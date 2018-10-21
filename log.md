@@ -40,8 +40,9 @@ during an active learning process. Relevant literature includes:
 Using the POV-Ray tool paired with [Vapory](https://github.com/Zulko/vapory), I
 can create arbitrary experimental scenes, with known object target information,
 in order to measure the performance of the model. This can also serve as an
-artificial oracle for segmentation masks and other information, with noise added
-to the oracle label as needed, to simulate human error.
+artificial oracle (edit: "imperfect oracle") for segmentation masks and other
+information, with noise added to the oracle label as needed, to simulate human
+error.
 
 This dataset should be constructed to show the model's resilience to
 anomalies. That is, the model should not anticipate target features in any way,
@@ -77,3 +78,50 @@ Possible labellers include:
 * **Should the user expect the model to eventually be fully independent, or will
   anomalous data always require active learning?** This is a response to the
   hypothesis-space problem.
+
+## October 21, 2018
+
+### Misc
+* A tensorflow implementation for the U-Net architecture can be found
+  [here](https://github.com/jakeret/tf_unet), originally used for
+  [this](https://arxiv.org/abs/1609.09077) paper on galaxy detection.
+* See [docs/design.md](docs/design.md) for an ongoing design document for
+  artifice.
+* Additional target features could include some parameterization of the
+  object. Need the ability to add arbitrary numerical or categorical targets, as
+  long as consistent.
+* The
+  [deeplab](https://github.com/tensorflow/models/tree/master/research/deeplab)
+  repo is a TensorFlow supported segmentation model.
+* Potential problem: if we ever want to show the user artifical images, as part
+  of the selection metric, then the imperfect oracle cannot be used. These cases
+  will have to defer to the human labeller.
+* We need to provide support for *existing data*. Very often, a scientist will
+  already have well-labeled experiments, and this will provide a useful starting
+  point for any experiment.
+
+### Experiment Generator
+The **experiment generator** needs to store its output data in a form readable
+by [tf_unet](https://github.com/jakeret/tf_unet), i.e. it needs to be in a
+tfrecord. But each record needs to include both the mask and the 
+
+### Literature
+* [ParseNet: Looking Wider to See Better](https://arxiv.org/abs/1506.04579)
+  explores methodology for better segmentation masks.
+* [Semantic Image Segmentation with Deep Convolutional Nets and Fully Connected
+  CRFs](https://arxiv.org/abs/1412.7062) made huge strides in semantic segmenation.
+
+### Experimental Design: artificial experiments.
+There are numerous experiments we could try to emulate, each with their own
+target features.
+* **Find the ball:** the simplest experiment, featuring a single ball as the
+  marker. The ball's center can determine position. Added complexities include:
+  * Constraining ball position according to some distribution.
+  * Moving ball in +/-z.
+  * Changing number of balls, possibly requiring uniqueness for each one, if
+    occlusion is possible.
+  * Adding orientation markers to the balls.
+  * Perturbing the background image.
+* **Petri dish:** simulate the inside of a petri dish, finding the mask for an
+  "amoeba." In reality, this can be some shape with sinusoidal distortion of the
+  edges.
