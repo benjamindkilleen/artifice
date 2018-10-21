@@ -1,3 +1,7 @@
+To be deleted.
+
+This document is obsolete. Refer to design.md or the most recent entries in log.md.
+
 # Perturbations
 
 **Perturbations** are any variations between the sample images of an object and
