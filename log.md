@@ -125,3 +125,8 @@ target features.
 * **Petri dish:** simulate the inside of a petri dish, finding the mask for an
   "amoeba." In reality, this can be some shape with sinusoidal distortion of the
   edges.
+
+# October 22, 2018
+* See [this example](https://gist.github.com/Zulko/f828b38421dfbee59daf) on
+  using vapory for realistic physics simulations. This would be cool for doing a
+  bouncing ball experiment, without having to explicitly set each location, etc.

@@ -44,7 +44,7 @@ running test data. This includes:
    segmentation.
 3. Create the **imperfect oracle** with built-in random error emulating human
    labels, in
-   [test_utils](https://github.com/bendkill/artifice/test_utils). This
+   [test_utils](https://github.com/bendkill/artifice/oracle/test_utils). This
    cannot be used until (4) is finished.
 4. Develop an **active learning metric** for semantic segmentation. When using
    artifice, this would normally query the user. For our purposes, have it query
