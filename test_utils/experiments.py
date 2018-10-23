@@ -1,6 +1,17 @@
+"""experiments is a tool for creating large, labeled training sets for semantic
+segmentation and/or object detection, with the ray-tracing tool POV-Ray.
+
+Dependencies:
+* numpy
+* POV-Ray
+* vapory
+* tensorflow
+"""
+
 import numpy as np
 import vapory
 import os
+import tensorflow as tf
 
 class ExperimentObject:
   """An ExperimentObject represents the objects which may appear in an
@@ -59,6 +70,12 @@ class Experiment:
   "targets" are features of the experiment, other than the segmentation mask
   that are ultimately desired, such as position/orientation.
 
+  self.objects is a list of ExperimentObjects that are subject to change,
+  whereas self.static_objects is a list of vapory Objects ready to be inserted
+  in the scene, as is.
+
+  self.included is a list of POV-Ray files to include.
+
   Brainstorm: Each Experiment will have a list of Vapory objects in each scene,
   which includes both "objects" and light sources. Each of these needs to
   somehow determine where it can appear, as a function of which image it is in
@@ -95,8 +112,24 @@ class Experiment:
     self.fname = fname
 
     self.set_camera()
-    self.objects = []       # list of ExperimentObjects, including light sources
 
+    # The objects in the scene should be added to by the subclass.
+    self.experiment_objects = [] 
+    self.static_objects = []
+    self.included = ["colors.inc", "textures.inc"]
+    # TODO: make methods to add or delete objects
+
+  def add_object(obj):
+    """Adds obj to the appropriate list, according to the type of the object.
+
+    If obj is not an ExperimentObject or a vapory object, behavior is
+    undefined.
+    """
+    if type(obj) == ExperimentObject:
+      self.experiment_objects.append(obj)
+    else:
+      self.static_objects.append(obj)
+  
   def set_camera(img_shape=None):
     """Sets the camera dimensions of the Experiment so that the output image has
     `img_shape`. If `img_shape` is not None, resets `self.img_shape`.
@@ -118,6 +151,9 @@ class Experiment:
     calculate no targets, such as for experiments which only desire segmentation
     masks.
 
+    Targets is always a vector. This can represent a classification or some
+    numerical values (more likely).
+
     Returns a numpy array containing the targets for the most recent scene. If
     there are no targets, return None.
     """
@@ -128,27 +164,40 @@ class Experiment:
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns a dictionary containing the image, the mask, and any targets.
+    Returns a dictionary: {"image" : img, "mask" : mask, "target" : target},
+    where img, mask, and target are all tf.train.Features, ready to be written
+    into a tfrecord.
 
     Calls the make_targets() function, implemented by subclasses, that uses
     the object locations, orientations, etc. set by render_scene, to calculate
     the targets.
     """
+
+    mask, targets = None # TODO: placeholder
+
+    scene_objects = [obj() for obj in self.experiment_objects] + self.static_objects
+    scene = vapory.Scene(self.camera, scene_objects, included=self.included)
+    img = scene.render(height=self.size[0], width=self.size[1])
+
+    print(type(img))
+    exit()
     
-    pass
+    return {"image" : img, "mask" : mask, "target" : target}
     
   def run(self):
-    """Generate the dataset as perscribed, storing it as fname. Should include
+    """Generate the dataset as perscribed, storing it as self.fname. Should include
     the logic for each example, generating masks as well as target features.
-
-    TODO: decide whether to implement generally or per subclass.
     """
-
-    for i in range(self.N):
-      
+    writer = tf.python_io.TFRecordWriter(self.fname)
     
-    raise NotImplementedError
+    for i in range(self.N):
+      feature = self.render_scene()
+      features = tf.train.Features(feature=feature)
+      example = tf.train.Example(features=features)
+      writer.write(example.SerializeToString())
 
+    writer.close()
+    
 class BallExperiment(Experiment):
   """Generate an experiment with one or more balls.
   """
@@ -157,19 +206,35 @@ class BallExperiment(Experiment):
     super().__init__(**kwargs)
 
     assert(num_balls > 0)
-    
     self.num_balls = int(num_balls)
 
-  def run(self):
+  def add_static_ball(self, center, radius):
+    """Adds a static red ball to the scene.
+    args:
+      center: a list (or tuple) of length two or three, specifying the center of
+        the ball. If len(center) == 2, ball is assumed to lie in image plane
+        (z=0).
+      radius: radius of the ball.
+
+    TODO: add options to change color of ball.
+    """
+    center = list(center)
+    if len(center) == 2:
+      center.append(0)
+    assert(len(center) == 3)
+    ball = vapory.Sphere(center, radius, Pigment('Red'))
+    self.add_object(ball)
+
+#################### TESTS ####################
     
+def center_test():
+  exp = BallExperiment()
+  exp.add_static_ball((0,0), 10)
+  exp.render_scene()
     
-
-
-
-  
 def main():
   """For testing purposes"""
-
-  pass
+  center_test()
+  
 
 if __name__ == '__main__': main()
