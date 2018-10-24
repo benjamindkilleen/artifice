@@ -126,7 +126,46 @@ target features.
   "amoeba." In reality, this can be some shape with sinusoidal distortion of the
   edges.
 
-# October 22, 2018
+## October 22, 2018
 * See [this example](https://gist.github.com/Zulko/f828b38421dfbee59daf) on
   using vapory for realistic physics simulations. This would be cool for doing a
   bouncing ball experiment, without having to explicitly set each location, etc.
+
+## October 23, 2018
+* Potential problem where POV-Ray and tensorflow are mutually exclusive. Might
+  need to add functionality for experiments.py to export to `png` or `json` for
+  each image. This would allow the script to create datasets from povray in one
+  step, then convert them to tfrecords in the next step. This is clunky,
+  however.
+
+## October 24, 2018
+* RCC responded to the above issue. POV-Ray depends on TIFF, which hadn't been
+  updated for gpu2.
+* New issue for experiments.py: target shouldn't just be one vector. In a sense,
+  every object being tracked has a target vector associated with it. Associating
+  *target vectors with regions in a segmentation mask* is tricky. Requires more
+  thought, because the targets are only being used for the second-step net.
+  
+### Target Association Problem
+**Problem:** we need to associate with each instance of an object in the image a
+specific vector, which is the target for that object. The problem is that,
+while forward inference after training should work fine, there's no way to know
+which target vector is associated with which object instance in the image.
+* We could make each instance it's own class, in the dataset. This is clunky and
+  doesn't reflect the structure of the problem, however.
+* Look into how object detectors deal with unknown numbers of objects (use
+  **LSTMs with a confidence metric**), how they deal with backpropagation in
+  this case. Should be the same deal. Maybe Prof. Maire can offer reading? This
+  solution ties together the two parts of the network approach, making the
+  second step less isolated.
+* Have an unambiguous ordering for each target vector. For a known number of
+  objects in the scene, this can be the (x,y) coordinate, lexicographically
+  ordered? Still some ambiguit, and object position is not necessarily
+  well-defined from a mask, hence the problem.
+* Include position in every target. Find an unambiguous mapping from every
+  detection to every target.
+
+### Generating Masks:
+* Need to **determine camera transformation matrix** from POV-Ray setup. Use
+  this to generate masks, for each type of vapory object, manually? Should be
+  relatively simple...

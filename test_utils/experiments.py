@@ -12,27 +12,28 @@ import numpy as np
 import vapory
 import os
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
-class ExperimentObject:
-  """An ExperimentObject represents the objects which may appear in an
-  Experiment. The vapory object itself is created on __call__().
+class DynamicObject:
+  """An ImageObject is a wrapper around a Vapory object. This may be used for any
+  objects in a scene which change from image to image but are not being tracked.
+  The vapory object itself is created on every __call__().
 
-  This class is intended to fully encompass all needed vapory
-  objects. Subclassing is desirable when many of the same object are present in
-  a scene, each with their own location/orientation attributes.
+  args:
+    vapory_object: the vapory class this ExperimentObject represents.
+    object_args: either a tuple, containing all required arguments for creating
+      vapory_object, or a function which creates this tuple (allowing for
+      non-determinism), as well as any others that should change on each call.
+    args: any additional args, passed on as vapory_object(*object_args + args)
+    kwargs: additions keyword arguments are passed onto the vapory object, the
+      same on every call.
+
+  self.args stores the most recent args as a list. This is instantiated as [],
+  and is used by Experiment.compute_mask() to generate the mask of the object,
+  as well as by Experiment.compute_target() for any additional target values.
+
   """
-
-  def __init__(self, vapory_object, object_args, **kwargs):
-    """
-    args:
-      vapory_object: the vapory class this ExperimentObject represents.
-      object_args: either a tuple, containing all required arguments for creating
-        vapory_object, or a function which creates this tuple (allowing for
-        non-determinism), as well as any others that should change on each call.
-      kwargs: additions keyword arguments are passed onto the vapory object, the
-        same on every call.
-    """
-
+  def __init__(self, vapory_object, object_args, *args, **kwargs):
     self.vapory_object = vapory_object
     
     if callable(object_args):
@@ -42,21 +43,56 @@ class ExperimentObject:
     else:
       raise RuntimeError("`object_args` is not a tuple or function")
 
-    self.other_args = sum([list(t) for t in kwargs.items()], [])
+    self.other_args = list(args) + sum([list(t) for t in kwargs.items()], [])
+    self.args = []
 
   def __call__(self):
     """Return an instance of the represented vapory object, ready to be inserted
     into a scene.
     """
-    args = self.get_args()
-    return self.vapory_object(*args + self.other_args)
-    
+    self.args = list(self.get_args()) + self.other_args
+    return self.vapory_object(*self.args)
+
+  
+class ExperimentObject(DynamicObject):
+  """An ExperimentObject is a wrapper around a Vapory object, and it represents a
+  marker for detection. An ExperimentObject should be used, rather than a mere
+  ImageObject or vapory object, whenever the object is being tracked (needs a
+  mask). Unlike an ImageObject, every ExperimentObject has a class associated
+  with it (an integer >0, since 0 is the background class).
+
+  args:
+    vapory_object: the vapory class this ExperimentObject represents.
+    object_args: either a tuple, containing all required arguments for creating
+      vapory_object, or a function which creates this tuple (allowing for
+      non-determinism), as well as any others that should change on each call.
+    object_class: numerical class of the object, used for generating a
+      mask. default=1.
+    args: any additional args, passed on as vapory_object(*object_args + args)
+    kwargs: additions keyword arguments are passed onto the vapory object, the
+      same on every call.
+
+  """
+
+  def __init__(self, vapory_object, object_args, *args, object_class=1, **kwargs):
+    super().__init__(vapory_object, object_args, *args, **kwargs)
+    assert(object_class > 0)
+    self.object_class = int(object_class)
+
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
   using self.run(). It has variations that affect the output labels.
 
-  By default, an Experiment will write 1000 examples to a tfrecord file,
-  storing images as 8-bit grayscale.
+  args:
+    img_shape: (rows, cols) shape of the output images, determines the aspect ratio
+      of the camera, default=(512,512). Number of channels determined by `mode`
+    mode: image mode to generate, default='L' (8-bit grayscale)
+    num_classes: number of classes to be detected.
+    N: number of images to generate, default=1000
+    output_format: filetype to write, default='tfrecord'
+    fname: name of output file, without extension. Ignored if included.
+    camera_multiplier: controls how far out the camera is positioned, as a
+      multiple of img_shape[1] (vertical pixels), default=4 (far away)
 
   Image `mode` is according to PIL.Image. Valid inputs are:
   * L (8-bit pixels, black and white)
@@ -73,53 +109,37 @@ class Experiment:
   self.objects is a list of ExperimentObjects that are subject to change,
   whereas self.static_objects is a list of vapory Objects ready to be inserted
   in the scene, as is.
-
-  self.included is a list of POV-Ray files to include.
-
-  Brainstorm: Each Experiment will have a list of Vapory objects in each scene,
-  which includes both "objects" and light sources. Each of these needs to
-  somehow determine where it can appear, as a function of which image it is in
-  the dataset (to allow for temporal dependent datasets). Some objects may
-  appear always, but others may only appear sometimes (background clutter,
-  occlusion, etc.).
-
   """
 
   supported_modes = {'L', 'RGB'}
   supported_formats = {'tfrecord'}
+  included = ["colors.inc", "textures.inc"]
 
-  def __init__(self, img_shape=(512,512), mode='L', N=1000, output_format='tfrecord',
-               fname="out"):
-    """
-    args:
-      img_shape: (rows, cols) shape of the output images, determines the aspect ratio
-        of the camera, default=(512,512). Number of channels determined by `mode`
-      mode: image mode to generate, default='L' (8-bit grayscale)
-      N: number of images to generate, default=1000
-      output_format: filetype to write, default='tfrecord'
-      fname: name of output file, without extension. Ignored if included.
-    """
+  def __init__(self, img_shape=(512,512), mode='RGB', num_classes=1, N=1000,
+               output_format='tfrecord', fname="out", camera_multiplier=4):
     assert(type(img_shape) == tuple and len(img_shape) == 2)
     assert(mode in self.supported_modes)
     assert(output_format in self.supported_formats)
-    assert(fname == str)
+    assert(type(fname) == str)
     fname = '.'.join(fname.split('.')[:-1])
+    assert(camera_multiplier > 0)
+    assert(num_classes > 0)
     
     self.img_shape = img_shape
     self.N = int(N)
     self.mode = mode
     self.output_format=output_format
     self.fname = fname
-
+    self.camera_multiplier = camera_multiplier
+    
     self.set_camera()
 
     # The objects in the scene should be added to by the subclass.
-    self.experiment_objects = [] 
-    self.static_objects = []
-    self.included = ["colors.inc", "textures.inc"]
-    # TODO: make methods to add or delete objects
+    self.experiment_objects = [] # ExperimentObject instances
+    self.dynamic_objects = []    # DynamicObject instances
+    self.static_objects = []     # vapory object instances
 
-  def add_object(obj):
+  def add_object(self, obj):
     """Adds obj to the appropriate list, according to the type of the object.
 
     If obj is not an ExperimentObject or a vapory object, behavior is
@@ -127,36 +147,60 @@ class Experiment:
     """
     if type(obj) == ExperimentObject:
       self.experiment_objects.append(obj)
+    elif type(obj) == DynamicObject:
+      self.dynamic_objects = []
     else:
       self.static_objects.append(obj)
   
-  def set_camera(img_shape=None):
+  def set_camera(self, img_shape=None, camera_multiplier=None):
     """Sets the camera dimensions of the Experiment so that the output image has
     `img_shape`. If `img_shape` is not None, resets `self.img_shape`.
     """
     if img_shape != None:
-      assert(type(img_shape) == tuple and len(img_shape) == 2)
-      self.img_shape = img_shape
+      assert(len(img_shape) == 2)
+      self.img_shape = tuple(img_shape)
 
-    location = [0, 0, -self.img_shape[1]]
+    if camera_multiplier != None:
+      assert(camera_multiplier > 0)
+      self.camera_multiplier = camera_multiplier
+
+    location = [0, 0, -self.img_shape[0]*self.camera_multiplier]
     look_at = [0,0,0]
     right = [self.img_shape[0] / self.img_shape[1], 0, 0]
+    angle = 2*np.degrees(np.arctan(1 / (2*self.camera_multiplier)))
 
     self.camera = vapory.Camera('location', location,
                                 'look_at', look_at,
-                                'right', right)
+                                'right', right,
+                                'angle', angle)
 
-  def calculate_targets(self):
-    """Calculate the targets for this Experiment. The default behavior is to
-    calculate no targets, such as for experiments which only desire segmentation
-    masks.
+  def compute_mask(self):
+    """Computes the mask for the scene, based on most recent vapory objects
+    created. Checks whether 
 
-    Targets is always a vector. This can represent a classification or some
+    Returns a sparse 
+    """
+    
+    pass
+    
+  def compute_target(self, *args):
+    """Calculate the target for this ExperimentObject. Called with the same args
+    that The default behavior is to calculate no target, such as for experiments
+    which only desire segmentation masks. Should be overwritten by subclasses.
+    
+    Target is always a vector. This can represent a classification or some
     numerical values (more likely).
-
+    
     Returns a numpy array containing the targets for the most recent scene. If
     there are no targets, return None.
+    
     """
+    # TODO: necessary? Might also belong in ExperimentObject. Unclear.
+    # TODO: calculate_target should be able to see all the args that were passed
+    # into the vapory object, to determine any targets that it needs to, from
+    # those properties.
+    # TODO: associate target vector with each object in segmentation mask, how?
+    
 
     return None
     
@@ -173,16 +217,22 @@ class Experiment:
     the targets.
     """
 
-    mask, targets = None # TODO: placeholder
+    mask = target = None # TODO: placeholder
 
-    scene_objects = [obj() for obj in self.experiment_objects] + self.static_objects
-    scene = vapory.Scene(self.camera, scene_objects, included=self.included)
-    img = scene.render(height=self.size[0], width=self.size[1])
+    dynamic_objects = [obj() for obj in self.dynamic_objects]
+    experiment_objects = [obj() for obj in self.experiment_objects]
+    all_objects = self.static_objects + dynamic_objects + experiment_objects
+    scene = vapory.Scene(self.camera, all_objects, included=self.included)
 
-    print(type(img))
-    exit()
+    # img is an ndarray of np.uint8s.
+    img = scene.render(height=self.img_shape[0], width=self.img_shape[1])
+    mask = self.compute_mask()  # computes using most recently used args
+
+    x = img.reshape(np.prod(img.shape))
+    y = mask.reshape(np.prod(mask.shape))
     
-    return {"image" : img, "mask" : mask, "target" : target}
+    return {"image" : tf.train.Feature(float_list=tf.train.FloatList(value=x)),
+            "mask" : mask, "target" : target}
     
   def run(self):
     """Generate the dataset as perscribed, storing it as self.fname. Should include
@@ -202,14 +252,11 @@ class BallExperiment(Experiment):
   """Generate an experiment with one or more balls.
   """
   
-  def __init__(self, num_balls=1, **kwargs):
-    super().__init__(**kwargs)
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
 
-    assert(num_balls > 0)
-    self.num_balls = int(num_balls)
-
-  def add_static_ball(self, center, radius):
-    """Adds a static red ball to the scene.
+  def add_static_ball(self, center, radius, *args):
+    """Adds a static ball to the scene.
     args:
       center: a list (or tuple) of length two or three, specifying the center of
         the ball. If len(center) == 2, ball is assumed to lie in image plane
@@ -222,19 +269,27 @@ class BallExperiment(Experiment):
     if len(center) == 2:
       center.append(0)
     assert(len(center) == 3)
-    ball = vapory.Sphere(center, radius, Pigment('Red'))
+    ball = vapory.Sphere(center, radius, *args)
     self.add_object(ball)
 
 #################### TESTS ####################
     
-def center_test():
-  exp = BallExperiment()
-  exp.add_static_ball((0,0), 10)
-  exp.render_scene()
+def test():
+  color = lambda col: vapory.Texture(vapory.Pigment('color', col))
+  
+  exp = BallExperiment(img_shape=(512, 1024))
+  exp.add_object(vapory.Background('White'))
+  exp.add_object(vapory.LightSource([0, 500, -500], 'color', [1,1,1]))
+  ball = ExperimentObject(vapory.Sphere, lambda : ((0,0), 50), color('Red'))
+  exp.add_object(ball)
+  features = exp.render_scene()
+  
+  plt.imshow(features['image'])
+  plt.show()
     
 def main():
   """For testing purposes"""
-  center_test()
+  test()
   
 
 if __name__ == '__main__': main()
