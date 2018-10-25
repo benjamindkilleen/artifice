@@ -169,3 +169,19 @@ which target vector is associated with which object instance in the image.
 * Need to **determine camera transformation matrix** from POV-Ray setup. Use
   this to generate masks, for each type of vapory object, manually? Should be
   relatively simple...
+
+## October 25, 2018
+* Interesting problem of semantic segmentation. First step, need to deduce the
+  WtoI camera projection matrix of the POV-Ray camera, relatively easy. Second
+  step: Experiment compute_mask needs to check every overlapping pixel for the
+  closer object. It does this by first getting all the masks that lie on a given
+  pixel, then calculating (based on the geometry of each object) which one is
+  closest. This isn't the fastest thing in the world...maybe compile to cython
+  (without modifications)? Gross. Maybe write a C library to do it for each
+  object? Hmmmmmmm. More gross. Staying in native python isn't bad either, if we
+  just run this on midway.
+  Problem is, we're gonna have to stick with datasets on spheres, boxes, and
+  maybe cylinders. Just for the test stuff.
+* Another issue: perhaps we shouldn't be creating the complete dataset? Or
+  rather, it seems like the oracle will have to take the complete dataset and
+  only show artifice a small part of it.

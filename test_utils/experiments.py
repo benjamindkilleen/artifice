@@ -6,6 +6,10 @@ Dependencies:
 * POV-Ray
 * vapory
 * tensorflow
+
+.tfrecord writer largely based on:
+http://warmspringwinds.github.io/tensorflow/tf-slim/2016/12/21/tfrecords-guide/
+
 """
 
 import numpy as np
@@ -13,6 +17,15 @@ import vapory
 import os
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from skimage import draw
+
+# helper functions for writing tfrecords
+def _bytes_feature(value):
+  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
+def _int64_feature(value):
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+
 
 class DynamicObject:
   """An ImageObject is a wrapper around a Vapory object. This may be used for any
@@ -79,6 +92,41 @@ class ExperimentObject(DynamicObject):
     assert(object_class > 0)
     self.object_class = int(object_class)
 
+  def compute_mask(experiment):
+    """Compute the numpy mask of the ExperimentObject, given Experiment
+    `experiment`.
+
+    This should be overwritten by subclasses, for each type of vapory
+    object. Each object returns the indices of the experiment scene that it
+    contains (from skimage.draw). It is up to the Experiment to decide, in the
+    case of occlusions, which object is in front of the other.
+
+    """
+    raise NotImplementedError("compute_mask is specific to each vapory object.")
+
+class ExperimentSphere(ExperimentObject):
+  """An ExperimentSphere, representing a vapory.Sphere.
+
+  args:
+    vapory_object: the vapory class this ExperimentObject represents.
+    object_args: either a tuple, containing all required arguments for creating
+      vapory_object, or a function which creates this tuple (allowing for
+      non-determinism), as well as any others that should change on each call.
+    object_class: numerical class of the object, used for generating a
+      mask. default=1.
+    args: any additional args, passed on as vapory_object(*object_args + args)
+    kwargs: additions keyword arguments are passed onto the vapory object, the
+      same on every call.
+  """
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(vapory.Sphere, *args, **kwargs)
+
+  def compute_mask(experiment):
+    """Compute the mask for an ExperimentSphere, placed in experiment."""
+    assert(len(self.args) != 0)
+    
+    
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
   using self.run(). It has variations that affect the output labels.
@@ -145,7 +193,7 @@ class Experiment:
     If obj is not an ExperimentObject or a vapory object, behavior is
     undefined.
     """
-    if type(obj) == ExperimentObject:
+    if issubclass(type(obj), ExperimentObject):
       self.experiment_objects.append(obj)
     elif type(obj) == DynamicObject:
       self.dynamic_objects = []
@@ -168,6 +216,8 @@ class Experiment:
     look_at = [0,0,0]
     right = [self.img_shape[0] / self.img_shape[1], 0, 0]
     angle = 2*np.degrees(np.arctan(1 / (2*self.camera_multiplier)))
+    
+    # TODO: set camera projection matrix
 
     self.camera = vapory.Camera('location', location,
                                 'look_at', look_at,
@@ -175,13 +225,15 @@ class Experiment:
                                 'angle', angle)
 
   def compute_mask(self):
-    """Computes the mask for the scene, based on most recent vapory objects
-    created. Checks whether 
+    """Computes the label (annotation) for the scene, based on most recent vapory
+    objects created.
 
-    Returns a sparse 
+    Returns the label.
+
     """
+    mask = np.zeros(self.img_shape, dtype=np.uint8)
     
-    pass
+    return mask
     
   def compute_target(self, *args):
     """Calculate the target for this ExperimentObject. Called with the same args
@@ -201,7 +253,6 @@ class Experiment:
     # those properties.
     # TODO: associate target vector with each object in segmentation mask, how?
     
-
     return None
     
   def render_scene(self):
@@ -217,22 +268,25 @@ class Experiment:
     the targets.
     """
 
-    mask = target = None # TODO: placeholder
-
     dynamic_objects = [obj() for obj in self.dynamic_objects]
     experiment_objects = [obj() for obj in self.experiment_objects]
     all_objects = self.static_objects + dynamic_objects + experiment_objects
     scene = vapory.Scene(self.camera, all_objects, included=self.included)
 
-    # img is an ndarray of np.uint8s.
+    # img, mask ndarrays of np.uint8s.
     img = scene.render(height=self.img_shape[0], width=self.img_shape[1])
     mask = self.compute_mask()  # computes using most recently used args
 
-    x = img.reshape(np.prod(img.shape))
-    y = mask.reshape(np.prod(mask.shape))
-    
-    return {"image" : tf.train.Feature(float_list=tf.train.FloatList(value=x)),
-            "mask" : mask, "target" : target}
+    assert(img.ndim == 3 and mask.ndim == 3) # TODO: reshape img, mask if needed
+    img_string = img.tostring()
+    mask_string = lbl.tostring()
+    image_shape = np.array(img.shape, dtype=np.int64)
+    mask_shape = mask.shape(mask.shape, dtype=np.int64)
+
+    return {"image" : _bytes_feature(img_string),
+            "mask" : _bytes_feature(mask_string),
+            "image_shape" : _int64_feature(image_shape),
+            "mask_shape" : _int64_feature()}
     
   def run(self):
     """Generate the dataset as perscribed, storing it as self.fname. Should include
@@ -282,9 +336,9 @@ def test():
   exp.add_object(vapory.LightSource([0, 500, -500], 'color', [1,1,1]))
   ball = ExperimentObject(vapory.Sphere, lambda : ((0,0), 50), color('Red'))
   exp.add_object(ball)
-  features = exp.render_scene()
+  feature = exp.render_scene()
   
-  plt.imshow(features['image'])
+  plt.imshow(feature['image'])
   plt.show()
     
 def main():
