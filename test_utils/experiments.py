@@ -7,9 +7,6 @@ Dependencies:
 * vapory
 * tensorflow
 
-.tfrecord writer largely based on:
-http://warmspringwinds.github.io/tensorflow/tf-slim/2016/12/21/tfrecords-guide/
-
 """
 
 import numpy as np
@@ -19,13 +16,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from skimage import draw
 
-# helper functions for writing tfrecords
-def _bytes_feature(value):
-  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
-
-def _int64_feature(value):
-  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
-
+from artifice.utils import dataset
 
 class DynamicObject:
   """An ImageObject is a wrapper around a Vapory object. This may be used for any
@@ -122,6 +113,13 @@ class ExperimentSphere(ExperimentObject):
   def __init__(self, *args, **kwargs):
     super().__init__(vapory.Sphere, *args, **kwargs)
 
+  def __call__(self):
+    """Record the center and radius of the sphere."""
+    vapory_object = super().__call__()
+    self.center = self.args[0]
+    self.radius = self.args[1]
+    return vapory_object
+    
   def compute_mask(experiment):
     """Compute the mask for an ExperimentSphere, placed in experiment."""
     assert(len(self.args) != 0)
@@ -132,7 +130,7 @@ class Experiment:
   using self.run(). It has variations that affect the output labels.
 
   args:
-    img_shape: (rows, cols) shape of the output images, determines the aspect ratio
+    image_shape: (rows, cols) shape of the output images, determines the aspect ratio
       of the camera, default=(512,512). Number of channels determined by `mode`
     mode: image mode to generate, default='L' (8-bit grayscale)
     num_classes: number of classes to be detected.
@@ -140,7 +138,7 @@ class Experiment:
     output_format: filetype to write, default='tfrecord'
     fname: name of output file, without extension. Ignored if included.
     camera_multiplier: controls how far out the camera is positioned, as a
-      multiple of img_shape[1] (vertical pixels), default=4 (far away)
+      multiple of image_shape[1] (vertical pixels), default=4 (far away)
 
   Image `mode` is according to PIL.Image. Valid inputs are:
   * L (8-bit pixels, black and white)
@@ -163,9 +161,9 @@ class Experiment:
   supported_formats = {'tfrecord'}
   included = ["colors.inc", "textures.inc"]
 
-  def __init__(self, img_shape=(512,512), mode='RGB', num_classes=1, N=1000,
-               output_format='tfrecord', fname="out", camera_multiplier=4):
-    assert(type(img_shape) == tuple and len(img_shape) == 2)
+  def __init__(self, image_shape=(512,512), mode='RGB', num_classes=1, N=1000,
+               output_format='tfrecord', fname="data", camera_multiplier=4):
+    assert(type(image_shape) == tuple and len(image_shape) == 2)
     assert(mode in self.supported_modes)
     assert(output_format in self.supported_formats)
     assert(type(fname) == str)
@@ -173,14 +171,14 @@ class Experiment:
     assert(camera_multiplier > 0)
     assert(num_classes > 0)
     
-    self.img_shape = img_shape
+    self.image_shape = image_shape
     self.N = int(N)
     self.mode = mode
     self.output_format=output_format
-    self.fname = fname
+    self.fname = fname + '.' + output_format
     self.camera_multiplier = camera_multiplier
     
-    self.set_camera()
+    self._set_camera()
 
     # The objects in the scene should be added to by the subclass.
     self.experiment_objects = [] # ExperimentObject instances
@@ -200,38 +198,70 @@ class Experiment:
     else:
       self.static_objects.append(obj)
   
-  def set_camera(self, img_shape=None, camera_multiplier=None):
+  def _set_camera(self):
     """Sets the camera dimensions of the Experiment so that the output image has
-    `img_shape`. If `img_shape` is not None, resets `self.img_shape`.
+    `image_shape`. Also sets the camera projection matrix. Should only be called
+    by __init__().
+
     """
-    if img_shape != None:
-      assert(len(img_shape) == 2)
-      self.img_shape = tuple(img_shape)
 
-    if camera_multiplier != None:
-      assert(camera_multiplier > 0)
-      self.camera_multiplier = camera_multiplier
+    camera_distance = self.image_shape[0]*self.camera_multiplier
+    location = [0, 0, -camera_distance]
+    direction = [0, 0, 1]
+    right_length = self.image_shape[0] / self.image_shape[1]
+    right = [right_length, 0, 0]
+    half_angle_radians = 2*np.arctan(1 / (2*self.camera_multiplier))
 
-    location = [0, 0, -self.img_shape[0]*self.camera_multiplier]
-    look_at = [0,0,0]
-    right = [self.img_shape[0] / self.img_shape[1], 0, 0]
-    angle = 2*np.degrees(np.arctan(1 / (2*self.camera_multiplier)))
-    
-    # TODO: set camera projection matrix
+    # Set the camera projection matrix.
+    aspect_ratio = right_length # up_length is 1, by default
+    # focal_length = 0.5 * right_length / np.tan(half_angle_radians) # length of
+    # POV-Ray direction vector
+    # (Szeliski 53)
+    focal_length = self.image_shape[1] / (2*np.tan(half_angle_radians))
+    K = np.array(
+      [[focal_length, 0, self.image_shape[0]/2],
+       [0, aspect_ratio*focal_length, self.image_shape[1]/2],
+       [0, 0, 1]])
+    T = np.array(
+      [[0],
+       [0],
+       [camera_distance]])
+    R = np.array(
+      [[1, 0, 0],
+       [0, -1, 0],
+       [0, 0, 1]])
+    self._camera_projection_matrix = K @ np.concatenate((R, T), axis=1)
 
     self.camera = vapory.Camera('location', location,
-                                'look_at', look_at,
+                                'direction', direction,
                                 'right', right,
-                                'angle', angle)
+                                'angle', 2*np.degrees(half_angle_radians))
 
-  def compute_mask(self):
-    """Computes the label (annotation) for the scene, based on most recent vapory
-    objects created.
+  def project(self, x, y, z, is_point=True):
+    """Project the world-space [x,y,z,is_point] to image-space. `is_point` captures
+    whether [x,y,z] should be treated as a point or a vector.
 
-    Returns the label.
+    Return the [i,j] point in image-space (as a numpy array).
 
     """
-    mask = np.zeros(self.img_shape, dtype=np.uint8)
+
+    is_point = int(is_point)
+    X = np.array([x, y, z, is_point])
+    Xi = self._camera_projection_matrix @ X
+    return np.array([Xi[0]/Xi[2], Xi[1]/Xi[2]])
+    
+  def compute_mask(self):
+    """Computes the mask (annotation) for the scene, based on most recent vapory
+    objects created. Each mask marks the class associated with the pixel.
+
+    """
+    mask = np.zeros((self.image_shape[0], self.image_shape[1], 1),
+                    dtype=np.uint8)
+
+    
+    # TODO: compute the masks for each object, then check each pixel for
+    # occlusions. Determine, based on object geometry, which object it belongs
+    # to.
     
     return mask
     
@@ -259,10 +289,9 @@ class Experiment:
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns a dictionary: {"image" : img, "mask" : mask, "target" : target},
-    where img, mask, and target are all tf.train.Features, ready to be written
-    into a tfrecord.
+    Returns a "scene", tuple of "image" and "mask".
 
+    # TODO:
     Calls the make_targets() function, implemented by subclasses, that uses
     the object locations, orientations, etc. set by render_scene, to calculate
     the targets.
@@ -273,34 +302,20 @@ class Experiment:
     all_objects = self.static_objects + dynamic_objects + experiment_objects
     scene = vapory.Scene(self.camera, all_objects, included=self.included)
 
-    # img, mask ndarrays of np.uint8s.
-    img = scene.render(height=self.img_shape[0], width=self.img_shape[1])
+    # image, mask ndarrays of np.uint8s.
+    image = scene.render(height=self.image_shape[0], width=self.image_shape[1])
     mask = self.compute_mask()  # computes using most recently used args
 
-    assert(img.ndim == 3 and mask.ndim == 3) # TODO: reshape img, mask if needed
-    img_string = img.tostring()
-    mask_string = lbl.tostring()
-    image_shape = np.array(img.shape, dtype=np.int64)
-    mask_shape = mask.shape(mask.shape, dtype=np.int64)
-
-    return {"image" : _bytes_feature(img_string),
-            "mask" : _bytes_feature(mask_string),
-            "image_shape" : _int64_feature(image_shape),
-            "mask_shape" : _int64_feature()}
-    
+    return image, mask
+        
   def run(self):
-    """Generate the dataset as perscribed, storing it as self.fname. Should include
-    the logic for each example, generating masks as well as target features.
+    """Generate the dataset as perscribed, storing it as self.fname.
     """
-    writer = tf.python_io.TFRecordWriter(self.fname)
-    
-    for i in range(self.N):
-      feature = self.render_scene()
-      features = tf.train.Features(feature=feature)
-      example = tf.train.Example(features=features)
-      writer.write(example.SerializeToString())
+    def gen():
+      for i in range(self.N):
+        yield dataset.tf_string_from_scene(self.render_scene())
 
-    writer.close()
+    dataset.write_tfrecord(self.fname, gen)
     
 class BallExperiment(Experiment):
   """Generate an experiment with one or more balls.
@@ -331,14 +346,19 @@ class BallExperiment(Experiment):
 def test():
   color = lambda col: vapory.Texture(vapory.Pigment('color', col))
   
-  exp = BallExperiment(img_shape=(512, 1024))
+  exp = BallExperiment(image_shape=(10, 10))
   exp.add_object(vapory.Background('White'))
   exp.add_object(vapory.LightSource([0, 500, -500], 'color', [1,1,1]))
-  ball = ExperimentObject(vapory.Sphere, lambda : ((0,0), 50), color('Red'))
+  # TODO: oboe with radius
+  ball = ExperimentObject(vapory.Sphere, lambda : ((0,0), 5), color('Red'))
   exp.add_object(ball)
-  feature = exp.render_scene()
+  image, mask = exp.render_scene()
+
+  world_point = [0, 5, 0]
+  image_point = exp.project(*world_point)
   
-  plt.imshow(feature['image'])
+  plt.imshow(image)
+  plt.plot(image_point[0], image_point[1], 'b.')
   plt.show()
     
 def main():
