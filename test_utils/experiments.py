@@ -5,14 +5,17 @@ Dependencies:
 * numpy
 * POV-Ray
 * vapory
-* tensorflow
+
+On masks and annotations:
+A "mask" is a tuple of arrays, such as those returned by skimage.draw functions,
+which index into the experiment's image space.
+An "annotation" is an array with the same height and width as the experiment's image.
 
 """
 
 import numpy as np
 import vapory
 import os
-import tensorflow as tf
 import matplotlib.pyplot as plt
 from skimage import draw
 
@@ -33,8 +36,7 @@ class DynamicObject:
       same on every call.
 
   self.args stores the most recent args as a list. This is instantiated as [],
-  and is used by Experiment.compute_mask() to generate the mask of the object,
-  as well as by Experiment.compute_target() for any additional target values.
+  and is used by Experiment.compute_annotation() to generate the mask of the object.
 
   """
   def __init__(self, vapory_object, object_args, *args, **kwargs):
@@ -70,21 +72,21 @@ class ExperimentObject(DynamicObject):
     object_args: either a tuple, containing all required arguments for creating
       vapory_object, or a function which creates this tuple (allowing for
       non-determinism), as well as any others that should change on each call.
-    object_class: numerical class of the object, used for generating a
-      mask. default=1.
+    semantic_label: numerical class of the object, used for generating an
+      annotation. default=1.
     args: any additional args, passed on as vapory_object(*object_args + args)
     kwargs: additions keyword arguments are passed onto the vapory object, the
       same on every call.
 
   """
 
-  def __init__(self, vapory_object, object_args, *args, object_class=1, **kwargs):
+  def __init__(self, vapory_object, object_args, *args, semantic_label=1, **kwargs):
     super().__init__(vapory_object, object_args, *args, **kwargs)
-    assert(object_class > 0)
-    self.object_class = int(object_class)
+    assert(semantic_label > 0)
+    self.semantic_label = int(semantic_label)
 
   def compute_mask(experiment):
-    """Compute the numpy mask of the ExperimentObject, given Experiment
+    """Compute the mask of the ExperimentObject, given Experiment
     `experiment`.
 
     This should be overwritten by subclasses, for each type of vapory
@@ -103,8 +105,8 @@ class ExperimentSphere(ExperimentObject):
     object_args: either a tuple, containing all required arguments for creating
       vapory_object, or a function which creates this tuple (allowing for
       non-determinism), as well as any others that should change on each call.
-    object_class: numerical class of the object, used for generating a
-      mask. default=1.
+    semantic_label: numerical class of the object, used for generating an
+      annotation. default=1.
     args: any additional args, passed on as vapory_object(*object_args + args)
     kwargs: additions keyword arguments are passed onto the vapory object, the
       same on every call.
@@ -116,14 +118,19 @@ class ExperimentSphere(ExperimentObject):
   def __call__(self):
     """Record the center and radius of the sphere."""
     vapory_object = super().__call__()
-    self.center = self.args[0]
+    self.center = np.array(self.args[0])
     self.radius = self.args[1]
     return vapory_object
     
-  def compute_mask(experiment):
+  def compute_mask(self, experiment):
     """Compute the mask for an ExperimentSphere, placed in experiment."""
     assert(len(self.args) != 0)
-    
+    center = experiment.project(*self.center)
+    radius = np.linalg.norm(experiment.project(
+      self.radius, 0, 0, is_point=False))
+    return draw.circle(center[0], center[1], radius,
+                       shape=experiment.image_shape[:2])
+                                
     
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
@@ -148,9 +155,6 @@ class Experiment:
   The camera will be placed in each experiment such that the <x,y,0> plane is
   the image plane, with one unit of distance corresponding to ~1 pixel on that
   plane.
-
-  "targets" are features of the experiment, other than the segmentation mask
-  that are ultimately desired, such as position/orientation.
 
   self.objects is a list of ExperimentObjects that are subject to change,
   whereas self.static_objects is a list of vapory Objects ready to be inserted
@@ -179,7 +183,7 @@ class Experiment:
     self.camera_multiplier = camera_multiplier
     
     self._set_camera()
-
+    
     # The objects in the scene should be added to by the subclass.
     self.experiment_objects = [] # ExperimentObject instances
     self.dynamic_objects = []    # DynamicObject instances
@@ -210,7 +214,7 @@ class Experiment:
     direction = [0, 0, 1]
     right_length = self.image_shape[0] / self.image_shape[1]
     right = [right_length, 0, 0]
-    half_angle_radians = 2*np.arctan(1 / (2*self.camera_multiplier))
+    half_angle_radians = np.arctan(1 / (2*self.camera_multiplier))
 
     # Set the camera projection matrix.
     aspect_ratio = right_length # up_length is 1, by default
@@ -248,27 +252,32 @@ class Experiment:
     is_point = int(is_point)
     X = np.array([x, y, z, is_point])
     Xi = self._camera_projection_matrix @ X
-    return np.array([Xi[0]/Xi[2], Xi[1]/Xi[2]])
+    if is_point:
+      return np.array([Xi[0]/Xi[2], Xi[1]/Xi[2]])
+    else:
+      return Xi[:2]
     
-  def compute_mask(self):
-    """Computes the mask (annotation) for the scene, based on most recent vapory
-    objects created. Each mask marks the class associated with the pixel.
+  def compute_annotation(self):
+    """Computes the annotation for the scene, based on most recent vapory
+    objects created. Each annotation marks the class associated with the pixel.
 
     """
-    mask = np.zeros((self.image_shape[0], self.image_shape[1], 1),
+    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1),
                     dtype=np.uint8)
 
-    
+    for obj in self.experiment_objects:
+      rr, cc = obj.compute_mask(self)
+      annotation[rr, cc, 0] = obj.semantic_label;
     # TODO: compute the masks for each object, then check each pixel for
     # occlusions. Determine, based on object geometry, which object it belongs
     # to.
     
-    return mask
+    return annotation
     
   def compute_target(self, *args):
     """Calculate the target for this ExperimentObject. Called with the same args
     that The default behavior is to calculate no target, such as for experiments
-    which only desire segmentation masks. Should be overwritten by subclasses.
+    which only desire segmentation annotations. Should be overwritten by subclasses.
     
     Target is always a vector. This can represent a classification or some
     numerical values (more likely).
@@ -289,7 +298,7 @@ class Experiment:
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns a "scene", tuple of "image" and "mask".
+    Returns a "scene", tuple of "image" and "annotation".
 
     # TODO:
     Calls the make_targets() function, implemented by subclasses, that uses
@@ -302,11 +311,11 @@ class Experiment:
     all_objects = self.static_objects + dynamic_objects + experiment_objects
     scene = vapory.Scene(self.camera, all_objects, included=self.included)
 
-    # image, mask ndarrays of np.uint8s.
+    # image, annotation ndarrays of np.uint8s.
     image = scene.render(height=self.image_shape[0], width=self.image_shape[1])
-    mask = self.compute_mask()  # computes using most recently used args
+    annotation = self.compute_annotation()  # computes using most recently used args
 
-    return image, mask
+    return image, annotation
         
   def run(self):
     """Generate the dataset as perscribed, storing it as self.fname.
@@ -346,20 +355,24 @@ class BallExperiment(Experiment):
 def test():
   color = lambda col: vapory.Texture(vapory.Pigment('color', col))
   
-  exp = BallExperiment(image_shape=(10, 10))
+  exp = BallExperiment(image_shape=(100, 100))
   exp.add_object(vapory.Background('White'))
   exp.add_object(vapory.LightSource([0, 500, -500], 'color', [1,1,1]))
   # TODO: oboe with radius
-  ball = ExperimentObject(vapory.Sphere, lambda : ((0,0), 5), color('Red'))
+  ball = ExperimentSphere(lambda : ([0,0,0], 25), color('Red'))
   exp.add_object(ball)
-  image, mask = exp.render_scene()
+  image, annotation = exp.render_scene()
 
-  world_point = [0, 5, 0]
-  image_point = exp.project(*world_point)
+  # # world_point = [25/np.sqrt(2), 25/np.sqrt(2), 0]
+  # world_point = [0, 25, -100]
+  # image_point = exp.project(*world_point)
+  # print("image_point:", image_point)
   
   plt.imshow(image)
-  plt.plot(image_point[0], image_point[1], 'b.')
-  plt.show()
+  plt.savefig('image.png')
+
+  plt.imshow(annotation.reshape(annotation.shape[:2]))
+  plt.savefig('annotation.png')
     
 def main():
   """For testing purposes"""
