@@ -21,6 +21,20 @@ from skimage import draw
 
 from artifice.utils import dataset
 
+def normalize(X):
+  """Return normalized 1D vector X"""
+  X = np.array(X)
+  assert(len(X.shape) == 1)
+  return X / np.linalg.norm(X)
+
+def perpendicular(X):
+  """Return a unit vector perpendicular to X in R^3."""
+  X = np.array(X)
+  assert(len(X.shape) == 1)
+  return normalize(np.array([X[1] - X[2],
+                             X[2] - X[0],
+                             X[0] - X[1]]))
+                   
 class DynamicObject:
   """An ImageObject is a wrapper around a Vapory object. This may be used for any
   objects in a scene which change from image to image but are not being tracked.
@@ -91,7 +105,7 @@ class ExperimentObject(DynamicObject):
 
     This should be overwritten by subclasses, for each type of vapory
     object. Each object returns the indices of the experiment scene that it
-    contains (from skimage.draw). It is up to the Experiment to decide, in the
+    contains (as in skimage.draw). It is up to the Experiment to decide, in the
     case of occlusions, which object is in front of the other.
 
     """
@@ -125,13 +139,18 @@ class ExperimentSphere(ExperimentObject):
   def compute_mask(self, experiment):
     """Compute the mask for an ExperimentSphere, placed in experiment."""
     assert(len(self.args) != 0)
-    center = experiment.project(*self.center)
-    radius = np.linalg.norm(experiment.project(
-      self.radius, 0, 0, is_point=False))
-    return draw.circle(center[0], center[1], radius,
-                       shape=experiment.image_shape[:2])
-                                
-    
+    center = experiment.project(self.center)
+    center_to_edge = self.radius * perpendicular(
+      experiment.camera_to(self.center))
+    radius_vector = (experiment.project(self.center + center_to_edge)
+                     - experiment.project(self.center))
+    radius = np.linalg.norm(radius_vector)
+
+    rr, cc = draw.circle(center[0], center[1], radius,
+                         shape=experiment.image_shape[:2])
+    return rr, cc
+
+
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
   using self.run(). It has variations that affect the output labels.
@@ -211,17 +230,15 @@ class Experiment:
 
     camera_distance = self.image_shape[0]*self.camera_multiplier
     location = [0, 0, -camera_distance]
-    direction = [0, 0, 1]
-    right_length = self.image_shape[0] / self.image_shape[1]
-    right = [right_length, 0, 0]
+    direction = [0, 0, 1]       # POV-Ray direction vector
+    aspect_ratio = self.image_shape[0] / self.image_shape[1] # aspect ratio
+    right = [aspect_ratio, 0, 0]                             # POV-Ray vector
     half_angle_radians = np.arctan(1 / (2*self.camera_multiplier))
-
-    # Set the camera projection matrix.
-    aspect_ratio = right_length # up_length is 1, by default
-    # focal_length = 0.5 * right_length / np.tan(half_angle_radians) # length of
-    # POV-Ray direction vector
+    
     # (Szeliski 53)
     focal_length = self.image_shape[1] / (2*np.tan(half_angle_radians))
+    
+    # Set the camera projection matrix.
     K = np.array(
       [[focal_length, 0, self.image_shape[0]/2],
        [0, aspect_ratio*focal_length, self.image_shape[1]/2],
@@ -231,32 +248,40 @@ class Experiment:
        [0],
        [camera_distance]])
     R = np.array(
-      [[1, 0, 0],
-       [0, -1, 0],
+      [[0, -1, 0],
+       [1, 0, 0],
        [0, 0, 1]])
     self._camera_projection_matrix = K @ np.concatenate((R, T), axis=1)
+    
+    self._camera_location = np.array(location)
 
     self.camera = vapory.Camera('location', location,
                                 'direction', direction,
                                 'right', right,
                                 'angle', 2*np.degrees(half_angle_radians))
 
-  def project(self, x, y, z, is_point=True):
-    """Project the world-space [x,y,z,is_point] to image-space. `is_point` captures
-    whether [x,y,z] should be treated as a point or a vector.
-
+  def camera_to(self, X):
+    """Get the world-space vector from the camera to X"""
+    assert(len(X) == 3)
+    return np.array(X) - self._camera_location
+    
+  def project(self, X):
+    """Project the world-space POINT X = [x,y,z] to image-space.
     Return the [i,j] point in image-space (as a numpy array).
+    """
+    assert(len(X) == 3)
+    Xi = self._camera_projection_matrix @ np.concatenate((X, [1]))
+    return np.array([Xi[0]/Xi[2], Xi[1]/Xi[2]])
+
+  def project_vector(self, a, b):
+    """Project the vector given by (a - b) onto the image-space.
+
+    For camera transformation matrix M, returns:
+    (u,v) = M @ a - M @ b
 
     """
-
-    is_point = int(is_point)
-    X = np.array([x, y, z, is_point])
-    Xi = self._camera_projection_matrix @ X
-    if is_point:
-      return np.array([Xi[0]/Xi[2], Xi[1]/Xi[2]])
-    else:
-      return Xi[:2]
-    
+    return self.project(a) - self.project(b)
+  
   def compute_annotation(self):
     """Computes the annotation for the scene, based on most recent vapory
     objects created. Each annotation marks the class associated with the pixel.
@@ -271,7 +296,6 @@ class Experiment:
     # TODO: compute the masks for each object, then check each pixel for
     # occlusions. Determine, based on object geometry, which object it belongs
     # to.
-    
     return annotation
     
   def compute_target(self, *args):
@@ -351,28 +375,50 @@ class BallExperiment(Experiment):
     self.add_object(ball)
 
 #################### TESTS ####################
-    
+
+def annotation_diff(image, annotation):
+  """Assuming annotation has a black background, return a numpy array of binary
+  values that shows which pixels are off."""
+  bin_image = np.not_equal(image, 0).any(axis=2)
+  bin_annotation = np.not_equal(annotation,0).reshape(annotation.shape[:2])
+  return np.not_equal(bin_image, bin_annotation)
+
+
 def test():
   color = lambda col: vapory.Texture(vapory.Pigment('color', col))
+  width = 500
   
-  exp = BallExperiment(image_shape=(100, 100))
-  exp.add_object(vapory.Background('White'))
-  exp.add_object(vapory.LightSource([0, 500, -500], 'color', [1,1,1]))
-  # TODO: oboe with radius
-  ball = ExperimentSphere(lambda : ([0,0,0], 25), color('Red'))
-  exp.add_object(ball)
+  exp = BallExperiment(image_shape=(width, width))
+  exp.add_object(vapory.Background('Black'))
+  exp.add_object(vapory.LightSource([0, 5*width, -5*width], 'color', [1,1,1]))
+  # TODO: oboe with radius?
+  min_radius = 20
+  max_radius = 100
+  fargs = lambda : (
+    [np.random.randint(max_radius/2,width/2 - max_radius/2),
+     np.random.randint(max_radius/2,width/2 - max_radius/2),
+     np.random.randint(-width, width)
+    ],
+    np.random.randint(min_radius, max_radius))
+  red_ball = ExperimentSphere(fargs, color('Red'))
+  blue_ball = ExperimentSphere(fargs, color('Blue'), semantic_label=2)
+  exp.add_object(red_ball)
+  exp.add_object(blue_ball)
+  
   image, annotation = exp.render_scene()
 
-  # # world_point = [25/np.sqrt(2), 25/np.sqrt(2), 0]
-  # world_point = [0, 25, -100]
+  # world_point = red_ball.center
   # image_point = exp.project(*world_point)
-  # print("image_point:", image_point)
   
   plt.imshow(image)
+  # plt.plot(image_point[0], image_point[1], 'b.')
   plt.savefig('image.png')
 
   plt.imshow(annotation.reshape(annotation.shape[:2]))
   plt.savefig('annotation.png')
+
+  plt.imshow(annotation_diff(image, annotation))
+  plt.savefig('annotation_diff.png')
     
 def main():
   """For testing purposes"""
