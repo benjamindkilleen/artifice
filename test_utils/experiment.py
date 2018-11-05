@@ -455,7 +455,6 @@ def annotation_diff(image, annotation):
   bin_annotation = np.not_equal(annotation,0).reshape(annotation.shape[:2])
   return np.not_equal(bin_image, bin_annotation)
 
-
 def test():
   color = lambda col: vapory.Texture(vapory.Pigment('color', col))
   width = 500
@@ -466,8 +465,8 @@ def test():
   # TODO: oboe with radius?
   min_radius = 20
   max_radius = 100
-  left_fargs = lambda : ([-100, 0, 0], 125)
-  right_fargs = lambda : ([100, 0, 0], 125)
+  left_fargs = lambda : ([-100, 0, +15], 125)
+  right_fargs = lambda : ([100, 0, -15], 125)
   fargs = lambda : (
     [np.random.randint(max_radius/2,width/2 - max_radius/2),
      np.random.randint(max_radius/2,width/2 - max_radius/2),
