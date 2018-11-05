@@ -21,6 +21,8 @@ from skimage import draw
 
 from artifice.utils import dataset
 
+INFINITY = 10e9
+
 def normalize(X):
   """Return normalized 1D vector X"""
   X = np.array(X)
@@ -34,7 +36,18 @@ def perpendicular(X):
   return normalize(np.array([X[1] - X[2],
                              X[2] - X[0],
                              X[0] - X[1]]))
-                   
+
+def quadratic_formula(a,b,c):
+  """Return the two solutions according to the quadratic formula. If no
+  real solutions exist, return None.
+  """
+  sqrt_term = b**2 - 4*a*c
+  if sqrt_term < 0:
+    return None
+
+  return (-b + np.sqrt(sqrt_term)) / (2*a), (-b - np.sqrt(sqrt_term)) / (2*a)
+
+
 class DynamicObject:
   """An ImageObject is a wrapper around a Vapory object. This may be used for any
   objects in a scene which change from image to image but are not being tracked.
@@ -111,6 +124,7 @@ class ExperimentObject(DynamicObject):
     """
     raise NotImplementedError("compute_mask is specific to each vapory object.")
 
+  
 class ExperimentSphere(ExperimentObject):
   """An ExperimentSphere, representing a vapory.Sphere.
 
@@ -128,6 +142,7 @@ class ExperimentSphere(ExperimentObject):
 
   def __init__(self, *args, **kwargs):
     super().__init__(vapory.Sphere, *args, **kwargs)
+    self.center = self.radius = None
 
   def __call__(self):
     """Record the center and radius of the sphere."""
@@ -135,9 +150,38 @@ class ExperimentSphere(ExperimentObject):
     self.center = np.array(self.args[0])
     self.radius = self.args[1]
     return vapory_object
-    
+  
+  def distance_to_surface(self, Xi, experiment):
+    """Given a point Xi = [x,y] in image-space, compute the distance from
+    experiment.camera_location to the near-surface of the sphere.
+
+    If Xi is not on the surface, return "infinity" (actually 1bil).
+    """
+    assert(len(self.args) != 0)
+    const = experiment.camera_location - self.center
+    v = experiment.unproject(Xi)
+
+    a = np.linalg.norm(v)**2
+    b = 2*np.dot(const, v)
+    c = np.linalg.norm(const)**2 - self.radius**2
+
+    ts = quadratic_formula(a,b,c)
+    if ts == None:
+      return INFINITY
+    t1, t2 = ts
+
+    # l = cam_loc + t*v, so d = distance to camera = l - cam_loc = t*v
+    d1 = np.linalg.norm(t1*v)
+    d2 = np.linalg.norm(t2*v)
+
+    return min(d1, d2)
+
   def compute_mask(self, experiment):
-    """Compute the mask for an ExperimentSphere, placed in experiment."""
+    """Compute the mask for an ExperimentSphere, placed in experiment. Returns rr,
+    cc, which are list of indices to access the image (as from skimage.draw),
+    and dd: the distance from camera to object along each pixel in (rr,cc).
+
+    """
     assert(len(self.args) != 0)
     center = experiment.project(self.center)
     center_to_edge = self.radius * perpendicular(
@@ -145,16 +189,21 @@ class ExperimentSphere(ExperimentObject):
     radius_vector = (experiment.project(self.center + center_to_edge)
                      - experiment.project(self.center))
     radius = np.linalg.norm(radius_vector)
-
+    
     rr, cc = draw.circle(center[0], center[1], radius,
                          shape=experiment.image_shape[:2])
-    return rr, cc
+    
+    dd = np.empty(rr.shape[0], dtype=np.float64)
+    for i in range(dd.shape[0]):
+      dd[i] = self.distance_to_surface([rr[i], cc[i]], experiment)
+      
+    return rr, cc, dd
 
-
+  
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
   using self.run(). It has variations that affect the output labels.
-
+  
   args:
     image_shape: (rows, cols) shape of the output images, determines the aspect ratio
       of the camera, default=(512,512). Number of channels determined by `mode`
@@ -167,9 +216,9 @@ class Experiment:
       multiple of image_shape[1] (vertical pixels), default=4 (far away)
 
   Image `mode` is according to PIL.Image. Valid inputs are:
-  * L (8-bit pixels, black and white)
   * RGB (3x8-bit pixels, true colour)
-  (other modes to be supported in future versions)
+  Other modes to be supported later, including:
+  * L (8-bit pixels, black and white)
 
   The camera will be placed in each experiment such that the <x,y,0> plane is
   the image plane, with one unit of distance corresponding to ~1 pixel on that
@@ -251,9 +300,11 @@ class Experiment:
       [[0, -1, 0],
        [1, 0, 0],
        [0, 0, 1]])
-    self._camera_projection_matrix = K @ np.concatenate((R, T), axis=1)
-    
-    self._camera_location = np.array(location)
+    P = K @ np.concatenate((R, T), axis=1)
+    self._camera_WtoI = np.concatenate((P, [[0, 0, 0, 1]]), axis=0)
+    self._camera_ItoW = np.linalg.inv(self._camera_WtoI)
+
+    self.camera_location = np.array(location)
 
     self.camera = vapory.Camera('location', location,
                                 'direction', direction,
@@ -263,24 +314,43 @@ class Experiment:
   def camera_to(self, X):
     """Get the world-space vector from the camera to X"""
     assert(len(X) == 3)
-    return np.array(X) - self._camera_location
-    
+    return np.array(X) - self.camera_location
+  
   def project(self, X):
     """Project the world-space POINT X = [x,y,z] to image-space.
     Return the [i,j] point in image-space (as a numpy array).
     """
     assert(len(X) == 3)
-    Xi = self._camera_projection_matrix @ np.concatenate((X, [1]))
+    Xi = self._camera_WtoI @ np.concatenate((np.array(X), [1]))
     return np.array([Xi[0]/Xi[2], Xi[1]/Xi[2]])
 
-  def project_vector(self, a, b):
-    """Project the vector given by (a - b) onto the image-space.
+  def unproject_point(self, Xi, disparity=1):
+    """From index space point Xi = [x,y], unproject back into world-space. Note
+    that since an unambiguous 3D point cannot be recovered, this should be used
+    only to recover a ray associated with a given pixel in image-space.
 
-    For camera transformation matrix M, returns:
-    (u,v) = M @ a - M @ b
-
+    The "disparity" argument controls this ambiguity. Different disparities will
+    yield different points along the same ray.
     """
-    return self.project(a) - self.project(b)
+    assert(len(Xi) == 2)
+    Xi = np.array(Xi)
+    X = self._camera_ItoW @ np.array([Xi[0], Xi[1], 1, disparity])
+    return (X / X[3])[:3]
+
+  def unproject(self, Xi):
+    """From index space point Xi = [x,y], unproject back into world-space. Due
+    to 3D-2D ambiguity, an image-space corresponds to a ray in
+    world-space. Returns a unit-vector along this ray. Together with camera
+    location, this can recover any point along the ray.
+    """
+    Xi = np.array(Xi)
+    a = self.unproject_point(Xi)
+    b = self.unproject_point(Xi, disparity = 2)
+    V = normalize(a - b)
+    if V[2] == 0:
+      return V
+    else:
+      return V * V[2] / abs(V[2]) # ensure V points toward +z
   
   def compute_annotation(self):
     """Computes the annotation for the scene, based on most recent vapory
@@ -288,14 +358,16 @@ class Experiment:
 
     """
     annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1),
-                    dtype=np.uint8)
-
+                          dtype=np.uint8)
+    object_distance = INFINITY * np.ones(annotation.shape[:2], dtype=np.float64)
+    
     for obj in self.experiment_objects:
-      rr, cc = obj.compute_mask(self)
-      annotation[rr, cc, 0] = obj.semantic_label;
-    # TODO: compute the masks for each object, then check each pixel for
-    # occlusions. Determine, based on object geometry, which object it belongs
-    # to.
+      rr, cc, dd = obj.compute_mask(self)
+      for i in range(rr.shape[0]):
+        if dd[i] < object_distance[rr[i], cc[i]]:
+          object_distance[rr[i], cc[i]] = dd[i]
+          annotation[rr[i], cc[i], 0] = obj.semantic_label
+
     return annotation
     
   def compute_target(self, *args):
@@ -394,14 +466,17 @@ def test():
   # TODO: oboe with radius?
   min_radius = 20
   max_radius = 100
+  left_fargs = lambda : ([-100, 0, 0], 125)
+  right_fargs = lambda : ([100, 0, 0], 125)
   fargs = lambda : (
     [np.random.randint(max_radius/2,width/2 - max_radius/2),
      np.random.randint(max_radius/2,width/2 - max_radius/2),
      np.random.randint(-width, width)
     ],
     np.random.randint(min_radius, max_radius))
-  red_ball = ExperimentSphere(fargs, color('Red'))
-  blue_ball = ExperimentSphere(fargs, color('Blue'), semantic_label=2)
+  
+  red_ball = ExperimentSphere(left_fargs, color('Red'))
+  blue_ball = ExperimentSphere(right_fargs, color('Blue'), semantic_label=2)
   exp.add_object(red_ball)
   exp.add_object(blue_ball)
   
