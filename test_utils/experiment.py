@@ -21,7 +21,9 @@ from skimage import draw
 
 from artifice.utils import dataset
 
+
 INFINITY = 10e9
+
 
 def normalize(X):
   """Return normalized 1D vector X"""
