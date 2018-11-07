@@ -1,6 +1,5 @@
 """Drawing functions for use in experiments.py. These functions are very
-similar, in terms of arguments and return values, as skimage.draw. However,
-those functions turned out to be less-than-perfect for artifice's purpose.
+similar, in terms of arguments and return values, as skimage.draw.
 """
 
 import numpy as np

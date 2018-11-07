@@ -16,7 +16,10 @@ Artifice consists of *core functionality*, including:
   in experimental images.
 * a first-step **segmentation model**, most likely based on
   [tf_unet](https://github.com/jakeret/tf_unet) from the original [U-Net
-  paper](http://www.arxiv.org/pdf/1505.04597.pdf).
+  paper](http://www.arxiv.org/pdf/1505.04597.pdf). [Pyramid
+  Parsing](http://arxiv.org/abs/1612.01105) is another alternative, very good
+  performance. [dwt](https://github.com/min2209/dwt) looks like a decent
+  implementation, although it is still under construction.
 * a second-step **target feature model**, very likely a small-scale CNN with
   regression outputs.
 * **dataset export** capability, which writes the final target features
@@ -38,21 +41,27 @@ running test data. This includes:
    [test_utils](https://github.com/bendkill/artifice/test_utils), using
    [Vapory](https://github.com/Zulko/vapory). Focus on the *find the ball*
    experiment.
-2. Adapt [tf_unet](https://github.com/jakeret/tf_unet) in
-   [artifice/tf_unet](https://github.com/bendkill/artifice/artifice/tf_unet)
-   for running on test data, at first using a random selection metric, just for
-   segmentation.
-3. Create the **imperfect oracle** with built-in random error emulating human
+2. Create a **semantic segmentation** workflow inside artifice. This could
+   consist of [tf_unet](https://github.com/jakeret/tf_unet) or [Pyramid
+   Parsing](http://arxiv.org/abs/1612.01105), which seems to perform much better
+   (but a working implementation is not yet available?). Run this scheme on test
+   data from the *experiment generator*, using random selection as a first
+   approach.
+3. Improve on semantic segmentation with **instance segmentation** and/or
+   **target identification**. This can take the output of a semantic
+   segmentation, zero all background pixels, and determine an intelligent
+   output.
+4. Create the **imperfect oracle** with built-in random error emulating human
    labels, in
    [test_utils](https://github.com/bendkill/artifice/oracle/test_utils). This
    cannot be used until (4) is finished.
-4. Develop an **active learning metric** for semantic segmentation. When using
+5. Develop an **active learning metric** for semantic segmentation. When using
    artifice, this would normally query the user. For our purposes, have it query
    the imporfect oracle. At first, this cannot include artificial images, since
    the oracle is unable to label those, and we haven't developed the image
    labeller yet.
-5. Create the **performance evaluation** tool, to show network performance.
-6. Improve the **experiment generator** to include anomalous behavior.
-7. Develop different **data augmentation** methods for dealing with this
+6. Create the **performance evaluation** tool, to show network performance.
+7. Improve the **experiment generator** to include anomalous behavior.
+8. Develop different **data augmentation** methods for dealing with this
    anomalous behavior.
    

@@ -185,3 +185,28 @@ which target vector is associated with which object instance in the image.
 * Another issue: perhaps we shouldn't be creating the complete dataset? Or
   rather, it seems like the oracle will have to take the complete dataset and
   only show artifice a small part of it.
+
+## November 5, 2018
+As of now, I've completed the initial work on experiment.py, a tool for creating
+semantic segmentation datasets with POV-Ray. The next step is to create the core
+ML functionality for training and architecture. This requires some level of
+generality, allowing for an active learning metric to replace the random
+selection default. As discussed, the implementations of
+[tf_unet](https://github.com/jakeret/tf_unet) are a good place to start.
+
+Initially, of course, simple semantic segmentation is a good place to
+start. Eventually, though, we want to incorporate the desired targets into the
+annotation. This may involve "distance to object center" as a good localization
+metric (even if an actual center isn't well defined, can be an average). This is
+good for localizing any number of objects, potentially.
+
+There's also the graph partitioning method (to read).
+
+## November 6, 2018
+
+### Notes on Deep Watershed Transform
+* Deep network learns an intermediate task: direction of descent of watershed
+  energy.
+* Takes a semantic segmentation as input. Can use any algorithm for this initial
+  semantic segmentation. Input 0s all the pixels in the background class, then
+  feeds in the remaining RGB image.
