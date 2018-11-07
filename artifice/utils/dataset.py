@@ -80,3 +80,20 @@ def write_tfrecord(fname, gen):
     writer.write(e)
 
   writer.close()
+
+def read_tfrecord(fname, parse_example_string=scene_from_tf_string):
+  """Reads a tfrecord into a generator over each parsed example, using
+  parse_example to turn each serialized tf string into a value returned from the
+  generator. parse_example=None, then just return the unparsed string on each
+  call to the generator.
+  """
+
+  if parse_example_string == None:
+    parse_example_string = lambda x : x
+  record_iter = tf.python_io.tf_record_iterator(path=fname)
+
+  def gen():
+    for string_record in record_iter:
+      yield parse_example_string(string_example)
+
+  return gen

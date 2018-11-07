@@ -241,7 +241,7 @@ class Experiment:
     assert(mode in self.supported_modes)
     assert(output_format in self.supported_formats)
     assert(type(fname) == str)
-    fname = '.'.join(fname.split('.')[:-1])
+    fname = '.'.join(fname.split('.')[:-1]) # TODO; get format from fname extension
     assert(camera_multiplier > 0)
     assert(num_classes > 0)
     
@@ -251,6 +251,7 @@ class Experiment:
     self.output_format=output_format
     self.fname = fname + '.' + output_format
     self.camera_multiplier = camera_multiplier
+    self.num_classes = num_classes # TODO: unused
     
     self._set_camera()
     
@@ -421,7 +422,7 @@ class Experiment:
     def gen():
       for i in range(self.N):
         yield dataset.tf_string_from_scene(self.render_scene())
-
+        
     dataset.write_tfrecord(self.fname, gen)
     
 class BallExperiment(Experiment):
@@ -467,17 +468,15 @@ def test():
   # TODO: oboe with radius?
   min_radius = 20
   max_radius = 100
-  left_fargs = lambda : ([-100, 0, +15], 125)
-  right_fargs = lambda : ([100, 0, -15], 125)
-  fargs = lambda : (
+  argsf = lambda : (
     [np.random.randint(max_radius/2,width/2 - max_radius/2),
      np.random.randint(max_radius/2,width/2 - max_radius/2),
      np.random.randint(-width, width)
     ],
     np.random.randint(min_radius, max_radius))
   
-  red_ball = ExperimentSphere(left_fargs, color('Red'))
-  blue_ball = ExperimentSphere(right_fargs, color('Blue'), semantic_label=2)
+  red_ball = ExperimentSphere(argsf, color('Red'))
+  blue_ball = ExperimentSphere(argsf, color('Blue'), semantic_label=2)
   exp.add_object(red_ball)
   exp.add_object(blue_ball)
   
