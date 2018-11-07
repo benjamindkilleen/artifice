@@ -8,6 +8,8 @@ http://warmspringwinds.github.io/tensorflow/tf-slim/2016/12/21/tfrecords-guide/
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
+import os
 
 def _bytes_feature(value):
   # Helper function for writing a string to a tfrecord
@@ -15,7 +17,8 @@ def _bytes_feature(value):
 
 def _int64_feature(value):
   # Helper function for writing an array to a tfrecord
-  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+
 
 def tf_string_from_scene(scene):
   """Creates a tf example from the scene, which contains an image and a annotation.
@@ -40,16 +43,17 @@ def tf_string_from_scene(scene):
   image_string = image.tostring()
   annotation_string = annotation.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
-  annotation_shape = annotation.shape(annotation.shape, dtype=np.int64)
+  annotation_shape = np.array(annotation.shape, dtype=np.int64)
   
   feature = {"image" : _bytes_feature(image_string),
              "annotation" : _bytes_feature(annotation_string),
              "image_shape" : _int64_feature(image_shape),
-             "annotation_shape" : _int64_feature()}
+             "annotation_shape" : _int64_feature(annotation_shape)}
         
   features = tf.train.Features(feature=feature)
   example = tf.train.Example(features=features)
   return example.SerializeToString()
+
 
 def scene_from_tf_string(example_string):
   """Take a serialized tf.train.Example, as created by tf_string_from_scene(),
@@ -71,6 +75,7 @@ def scene_from_tf_string(example_string):
 
   return image, annotation
 
+
 def write_tfrecord(fname, gen):
   """Write a tfrecord from the generator, gen, which yields a serialized string
   to write for every example. Save it to fname."""
@@ -80,6 +85,7 @@ def write_tfrecord(fname, gen):
     writer.write(e)
 
   writer.close()
+
 
 def read_tfrecord(fname, parse_example_string=scene_from_tf_string):
   """Reads a tfrecord into a generator over each parsed example, using
@@ -92,8 +98,22 @@ def read_tfrecord(fname, parse_example_string=scene_from_tf_string):
     parse_example_string = lambda x : x
   record_iter = tf.python_io.tf_record_iterator(path=fname)
 
-  def gen():
-    for string_record in record_iter:
-      yield parse_example_string(string_example)
+  for string_record in record_iter:
+    yield parse_example_string(string_record)
 
-  return gen
+
+def save_first_scene(fname):
+  """Saves the first scene from fname, a tfrecord, in the same directory. Meant
+  for testing.
+  """
+  root = os.path.join(*fname.split(os.sep)[:-1])
+
+  gen = read_tfrecord(fname)
+  image, annotation = next(gen)
+  
+  plt.imshow(image)
+  plt.savefig(os.path.join(root, "example_image.png"))
+
+  plt.imshow(annotation[:,:,0])
+  plt.savefig(os.path.join(root, "example_annotation.png"))
+  
