@@ -26,7 +26,7 @@ color = lambda col : vapory.Texture(vapory.Pigment('color', col))
 exp = experiment.BallExperiment(image_shape=image_shape,
                                 num_classes=num_classes,
                                 N=N, fname=fname)
-exp.add_object(vapory.Background('Black'))
+exp.add_object(vapory.Background('White'))
 exp.add_object(vapory.LightSource([0, image_shape[0], -2*image_shape[1]],
                                   'color', [1,1,1]))
 argsf = lambda : (
@@ -42,7 +42,7 @@ exp.add_object(red_ball)
 exp.add_object(blue_ball)
 
 # Run the experiment, creating the tfrecord
-exp.run()
+exp.run(verbose=True)
 
 # Save the first two images of the data
 dataset.save_first_scene(fname)

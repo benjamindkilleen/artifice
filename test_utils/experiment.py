@@ -416,11 +416,13 @@ class Experiment:
 
     return image, annotation
         
-  def run(self):
+  def run(self, verbose=False):
     """Generate the dataset as perscribed, storing it as self.fname.
     """
     def gen():
       for i in range(self.N):
+        if verbose:
+          print("Rendering scene %i of %i..." % (i, self.N))
         yield dataset.tf_string_from_scene(self.render_scene())
         
     dataset.write_tfrecord(self.fname, gen)
