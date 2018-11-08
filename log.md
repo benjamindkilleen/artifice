@@ -210,3 +210,71 @@ There's also the graph partitioning method (to read).
 * Takes a semantic segmentation as input. Can use any algorithm for this initial
   semantic segmentation. Input 0s all the pixels in the background class, then
   feeds in the remaining RGB image.
+
+## November 8, 2018
+
+### Planning Artifice Layout
+
+The structural elements of artifice are laid out in
+[docs/design.md](https://github.com/bendkill/artifice/blob/master/docs/design.md),
+but here I give some thought to the layout of the code and how each piece will
+interact with each other.
+
+Note that this diagram is mutable and subject to change. Consult
+[docs/design.md](https://github.com/bendkill/artifice/blob/master/docs/design.md)
+for a more up-to-date summary.
+
+```
+artifice
+├── README.md
+├── artifice
+│   ├── semantic_model.py
+│   │   """Provides an abstraction of the tensorflow model used for semantic
+│   │   segmentation, most likely tf_unet.
+│   │   """
+│   ├── instance_model.py
+│   │   """Provides an abstraction of the tensorflow model used for instance
+│   │   segmentation after semantic segmentation blackout. Most likely an 
+│   │   implementation of Deep Watershed Transform. This could potentially
+│   │   also include target annotations on each instance, once identified."""
+│   ├── label.py
+│   │   """Queried with an example from a dataset. Returns existing annotation,
+│   │   annotation from imperfect oracle, or human annotation, depending on
+│   │   stage of dev."""
+│   ├── augment.py
+│   │   """Provides dataset augmentation capabilities, given instance segmentation
+│   │   annotations and images. Meant to produce images for first-input (before
+│   │   semantic segmentation blackout.)"""
+│   └── utils
+│       └── dataset.py
+├── docs
+│   └── design.md
+├── log.md
+├── scripts
+│   │   """Miscellaneous python scripts, mostly for dataset generation
+│   │   """
+│   └── two_spheres.py
+└── test_utils
+    │  """Contains tools for testing artifice which are not part of the core
+    │  functionality. e.g. dataset generation (datasets normally provided by user), 
+    │  or imperfect oracle (normally the user serves as the "human oracle")""".
+    ├── imperfect_oracle.py
+    │  """Provides an artificial human oracle. Given an annotation, return an
+    │  imperfect annotation, such as a human might produce."""
+    ├── draw.py
+    │  """Emulation of skimage.draw, providing other shapes as needed. Not
+    │  currently in use."""
+    └── experiment.py
+       """dataset generation"""
+```
+
+Depending on obsoleteness, this section may also appear in
+[docs/design.md](https://github.com/bendkill/artifice/blob/master/docs/design.md).
+
+### Misc
+[tks10/segmentation_unet](https://github.com/tks10/segmentation_unet) is another
+very good implementation of UNet, using
+tensorflow. [tf_unet](https://github.com/jakeret/tf_unet) still seems like a
+better implementation overall (more robust model setup), but `segmentation_unet`
+has a data augmenter which may be good as a starting point for our augmentation
+setup

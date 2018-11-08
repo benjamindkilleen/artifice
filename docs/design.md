@@ -36,6 +36,57 @@ running test data. This includes:
 * a **performance evaluation** tool, comparing artifice output with actual
   target data.
 
+## File Layout
+
+The following is the planned layout of artifice.
+
+```
+artifice
+├── README.md
+├── artifice
+│   ├── semantic_model.py
+│   │   """Provides an abstraction of the tensorflow model used for semantic
+│   │   segmentation, most likely tf_unet.
+│   │   """
+│   ├── instance_model.py
+│   │   """Provides an abstraction of the tensorflow model used for instance
+│   │   segmentation after semantic segmentation blackout. Most likely an 
+│   │   implementation of Deep Watershed Transform. This could potentially
+│   │   also include target annotations on each instance, once identified."""
+│   ├── label.py
+│   │   """Queried with an example from a dataset. Returns existing annotation,
+│   │   annotation from imperfect oracle, or human annotation, depending on
+│   │   stage of dev."""
+│   ├── augment.py
+│   │   """Provides dataset augmentation capabilities, given instance segmentation
+│   │   annotations and images. Meant to produce images for first-input (before
+│   │   semantic segmentation blackout.)"""
+│   └── utils
+│       └── dataset.py
+├── docs
+│   └── design.md
+├── log.md
+├── scripts
+│   │   """Miscellaneous python scripts, mostly for dataset generation
+│   │   """
+│   └── two_spheres.py
+└── test_utils
+    │  """Contains tools for testing artifice which are not part of the core
+    │  functionality. e.g. dataset generation (datasets normally provided by user), 
+    │  or imperfect oracle (normally the user serves as the "human oracle")""".
+    ├── imperfect_oracle.py
+    │  """Provides an artificial human oracle. Given an annotation, return an
+    │  imperfect annotation, such as a human might produce."""
+    ├── draw.py
+    │  """Emulation of skimage.draw, providing other shapes as needed. Not
+    │  currently in use."""
+    └── experiment.py
+       """dataset generation"""
+```
+
+There is some ambiguity as to whether `segment_model.py` and `instance_model.py`
+should be separate. Unclear at this point.
+
 ## Workflow
 1. Create the **experiment generator** in
    [test_utils](https://github.com/bendkill/artifice/test_utils), using
