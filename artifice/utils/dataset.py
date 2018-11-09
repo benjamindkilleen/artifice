@@ -110,10 +110,10 @@ def save_first_scene(fname):
 
   gen = read_tfrecord(fname)
   image, annotation = next(gen)
-  
-  plt.imshow(image)
+
+  plt.imshow(image[:,:,0], cmap='gray')
   plt.savefig(os.path.join(root, "example_image.png"))
 
-  plt.imshow(annotation[:,:,0])
+  plt.imshow(annotation[:,:,0], cmap='tab20')
   plt.savefig(os.path.join(root, "example_annotation.png"))
   

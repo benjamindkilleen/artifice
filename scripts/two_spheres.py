@@ -12,9 +12,11 @@ from test_utils import experiment
 from artifice.utils import dataset
 import matplotlib.pyplot as plt
 
+debug = False
+
 # Parameters
 root = "data/two_spheres/"            # Root dir for fname
-N = 5000                              # number of examples
+N = 5 if debug else 5000               # number of examples
 image_shape = (512, 512)              # first two dimensions of output images
 num_classes = 2                       # number of semantic classes
 fname = root + "two_spheres.tfrecord" # tfrecord to write to
@@ -35,6 +37,7 @@ argsf = lambda : (
    np.random.randint(-max_radius, max_radius)],
   np.random.randint(min_radius, max_radius+1))
 
+# grayscale images, but objects will result in the same class anyway
 red_ball = experiment.ExperimentSphere(argsf, color('Red'))
 blue_ball = experiment.ExperimentSphere(argsf, color('Blue'))
 
@@ -42,7 +45,8 @@ exp.add_object(red_ball)
 exp.add_object(blue_ball)
 
 # Run the experiment, creating the tfrecord
-exp.run(verbose=True)
+exp.run(verbose=debug)
 
-# Save the first two images of the data
-dataset.save_first_scene(fname)
+# Save the first two images of the data, only works in sinteractive
+if debug:
+  dataset.save_first_scene(fname)
