@@ -2,8 +2,8 @@
 algorithm isn't important, as long as it returns an output in familiar form.
 
 We implement the U-Net segmentation architecture
-(http://arxiv.org/abs/1505.04597), emulating implementations at
-* https://github.com/tks10/segmentation_unet/
+(http://arxiv.org/abs/1505.04597), emulating the implementation at *
+https://github.com/tks10/segmentation_unet/
 
 """
 
@@ -22,6 +22,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 args:
 * channels: number of channels in the image (grayscale by default)
 * num_classes: number of classes of objects to be detected (including default)
+
+In this context, `image` is the input to the model, and `annotation`, is the
+SEMANTIC annotation (groung truth) of `image`, a [image_shape[0],
+image_shape[1], num_classes] shape array which one-hot encoedes each pixel's
+class. `prediction` is the network's prediction for that annotation.
+
 """
 class SemanticModel:
   def __init__(self, image_shape, num_classes=2):
@@ -121,6 +127,7 @@ class UNet(SemanticModel):
     prediction = UNet.conv(up_conv1_2, filters=num_classes,
                            kernel_size=[1, 1], activation=None)
 
+    logging.info("Finished UNet model.")
     return image, prediction, annotation, training
     
   @staticmethod
