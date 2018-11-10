@@ -210,7 +210,7 @@ class Experiment:
     image_shape: (rows, cols) shape of the output images, determines the aspect ratio
       of the camera, default=(512,512). Number of channels determined by `mode`
     mode: image mode to generate, default='L' (8-bit grayscale)
-    num_classes: number of classes to be detected, not including the background class.
+    num_classes: number of classes to be detected, INCLUDING the background class.
     N: number of images to generate, default=1000
     output_format: filetype to write, default='tfrecord'
     fname: name of output file, without extension. Ignored if included.
@@ -231,11 +231,11 @@ class Experiment:
   in the scene, as is.
   """
 
-  supported_modes = {'L'}       # TODO: RGB?
+  supported_modes = {'L', 'RGB'}      
   supported_formats = {'tfrecord'}
   included = ["colors.inc", "textures.inc"]
 
-  def __init__(self, image_shape=(512,512), mode='L', num_classes=1, N=1000,
+  def __init__(self, image_shape=(512,512), mode='L', num_classes=2, N=1000,
                output_format='tfrecord', fname="data", camera_multiplier=4):
     assert(type(image_shape) == tuple and len(image_shape) == 2)
     assert(mode in self.supported_modes)
@@ -412,7 +412,8 @@ class Experiment:
 
     # image, annotation ndarrays of np.uint8s.
     image = scene.render(height=self.image_shape[0], width=self.image_shape[1])
-    image = img.grayscale(image)
+    if self.mode == 'L':
+      image = img.grayscale(image)
     annotation = self.compute_annotation()  # computes using most recently used args
 
     return image, annotation
