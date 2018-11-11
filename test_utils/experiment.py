@@ -425,7 +425,7 @@ class Experiment:
       for i in range(self.N):
         if verbose:
           print("Rendering scene %i of %i..." % (i, self.N))
-        yield dataset.tf_string_from_scene(self.render_scene())
+        yield dataset.example_string_from_scene(self.render_scene())
         
     dataset.write_tfrecord(self.fname, gen)
     
