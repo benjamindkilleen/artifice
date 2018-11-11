@@ -46,18 +46,22 @@ artifice
 ├── artifice
 │   ├── semantic_model.py
 │   │   """Provides an abstraction of the tensorflow model used for semantic
-│   │   segmentation, most likely tf_unet.
-│   │   """
+│   │   segmentation, able to subclass to many types of semantic models.
+│   │   Does not provide training methods for these models."""
 │   ├── instance_model.py
 │   │   """Provides an abstraction of the tensorflow model used for instance
 │   │   segmentation after semantic segmentation blackout. Most likely an 
 │   │   implementation of Deep Watershed Transform. This could potentially
 │   │   also include target annotations on each instance, once identified."""
-│   ├── label.py
+│   ├── model.py
+│   │   """A Model object contains a full workflow, through all phases of artifice's
+│   │   detection scheme. It should implement a train method, given a (potentially
+│   │   as yet unlabeled) dataset."""
+│   ├── labeller.py
 │   │   """Queried with an example from a dataset. Returns existing annotation,
 │   │   annotation from imperfect oracle, or human annotation, depending on
 │   │   stage of dev."""
-│   ├── augment.py
+│   ├── augmenter.py
 │   │   """Provides dataset augmentation capabilities, given instance segmentation
 │   │   annotations and images. Meant to produce images for first-input (before
 │   │   semantic segmentation blackout.)"""
