@@ -1,6 +1,5 @@
-"""Create a dataset of scenes with two spheres, red and blue, of separate
-classes. Vary the position and radius of these spheres randomly within the image
-frame.
+"""Create a dataset of scenes with two spheres, red and blue. Vary the position
+and radius of these spheres randomly within the image frame.
 
 Outputs a tfrecord in current data/two_spheres. (Should be run from $ARTIFICE)
 

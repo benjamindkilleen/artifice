@@ -18,6 +18,8 @@ import vapory
 import os
 import matplotlib.pyplot as plt
 from skimage import draw
+import skvideo
+from inspect import signature
 
 from artifice.utils import dataset, img
 
@@ -56,13 +58,14 @@ class DynamicObject:
   The vapory object itself is created on every __call__().
 
   args:
-    vapory_object: the vapory class this ExperimentObject represents.
-    object_args: either a tuple, containing all required arguments for creating
-      vapory_object, or a function which creates this tuple (allowing for
-      non-determinism), as well as any others that should change on each call.
-    args: any additional args, passed on as vapory_object(*object_args + args)
-    kwargs: additions keyword arguments are passed onto the vapory object, the
-      same on every call.
+  * vapory_object: the vapory class this ExperimentObject represents.
+  * object_args: either a tuple, containing all required arguments for creating
+    vapory_object, or a function which creates this tuple (allowing for
+    non-determinism), as well as any others that should change on each
+    call. This function may optionally take an argument (such as a time step).
+  * args: any additional args, passed on as vapory_object(*object_args + args)
+  * kwargs: additions keyword arguments are passed onto the vapory object, the
+    same on every call.
 
   self.args stores the most recent args as a list. This is instantiated as [],
   and is used by Experiment.compute_annotation() to generate the mask of the object.
@@ -78,14 +81,21 @@ class DynamicObject:
     else:
       raise RuntimeError("`object_args` is not a tuple or function")
 
+    self.time_step = len(signature(transform).parameters) == 1
     self.other_args = list(args) + sum([list(t) for t in kwargs.items()], [])
     self.args = []
 
-  def __call__(self):
+  def __call__(self, t=None):
     """Return an instance of the represented vapory object, ready to be inserted
     into a scene.
+
+    TODO: allow arguments to be passed in, overriding get_args. Optional.
     """
-    self.args = list(self.get_args()) + self.other_args
+    if self.time_step:
+      assert(t is not None)
+      self.args = list(self.get_args(t))
+    else:
+      self.args = list(self.get_args()) + self.other_args
     return self.vapory_object(*self.args)
 
   
@@ -212,7 +222,8 @@ class Experiment:
     mode: image mode to generate, default='L' (8-bit grayscale)
     num_classes: number of classes to be detected, INCLUDING the background class.
     N: number of images to generate, default=1000
-    output_format: filetype to write, default='tfrecord'
+    output_format: filetype to write, default='tfrecord'. Can be a list of
+      filetypes, in which case the same data will be written to each.
     fname: name of output file, without extension. Ignored if included.
     camera_multiplier: controls how far out the camera is positioned, as a
       multiple of image_shape[1] (vertical pixels), default=4 (far away)
@@ -232,25 +243,39 @@ class Experiment:
   """
 
   supported_modes = {'L', 'RGB'}      
-  supported_formats = {'tfrecord'}
+  supported_formats = {'tfrecord', 'mp4'}
   included = ["colors.inc", "textures.inc"]
 
   def __init__(self, image_shape=(512,512), mode='L', num_classes=2, N=1000,
                output_format='tfrecord', fname="data", camera_multiplier=4):
-    assert(type(image_shape) == tuple and len(image_shape) == 2)
-    assert(mode in self.supported_modes)
-    assert(output_format in self.supported_formats)
-    assert(type(fname) == str)
-    fname = '.'.join(fname.split('.')[:-1]) # TODO; get format from fname extension
-    assert(camera_multiplier > 0)
-    assert(num_classes > 0)
-    
-    self.image_shape = image_shape
     self.N = int(N)
+
+    assert(type(image_shape) == tuple and len(image_shape) == 2)
+    self.image_shape = image_shape
+
+    assert(mode in self.supported_modes)
     self.mode = mode
-    self.output_format=output_format
-    self.fname = fname + '.' + output_format
+
+    # output formats
+    if type(output_format) in [list, set]:
+      self.output_formats = set(output_format)
+    else:
+      assert(type(output_format) == str)
+      self.output_formats = {output_format}
+    assert(all([f in self.supported_formats for f in self.output_formats]))
+
+    # fname
+    assert(type(fname) == str)
+    self.fname = '.'.join(fname.split('.')[:-1])
+    extension = fname.split('.')[-1]
+    if extension not in self.output_formats:
+      assert(extension in self.supported_formats)
+      self.output_formats.append(extension)
+
+    assert(camera_multiplier > 0)
     self.camera_multiplier = camera_multiplier
+
+    assert(num_classes > 0)
     self.num_classes = num_classes # TODO: unused
     
     self._set_camera()
@@ -393,7 +418,7 @@ class Experiment:
     
     return None
     
-  def render_scene(self):
+  def render_scene(self, t=None):
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
@@ -405,8 +430,8 @@ class Experiment:
     the targets.
     """
 
-    dynamic_objects = [obj() for obj in self.dynamic_objects]
-    experiment_objects = [obj() for obj in self.experiment_objects]
+    dynamic_objects = [obj(t) for obj in self.dynamic_objects]
+    experiment_objects = [obj(t) for obj in self.experiment_objects]
     all_objects = self.static_objects + dynamic_objects + experiment_objects
     scene = vapory.Scene(self.camera, all_objects, included=self.included)
 
@@ -417,18 +442,83 @@ class Experiment:
     annotation = self.compute_annotation()  # computes using most recently used args
 
     return image, annotation
-        
-  def run(self, verbose=False):
-    """Generate the dataset as perscribed, storing it as self.fname.
-    """
+
+  def _run_tfrecord(self, verbose=False):
+    """Generate the dataset as a tfrecord."""
     def gen():
-      for i in range(self.N):
+      for t in range(self.N):
         if verbose:
-          print("Rendering scene %i of %i..." % (i, self.N))
-        yield dataset.example_string_from_scene(self.render_scene())
+          print("Rendering scene %i of %i..." % (t, self.N))
+        yield dataset.example_string_from_scene(self.render_scene(t))
         
-    dataset.write_tfrecord(self.fname, gen)
+    dataset.write_tfrecord(self.fname + '.tfrecord', gen)
+
+  def _run_mp4(self, verbose=False):
+    """Generate the images and annotations in the dataset as an mp4. Saves
+    images as self.fname and annotations in the same location, with "annotation"
+    in the title.
+
+    """
+    image_fname = self.fname + '.mp4'
+    annotation_fname = self.fname + '_annotation.mp4'
+
+    image_writer = skvideo.io.FFmpegWriter(image_fname, outputdict={
+      '-vcodec': 'libx264', '-b': '300000000'})
+    annotation_writer = skvideo.io.FFmpegWriter(annotation_fname, outputdict={
+      '-vcodec': 'libx264', '-b': '300000000'})
     
+    for t in range(self.N):
+      if verbose:
+        print("Rendering scene %i of %i..." % (t, self.N))
+      image, annotation = self.render_scene(t)
+      image_writer.writeFrame(image)
+      annotation_writer.writeFrame(annotation)
+
+    image_writer.close()
+    annotation_writer.close()
+    
+  def run(self, verbose=False):
+    """Generate the dataset in each format.
+    """
+
+    if len(self.output_formats) == 0:
+      # TODO: raise error?
+      return
+    
+    # Instantiate writers and fnames for each format
+    if 'tfrecord' in self.output_formats:
+      tfrecord_fname = self.fname + '.tfrecord'
+      tfrecord_writer = tf.python_io.TFRecordWriter(fname)
+    if 'mp4' in self.output_formats:
+      mp4_image_fname = self.fname + '.mp4'
+      mp4_annotation_fname = self.fname + '_annotation.mp4'
+      mp4_image_writer = skvideo.io.FFmpegWriter(mp4_image_fname, outputdict={
+        '-vcodec': 'libx264', '-b': '300000000'})
+      mp4_annotation_writer = skvideo.io.FFmpegWriter(mp4_annotation_fname, outputdict={
+        '-vcodec': 'libx264', '-b': '300000000'})
+
+    # step through all the frames, rendering each scene with time-dependence if necessary.
+    for t in range(self.N):
+      if verbose:
+        ("Rendering scene {} of {}...".format(t, self.N))
+      scene = self.render_scene(t)
+      image, annotation = scene
+      
+      if 'tfrecord' in self.output_formats:
+        e = dataset.example_string_from_scene(scene)
+        tfrecord_writer.write(e)
+        
+      if 'mp4' in self.output_formats:
+        mp4_image_writer.writeFrame(image)
+        mp4_annotation_writer.writeFrame(annotation)
+
+    if 'tfrecord' in self.output_formats:
+      tfrecord_writer.close()
+    if 'mp4' in self.output_formats:
+      mp4_image_writer.close()
+      mp4_annotation_writer.close()
+    
+        
 class BallExperiment(Experiment):
   """Generate an experiment with one or more balls.
   """
