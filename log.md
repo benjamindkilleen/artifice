@@ -278,3 +278,13 @@ tensorflow. [tf_unet](https://github.com/jakeret/tf_unet) still seems like a
 better implementation overall (more robust model setup), but `segmentation_unet`
 has a data augmenter which may be good as a starting point for our augmentation
 setup
+
+## November 13, 2018
+
+* Balls moving around inside some cube, bouncing off one another.
+* Elastic, inelastic collision?
+* Spheres coupled with an invisible spring, learning the spring constant through
+  the ML recovered positions. How would you make sure that the recovery of one
+  ball's wouldn't influence the other's.
+* Initially just learn on two spheres.
+  * Spring constant, different masses, etc.
