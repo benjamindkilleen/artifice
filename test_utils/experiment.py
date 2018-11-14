@@ -520,7 +520,8 @@ class Experiment:
     
         
 class BallExperiment(Experiment):
-  """Generate an experiment with one or more balls.
+  """Generate an experiment with one or more balls. Mostly for test cases.
+
   """
   
   def __init__(self, *args, **kwargs):
