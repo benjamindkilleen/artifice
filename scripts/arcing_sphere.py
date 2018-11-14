@@ -27,7 +27,7 @@ num_classes = 2                 # including background
 # physical sphere parameters
 radius = 50                     # radius in approx-pixels. (e.g. meters)
 mass = 2                        # mass in kilograms
-x = -iamge_shape[0] / 2         # initial x position in world
+x = -image_shape[0] / 2         # initial x position in world
 y = -300                        # initial y position in world
 vx = 10                         # initial x velocity in m/s
 vy = 10                         # initial y velocity in m/s

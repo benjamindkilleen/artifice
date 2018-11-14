@@ -18,7 +18,7 @@ import vapory
 import os
 import matplotlib.pyplot as plt
 from skimage import draw
-import skvideo
+from skvideo.io import FFmpegWriter
 from inspect import signature
 
 from artifice.utils import dataset, img
@@ -76,12 +76,13 @@ class DynamicObject:
     
     if callable(object_args):
       self.get_args = object_args
+      self.do_time_step = len(signature(object_args).parameters) == 1
     elif type(object_args) == tuple:
       self.get_args = lambda : object_args
+      self.do_time_step = False
     else:
       raise RuntimeError("`object_args` is not a tuple or function")
 
-    self.time_step = len(signature(transform).parameters) == 1
     self.other_args = list(args) + sum([list(t) for t in kwargs.items()], [])
     self.args = []
 
@@ -91,7 +92,7 @@ class DynamicObject:
 
     TODO: allow arguments to be passed in, overriding get_args. Optional.
     """
-    if self.time_step:
+    if self.do_time_step:
       assert(t is not None)
       self.args = list(self.get_args(t))
     else:
@@ -264,13 +265,17 @@ class Experiment:
       self.output_formats = {output_format}
     assert(all([f in self.supported_formats for f in self.output_formats]))
 
-    # fname
+    # TODO: (URGENT) fix logic so that there is no default extension, and either
+    # output_format or .whatever must be specified. Stupid problem. Or just
+    # expect a filename without extensions and mandate that output_format be
+    # specified, because I am no numpy.  fname
     assert(type(fname) == str)
     self.fname = '.'.join(fname.split('.')[:-1])
-    extension = fname.split('.')[-1]
-    if extension not in self.output_formats:
-      assert(extension in self.supported_formats)
-      self.output_formats.append(extension)
+    if '.' in fname:
+      extension = fname.split('.')[-1]
+      if extension not in self.output_formats:
+        assert(extension in self.supported_formats)
+        self.output_formats.append(extension)
 
     assert(camera_multiplier > 0)
     self.camera_multiplier = camera_multiplier
@@ -442,40 +447,6 @@ class Experiment:
     annotation = self.compute_annotation()  # computes using most recently used args
 
     return image, annotation
-
-  def _run_tfrecord(self, verbose=False):
-    """Generate the dataset as a tfrecord."""
-    def gen():
-      for t in range(self.N):
-        if verbose:
-          print("Rendering scene %i of %i..." % (t, self.N))
-        yield dataset.example_string_from_scene(self.render_scene(t))
-        
-    dataset.write_tfrecord(self.fname + '.tfrecord', gen)
-
-  def _run_mp4(self, verbose=False):
-    """Generate the images and annotations in the dataset as an mp4. Saves
-    images as self.fname and annotations in the same location, with "annotation"
-    in the title.
-
-    """
-    image_fname = self.fname + '.mp4'
-    annotation_fname = self.fname + '_annotation.mp4'
-
-    image_writer = skvideo.io.FFmpegWriter(image_fname, outputdict={
-      '-vcodec': 'libx264', '-b': '300000000'})
-    annotation_writer = skvideo.io.FFmpegWriter(annotation_fname, outputdict={
-      '-vcodec': 'libx264', '-b': '300000000'})
-    
-    for t in range(self.N):
-      if verbose:
-        print("Rendering scene %i of %i..." % (t, self.N))
-      image, annotation = self.render_scene(t)
-      image_writer.writeFrame(image)
-      annotation_writer.writeFrame(annotation)
-
-    image_writer.close()
-    annotation_writer.close()
     
   def run(self, verbose=False):
     """Generate the dataset in each format.
@@ -492,12 +463,13 @@ class Experiment:
     if 'mp4' in self.output_formats:
       mp4_image_fname = self.fname + '.mp4'
       mp4_annotation_fname = self.fname + '_annotation.mp4'
-      mp4_image_writer = skvideo.io.FFmpegWriter(mp4_image_fname, outputdict={
+      mp4_image_writer = FFmpegWriter(mp4_image_fname, outputdict={
         '-vcodec': 'libx264', '-b': '300000000'})
-      mp4_annotation_writer = skvideo.io.FFmpegWriter(mp4_annotation_fname, outputdict={
+      mp4_annotation_writer = FFmpegWriter(mp4_annotation_fname, outputdict={
         '-vcodec': 'libx264', '-b': '300000000'})
 
-    # step through all the frames, rendering each scene with time-dependence if necessary.
+    # step through all the frames, rendering each scene with time-dependence if
+    # necessary.
     for t in range(self.N):
       if verbose:
         ("Rendering scene {} of {}...".format(t, self.N))
