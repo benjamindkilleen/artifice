@@ -18,8 +18,9 @@ import vapory
 import os
 import matplotlib.pyplot as plt
 from skimage import draw
-from skvideo.io import FFmpegWriter
+# from skvideo.io import FFmpegWriter
 from inspect import signature
+import subprocess as sp
 
 from artifice.utils import dataset, img
 
@@ -157,9 +158,9 @@ class ExperimentSphere(ExperimentObject):
     super().__init__(vapory.Sphere, *args, **kwargs)
     self.center = self.radius = None
 
-  def __call__(self):
+  def __call__(self, t=None):
     """Record the center and radius of the sphere."""
-    vapory_object = super().__call__()
+    vapory_object = super().__call__(t)
     self.center = np.array(self.args[0])
     self.radius = self.args[1]
     return vapory_object
@@ -248,7 +249,8 @@ class Experiment:
   included = ["colors.inc", "textures.inc"]
 
   def __init__(self, image_shape=(512,512), mode='L', num_classes=2, N=1000,
-               output_format='tfrecord', fname="data", camera_multiplier=4):
+               output_format='tfrecord', fname="data", camera_multiplier=4,
+               fps=1):
     self.N = int(N)
 
     assert(type(image_shape) == tuple and len(image_shape) == 2)
@@ -265,23 +267,16 @@ class Experiment:
       self.output_formats = {output_format}
     assert(all([f in self.supported_formats for f in self.output_formats]))
 
-    # TODO: (URGENT) fix logic so that there is no default extension, and either
-    # output_format or .whatever must be specified. Stupid problem. Or just
-    # expect a filename without extensions and mandate that output_format be
-    # specified, because I am no numpy.  fname
+    # set fname, without extension
     assert(type(fname) == str)
-    self.fname = '.'.join(fname.split('.')[:-1])
-    if '.' in fname:
-      extension = fname.split('.')[-1]
-      if extension not in self.output_formats:
-        assert(extension in self.supported_formats)
-        self.output_formats.append(extension)
+    self.fname = fname
 
     assert(camera_multiplier > 0)
     self.camera_multiplier = camera_multiplier
 
     assert(num_classes > 0)
     self.num_classes = num_classes # TODO: unused
+    self.fps = int(fps)
     
     self._set_camera()
     
@@ -461,18 +456,36 @@ class Experiment:
       tfrecord_fname = self.fname + '.tfrecord'
       tfrecord_writer = tf.python_io.TFRecordWriter(fname)
     if 'mp4' in self.output_formats:
+      # TODO some crazy error here with ffmpeg.
+      
       mp4_image_fname = self.fname + '.mp4'
       mp4_annotation_fname = self.fname + '_annotation.mp4'
-      mp4_image_writer = FFmpegWriter(mp4_image_fname, outputdict={
-        '-vcodec': 'libx264', '-b': '300000000'})
-      mp4_annotation_writer = FFmpegWriter(mp4_annotation_fname, outputdict={
-        '-vcodec': 'libx264', '-b': '300000000'})
+      cmd = ['ffmpeg',
+             '-y',          # overwrite existing files
+             '-f', 'rawvideo',
+             '-vcodec','rawvideo',
+             '-s', '{}x{}'.format(*self.image_shape), # frame size
+             'pix_fmt', 'rgb24',
+             '-r', self.fps, # frames per second
+             '-i', '-',     # input comes from a pipe
+             '-an',         # no audio
+             '-vcodec', 'mpeg']
+      image_cmd = cmd + [mp4_image_fname]
+      annotation_cmd = cmd + [mp4_annotation_fname]
+
+      image_pipe = sp.Popen(image_cmd, stdin=sp.PIPE, stderr=sp.PIPE)
+      annotation_pipe = sp.Popen(annotation_cmd, stdin=sp.PIPE, stderr=sp.PIPE)
+                 
+      # mp4_image_writer = FFmpegWriter(mp4_image_fname, outputdict={
+      #   '-vcodec': 'libx264', '-b': '300000000'})
+      # mp4_annotation_writer = FFmpegWriter(mp4_annotation_fname, outputdict={
+      #   '-vcodec': 'libx264', '-b': '300000000'})
 
     # step through all the frames, rendering each scene with time-dependence if
     # necessary.
     for t in range(self.N):
       if verbose:
-        ("Rendering scene {} of {}...".format(t, self.N))
+        print("Rendering scene {} of {}...".format(t, self.N))
       scene = self.render_scene(t)
       image, annotation = scene
       
@@ -481,14 +494,26 @@ class Experiment:
         tfrecord_writer.write(e)
         
       if 'mp4' in self.output_formats:
-        mp4_image_writer.writeFrame(image)
-        mp4_annotation_writer.writeFrame(annotation)
+        image_pipe.proc.stdin.write(image.tostring())
+        annotation_pipe.proc.stdin.write(annotation.tostring())
+        # mp4_image_writer.writeFrame(image)
+        # mp4_annotation_writer.writeFrame(annotation)
 
     if 'tfrecord' in self.output_formats:
       tfrecord_writer.close()
     if 'mp4' in self.output_formats:
-      mp4_image_writer.close()
-      mp4_annotation_writer.close()
+      image_pipe.proc.stdin.close()
+      if image_pipe.proc.stderr is not None:
+        image_pipe.proc.stderr.close()
+      image_pipe.proc.wait()
+      
+      annotation_pipe.proc.stdin.close()
+      if annotation_pipe.proc.stderr is not None:
+         annotation_pipe.proc.stderr.close()
+      annotation_pipe.proc.wait()       
+
+      # mp4_image_writer.close()
+      # mp4_annotation_writer.close()
     
         
 class BallExperiment(Experiment):

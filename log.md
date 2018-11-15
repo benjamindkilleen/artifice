@@ -288,3 +288,8 @@ setup
   ball's wouldn't influence the other's.
 * Initially just learn on two spheres.
   * Spring constant, different masses, etc.
+
+## November 14, 2018
+For a more awesome approach to `mp4` writing, see
+[this](https://github.com/Zulko/moviepy/blob/master/moviepy/video/io/ffmpeg_writer.py) great repo. It's a wrapper around ffmpeg.
+
