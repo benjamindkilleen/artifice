@@ -32,6 +32,7 @@ exp = experiment.BallExperiment(image_shape=image_shape,
 exp.add_object(vapory.Background('White'))
 exp.add_object(vapory.LightSource([0, image_shape[0], -2*image_shape[1]],
                                   'color', [1,1,1]))
+
 argsf = lambda : (
   [np.random.randint(-image_shape[1]/2, image_shape[1]/2),
    np.random.randint(-image_shape[0]/2, image_shape[0]/2),

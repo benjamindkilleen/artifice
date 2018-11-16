@@ -18,7 +18,6 @@ import vapory
 import os
 import matplotlib.pyplot as plt
 from skimage import draw
-# from skvideo.io import FFmpegWriter
 from inspect import signature
 import subprocess as sp
 
@@ -95,7 +94,7 @@ class DynamicObject:
     """
     if self.do_time_step:
       assert(t is not None)
-      self.args = list(self.get_args(t))
+      self.args = list(self.get_args(t)) + self.other_args
     else:
       self.args = list(self.get_args()) + self.other_args
     return self.vapory_object(*self.args)
@@ -244,7 +243,8 @@ class Experiment:
   in the scene, as is.
   """
 
-  supported_modes = {'L', 'RGB'}      
+  supported_modes = {'L', 'RGB'}
+  pix_fmts = {'L' : 'gray', 'RGB' : 'rgb8'}
   supported_formats = {'tfrecord', 'mp4'}
   included = ["colors.inc", "textures.inc"]
 
@@ -384,6 +384,10 @@ class Experiment:
     """Computes the annotation for the scene, based on most recent vapory
     objects created. Each annotation marks the class associated with the pixel.
 
+    TODO: currently, only modifies masks due to occlusion by other objects in
+    experiment_objects. This is usually sufficient, but in some cases, occlusion
+    may occur from static or untracked objects.
+
     """
     annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1),
                           dtype=np.uint8)
@@ -422,10 +426,10 @@ class Experiment:
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns a "scene", tuple of "image" and "annotation".
+    Returns a "scene", tuple of `image` and `annotation`.
 
-    # TODO:
-    Calls the make_targets() function, implemented by subclasses, that uses
+    TODO:
+    Call the make_targets() function, implemented by subclasses, that uses
     the object locations, orientations, etc. set by render_scene, to calculate
     the targets.
     """
@@ -455,31 +459,44 @@ class Experiment:
     if 'tfrecord' in self.output_formats:
       tfrecord_fname = self.fname + '.tfrecord'
       tfrecord_writer = tf.python_io.TFRecordWriter(fname)
+      if verbose:
+        print("Writing tfrecord to {}...".format(mp4_image_fname))
+
     if 'mp4' in self.output_formats:
-      # TODO some crazy error here with ffmpeg.
-      
       mp4_image_fname = self.fname + '.mp4'
       mp4_annotation_fname = self.fname + '_annotation.mp4'
-      cmd = ['ffmpeg',
-             '-y',          # overwrite existing files
-             '-f', 'rawvideo',
-             '-vcodec','rawvideo',
-             '-s', '{}x{}'.format(*self.image_shape), # frame size
-             'pix_fmt', 'rgb24',
-             '-r', self.fps, # frames per second
-             '-i', '-',     # input comes from a pipe
-             '-an',         # no audio
-             '-vcodec', 'mpeg']
-      image_cmd = cmd + [mp4_image_fname]
-      annotation_cmd = cmd + [mp4_annotation_fname]
 
-      image_pipe = sp.Popen(image_cmd, stdin=sp.PIPE, stderr=sp.PIPE)
-      annotation_pipe = sp.Popen(annotation_cmd, stdin=sp.PIPE, stderr=sp.PIPE)
-                 
-      # mp4_image_writer = FFmpegWriter(mp4_image_fname, outputdict={
-      #   '-vcodec': 'libx264', '-b': '300000000'})
-      # mp4_annotation_writer = FFmpegWriter(mp4_annotation_fname, outputdict={
-      #   '-vcodec': 'libx264', '-b': '300000000'})
+      if verbose:
+        print("Writing video to {}...".format(mp4_image_fname))
+      image_cmd = ['ffmpeg',
+                   '-y',              # overwrite existing files
+                   '-f', 'rawvideo',
+                   '-vcodec', 'rawvideo',
+                   '-s', '{}x{}'.format(*self.image_shape), # frame size
+                   '-pix_fmt', self.pix_fmts[self.mode],
+                   '-r', str(self.fps), # frames per second
+                   '-i', '-',           # input comes from a pipe
+                   '-an',               # no audio
+                   '-vcodec', 'mpeg4',
+                   mp4_image_fname]
+      annotation_cmd = ['ffmpeg',
+                        '-y',              # overwrite existing files
+                        '-f', 'rawvideo',
+                        '-vcodec', 'rawvideo',
+                        '-s', '{}x{}'.format(*self.image_shape), # frame size
+                        '-pix_fmt', 'rgba',
+                        '-r', str(self.fps), # frames per second
+                        '-i', '-',           # input comes from a pipe
+                        '-an',               # no audio
+                        '-vcodec', 'mpeg4',
+                        mp4_annotation_fname]      
+      mp4_annotation_cmap = plt.get_cmap('tab20c', lut=self.num_classes)
+
+      mp4_image_log = open(self.fname + '_log.txt', 'w+')
+      mp4_annotation_log = open(self.fname + '_annotation_log.txt', 'w+')
+      mp4_image_proc = sp.Popen(image_cmd, stdin=sp.PIPE, stderr=mp4_image_log)
+      mp4_annotation_proc = sp.Popen(annotation_cmd, stdin=sp.PIPE,
+                                     stderr=mp4_annotation_log)
 
     # step through all the frames, rendering each scene with time-dependence if
     # necessary.
@@ -494,28 +511,23 @@ class Experiment:
         tfrecord_writer.write(e)
         
       if 'mp4' in self.output_formats:
-        image_pipe.proc.stdin.write(image.tostring())
-        annotation_pipe.proc.stdin.write(annotation.tostring())
-        # mp4_image_writer.writeFrame(image)
-        # mp4_annotation_writer.writeFrame(annotation)
+        mp4_image_proc.stdin.write(image.tostring())
+        annotation_map = mp4_annotation_cmap(annotation[:,:,0]) * 255
+        annotation_map = annotation_map.astype(np.uint8)
+        mp4_annotation_proc.stdin.write(annotation_map.tostring())
 
     if 'tfrecord' in self.output_formats:
       tfrecord_writer.close()
     if 'mp4' in self.output_formats:
-      image_pipe.proc.stdin.close()
-      if image_pipe.proc.stderr is not None:
-        image_pipe.proc.stderr.close()
-      image_pipe.proc.wait()
+      mp4_image_proc.stdin.close()
+      mp4_image_proc.wait()
+      mp4_image_log.close()
       
-      annotation_pipe.proc.stdin.close()
-      if annotation_pipe.proc.stderr is not None:
-         annotation_pipe.proc.stderr.close()
-      annotation_pipe.proc.wait()       
+      mp4_annotation_proc.stdin.close()
+      mp4_annotation_proc.wait()
+      mp4_annotation_log.close()
 
-      # mp4_image_writer.close()
-      # mp4_annotation_writer.close()
-    
-        
+      
 class BallExperiment(Experiment):
   """Generate an experiment with one or more balls. Mostly for test cases.
 
