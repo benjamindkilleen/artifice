@@ -18,23 +18,25 @@ debug = True
 # helpers
 color = lambda col : vapory.Texture(vapory.Pigment('color', col))
 
-# dataset parameters (configurable)
-root = "data/coupled_spheres/"   # root dir for fname
-fps = 30                         # frame rate of the video
-steps_per_frame = 1              # number of simulated time steps per frame
-seconds = 5                      # number of seconds in the video
-N = int(seconds / time_step)     # number of frames
-output_formats = {'mp4'}         # write to a video
-fname = root + 'coupled_spheres' # extensions from output_formats
-image_shape = (512, 512)         # image shape
-num_classes = 2                  # including background
-
-# dataset params (derived)
-frame_step = 1/float(fps)                # time per frame
+# dataset parameters
+root = "data/coupled_spheres/"  # root dir for fname
+fps = 30                        # frame rate of the video
+frame_step = 1/float(fps)       # time per frame (DERIVED)
+steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # time step for simulation
+seconds = 5                              # number of seconds in the video
+N = int(seconds / frame_step)            # number of frames (DERIVED)
+output_formats = {'mp4'}                 # write to a video
+fname = root + 'coupled_spheres'         # extensions from output_formats
+image_shape = (512, 512)                 # image shape
+num_classes = 2                          # including background
 
 # initial parameters. 1 povray unit = 1 cm
 initial = {}
+
+# TODO: handle unit conversions to meters, whatever, inside step. Remember theta
+# has to be in radians (should already be). And yeah. Dividing by M is probably
+# causing the problem.
 
 # ball 1
 r1 = 50              # radius
@@ -113,6 +115,7 @@ def update_to_step(t):
   """Update to physical time step t (proportional to frame number fn)"""
   global step_cnt
   if t > step_cnt:
+    if debug: print("updating to step", t)
     step(n = t - step_cnt)
     step_cnt += t
   
@@ -122,18 +125,18 @@ def update_to_step(t):
 def argsf1(fn):
   t = steps_per_frame * fn
   update_to_step(t)
-  r1 = X[0] * m2 / M
-  x1 = Xc[0] + r1*np.cos(X[2])
-  y1 = Xc[2] + r1*np.sin(X[2])
-  return [x1,y1,0], r1            # TODO: placeholder
+  r = X[0] * m2 / M
+  x = Xc[0] + r*np.cos(X[2])
+  y = Xc[2] + r*np.sin(X[2])
+  return [x,y,0], r1            # TODO: placeholder
 
 def argsf2(fn):
   t = steps_per_frame * fn
   update_to_step(t)
-  r2 = X[0] * m1 / M
-  x1 = Xc[0] - r1*np.cos(X[2])
-  y1 = Xc[2] - r1*np.sin(X[2])  
-  return [x2,y2,0], r1            # TODO: placeholder
+  r = X[0] * m1 / M
+  x = Xc[0] - r*np.cos(X[2])
+  y = Xc[2] - r*np.sin(X[2])
+  return [x,y,0], r2            # TODO: placeholder
 
 s1 = experiment.ExperimentSphere(argsf1, color('Gray'))
 s2 = experiment.ExperimentSphere(argsf2, color('Gray'))
