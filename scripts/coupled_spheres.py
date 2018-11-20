@@ -20,11 +20,11 @@ color = lambda col : vapory.Texture(vapory.Pigment('color', col))
 
 # dataset parameters
 root = "data/coupled_spheres/"  # root dir for fname
-fps = 60                        # frame rate of the video
+fps = 30                        # frame rate of the video
 frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # time step for simulation
-seconds = 1                              # number of seconds in the video
+seconds = .5                             # number of seconds in the video
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'mp4'}                 # write to a video
 fname = root + 'coupled_spheres'         # extensions from output_formats
@@ -80,8 +80,9 @@ X[0] /= 100.
 X[1] /= 100.
 
 # spring:
-k = 50                          # spring constant
-l0 = 50                         # relaxed length (cm)
+k = 2                          # spring constant
+l0_ = 400                       # relaxed length (cm)
+l0 = l0_ / 100
 def spring(l):
   """Return the force in Newtons exerted by the spring as a function of its length
   `l`. Negative force is attractive, positive repulsive. In center-of-mass polar
