@@ -34,20 +34,20 @@ num_classes = 2                          # including background
 # initial parameters. 1 povray unit = 1 cm
 
 # ball 1 in povray unites
-r1 = 50              # radius (cm)
-m1 = 1               # mass (kg)
+r1 = 20              # radius (cm)
+m1 = 2               # mass (kg)
 x1 = -150            # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = 0              # initial x velocity (cm/s)
-vy1 = 0              # initial y velocity
+vy1 = -50            # initial y velocity
 
 # ball 2
 r2 = 50
-m2 = 1
+m2 = 5
 x2 = 150
 y2 = 0
 vx2 = 0
-vy2 = 0
+vy2 = 50
 
 # derived params
 M = m1 + m2
@@ -76,7 +76,7 @@ X[0] /= 100.
 X[1] /= 100.
 
 # spring:
-k = 2                           # spring constant
+k = 10                           # spring constant
 l0_ = 290                       # relaxed length (cm)
 l0 = l0_ / 100
 def spring(l):
@@ -106,7 +106,7 @@ def step(n=1, dt=time_step):
     
     X[0] = X[0] + X[1]*dt + 0.5*ddl*dt_sqr
     X[1] = X[1] + ddl*dt
-    X[2] = X[2] + X[3]*dt + 0.5*ddth*dt_sqr
+    X[2] = X[2] + X[3]*dt + 0.5*ddth*dt_sqr # TODO: round down angle to [0,pi)
     X[3] = X[3] + ddth*dt
 
     # TODO: update Xc (shouldn't matter yet)
