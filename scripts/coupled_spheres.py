@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from test_utils import experiment
 from artifice.utils import dataset
 
-debug = False
+debug = True
 
 # helpers
 color = lambda col : vapory.Texture(vapory.Pigment('color', col))
@@ -24,7 +24,7 @@ fps = 30                        # frame rate of the video
 frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # time step for simulation
-seconds = .5                             # number of seconds in the video
+seconds = 10                             # number of seconds in the video
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'mp4'}                 # write to a video
 fname = root + 'coupled_spheres'         # extensions from output_formats
@@ -32,9 +32,6 @@ image_shape = (512, 512)                 # image shape
 num_classes = 2                          # including background
 
 # initial parameters. 1 povray unit = 1 cm
-
-# TODO: weird bug step errors. Video is freezing at physical steps, slowing
-# down. Not sure what's happening. Also fix spring() for non-linearities.
 
 # ball 1 in povray unites
 r1 = 50              # radius
@@ -80,7 +77,7 @@ X[0] /= 100.
 X[1] /= 100.
 
 # spring:
-k = 2                          # spring constant
+k = 5                           # spring constant
 l0_ = 400                       # relaxed length (cm)
 l0 = l0_ / 100
 def spring(l):
