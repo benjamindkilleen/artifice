@@ -100,13 +100,21 @@ def step(n=1, dt=time_step):
   global X, Xc
   dt_sqr = dt*dt
 
+  # Just do cartesian coordinates. Cartesian coordinates are just easier, in
+  # case I have multiple things flying around.
   while (n > 0):
+    # Equations of motion, getting 
     ddth = 0 if X[1] == 0 else -2 * (X[0] / X[1]) * X[3] # TODO: divide by 0 case
     ddl = spring(X[0]) / M + X[0] * X[3]*X[3]
-    
+
+    # TODO: folding back at the boundaries, to simulate bouncing.
+    # Have to do it for x and then y, do it again and again until no more folding.
+    # Negate the velocities properties.
+    # Use the velocity Verlet algorithm
+    # (https://en.wikipedia.org/wiki/Verlet_integration) to update cartesion coordinates.
     X[0] = X[0] + X[1]*dt + 0.5*ddl*dt_sqr
     X[1] = X[1] + ddl*dt
-    X[2] = X[2] + X[3]*dt + 0.5*ddth*dt_sqr # TODO: round down angle to [0,pi)
+    X[2] = (X[2] + X[3]*dt + 0.5*ddth*dt_sqr) % np.pi
     X[3] = X[3] + ddth*dt
 
     # TODO: update Xc (shouldn't matter yet)
