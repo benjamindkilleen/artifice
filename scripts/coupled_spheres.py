@@ -24,7 +24,7 @@ fps = 60                        # frame rate of the video
 frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # time step for simulation
-seconds = 10                              # number of seconds in the video
+seconds = 1                              # number of seconds in the video
 N = int(fps * seconds)                    # number of frames (DERIVED)
 output_formats = {'mp4'}                 # write to a video
 fname = root + 'coupled_spheres'         # extensions from output_formats
@@ -101,16 +101,18 @@ def step(n=1, dt=time_step):
   xc, vxc, yc, vyc = Xc
   """
   global X, Xc
+  dt_sqr = dt*dt
 
   while (n > 0):
     ddth = 0 if X[1] == 0 else -2 * (X[0] / X[1]) * X[3] # TODO: divide by 0 case
     ddl = spring(X[0]) / M + X[0] * X[3]*X[3]
     
-    dt_sqr = dt*dt
     X[0] = X[0] + X[1]*dt + 0.5*ddl*dt_sqr
     X[1] = X[1] + ddl*dt
     X[2] = X[2] + X[3]*dt + 0.5*ddth*dt_sqr
     X[3] = X[3] + ddth*dt
+
+    # TODO: update Xc (shouldn't matter yet)
     n -= 1
 
 global step_cnt
@@ -135,7 +137,7 @@ def argsf1(fn):
   return [100*x,100*y,0], r1
 
 def argsf2(fn):
-  t = steps_per_frame * fn
+  t = steps_per_frame * fn      # TODO: fix
   update_to_step(t)
   r = X[0] * m1 / M
   x = Xc[0] - r*np.cos(X[2])
