@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from test_utils import experiment
 from artifice.utils import dataset
 
-debug = True
+debug = False
 
 # helpers
 color = lambda col : vapory.Texture(vapory.Pigment('color', col))
@@ -90,7 +90,7 @@ def spring(l):
 
   """
   # TODO: apply non-linearities near boundaries of spring
-  return k * (l - l0)
+  return -k * (l - l0)
 
 def step(n=1, dt=time_step):
   """Update the polar and CM system over n time steps of length dt. Recall:
