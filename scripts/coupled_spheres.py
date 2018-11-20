@@ -25,7 +25,7 @@ frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # time step for simulation
 seconds = 1                              # number of seconds in the video
-N = int(fps * seconds)                    # number of frames (DERIVED)
+N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'mp4'}                 # write to a video
 fname = root + 'coupled_spheres'         # extensions from output_formats
 image_shape = (512, 512)                 # image shape
@@ -123,8 +123,8 @@ def update_to_step(t):
   if t > step_cnt:
     if debug: print("updating to step", t)
     step(n = t - step_cnt)
-    step_cnt += t
-  
+    step_cnt = t
+
 # experiment spheres: whichever one is called first updates the global
 # state. Then each of them translates the global state back into cartesian
 # coordinates. Takes the frame number as argument.
