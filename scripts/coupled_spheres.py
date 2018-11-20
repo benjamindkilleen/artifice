@@ -34,17 +34,17 @@ num_classes = 2                          # including background
 # initial parameters. 1 povray unit = 1 cm
 
 # ball 1 in povray unites
-r1 = 50              # radius
-m1 = 2               # mass (kg)
-x1 = -200            # initial x position (cm)
+r1 = 50              # radius (cm)
+m1 = 1               # mass (kg)
+x1 = -150            # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = 0              # initial x velocity (cm/s)
 vy1 = 0              # initial y velocity
 
 # ball 2
-r2 = 75
-m2 = 3 
-x2 = 200
+r2 = 50
+m2 = 1
+x2 = 150
 y2 = 0
 vx2 = 0
 vy2 = 0
@@ -62,11 +62,10 @@ Xc = np.array([(x1*m1 + x2*m2)/M,
                (vy1*m1 + vy2*m2)/M])
 
 xc, vxc, yc, vyc = Xc
-l_sqr = (x1 - xc)**2 + (y1 - yc)**2
-l = np.sqrt(l_sqr)
+l = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
 dl = ((x1 - xc)*(vx1 - vxc) + (y1 - yc)*(vy1 - vyc)) / l
 th = np.arctan2(y1 - yc, x1 - xc)
-dth = ((x1 - xc)*(vy1 - vyc) - (y1 - yc)*(vx1 - vxc)) / l_sqr
+dth = ((x1 - xc)*(vy1 - vyc) - (y1 - yc)*(vx1 - vxc)) / ((x1 - xc)**2 + (y1 - yc)**2)
 
 global X
 X = np.array([l, dl, th, dth])
@@ -77,8 +76,8 @@ X[0] /= 100.
 X[1] /= 100.
 
 # spring:
-k = 5                           # spring constant
-l0_ = 400                       # relaxed length (cm)
+k = 10                          # spring constant
+l0_ = 290                       # relaxed length (cm)
 l0 = l0_ / 100
 def spring(l):
   """Return the force in Newtons exerted by the spring as a function of its length
