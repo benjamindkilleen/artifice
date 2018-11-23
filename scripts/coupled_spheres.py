@@ -13,33 +13,30 @@ import matplotlib.pyplot as plt
 from test_utils import experiment
 from artifice.utils import dataset
 
+# Main parameters
 debug = False
-
-# helpers
-color = lambda col : vapory.Texture(vapory.Pigment('color', col))
+seconds = 30
 
 # dataset parameters
 root = "data/coupled_spheres/"  # root dir for fname
 fps = 30                        # frame rate of the video
 frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
-time_step = steps_per_frame * frame_step # time step for simulation
-seconds = 30                             # number of seconds in the video
+time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'mp4'}                 # write to a video
 fname = root + 'coupled_spheres'         # extensions from output_formats
 image_shape = (512, 512)                 # image shape
 num_classes = 2                          # including background
 
-# initial parameters. 1 povray unit = 1 cm
-
+# Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
 r1 = 20              # radius (cm)
 m1 = 2               # mass (kg)
 x1 = -150            # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = 0              # initial x velocity (cm/s)
-vy1 = -50            # initial y velocity
+vy1 = -30            # initial y velocity
 
 # ball 2
 r2 = 50
@@ -47,38 +44,21 @@ m2 = 5
 x2 = 150
 y2 = 0
 vx2 = 0
-vy2 = 50
+vy2 = 30
 
-# derived params
-M = m1 + m2
+# Spring parameters
+k = 15                          # (N / m)
+relaxed_length = 275            # (cm)
 
-# X = [l, l*, th, th*] is the current state of the polar-coordinate system
-# Xc = [xc, xc*, yc, yc*] is the current state of the center of mass
-# where '*' denotes the time derivative "dot"
-global Xc
-Xc = np.array([(x1*m1 + x2*m2)/M,
-               (vx1*m1 + vx2*m2)/M,
-               (y1*m1 + y2*m2)/M,
-               (vy1*m1 + vy2*m2)/M])
+# Add walls at the boundary of the image plane
+walls = False
 
-xc, vxc, yc, vyc = Xc
-l = np.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-dl = ((x1 - xc)*(vx1 - vxc) + (y1 - yc)*(vy1 - vyc)) / l
-th = np.arctan2(y1 - yc, x1 - xc)
-dth = ((x1 - xc)*(vy1 - vyc) - (y1 - yc)*(vx1 - vxc)) / ((x1 - xc)**2 + (y1 - yc)**2)
+#################### CONFIGURABLE OPTIONS ABOVE ####################
 
-global X
-X = np.array([l, dl, th, dth])
-
-# Convert to meters:
-Xc /= 100.
-X[0] /= 100.
-X[1] /= 100.
+global initial, current
 
 # spring:
-k = 10                           # spring constant
-l0_ = 290                       # relaxed length (cm)
-l0 = l0_ / 100
+l0 = relaxed_length / 100
 def spring(l):
   """Return the force in Newtons exerted by the spring as a function of its length
   `l`. Negative force is attractive, positive repulsive. In center-of-mass polar
@@ -92,34 +72,65 @@ def spring(l):
   # TODO: apply non-linearities near boundaries of spring
   return -k * (l - l0)
 
-def step(n=1, dt=time_step):
-  """Update the polar and CM system over n time steps of length dt. Recall:
-  l, dl, th, dth = X
-  xc, vxc, yc, vyc = Xc
+
+def calculate_acceleration(x1, x2):
+  """Calculate the accelerations of the system from equations of motion, given
+  position vectors x1 and x2 for the two spheres.
   """
-  global X, Xc
-  dt_sqr = dt*dt
+  l = x1 - x2
+  mag_l = np.linalg.norm(l)
+  mag_F = spring(mag_l)
+  l_hat = l / mag_l
+  a1 = mag_F * l_hat / m1
+  a2 = -a1
+  return a1, a2
+
+
+def impose_walls():
+  """Impose the walls at the boundary of the image_plane on the CURRENT state of
+  the system."""
+  if not walls:
+    return
+  
+  global current
+  
+
+def step(n=1):
+  """Update the polar and CM system over n time steps of length dt, using the
+  velocity Verlet algorithm, as on
+  https://en.wikipedia.org/wiki/Verlet_integration
+
+  """
+  global initial, current
+  dt = time_step
 
   # Just do cartesian coordinates. Cartesian coordinates are just easier, in
   # case I have multiple things flying around.
   while (n > 0):
-    # Equations of motion, getting 
-    ddth = 0 if X[1] == 0 else -2 * (X[0] / X[1]) * X[3] # TODO: divide by 0 case
-    ddl = spring(X[0]) / M + X[0] * X[3]*X[3]
+    initial = current.copy()
 
-    # TODO: folding back at the boundaries, to simulate bouncing.
-    # Have to do it for x and then y, do it again and again until no more folding.
-    # Negate the velocities properties.
-    # Use the velocity Verlet algorithm
-    # (https://en.wikipedia.org/wiki/Verlet_integration) to update cartesion coordinates.
-    X[0] = X[0] + X[1]*dt + 0.5*ddl*dt_sqr
-    X[1] = X[1] + ddl*dt
-    X[2] = (X[2] + X[3]*dt + 0.5*ddth*dt_sqr) % np.pi
-    X[3] = X[3] + ddth*dt
+    # 1. Calculate half-step velocity
+    half_step_v1 = initial['v1'] + 0.5*initial['a1'] * dt
+    half_step_v2 = initial['v2'] + 0.5*initial['a2'] * dt
 
-    # TODO: update Xc (shouldn't matter yet)
+    # 2. Calculate current position
+    current['x1'] = initial['x1'] + half_step_v1 * dt
+    current['x2'] = initial['x2'] + half_step_v2 * dt
+
+    # 3. Calculate current acceleration
+    current['a1'], current['a2'] = calculate_acceleration(current['x1'],
+                                                          current['x2'])
+
+    # 4. Calculate current velocity
+    current['v1'] = half_step_v1 + 0.5*current['a1'] * dt
+    current['v2'] = half_step_v2 + 0.5*current['a2'] * dt
+
+    # Correct for bouncing off of walls
+    impose_walls()
+    
     n -= 1
 
+    
 global step_cnt
 step_cnt = 0
 def update_to_step(t):
@@ -136,39 +147,65 @@ def update_to_step(t):
 def argsf1(fn):
   t = steps_per_frame * fn
   update_to_step(t)
-  r = X[0] * m2 / M
-  x = Xc[0] + r*np.cos(X[2])
-  y = Xc[2] + r*np.sin(X[2])
-  return [100*x,100*y,0], r1
+  x, y = 100 * current['x1']
+  return [x,y,0], r1
 
 def argsf2(fn):
   t = steps_per_frame * fn      # TODO: fix
   update_to_step(t)
-  r = X[0] * m1 / M
-  x = Xc[0] - r*np.cos(X[2])
-  y = Xc[2] - r*np.sin(X[2])
-  return [100*x,100*y,0], r2
+  x, y = 100 * current['x2']
+  return [x,y,0], r2
 
-s1 = experiment.ExperimentSphere(argsf1, color('Gray'))
-s2 = experiment.ExperimentSphere(argsf2, color('Gray'))
 
-# experiment
-exp = experiment.Experiment(image_shape=image_shape,
-                            num_classes=num_classes,
-                            N=N, fname=fname,
-                            output_format=output_formats,
-                            fps=fps, mode='L')
-exp.add_object(vapory.LightSource([0, 5*image_shape[0], -5*image_shape[1]],
-                                  'color', [1,1,1]))
-exp.add_object(vapory.LightSource([5*image_shape[0], 0, -5*image_shape[1]],
-                                  'color', [1,1,1]))
-exp.add_object(vapory.Plane([0,0,1], 2*max(r1, r2), color('White'))) # ground
-exp.add_object(s1)
-exp.add_object(s2)
+def main():
+  # helpers
+  color = lambda col : vapory.Texture(vapory.Pigment('color', col))
+  
+  # initial state, in SI units
+  global initial, current
 
-if debug:
-  image, annotation = exp.render_scene(0)
-  plt.imshow(image[:,:,0], cmap='gray')
-  plt.show()
-else:
-  exp.run(verbose=True)
+  initial = {}
+  initial['x1'] = np.array([x1, y1]) / 100.
+  initial['v1'] = np.array([vx1, vy1]) / 100.
+  initial['x2'] = np.array([x2, y2]) / 100.
+  initial['v2'] = np.array([vx2, vy2]) / 100.
+
+  # Calculate initial acceleration with equations of motion
+  initial['a1'], initial['a2'] = calculate_acceleration(initial['x1'],
+                                                        initial['x2'])
+
+  current = initial.copy()
+
+  # Begin setup
+  s1 = experiment.ExperimentSphere(argsf1, color('Gray'))
+  s2 = experiment.ExperimentSphere(argsf2, color('Gray'))
+
+  # experiment
+  exp = experiment.Experiment(image_shape=image_shape,
+                              num_classes=num_classes,
+                              N=N, fname=fname,
+                              output_format=output_formats,
+                              fps=fps, mode='L')
+  exp.add_object(vapory.LightSource([0, 5*image_shape[0], -5*image_shape[1]],
+                                    'color', [1,1,1]))
+  exp.add_object(vapory.LightSource([5*image_shape[0], 0, -5*image_shape[1]],
+                                    'color', [1,1,1]))
+  exp.add_object(vapory.Plane([0,0,1], 2*max(r1, r2), color('White'))) # ground
+
+  if walls:
+    # Add wall objects
+    pass
+
+  exp.add_object(s1)
+  exp.add_object(s2)
+
+  if debug:
+    image, annotation = exp.render_scene(0)
+    plt.imshow(image[:,:,0], cmap='gray')
+    plt.show()
+  else:
+    exp.run(verbose=True)
+
+
+if __name__ == "__main__":
+  main()
