@@ -107,7 +107,8 @@ def step(n=1):
   # Just do cartesian coordinates. Cartesian coordinates are just easier, in
   # case I have multiple things flying around.
   while (n > 0):
-    initial = current.copy()
+    for k in current.keys():
+      initial[k] = current[k]
 
     # 1. Calculate half-step velocity
     half_step_v1 = initial['v1'] + 0.5*initial['a1'] * dt
