@@ -379,6 +379,18 @@ class Experiment:
       return V
     else:
       return V * V[2] / abs(V[2]) # ensure V points toward +z
+
+  def unproject_to_image_plane(self, Xi):
+    """From index space point Xi = [x,y], unproject back to the world-space
+    point which lies on the image plane.
+    """
+    Xi = np.array(Xi)
+    u_hat = self.unproject(Xi)
+    v = self.camera_location
+    mag_v = np.linalg.norm(v)
+    cos_th = np.dot(u,v) / (u_hat * mag_v)
+    u = (mag_v / cos_th) * u_hat
+    return v + u
   
   def compute_annotation(self):
     """Computes the annotation for the scene, based on most recent vapory
