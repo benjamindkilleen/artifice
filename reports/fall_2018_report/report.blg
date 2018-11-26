@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2015)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: report.aux
+The style file: asmems4.bst
+Database file #1: artifice.bib
+Warning--empty year in deng_imagenet:_nodate
+Warning--empty journal in deng_imagenet:_nodate
+You've used 2 entries,
+            1984 wiz_defined-function locations,
+            495 strings with 3922 characters,
+and the built_in function-call counts, 508 in all, are:
+= -- 27
+> -- 50
+< -- 0
++ -- 18
+- -- 16
+* -- 43
+:= -- 99
+add.period$ -- 7
+call.type$ -- 2
+change.case$ -- 2
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 17
+empty$ -- 35
+format.name$ -- 16
+if$ -- 101
+int.to.chr$ -- 0
+int.to.str$ -- 2
+missing$ -- 2
+newline$ -- 14
+num.names$ -- 2
+pop$ -- 6
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 6
+stack$ -- 0
+substring$ -- 2
+swap$ -- 5
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 2
+while$ -- 3
+width$ -- 3
+write$ -- 23
+(There were 2 warnings)

@@ -280,7 +280,7 @@ has a data augmenter which may be good as a starting point for our augmentation
 setup
 
 ## November 13, 2018
-
+Check-in meeting notes:
 * Balls moving around inside some cube, bouncing off one another.
 * Elastic, inelastic collision?
 * Spheres coupled with an invisible spring, learning the spring constant through

@@ -1,0 +1,16 @@
+\begin{thebibliography}{1}
+
+\bibitem{deng_imagenet:_nodate}
+Deng, J., Dong, W., Socher, R., Li, L.-J., Li, K., and Fei-Fei, L.
+\newblock ``{ImageNet}: {A} {Large}-{Scale} {Hierarchical} {Image}
+  {Database}''.
+\newblock p.~8.
+
+\bibitem{lin_microsoft_2014}
+Lin, T.-Y., Maire, M., Belongie, S., Bourdev, L., Girshick, R., Hays, J.,
+  Perona, P., Ramanan, D., Zitnick, C.~L., and Dollár, P., 2014.
+\newblock ``Microsoft {COCO}: {Common} {Objects} in {Context}''.
+\newblock {\em arXiv:1405.0312 [cs]}, May.
+\newblock arXiv: 1405.0312.
+
+\end{thebibliography}
