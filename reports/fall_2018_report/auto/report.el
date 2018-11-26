@@ -22,6 +22,7 @@
     "subcaption")
    (LaTeX-add-labels
     "sec:introduction"
+    "sec:previous-work"
     "sec:method"
     "fig:general-graph"
     "fig:artifice-graph"

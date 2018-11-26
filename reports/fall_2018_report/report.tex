@@ -47,7 +47,21 @@ size and complexity, tackling increasingly sophisticated tasks with applications
 including facial recognition and self-driving. However, this success relies on
 the availability of very large, well-labeled datasets like ImageNet
 \cite{deng_imagenet:_nodate} or COCO \cite{lin_microsoft_2014}, which facilitate
-supervised training. Although ``real-world'' applications 
+supervised training. Although real-world applications often motivate the
+investment needed to created these datasets, smaller scale vision tasks have no
+such advantage. In particular, many scientific experiments use video to recover
+object location, orientation, or topology, aiming to recover these qualities
+through highly specialized image analysis. In such instances, DNNs promise fast
+and reliable labeling, provided that the man-hour investment required for their
+training significantly undercuts a more traditional---or even manual---labeling.
+
+Due to the
+
+\subsection{Previous Work}
+\label{sec:previous-work}
+
+In a previous report, we examined the application of
+DNNs for bounding-box detection on labeled 
 
 \section{Method}
 \label{sec:method}
