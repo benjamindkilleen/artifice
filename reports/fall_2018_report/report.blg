@@ -5,45 +5,45 @@ The style file: asmems4.bst
 Database file #1: artifice.bib
 Warning--empty year in deng_imagenet:_nodate
 Warning--empty journal in deng_imagenet:_nodate
-You've used 2 entries,
+You've used 12 entries,
             1984 wiz_defined-function locations,
-            495 strings with 3922 characters,
-and the built_in function-call counts, 508 in all, are:
-= -- 27
-> -- 50
+            556 strings with 5885 characters,
+and the built_in function-call counts, 3750 in all, are:
+= -- 338
+> -- 158
 < -- 0
-+ -- 18
-- -- 16
-* -- 43
-:= -- 99
-add.period$ -- 7
-call.type$ -- 2
-change.case$ -- 2
++ -- 60
+- -- 48
+* -- 246
+:= -- 532
+add.period$ -- 41
+call.type$ -- 12
+change.case$ -- 12
 chr.to.int$ -- 0
-cite$ -- 4
-duplicate$ -- 17
-empty$ -- 35
-format.name$ -- 16
-if$ -- 101
+cite$ -- 14
+duplicate$ -- 188
+empty$ -- 355
+format.name$ -- 48
+if$ -- 878
 int.to.chr$ -- 0
-int.to.str$ -- 2
-missing$ -- 2
-newline$ -- 14
-num.names$ -- 2
-pop$ -- 6
+int.to.str$ -- 12
+missing$ -- 12
+newline$ -- 67
+num.names$ -- 14
+pop$ -- 56
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 6
+skip$ -- 121
 stack$ -- 0
-substring$ -- 2
-swap$ -- 5
+substring$ -- 264
+swap$ -- 85
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
 warning$ -- 2
-while$ -- 3
-width$ -- 3
-write$ -- 23
+while$ -- 35
+width$ -- 14
+write$ -- 137
 (There were 2 warnings)

@@ -1,4 +1,26 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
+
+\bibitem{bernardis_finding_2010}
+Bernardis, E., and Yu, S.~X., 2010.
+\newblock ``Finding dots: {Segmentation} as popping out regions from
+  boundaries''.
+\newblock In 2010 {IEEE} {Computer} {Society} {Conference} on {Computer}
+  {Vision} and {Pattern} {Recognition}, pp.~199--206.
+
+\bibitem{ronneberger_u-net:_2015}
+Ronneberger, O., Fischer, P., and Brox, T., 2015.
+\newblock ``U-{Net}: {Convolutional} {Networks} for {Biomedical} {Image}
+  {Segmentation}''.
+\newblock {\em arXiv:1505.04597 [cs]}, May.
+\newblock arXiv: 1505.04597.
+
+\bibitem{krizhevsky_imagenet_2012}
+Krizhevsky, A., Sutskever, I., and Hinton, G.~E., 2012.
+\newblock ``{ImageNet} {Classification} with {Deep} {Convolutional} {Neural}
+  {Networks}''.
+\newblock In {\em Advances in {Neural} {Information} {Processing} {Systems}
+  25}, F.~Pereira, C.~J.~C. Burges, L.~Bottou, and K.~Q. Weinberger, eds.
+  Curran Associates, Inc., pp.~1097--1105.
 
 \bibitem{deng_imagenet:_nodate}
 Deng, J., Dong, W., Socher, R., Li, L.-J., Li, K., and Fei-Fei, L.
@@ -12,5 +34,48 @@ Lin, T.-Y., Maire, M., Belongie, S., Bourdev, L., Girshick, R., Hays, J.,
 \newblock ``Microsoft {COCO}: {Common} {Objects} in {Context}''.
 \newblock {\em arXiv:1405.0312 [cs]}, May.
 \newblock arXiv: 1405.0312.
+
+\bibitem{settles_active_2012}
+Settles, B., 2012.
+\newblock ``Active {Learning}''.
+\newblock {\em Synthesis Lectures on Artificial Intelligence and Machine
+  Learning, {\bf 6}}(1), June, pp.~1--114.
+
+\bibitem{kao_localization-aware_2018}
+Kao, C.-C., Lee, T.-Y., Sen, P., and Liu, M.-Y., 2018.
+\newblock ``Localization-{Aware} {Active} {Learning} for {Object}
+  {Detection}''.
+\newblock {\em arXiv:1801.05124 [cs]}, Jan.
+\newblock arXiv: 1801.05124.
+
+\bibitem{jain_active_2016}
+Jain, S.~D., and Grauman, K., 2016.
+\newblock ``Active {Image} {Segmentation} {Propagation}''.
+\newblock In 2016 {IEEE} {Conference} on {Computer} {Vision} and {Pattern}
+  {Recognition} ({CVPR}), pp.~2864--2873.
+
+\bibitem{torralba_unbiased_2011}
+Torralba, A., and Efros, A.~A., 2011.
+\newblock ``Unbiased look at dataset bias''.
+\newblock In {CVPR} 2011, pp.~1521--1528.
+
+\bibitem{nash_topological_2015}
+Nash, L.~M., Kleckner, D., Read, A., Vitelli, V., Turner, A.~M., and Irvine, W.
+  T.~M., 2015.
+\newblock ``Topological mechanics of gyroscopic metamaterials''.
+\newblock {\em Proceedings of the National Academy of Sciences, {\bf 112}}(47),
+  pp.~14495--14500.
+
+\bibitem{bai_deep_2016}
+Bai, M., and Urtasun, R., 2016.
+\newblock ``Deep {Watershed} {Transform} for {Instance} {Segmentation}''.
+\newblock {\em arXiv:1611.08303 [cs]}, Nov.
+\newblock arXiv: 1611.08303.
+
+\bibitem{vezhnevets_active_2012}
+Vezhnevets, A., Buhmann, J.~M., and Ferrari, V., 2012.
+\newblock ``Active learning for semantic segmentation with expected change''.
+\newblock In 2012 {IEEE} {Conference} on {Computer} {Vision} and {Pattern}
+  {Recognition}, pp.~3162--3169.
 
 \end{thebibliography}

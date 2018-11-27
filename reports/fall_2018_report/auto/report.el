@@ -22,11 +22,16 @@
     "subcaption")
    (LaTeX-add-labels
     "sec:introduction"
-    "sec:previous-work"
-    "sec:method"
-    "fig:general-graph"
+    "fig:traditional-graph"
     "fig:artifice-graph"
-    "fig:dependency-graphs")
+    "fig:dependency-graphs"
+    "sec:related-work"
+    "fig:gyros"
+    "fig:coupled-spheres"
+    "fig:example-experiments"
+    "sec:simulated-experiments"
+    "sec:method"
+    "sec:conclusion")
    (LaTeX-add-bibliographies
     "artifice"))
  :latex)

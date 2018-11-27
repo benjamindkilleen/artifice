@@ -16,20 +16,56 @@
 \gdef\HyperFirstAtBeginDocument#1{#1}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{bernardis_finding_2010}
+\citation{ronneberger_u-net:_2015}
+\citation{krizhevsky_imagenet_2012}
 \citation{deng_imagenet:_nodate}
 \citation{lin_microsoft_2014}
-\bibstyle{asmems4}
-\bibdata{artifice}
-\bibcite{deng_imagenet:_nodate}{1}
-\bibcite{lin_microsoft_2014}{2}
+\citation{settles_active_2012,kao_localization-aware_2018,jain_active_2016}
+\citation{krizhevsky_imagenet_2012,ronneberger_u-net:_2015}
+\citation{torralba_unbiased_2011}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}}
 \newlabel{sec:introduction}{{1}{1}{Introduction}{section.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {2}Method}{1}{section.2}}
-\newlabel{sec:method}{{2}{1}{Method}{section.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{1}{section.2}}
+\newlabel{sec:related-work}{{2}{1}{Related Work}{section.2}{}}
+\citation{ronneberger_u-net:_2015}
+\citation{ronneberger_u-net:_2015}
+\citation{nash_topological_2015}
+\citation{nash_topological_2015}
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:general-graph}{{1a}{2}{Traditional dependency graph\relax }{figure.caption.1}{}}
-\newlabel{sub@fig:general-graph}{{a}{2}{Traditional dependency graph\relax }{figure.caption.1}{}}
+\newlabel{fig:traditional-graph}{{1a}{2}{Traditional dependency graph\relax }{figure.caption.1}{}}
+\newlabel{sub@fig:traditional-graph}{{a}{2}{Traditional dependency graph\relax }{figure.caption.1}{}}
 \newlabel{fig:artifice-graph}{{1b}{2}{Artifice's dependency graph\relax }{figure.caption.1}{}}
 \newlabel{sub@fig:artifice-graph}{{b}{2}{Artifice's dependency graph\relax }{figure.caption.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces For a traditional vision task (\textbf  {a}), a camera converts real-world \textit  {scenes} into an unlabeled dataset $X$. These scenes have actual attributes $\mathaccent "707E\relax {Y}$ which a \textit  {labeller} records as the ``ground truth'' or ``measurement'' $Y$. A classifier or regression model $f$, trained on $(X,Y)$, produces predictions $\mathaccent "705E\relax {Y}$.  Artifice's dependency graph (\textbf  {b}), specialized for object detection in laboratory images, distinguishes between two types of constraints. \textit  {Imposed constraints}, such as physical boundaries, are known to the experimenter, but \textit  {inherent constraints}, such as a physical law, are the subject of hypothesis. \textit  {Adverse noise}, including lighting changes or object deformation, also influences the experiment. In (\textbf  {b}), the augmented dataset $X$ is continually updated by the Training Cycle. A \textit  {selector} chooses the query set $Q \subseteq X'$ based on existing predictions $\mathaccent "705E\relax {Y}$. A \textit  {labeler} produces imperfect ground truth $Y$, which enables the \textit  {augmenter} to intelligently update the dataset $X'$, incorporating imposed constraints. Here, dashed lines represent single instance connections, such as instantiating $X' \gets X$, rather than continual dependency throughout the Training Cycle.\relax }}{2}{figure.caption.1}}
-\newlabel{fig:dependency-graphs}{{1}{2}{For a traditional vision task (\textbf {a}), a camera converts real-world \textit {scenes} into an unlabeled dataset $X$. These scenes have actual attributes $\tilde {Y}$ which a \textit {labeller} records as the ``ground truth'' or ``measurement'' $Y$. A classifier or regression model $f$, trained on $(X,Y)$, produces predictions $\hat {Y}$.\\ Artifice's dependency graph (\textbf {b}), specialized for object detection in laboratory images, distinguishes between two types of constraints. \textit {Imposed constraints}, such as physical boundaries, are known to the experimenter, but \textit {inherent constraints}, such as a physical law, are the subject of hypothesis. \textit {Adverse noise}, including lighting changes or object deformation, also influences the experiment. In (\textbf {b}), the augmented dataset $X$ is continually updated by the Training Cycle. A \textit {selector} chooses the query set $Q \subseteq X'$ based on existing predictions $\hat {Y}$. A \textit {labeler} produces imperfect ground truth $Y$, which enables the \textit {augmenter} to intelligently update the dataset $X'$, incorporating imposed constraints. Here, dashed lines represent single instance connections, such as instantiating $X' \gets X$, rather than continual dependency throughout the Training Cycle.\relax }{figure.caption.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces For a traditional vision task \textbf  {(a)}, a camera converts real-world \textit  {scenes} into an unlabeled dataset $X$. These scenes have actual attributes $\mathaccent "707E\relax {Y}$ which a \textit  {labeller} records as the ``ground truth'' or ``measurement'' $Y$. A classifier or regression model $f$, trained on $(X,Y)$, produces predictions $\mathaccent "705E\relax {Y}$.  Artifice's dependency graph \textbf  {(b)}, specialized for scientific vision tasks, distinguishes between two types of constraints. \textit  {Imposed constraints}, such as physical boundaries, are known to the experimenter, but \textit  {inherent constraints}, such as a physical law, are the subject of inquiry. \textit  {Adverse noise}, including lighting changes or object deformation, also influences the experiment. In \textbf  {(b)}, the augmented dataset $X$ is continually updated by the Training Cycle. A \textit  {selector} chooses the query set $Q \subseteq X'$ based on existing predictions $\mathaccent "705E\relax {Y}$. A \textit  {labeler} produces imperfect ground truth $Y$, which enables the \textit  {augmenter} to intelligently update the dataset $X'$, incorporating imposed constraints. Here, dashed lines represent single instance connections, such as instantiating $X' \gets X$, rather than continual dependency throughout the Training Cycle.\relax }}{2}{figure.caption.1}}
+\newlabel{fig:dependency-graphs}{{1}{2}{For a traditional vision task \textbf {(a)}, a camera converts real-world \textit {scenes} into an unlabeled dataset $X$. These scenes have actual attributes $\tilde {Y}$ which a \textit {labeller} records as the ``ground truth'' or ``measurement'' $Y$. A classifier or regression model $f$, trained on $(X,Y)$, produces predictions $\hat {Y}$.\\ Artifice's dependency graph \textbf {(b)}, specialized for scientific vision tasks, distinguishes between two types of constraints. \textit {Imposed constraints}, such as physical boundaries, are known to the experimenter, but \textit {inherent constraints}, such as a physical law, are the subject of inquiry. \textit {Adverse noise}, including lighting changes or object deformation, also influences the experiment. In \textbf {(b)}, the augmented dataset $X$ is continually updated by the Training Cycle. A \textit {selector} chooses the query set $Q \subseteq X'$ based on existing predictions $\hat {Y}$. A \textit {labeler} produces imperfect ground truth $Y$, which enables the \textit {augmenter} to intelligently update the dataset $X'$, incorporating imposed constraints. Here, dashed lines represent single instance connections, such as instantiating $X' \gets X$, rather than continual dependency throughout the Training Cycle.\relax }{figure.caption.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Simulated Experiments}{2}{section.3}}
+\newlabel{sec:simulated-experiments}{{3}{2}{Simulated Experiments}{section.3}{}}
+\newlabel{fig:gyros}{{2a}{2}{Gyroscopic model\relax }{figure.caption.2}{}}
+\newlabel{sub@fig:gyros}{{a}{2}{Gyroscopic model\relax }{figure.caption.2}{}}
+\newlabel{fig:coupled-spheres}{{2b}{2}{Coupled spheres\relax }{figure.caption.2}{}}
+\newlabel{sub@fig:coupled-spheres}{{b}{2}{Coupled spheres\relax }{figure.caption.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces example experiments}}{2}{figure.caption.2}}
+\newlabel{fig:example-experiments}{{2}{2}{example experiments}{figure.caption.2}{}}
+\citation{ronneberger_u-net:_2015,bai_deep_2016}
+\citation{vezhnevets_active_2012}
+\citation{settles_active_2012}
+\citation{krizhevsky_imagenet_2012}
+\bibstyle{asmems4}
+\bibdata{artifice}
+\bibcite{bernardis_finding_2010}{1}
+\bibcite{ronneberger_u-net:_2015}{2}
+\bibcite{krizhevsky_imagenet_2012}{3}
+\bibcite{deng_imagenet:_nodate}{4}
+\bibcite{lin_microsoft_2014}{5}
+\bibcite{settles_active_2012}{6}
+\bibcite{kao_localization-aware_2018}{7}
+\bibcite{jain_active_2016}{8}
+\bibcite{torralba_unbiased_2011}{9}
+\bibcite{nash_topological_2015}{10}
+\bibcite{bai_deep_2016}{11}
+\bibcite{vezhnevets_active_2012}{12}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Method}{3}{section.4}}
+\newlabel{sec:method}{{4}{3}{Method}{section.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{3}{section.5}}
+\newlabel{sec:conclusion}{{5}{3}{Conclusion}{section.5}{}}
