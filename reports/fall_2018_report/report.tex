@@ -1,45 +1,37 @@
-\documentclass[twocolumn, 10pt]{asme2ej} %TODO: use IEEEtran document class
-                                         %instead
-\usepackage{epsfig}
+\documentclass[10pt, journal]{IEEEtran}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \graphicspath{ {images/} }
-\usepackage{multirow}
-\usepackage{array}
-\usepackage{subcaption}
+\usepackage[caption=false,font=footnotesize]{subfig}
 
 \title{Artifice: Generalized Object Detection in Scientific Images}
 
-\author{Benjamin Killeen
-  \affiliation{
-    \href{mailto:killeen@uchicago.edu}{killeen@uchicago.edu}
-  }
+\author{Benjamin Killeen and Gordon Kindlmann %
+  \thanks{Benjamin Killeen is an undergraduate with the Department of Computer
+    Science, University of Chicago, Chicago, IL 60637, USA (email:
+    \href{mailto:killeen@uchicago.edu}{killeen@uchicago.edu})} %
+  \thanks{Gordon Kindlmann is with the Department of Computer Science,
+    University of Chicago, Chicago, IL 60637, USA (email:
+    \href{mailto:glk@uchicago.edu}{glk@uchicago.edu})} %
 }
-
-\author{Gordon Kindlmann \affiliation{
-    \href{mailto:glk@uchicago.edu}{glk@uchicago.edu}
-  }
-}
-
 \begin{document}
 \maketitle
 
 \begin{abstract}
-  {\it Together with large training sets, Deep Neural Networks (DNNs) have
-    enabled a wide range of advancements in Computer Vision tasks, especially
-    with regard to object detection in real-world images. Object detection for
-    scientific images, on the other hand, presents challenges unlike more
-    traditional vision tasks. First, experiments exhibit a scarcity of labelled
-    data, a problem which we address through active learning and data
-    augmentation. Second, scientific experiments involve inherent constraints,
-    such as a natural law or governing principle, which the experimenter intends
-    to observe. Although this quality seems advantageous for data augmentation,
-    it threatens to undermine the scientific rigor of DNNs for laboratory
-    tasks. In this progress report, we describe our ongoing effort toward
-    training DNNs which are agnostic to inherent constraints yet perform
-    reliably on scarce data.\footnote{Code available at
-      \href{https://github.com/bendkill/artifice}
-      {github.com/bendkill/artifice}}}
+  Together with large training sets, Deep Neural Networks (DNNs) have enabled a
+  wide range of advancements in Computer Vision tasks, especially with regard to
+  object detection in real-world images. Object detection for scientific images,
+  on the other hand, presents challenges unlike more traditional vision
+  tasks. First, experiments exhibit a scarcity of labelled data, a problem which
+  we address through active learning and data augmentation. Second, scientific
+  experiments involve inherent constraints, such as a natural law or governing
+  principle, which the experimenter intends to observe. Although this quality
+  seems advantageous for data augmentation, it threatens to undermine the
+  scientific rigor of DNNs for laboratory tasks. In this progress report, we
+  describe our ongoing effort toward training DNNs which are agnostic to
+  inherent constraints yet perform reliably on scarce data.\footnote{Code
+    available at \href{https://github.com/bendkill/artifice}
+    {github.com/bendkill/artifice}}
 \end{abstract}
 
 \section{Introduction}
@@ -96,22 +88,21 @@ training. As much as possible, Artifice aims to be agnostic to these constraints
 
 \begin{figure*}
   \centering
-  \begin{subfigure}{0.4\linewidth}
-    \includegraphics[width=\columnwidth]{traditional_graph}
-    \caption{Traditional dependency graph}
+  \subfloat[]{
+    \includegraphics[width=0.4\linewidth]{traditional_graph}
     \label{fig:traditional-graph}
-  \end{subfigure}
+  }
   \hspace{0.1\linewidth}
-  \begin{subfigure}{0.4\linewidth}
-    \includegraphics[width=\columnwidth]{artifice_graph}
-    \caption{Artifice's dependency graph}
+  \subfloat[]{
+    \includegraphics[width=0.4\linewidth]{artifice_graph}
     \label{fig:artifice-graph}
-  \end{subfigure}
+  }
+
   \caption{For a traditional vision task \textbf{(a)}, a camera converts
     real-world \textit{scenes} into an unlabeled dataset $X$. These scenes have
     actual attributes $\tilde{Y}$ which a \textit{labeller} records as the
     ``ground truth'' or ``measurement'' $Y$. A classifier or regression model
-    $f$, trained on $(X,Y)$, produces predictions $\hat{Y}$.\\
+    $f$, trained on $(X,Y)$, produces predictions $\hat{Y}$.
     Artifice's dependency graph \textbf{(b)}, specialized for scientific vision
     tasks, distinguishes between two types of constraints. \textit{Imposed
       constraints}, such as physical boundaries, are known to the experimenter,
@@ -154,18 +145,15 @@ experiments.
 
 \begin{figure}
   \centering
-  \begin{subfigure}{0.4\linewidth}
-    \includegraphics[width=\linewidth]{gyros}
-    \caption{Gyroscopic model}
+  \subfloat[Gyroscopic Model]{
+    \includegraphics[width=0.4\linewidth]{gyros}
     \label{fig:gyros}
-  \end{subfigure}
+  }
   \hspace{0.1\linewidth}
-  \centering
-  \begin{subfigure}{0.4\linewidth}
-    \includegraphics[width=\linewidth]{coupled_spheres}
-    \caption{Coupled spheres}
+  \subfloat[Coupled Spheres]{
+    \includegraphics[width=0.4\linewidth]{coupled_spheres}
     \label{fig:coupled-spheres}
-  \end{subfigure}
+  }
 
   \caption[example experiments]{Example images from scientific experiments:
     \textbf{(a)} gyroscopic model for topological metamaterials
@@ -256,13 +244,14 @@ scheme intended for scientific tasks. Much work remains to be done with regard
 to Artifice's implementation, but we hope that by outlining our goals early, we
 have elucidated some key problems unique to scientific tasks.
 
-\begin{acknowledgment}
-  Thanks to Michael Maire for input and guidance, as well as William Irvine for
-  access to image data from his laboratory.
-\end{acknowledgment}
+\section*{Acknowledgment}
+\label{sec:acknowledgment}
 
-\bibliographystyle{asmems4}
-\bibliography{artifice}
+Thanks to Michael Maire for input and guidance, as well as William Irvine for
+access to image data from his laboratory.
+
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv, artifice}
 
 \end{document}
 %%% Local Variables:

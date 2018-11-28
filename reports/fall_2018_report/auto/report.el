@@ -2,24 +2,23 @@
  "report"
  (lambda ()
    (TeX-add-to-alist 'LaTeX-provided-class-options
-                     '(("asme2ej" "twocolumn" "10pt")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+                     '(("IEEEtran" "10pt" "journal")))
+   (TeX-add-to-alist 'LaTeX-provided-package-options
+                     '(("subfig" "caption=false" "font=footnotesize")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
-    "asme2ej"
-    "asme2ej10"
-    "epsfig"
+    "IEEEtran"
+    "IEEEtran10"
     "hyperref"
     "graphicx"
-    "multirow"
-    "array"
-    "subcaption")
+    "subfig")
    (LaTeX-add-labels
     "sec:introduction"
     "fig:traditional-graph"
@@ -31,8 +30,10 @@
     "fig:example-experiments"
     "sec:simulated-experiments"
     "sec:method"
-    "sec:conclusion")
+    "sec:conclusion"
+    "sec:acknowledgment")
    (LaTeX-add-bibliographies
-    "artifice"))
+    "IEEEabrv"
+    " artifice"))
  :latex)
 
