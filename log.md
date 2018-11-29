@@ -293,3 +293,28 @@ Check-in meeting notes:
 For a more awesome approach to `mp4` writing, see
 [this](https://github.com/Zulko/moviepy/blob/master/moviepy/video/io/ffmpeg_writer.py) great repo. It's a wrapper around ffmpeg.
 
+## November 29, 2018
+
+### Meeting Notes:
+* Better terms for imposed/intentional constraints.
+* When writing a paper, give reader warm fuzzy feelings. Risk: superficial
+  appearance of inventing new words/formalisms that the world has already
+  figured out how to describe. Search for high-level conceptual modeling of a
+  standard computer vision task.
+* People don't name papers. So remove "Artifice" from report.
+* Need a figure that encompasses what Bias is in an ML context, what is to us,
+  what the difference is, etc.
+* Adverse noise: REDUNDANT.
+* Relate imposed constraints and inherent constraints to the things that span
+  the tangent space.
+* "Pencils don't move sideways." Gordon Kindlmann, November 29, 2018
+* "Experimenter's constraints"
+* Should noise affect the augmenter? We have no parameterization of it, but 
+* Distinction between what the DNN learns to cope with and what the augmenter
+  helps it learn.
+
+Terminology:
+* Bias: a tendency in the dataset (sample) that is not reflective of the world
+  (Omega), but also bias of an esimator? Bad word. 
+* IID: independently and identically distributed random variable
+* Noise: degrees of freedom you don't know how to parameterize?
