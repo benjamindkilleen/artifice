@@ -313,8 +313,81 @@ For a more awesome approach to `mp4` writing, see
 * Distinction between what the DNN learns to cope with and what the augmenter
   helps it learn.
 
-Terminology:
+### Terminology:
 * Bias: a tendency in the dataset (sample) that is not reflective of the world
   (Omega), but also bias of an esimator? Bad word. 
 * IID: independently and identically distributed random variable
 * Noise: degrees of freedom you don't know how to parameterize?
+
+## December 7, 2018
+### Further Discussions of Terminology
+* **example**: x, an MxN image, or 1x(MxN) vector.
+* **example space**: vector space of which examples are elements. For MxN
+  images, this is R^(MxN)
+* **dataset**: X, consisting of many examples. We impose no ordering on
+  examples.
+* **distribution**: (f : R^(MxN) -> R) probability (density) of an example
+  x. There are several notions of distributions:
+  * **natural distribution**: the real-world distribution from which original
+    data obtained.
+  * (unnamed) notion of *uniform distribution*: an imaginary distribution (which
+    an augmented dataset simulates being drawn from)
+    * *uniform distribution*
+    * *something-agnostic distribution*?
+    * *naive distribution*
+    * *chaotic distribution*
+    * *nature-agnostic distribution*
+    * *confined distribution*
+    * **agnostic distribution**
+  * The **agnostic distribution** is uniform within the *absolute boundaries*
+    and "agnostic" to *governing trends*.
+* (unnamed) notion of constraints imposed by the experimenter: these *well-parameterized*
+  outer bounds of the data space are *known* by the experimenter. They consist
+  of *boundaries* and do not govern the density function of the data within the
+  space. (i.e. the data need not fill out its space)
+  * *boundary constraints*: the known parameters constraining the "natural
+    distribution."
+  * *distribution boundaries*
+  * *imposed boundaries*
+  * *artificial boundaries*
+  * *absolute boundaries*
+  * *constraints*
+  * *experimental constraints*
+  * *absolute constraints*
+  * *data constraints*
+  * *data space constraints*
+  * *boundary parameters*
+  * **label-space boundaries**
+* (unnamed) notion of the space these constraints/boundaries define:
+  * **data region**
+  * *bounded region*
+  * *data neighborhood* (nope, too much a notion of locality)
+  * *data space*
+* (unnamed) notion of constraints resulting from object of study: these are not
+  known with certainty and affect the *natural distribution*.
+  * *object principle*
+  * *target principle*
+  * *governing principle*
+  * *target structure*
+  * *hypothesis structure*
+  * *hypothesis factor*
+  * *principle distribution*
+  * *object of study*
+  * *non-uniform term*
+  * *heterogeneous term*
+  * *structured term*
+  * *structured patterns*
+  * *object patterns*
+  * *natural patterns*
+  * *governing patterns*
+  * *underlying patterns*
+  * *enigmatic patterns*
+  * *non-uniform trends*
+  * *heterogeneous trends*
+  * **governing trends**
+  
+## December 9, 2018
+For the coupled springs experiment, maybe apply different walls for each
+object. These walls constitute known *boundaries*, within which the experiment
+produces a sample from the natural distribution, but you want to sample
+uniformly within chi.

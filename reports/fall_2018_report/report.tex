@@ -1,10 +1,15 @@
 \documentclass[10pt, journal]{IEEEtran}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
 \usepackage{hyperref}
 \usepackage{graphicx}
 \graphicspath{ {images/} }
 \usepackage[caption=false,font=footnotesize]{subfig}
 
-\title{Artifice: Generalized Object Detection in Scientific Images}
+\DeclareMathOperator{\vol}{Vol}
+
+\title{Object Detection in Scientific Images (DRAFT)}
 
 \author{Benjamin Killeen and Gordon Kindlmann %
   \thanks{Benjamin Killeen is an undergraduate with the Department of Computer
@@ -21,15 +26,11 @@
   Together with large training sets, Deep Neural Networks (DNNs) have enabled a
   wide range of advancements in Computer Vision tasks, especially with regard to
   object detection in real-world images. Object detection for scientific images,
-  on the other hand, presents challenges unlike more traditional vision
-  tasks. First, experiments exhibit a scarcity of labelled data, a problem which
-  we address through active learning and data augmentation. Second, scientific
-  experiments involve inherent constraints, such as a natural law or governing
-  principle, which the experimenter intends to observe. Although this quality
-  seems advantageous for data augmentation, it threatens to undermine the
-  scientific rigor of DNNs for laboratory tasks. In this progress report, we
+  on the other hand, presents challenges unlike typical vision tasks. Scientific
+  tasks exhibit \emph{governing principles} (GPs) in their datasets, which
+  result from the phenomena under investigation. In this progress report, we
   describe our ongoing effort toward training DNNs which are agnostic to
-  inherent constraints yet perform reliably on scarce data.\footnote{Code
+  governing principles yet perform reliably on scarce data.\footnote{Code
     available at \href{https://github.com/bendkill/artifice}
     {github.com/bendkill/artifice}}
 \end{abstract}
@@ -37,90 +38,124 @@
 \section{Introduction}
 \label{sec:introduction}
 
+% TODO: incorporate principle of governing principles.
+
 Imaging systems are a vital component of many scientific experiments, used as
-the primary measuring device of properties such as object location and
+the primary measuring device of properties like object location or
 orientation. In cases where no alternative measuring device exists, accurate
 labeling is of the utmost importance. However, such image analysis can prove
 labor-intensive. Traditional methods involve \emph{ad hoc} solutions suited for
-one experimental setup, even though more general object detection tasks have
-been well-studied in Computer Vision. \cite{bernardis_finding_2010} uses a
-graph-cut approach for dot localization, noting various scientific applications,
-and \cite{ronneberger_u-net:_2015} applies a DNN for semantic segmentation of
-neuronal structures in electron microscope stacks. In this report, we introduce
-\emph{Artifice}, an ongoing effort to generalize across scientific tasks using
-DNNs.
+one experimental setup even though more general object detection tasks have been
+well-studied in Computer Vision. In this report, we introduce an ongoing effort
+to generalize principles for image-data analysis across scientific tasks using
+DNNs, emphasizing the importance of careful data augmentation.
 
-Deep Neural Networks (alternatively, deep convolutional neural networks) have
-shown remarkable success on real-world tasks \cite{krizhevsky_imagenet_2012}, as
-defined by datasets like ImageNet \cite{deng_imagenet:_nodate} and COCO
-\cite{lin_microsoft_2014}. These and other data underlie supervised learning
-approaches for increasingly complex systems, such as self-driving
-vehicles. Fig. \ref{fig:traditional-graph} shows a high-level outline of
-supervised learning for computer vision. Scientific experiments, on the other
-hand, have no dataset except what they generate; each experiment constitutes its
-own unique vision task. Artifice addresses this scarcity of labeled data through
-active learning \cite{settles_active_2012, kao_localization-aware_2018,
-  jain_active_2016} and data augmentation \cite{krizhevsky_imagenet_2012,
-  ronneberger_u-net:_2015}. It also confronts a problem unique to scientific
-tasks, which we refer to as inherent constraints.
-
-Unlike real-world tasks, scientific tasks aims to capture some natural law or
-governing principle in the data. Images of a sphere in free-fall, for example,
-capture the acceleration of gravity; a video of ants hunting for food obeys
-simple rules governing swarm behavior. These principles constitute
-\emph{inherent constraints}: patterns in the dataset reflecting the subject of
-scientific inquiry itself. They differ from \emph{imposed constraints}, which
-the experimenter controls. The experiment shown in fig. \ref{fig:gyros}, for
-example, constrains each moving dots to a circular region.
-
-We distinguish between imposed and inherent constraints for the purpose of
-training. Because imposed constraints reduce the vision task, Artifice
-incorporates them into its data augmentation step, as in
-Fig. \ref{fig:artifice-graph}. Crucially, imposed constraints are
-well-parameterized and guaranteed; the experimenter builds them into the vision
-task. Inherent constraints offer a similar advantage, since one could simulate
-their effects to further augment training data, but \emph{doing so could violate
-  the scientific method}. The experimenter cannot anticipate inherent
-constraints in order to build a better measuring stick, so to speak, because
-scientific experiments require unbiased measurement. Even the initial dataset,
-before any augmentation, contains inherent constraints that could influence
-training. As much as possible, Artifice aims to be agnostic to these constraints.
+Deep Neural Networks\footnote{Alternatively, deep convolutional neural networks}
+have shown remarkable success on real-world tasks
+\cite{krizhevsky_imagenet_2012}, such as challenges for datasets like ImageNet
+\cite{deng_imagenet:_nodate} and COCO \cite{lin_microsoft_2014}. These and other
+data underlie supervised learning approaches, as in
+Fig. \ref{fig:traditional-graph}, for increasingly complex tasks. Scientific
+experiments, on the other hand, have no dataset except what they generate; each
+experiment constitutes its own unique task, sometimes entirely disjoint from
+established datasets. The man-hour investment required for labeling scientific
+images motivates approaches such as active learning \cite{settles_active_2012,
+  kao_localization-aware_2018, jain_active_2016} and data augmentation,
+\cite{krizhevsky_imagenet_2012, ronneberger_u-net:_2015}. The focus of this
+report, however, is the application of boundary-aware augmentation, which aims
+to reduce overfitting to governing principles (section
+\ref{sec:governing-principles}).
 
 \begin{figure*}
   \centering
   \subfloat[]{
-    \includegraphics[width=0.4\linewidth]{traditional_graph}
+    \includegraphics[width=0.46\linewidth]{traditional_graph}
     \label{fig:traditional-graph}
   }
-  \hspace{0.1\linewidth}
+  \hfill
   \subfloat[]{
-    \includegraphics[width=0.4\linewidth]{artifice_graph}
+    \includegraphics[width=0.50\linewidth]{artifice_graph}
     \label{fig:artifice-graph}
   }
-
-  \caption{For a traditional vision task \textbf{(a)}, a camera converts
-    real-world \textit{scenes} into an unlabeled dataset $X$. These scenes have
-    actual attributes $\tilde{Y}$ which a \textit{labeller} records as the
-    ``ground truth'' or ``measurement'' $Y$. A classifier or regression model
-    $f$, trained on $(X,Y)$, produces predictions $\hat{Y}$.
-    Artifice's dependency graph \textbf{(b)}, specialized for scientific vision
-    tasks, distinguishes between two types of constraints. \textit{Imposed
-      constraints}, such as physical boundaries, are known to the experimenter,
-    but \textit{inherent constraints}, such as a physical law, are the subject
-    of inquiry. \textit{Adverse noise}, including lighting changes or object
-    deformation, also influences the experiment. In \textbf{(b)}, the augmented
-    dataset $X$ is continually updated by the Training Cycle. A
-    \textit{selector} chooses the query set $Q \subseteq X'$ based on existing
-    predictions $\hat{Y}$. A \textit{labeler} produces imperfect ground truth
-    $Y$, which enables the \textit{augmenter} to intelligently update the
-    dataset $X'$, incorporating imposed constraints. Here, dashed lines
-    represent single instance connections, such as instantiating $X' \gets X$,
-    rather than continual dependency throughout the Training Cycle.}
+  \caption{During supervised learning for real-world vision tasks \textbf{(a)},
+    a camera samples a large dataset $X$ from the ``visual world'' distribution
+    $f$. For scientific tasks \textbf{(b)}, an experiment samples a small
+    initial dataset $X_0$ from the natural distribution $f_n$, which includes
+    the effects of any governing principles. Our proposed training method
+    incorporates a boundary-aware augmenter $A$, which uses the training set
+    $(X,Y)$ to simulate drawing examples from the agnostic distribution
+    $f_a$. Dashed lines indicate theoretical or simulated objects.}
   \label{fig:dependency-graphs}
 \end{figure*}
 
+\subsection{Governing Principles}
+\label{sec:governing-principles}
+
+Scientific experiments use images as a measuring technique, recovering
+properties like object position or orientation for further analysis. These
+quantities encode the underlying structure of the experiment, if any exists,
+which is under investigation. Images of a sphere in free-fall, for example,
+capture the laws of gravity, which any measurement \emph{aiming to study
+  gravity} ought to ignore for the sake of scientific rigor. Experiments that
+anticipate such \emph{governing principles} (GPs) in the data commit a logical
+fallacy by assuming the initial point. This observation is particularly
+important for training DNNs in scientific tasks. Like any statistical model,
+DNNS are prone to overfitting when underlying correlations are present. In order
+to address this issue, we contrast scientific tasks with traditional tasks in
+computer vision.
+
+Fig. \ref{fig:traditional-graph} outlines the training process for traditional
+vision tasks. Typically, such approaches leverage a large, fully labeled
+training set $(X,Y)$, \textit{e.g.} ImageNet, where $X$ is the set of
+$M\times N$ images and $Y\subseteq \mathbb{R}^n$ is the label set. In any task,
+the labeling comprises a lower-dimensional representation of the data space,
+encoding valuable information from each example. $n$ denotes the dimensionality
+of the labeling, \textit{e.g.} the number of classes. Supervised learning aims
+to train a model (such as a DNN)
+$h : \mathbb{R}^{M\times N} \rightarrow \mathbb{R}^n$ that can interpret the
+visual world. Crucial, the visual world is not a uniformly distributed set of
+images; we denote its probability distribution as
+$f : \mathbb{R}^{M\times N} \rightarrow \mathbb{R}$, from which every dataset
+draws examples as independently and identically distributed as possible.
+
+For real-world tasks, sampling $f$ in this manner is desirable, but in
+scientific tasks, governing principles make sampling from the original
+distribution undesirable. In fact, for the purposes of training, we wish to
+sample from a distribution as uniform as possible in the label space
+$\mathbb{R}^n$. That is, we wish for the dataset $X$ to correspond to labels $Y$
+which contain almost no structure, within reasonable boundaries. Fortunately,
+most scientific experiments have well-known boundaries incorporated into their
+design. A sphere in free-fall, for instance, might be bound to one-dimension by
+a track, even though its image-space position is described by two
+coordinates. Fig. \ref{fig:gyros} shows an experiment where dot markers are
+confined to a small circular region. These \emph{label-space boundaries} are a
+low-dimensional representation of a data-space region
+$\chi \subseteq \mathbb{R}^{M\times N}$ such that the real distribution $f$
+obeys
+\[ (\forall x \not\in \chi)(f_n(x) = 0). \] Even with perfect knowledge of these
+boundaries, however, it is difficult or impossible to recover $\chi$ from the
+lower-dimensional label-space boundaries.
+
+Although $\chi$ is largely a theoretical construct, it serves as a useful
+concept for training GP-agnostic models. Consider the uniform distribution
+across it, which we will refer to as the \emph{agnostic distribution}:
+\[ f_a(x) =
+  \begin{cases}
+    \frac{1}{\vol(\chi)} & x \in \chi \\
+    0 & x \not\in \chi
+  \end{cases}
+\] From the initial dataset $X_0$, then, we wish to generate and label an
+augmented dataset $X$ that approximates a GP-agnostic dataset $X_a \sim f_a$. In
+this report, we introduce a \emph{Boundary-Aware Augmenter} (BAA) that utilizes
+label-space boundaries and instance segmentations to approach $X_a$.
+
 \section{Related Work}
 \label{sec:related-work}
+
+% \cite{bernardis_finding_2010} uses a graph-cut approach for dot localization,
+% noting various scientific applications, and \cite{ronneberger_u-net:_2015}
+% applies a DNN for semantic segmentation of neuronal structures in electron
+% microscope stacks.
 
 The problems of data scarcity and biases are well-considered in computer
 vision. \cite{torralba_unbiased_2011} explores bias in popular datasets for
@@ -129,35 +164,34 @@ computer vision by training DNNs on one dataset but testing them on another
 best on the dataset for which they were trained, even though datasets like
 ImageNet aim to capture the unbiased visual world. Creating unbiased datasets
 for real-world vision tasks remains an open problem, one which may demand a
-reckoning for the community's focus on improving dataset performance scores.
+reckoning for the community's focus on dataset performance scores.
 
 \cite{ronneberger_u-net:_2015} describes a novel segmentation architecture using
 up-convolutions which, paired with their data augmentation scheme, performs well
-on biomedical images taken from electron stacks. Like Artifice,
+on biomedical images taken from electron stacks. Like our approach,
 \cite{ronneberger_u-net:_2015} confronts data scarcity but also focuses on
 applications in biomedical imaging, where semantic segmentation is often
-sufficient. Artifice aims to address scientific tasks more generally, using
-semantic segmentation as one component of a general detection system, capable of
+sufficient. We aim to address scientific tasks more generally, using semantic
+segmentation as one component of a general detection system, capable of
 recovering location, orientation, or shape for multiple objects. Capturing these
 quantities with minimal human effort would accelerate a wide range of scientific
 experiments.
 
-
 \begin{figure}
   \centering
   \subfloat[Gyroscopic Model]{
-    \includegraphics[width=0.4\linewidth]{gyros}
+    \includegraphics[height=0.37\linewidth]{gyros}
     \label{fig:gyros}
   }
-  \hspace{0.1\linewidth}
+  \hfill
   \subfloat[Coupled Spheres]{
-    \includegraphics[width=0.4\linewidth]{coupled_spheres}
+    \includegraphics[height=0.37\linewidth]{coupled_spheres}
     \label{fig:coupled-spheres}
   }
 
   \caption[example experiments]{Example images from scientific experiments:
     \textbf{(a)} gyroscopic model for topological metamaterials
-    \cite{nash_topological_2015}. Each dot is constrained to the circle
+    \cite{nash_topological_2015}. Each dot is bound inside the circle
     surrounding it. \textbf{(b)} still frame from a simulated experiment of two
     spheres coupled by an invisible spring. Full video \href
     {https://github.com/bendkill/artifice/blob/master/docs/coupled_spheres.gif}
@@ -165,19 +199,62 @@ experiments.
   \label{fig:example-experiments}
 \end{figure}
 
+\section{Method}
+\label{sec:method}
+
+TODO: UPDATE METHOD
+
+Fig. \ref{fig:artifice-graph} shows our training scheme at a high-level. The
+details of this scheme are an area of active inquiry, with open questions
+pertaining to the \emph{selector}, for active learning; the \emph{augmenter},
+which should incorporate the experiment's imposed constraints; and the model
+$f$, which employs one or more DNNs.
+
+Because of the variety of scientific tasks, $f$ must remain flexible with regard
+to its output. Toward this end, we envision a two-step procedure which (1)
+obtains an instance segmentation \cite{ronneberger_u-net:_2015, bai_deep_2016}
+for objects of interest and (2) learns the target parameters (location,
+orientation, etc.) for each object. Whether these steps occur in an end-to-end
+fashion or are divided between several training steps is an open question. We
+do, however, consider (1) to be a vital step for the sake of maintaining
+generality. Even in scientific tasks where segmentation is unneeded, such as the
+Coupled Sphere experiment in \ref{sec:method}, obtaining pixel-level masks of
+each object enables more advanced data augmentation methods.
+
+Because we wish to minimize the man-hours required for training as much as
+possible, we use an active learning scheme to select a query set
+$Q \subseteq X'$ which will most inform training. The application of active
+learning to semantic segmentation has received relatively little attention, with
+the exception of \cite{vezhnevets_active_2012}, and the added complication of an
+imperfect labeler remains an open question in the field
+\cite{settles_active_2012}. We aim to address both issues with its
+\emph{selector}.
+
+Finally, the \emph{augmenter} will incorporate both the semantic segmentations
+obtained by $f$ and the imposed constraints specified by the experimenter to
+improve training as much as possible. We hope to test many augmentation methods
+while keeping in mind that the image space of a scientific task is usually much
+more constrained than that of a real-world
+task. \cite{krizhevsky_imagenet_2012}, for instance, uses sub-image extraction,
+flipping, and PCA analysis of RGB channels to augment ImageNet. These methods
+are not necessarily applicable to scientific tasks, where imposed constraints
+might invalidate a flipped image, for instance.
+
 \section{Simulated Experiments}
 \label{sec:simulated-experiments}
 
-In order to show Artifice's effectiveness, we develop several virtual
+TODO: UPDATE SIMULATED EXPERIMENTS
+
+In order to show our method's effectiveness, we develop several virtual
 experiments. These simulations offer several advantages over images from real
 experiments, such as in Fig. \ref{fig:gyros}. First, we have perfect knowledge
 of the experiment's ``Truth'' $\tilde{Y}$, as opposed to imperfect measurements,
 or ``ground truth,'' $Y$. In well established datasets, $\tilde{Y}$ and $Y$ are
-nearly identical, but Artifice must rely on one or a few human labelers for what
+nearly identical, but we must rely on one or a few human labelers for what
 should be unambiguous quantities. For testing, we calculate $\tilde{Y}$ from the
 known parameters of the simulation, and we emulate a human labeler by
 introducing small perturbations to $\tilde{Y}$, producing $Y$. Part of
-Artifice's goal is to train a DNN with predictions $\hat{Y}$ that more closely
+our goal is to train a DNN with predictions $\hat{Y}$ that more closely
 approximate $\tilde{Y}$ than the labels $Y$. Simulated experiments allow us to
 test this performance.
 
@@ -192,57 +269,15 @@ and relaxed length. Adverse noise, which in this case includes any shadows,
 lighting effects, and possible occlusion, also presents a challenge for
 detection.
 
-To demonstrate Artifice's resilience to inherent constraints, we intend to train
-a DNN on one experiment and evaluate its performance on experiments with
+To demonstrate our method's resilience to inherent constraints, we intend to
+train a DNN on one experiment and evaluate its performance on experiments with
 different simulated springs. This simple example illustrates the general
 resilience that we wish to develop.
-
-\section{Method}
-\label{sec:method}
-
-Fig. \ref{fig:artifice-graph} shows Artifice's training scheme at a
-high-level. The details of this scheme are an area of active inquiry, with open
-questions pertaining to the \emph{selector}, for active learning; the
-\emph{augmenter}, which should incorporate the experiment's imposed constraints;
-and the model $f$, which employs one or more DNNs.
-
-Because of the variety of scientific tasks, $f$ must remain flexible with regard
-to its output. Toward this end, we envision a two-step procedure which (1)
-obtains an instance segmentation \cite{ronneberger_u-net:_2015, bai_deep_2016}
-for objects of interest and (2) learns the target parameters (location,
-orientation, etc.) for each object. Whether these steps occur in an end-to-end
-fashion or are divided between several training steps is an open question. We
-do, however, consider (1) to be a vital step for the sake of maintaining
-generality. Even in scientific tasks where segmentation is unneeded, such as the
-Coupled Sphere experiment in \ref{sec:method}, obtaining pixel-level masks of
-each object enables more advanced data augmentation methods.
-
-Because we wish to minimize the man-hours required for training as much as
-possible, Artifice uses an active learning scheme to select a query set
-$Q \subseteq X'$ which will most inform training. The application of active
-learning to semantic segmentation has received relatively little attention, with
-the exception of \cite{vezhnevets_active_2012}, and the added complication of an
-imperfect labeler remains an open question in the field
-\cite{settles_active_2012}. Artifice aims to address both issues with its
-\emph{selector}.
-
-Finally, Artifice's \emph{augmenter} will incorporate both the semantic
-segmentations obtained by $f$ and the imposed constraints specified by the
-experimenter to improve training as much as possible. We hope to test many
-augmentation methods while keeping in mind that the image space of a scientific
-task is usually much more constrained than that of a real-world
-task. \cite{krizhevsky_imagenet_2012}, for instance, uses sub-image extraction,
-flipping, and PCA analysis of RGB channels to augment ImageNet. These methods are
-not necessarily applicable to scientific tasks, where imposed constraints might
-invalidate a flipped image, for instance.
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have outlined our ongoing efforts to develop Artifice, an object detection
-scheme intended for scientific tasks. Much work remains to be done with regard
-to Artifice's implementation, but we hope that by outlining our goals early, we
-have elucidated some key problems unique to scientific tasks.
+TODO: CONCLUSION
 
 \section*{Acknowledgment}
 \label{sec:acknowledgment}
