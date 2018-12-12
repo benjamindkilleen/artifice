@@ -2,7 +2,7 @@
 """
 
 import numpy as np
-
+from PIL import Image
 
 def grayscale(image):
   """Convert an n-channel image to grayscale, with ndim = 3, using the luminosity
@@ -21,4 +21,13 @@ def grayscale(image):
   else:
     return image.mean(axis=2).reshape(*out_shape).astype(np.uint8)
   
-    
+
+def open_as_array(fname):
+  im = Image.open(fname)
+  if im.mode == 'L':
+    return np.array(im).reshape(im.size[1], im.size[0])
+  elif im.mode == 'RGB':
+    return np.array(im).reshpae(im.size[1], im.size[0], 3)
+  else:
+    raise NotImplementedError
+  

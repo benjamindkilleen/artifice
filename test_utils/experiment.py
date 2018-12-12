@@ -480,28 +480,30 @@ class Experiment:
 
       if verbose:
         print("Writing video to {}...".format(mp4_image_fname))
-      image_cmd = ['ffmpeg',
-                   '-y',              # overwrite existing files
-                   '-f', 'rawvideo',
-                   '-vcodec', 'rawvideo',
-                   '-s', '{}x{}'.format(*self.image_shape), # frame size
-                   '-pix_fmt', self.pix_fmts[self.mode],
-                   '-r', str(self.fps), # frames per second
-                   '-i', '-',           # input comes from a pipe
-                   '-an',               # no audio
-                   '-vcodec', 'mpeg4',
-                   mp4_image_fname]
-      annotation_cmd = ['ffmpeg',
-                        '-y',              # overwrite existing files
-                        '-f', 'rawvideo',
-                        '-vcodec', 'rawvideo',
-                        '-s', '{}x{}'.format(*self.image_shape), # frame size
-                        '-pix_fmt', 'rgba',
-                        '-r', str(self.fps), # frames per second
-                        '-i', '-',           # input comes from a pipe
-                        '-an',               # no audio
-                        '-vcodec', 'mpeg4',
-                        mp4_annotation_fname]      
+      image_cmd = [
+        'ffmpeg',
+        '-y',              # overwrite existing files
+        '-f', 'rawvideo',
+        '-vcodec', 'rawvideo',
+        '-s', '{}x{}'.format(*self.image_shape), # frame size
+        '-pix_fmt', self.pix_fmts[self.mode],
+        '-r', str(self.fps), # frames per second
+        '-i', '-',           # input comes from a pipe
+        '-an',               # no audio
+        '-vcodec', 'mpeg4',
+        mp4_image_fname]
+      annotation_cmd = [
+        'ffmpeg',
+        '-y',              # overwrite existing files
+        '-f', 'rawvideo',
+        '-vcodec', 'rawvideo',
+        '-s', '{}x{}'.format(*self.image_shape), # frame size
+        '-pix_fmt', 'rgba',
+        '-r', str(self.fps), # frames per second
+        '-i', '-',           # input comes from a pipe
+        '-an',               # no audio
+        '-vcodec', 'mpeg4',
+        mp4_annotation_fname]      
       mp4_annotation_cmap = plt.get_cmap('tab20c', lut=self.num_classes)
 
       mp4_image_log = open(self.fname + '_log.txt', 'w+')
@@ -519,7 +521,7 @@ class Experiment:
       image, annotation = scene
       
       if 'tfrecord' in self.output_formats:
-        e = dataset.example_string_from_scene(scene)
+        e = dataset.example_string_from_scene(*scene)
         tfrecord_writer.write(e)
         
       if 'mp4' in self.output_formats:
