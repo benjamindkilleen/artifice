@@ -31,11 +31,11 @@ import os
 import numpy as np
 import tensorflow as tf
 from glob import glob
-from artifice.utils import img
-import matplotlib.pyplot as plt
+from skimage.transform import resize
+from artifice.utils import img, dataset
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 # Class names to class mappings (capital letters are cats)
 breeds = {
@@ -83,15 +83,17 @@ def class_from_filename(file_name):
   """Gets the integer class label from a file name.
   """
   match = re.match(r'([A-Za-z_]+)(_[0-9]+\.(png)|(jpg))', file_name, re.I)
-  return classes[match.groups()[0]]
+  return breeds[match.groups()[0]]
 
 
 def create_dataset(fname,
                    images_path='data/pets/images',
-                   annotations_path='data/pets/annotations/trimaps'):
+                   annotations_path='data/pets/annotations/trimaps',
+                   shape=(512,512)):
   
   """
   :fname: tfrecord file to write to
+  :shape: resize images to shape
   """
 
   writer = tf.python_io.TFRecordWriter(fname)
@@ -101,25 +103,31 @@ def create_dataset(fname,
   N = len(image_names)
   
   for i in range(N):
-    logging.info("Rendering scene {} of {}.".format(i, N))
+    logging.info(f"Writing example {i} of {N}.")
 
+    logging.debug(f"opening '{image_names[i]}'")
     image = img.open_as_array(image_names[i])
-    annotation = img.open_as_array(annotation_names[i])
+    mask = img.open_as_array(annotation_names[i])
+    annotation = np.zeros_like(mask, dtype=np.uint8)
     label = class_from_filename(os.path.basename(annotation_names[i]))
-    annotation[annotation == 1] = label # animal
-    annotation[annotation == 2] = 0     # background
-    annotation[annotation == 3] = 0     # boundary -> background
+    annotation[mask == 1] = label # animal
+    annotation[mask == 2] = 0     # background
+    annotation[mask == 3] = 0     # boundary -> background
+
+    if shape is not None:
+      logging.debug(f"resizing images to shape {shape}")
+      image = (255 * resize(image, (shape[0], shape[1], 3))).astype(np.uint8)
+      annotation = (255*resize(annotation, shape)).astype(np.uint8)
+      
+      # Clean up bad classes from interpolation.
+      bad_label = 1 if label == 2 else 2
+      annotation[annotation == bad_label] = label
+      
+    logging.debug(f"image shape {image.shape}, annotation shape {annotation.shape}")
 
     # debug:
-    plt.figure()
-    plt.imshow(image)
-    plt.figure()
-    plt.imshow(annotation)
-    plt.show()
-
     e = dataset.example_string_from_scene(image, annotation)
     writer.write(e)
-    break
   
   writer.close()
   

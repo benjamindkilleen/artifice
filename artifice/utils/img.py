@@ -25,9 +25,19 @@ def grayscale(image):
 def open_as_array(fname):
   im = Image.open(fname)
   if im.mode == 'L':
-    return np.array(im).reshape(im.size[1], im.size[0])
+    image = np.array(im).reshape(im.size[1], im.size[0])
   elif im.mode == 'RGB':
-    return np.array(im).reshpae(im.size[1], im.size[0], 3)
+    image = np.array(im).reshape(im.size[1], im.size[0], 3)
+  elif im.mode == 'P':
+    image = np.array(im.convert('RGB')).reshape(im.size[1], im.size[0], 3)
+  elif im.mode == 'RGBA':
+    image = np.array(im.convert('RGB')).reshape(im.size[1], im.size[0], 3)
   else:
-    raise NotImplementedError
-  
+    raise NotImplementedError("Cannot create image mode '{}'".format(im.mode))
+  return image
+
+
+def save(fname, image):
+  """Save the array image to png in fname."""
+  im = Image.fromarray(image)
+  im.save(fname)

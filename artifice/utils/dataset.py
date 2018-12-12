@@ -8,7 +8,7 @@ http://warmspringwinds.github.io/tensorflow/tf-slim/2016/12/21/tfrecords-guide/
 
 import numpy as np
 import tensorflow as tf
-# import matplotlib.pyplot as plt
+from artifice.utils import img
 import os
 
 def _bytes_feature(value):
@@ -29,8 +29,6 @@ def example_string_from_scene(image, annotation):
       elements: the original images, as strings, and their shapes.
 
   """
-  assert(type(scene) == tuple and len(scene) == 2)
-  
   image = np.atleast_3d(image)
   annotation = np.atleast_3d(annotation)
 
@@ -124,12 +122,11 @@ def save_first_scene(fname):
   gen = read_tfrecord(fname)
   image, annotation = next(gen)
 
-  plt.imshow(image[:,:,0], cmap='gray')
-  plt.savefig(os.path.join(root, "example_image.png"))
+  np.save(os.path.join(root, "example_image.npy"), image)
+  np.save(os.path.join(root, "example_annotation.npy"), annotation)
 
-  plt.imshow(annotation[:,:,0], cmap='tab20')
-  plt.savefig(os.path.join(root, "example_annotation.png"))
-  
+  img.save("example_image.png", image)
+
 
 class Loader:
   """Loads a dataset and, using the __call__() method, yields through batches over
