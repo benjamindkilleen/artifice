@@ -367,7 +367,7 @@ For a more awesome approach to `mp4` writing, see
   known with certainty and affect the *natural distribution*.
   * *object principle*
   * *target principle*
-  * *governing principle*
+  * **governing principle**
   * *target structure*
   * *hypothesis structure*
   * *hypothesis factor*
@@ -385,7 +385,8 @@ For a more awesome approach to `mp4` writing, see
   * *non-uniform trends*
   * *heterogeneous trends*
   * **governing trends**
-  
+  * *natural structure*
+
 ## December 9, 2018
 For the coupled springs experiment, maybe apply different walls for each
 object. These walls constitute known *boundaries*, within which the experiment

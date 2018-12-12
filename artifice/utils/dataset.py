@@ -21,11 +21,12 @@ def _int64_feature(value):
 
 
 def example_string_from_scene(scene):
-  """Creates a tf example from the scene, which contains an image and a annotation.
+  """Creates a tf example from the scene, which contains an image and an
+  annotation.
 
   args:
     scene: a tuple containing two elements, image and annotation, as
-      numpy arrays. These should have ndim==3.
+      numpy arrays.
   
   output: 
     example_string: a tf.train.Example, serialized to a string with four
@@ -34,11 +35,10 @@ def example_string_from_scene(scene):
   """
   assert(type(scene) == tuple and len(scene) == 2)
   
-  image = scene[0]
-  annotation = scene[1]
+  image = np.atleast_3d(scene[0])
+  annotation = np.atleast_3d(scene[1])
 
   # TODO: rather than assert this, change image and annotation if neeeded
-  assert(image.ndim == 3 and annotation.ndim == 3)
   assert(image.dtype == np.uint8 and annotation.dtype == np.uint8)
   image_string = image.tostring()
   annotation_string = annotation.tostring()

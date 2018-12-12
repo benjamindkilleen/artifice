@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.5.24)  10 DEC 2018 00:42
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.5.24)  10 DEC 2018 13:56
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -352,24 +352,24 @@ Package caption Info: Unknown document class (or package),
 (./report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 22.
-LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
 
 -- Lines per column: 58 (exact).
 \AtBeginShipoutBox=\box30
-Package hyperref Info: Link coloring OFF on input line 22.
+Package hyperref Info: Link coloring OFF on input line 23.
 (/usr/local/texlive/2015/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
 
@@ -378,9 +378,9 @@ Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
 \c@section@level=\count124
 )
-LaTeX Info: Redefining \ref on input line 22.
-LaTeX Info: Redefining \pageref on input line 22.
-LaTeX Info: Redefining \nameref on input line 22.
+LaTeX Info: Redefining \ref on input line 23.
+LaTeX Info: Redefining \pageref on input line 23.
+LaTeX Info: Redefining \nameref on input line 23.
 
 (./report.out) (./report.out)
 \@outlinefile=\write3
@@ -418,24 +418,56 @@ e
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: subfig package v1.3 is loaded.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Try loading font information for U+msa on input line 33.
+LaTeX Font Info:    Try loading font information for U+msa on input line 34.
 
 (/usr/local/texlive/2015/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 33.
+LaTeX Font Info:    Try loading font information for U+msb on input line 34.
 
 (/usr/local/texlive/2015/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-<images/traditional_graph.png, id=47, 523.9575pt x 222.8325pt>
+
+LaTeX Warning: Citation `krizhevsky_imagenet_2012' on page 1 undefined on input
+ line 55.
+
+
+LaTeX Warning: Citation `deng_imagenet:_nodate' on page 1 undefined on input li
+ne 56.
+
+
+LaTeX Warning: Citation `lin_microsoft_2014' on page 1 undefined on input line 
+56.
+
+
+LaTeX Warning: Citation `settles_active_2012' on page 1 undefined on input line
+ 63.
+
+
+LaTeX Warning: Citation `kao_localization-aware_2018' on page 1 undefined on in
+put line 63.
+
+
+LaTeX Warning: Citation `jain_active_2016' on page 1 undefined on input line 63
+.
+
+
+LaTeX Warning: Citation `krizhevsky_imagenet_2012' on page 1 undefined on input
+ line 64.
+
+
+LaTeX Warning: Citation `ronneberger_u-net:_2015' on page 1 undefined on input 
+line 64.
+
+<images/traditional_graph.png, id=35, 523.9575pt x 222.8325pt>
 File: images/traditional_graph.png Graphic file (type png)
 
 <use images/traditional_graph.png>
 Package pdftex.def Info: images/traditional_graph.png used on input line 74.
 (pdftex.def)             Requested size: 237.36346pt x 100.94691pt.
 
-<images/artifice_graph.png, id=49, 639.38875pt x 423.5825pt>
+<images/artifice_graph.png, id=37, 639.38875pt x 423.5825pt>
 File: images/artifice_graph.png Graphic file (type png)
 
 <use images/artifice_graph.png>
@@ -445,43 +477,92 @@ Package pdftex.def Info: images/artifice_graph.png used on input line 79.
 
 
 ]
-Underfull \hbox (badness 2173) in paragraph at lines 160--168
+
+LaTeX Warning: Citation `torralba_unbiased_2011' on page 2 undefined on input l
+ine 162.
+
+
+Underfull \hbox (badness 2173) in paragraph at lines 161--169
 []\OT1/ptm/m/n/10 The prob-lems of data scarcity and bi-ases are well-
  []
 
-<images/gyros.png, id=83, 803.0pt x 602.25pt>
+
+LaTeX Warning: Citation `ronneberger_u-net:_2015' on page 2 undefined on input 
+line 170.
+
+
+LaTeX Warning: Citation `ronneberger_u-net:_2015' on page 2 undefined on input 
+line 173.
+
+<images/gyros.png, id=61, 803.0pt x 602.25pt>
 File: images/gyros.png Graphic file (type png)
  <use images/gyros.png>
-Package pdftex.def Info: images/gyros.png used on input line 185.
+Package pdftex.def Info: images/gyros.png used on input line 186.
 (pdftex.def)             Requested size: 124.31668pt x 93.23877pt.
 
-<images/coupled_spheres.png, id=84, 513.92pt x 513.92pt>
+<images/coupled_spheres.png, id=62, 513.92pt x 513.92pt>
 File: images/coupled_spheres.png Graphic file (type png)
 
 <use images/coupled_spheres.png>
-Package pdftex.def Info: images/coupled_spheres.png used on input line 190.
+Package pdftex.def Info: images/coupled_spheres.png used on input line 191.
 (pdftex.def)             Requested size: 93.23872pt x 93.23877pt.
+
+
+LaTeX Warning: Citation `nash_topological_2015' on page 2 undefined on input li
+ne 199.
+
+
+LaTeX Warning: Citation `nash_topological_2015' on page 2 undefined on input li
+ne 199.
+
+
+LaTeX Warning: Citation `settles_active_2012' on page 2 undefined on input line
+ 209.
+
+
+LaTeX Warning: Citation `vezhnevets_active_2012' on page 2 undefined on input l
+ine 209.
+
+
+LaTeX Warning: Citation `krizhevsky_imagenet_2012' on page 2 undefined on input
+ line 216.
+
+
+Underfull \vbox (badness 1960) has occurred while \output is active []
+
  [2 <./images/traditional_graph.png> <./images/artifice_graph.png> <./images/gy
-ros.png (PNG copy)> <./images/coupled_spheres.png (PNG copy)>] (./report.bbl
-Missing character: There is no Ã in font ptmr7t!
-Missing character: There is no ¡ in font ptmr7t!
-)
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 291.
- [3]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 291.
+ros.png (PNG copy)> <./images/coupled_spheres.png (PNG copy)>]
+
+LaTeX Warning: Citation `bertalmio_image_2000' on page 3 undefined on input lin
+e 242.
+
+
+LaTeX Warning: Citation `pathak_context_2016' on page 3 undefined on input line
+ 244.
+
+No file report.bbl.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 332.
+[3
+
+]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 332.
  (./report.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 291.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 291.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 332.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 332.
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 1264DDCD89805547CDB48605C1F4F131;351.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 291.
+(rerunfilecheck)             Checksum: F77BABB3A445FCA021027690CBF4F96C;305.
+
+
+LaTeX Warning: There were undefined references.
+
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 332.
  ) 
 Here is how much of TeX's memory you used:
- 7542 strings out of 493089
- 116425 string characters out of 6134842
- 210311 words of memory out of 5000000
- 10918 multiletter control sequences out of 15000+600000
- 44257 words of font info for 93 fonts, out of 8000000 for 9000
+ 7525 strings out of 493089
+ 116065 string characters out of 6134842
+ 209796 words of memory out of 5000000
+ 10916 multiletter control sequences out of 15000+600000
+ 44228 words of font info for 93 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  36i,9n,47p,694b,349s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2015/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
@@ -501,10 +582,10 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmbi8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/ur
 w/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/ut
 mri8a.pfb>
-Output written on report.pdf (3 pages, 600999 bytes).
+Output written on report.pdf (3 pages, 592773 bytes).
 PDF statistics:
- 183 PDF objects out of 1000 (max. 8388607)
- 152 compressed objects within 2 object streams
- 32 named destinations out of 1000 (max. 500000)
- 77 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 146 PDF objects out of 1000 (max. 8388607)
+ 116 compressed objects within 2 object streams
+ 19 named destinations out of 1000 (max. 500000)
+ 69 words of extra memory for PDF output out of 10000 (max. 10000000)
 

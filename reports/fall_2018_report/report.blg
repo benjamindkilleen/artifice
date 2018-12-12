@@ -1,49 +1,73 @@
 This is BibTeX, Version 0.99d (TeX Live 2015)
 Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
 The top-level auxiliary file: report.aux
-The style file: asmems4.bst
-Database file #1: artifice.bib
-Warning--empty year in deng_imagenet:_nodate
-Warning--empty journal in deng_imagenet:_nodate
-You've used 12 entries,
-            1984 wiz_defined-function locations,
-            556 strings with 5885 characters,
-and the built_in function-call counts, 3750 in all, are:
-= -- 338
-> -- 158
+The style file: IEEEtran.bst
+White space in argument---line 62 of file report.aux
+ : \bibdata{IEEEabrv,
+ :                    report}
+I'm skipping whatever remains of this command
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: IEEEabrv.bib
+Warning--I didn't find a database entry for "krizhevsky_imagenet_2012"
+Warning--I didn't find a database entry for "deng_imagenet:_nodate"
+Warning--I didn't find a database entry for "lin_microsoft_2014"
+Warning--I didn't find a database entry for "settles_active_2012"
+Warning--I didn't find a database entry for "kao_localization-aware_2018"
+Warning--I didn't find a database entry for "jain_active_2016"
+Warning--I didn't find a database entry for "ronneberger_u-net:_2015"
+Warning--I didn't find a database entry for "torralba_unbiased_2011"
+Warning--I didn't find a database entry for "nash_topological_2015"
+Warning--I didn't find a database entry for "vezhnevets_active_2012"
+Warning--I didn't find a database entry for "bertalmio_image_2000"
+Warning--I didn't find a database entry for "pathak_context_2016"
+-- IEEEtran.bst version 1.13 (2008/09/30) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+
+Done.
+You've used 0 entries,
+            4039 wiz_defined-function locations,
+            1217 strings with 15140 characters,
+and the built_in function-call counts, 103 in all, are:
+= -- 0
+> -- 0
 < -- 0
-+ -- 60
-- -- 48
-* -- 246
-:= -- 532
-add.period$ -- 41
-call.type$ -- 12
-change.case$ -- 12
++ -- 0
+- -- 0
+* -- 19
+:= -- 26
+add.period$ -- 0
+call.type$ -- 0
+change.case$ -- 0
 chr.to.int$ -- 0
-cite$ -- 14
-duplicate$ -- 188
-empty$ -- 355
-format.name$ -- 48
-if$ -- 878
+cite$ -- 0
+duplicate$ -- 0
+empty$ -- 1
+format.name$ -- 0
+if$ -- 3
 int.to.chr$ -- 0
-int.to.str$ -- 12
-missing$ -- 12
-newline$ -- 67
-num.names$ -- 14
-pop$ -- 56
+int.to.str$ -- 0
+missing$ -- 0
+newline$ -- 23
+num.names$ -- 0
+pop$ -- 0
 preamble$ -- 1
 purify$ -- 0
-quote$ -- 0
-skip$ -- 121
+quote$ -- 2
+skip$ -- 1
 stack$ -- 0
-substring$ -- 264
-swap$ -- 85
+substring$ -- 0
+swap$ -- 0
 text.length$ -- 0
 text.prefix$ -- 0
-top$ -- 0
+top$ -- 5
 type$ -- 0
-warning$ -- 2
-while$ -- 35
-width$ -- 14
-write$ -- 137
-(There were 2 warnings)
+warning$ -- 0
+while$ -- 0
+width$ -- 0
+write$ -- 22
+(There was 1 error message)
