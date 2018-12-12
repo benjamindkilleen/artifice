@@ -125,8 +125,8 @@ def create_dataset(fname,
   
     
 def main():
-  pass
-
+  create_dataset("data/pets/pets.tfrecord")
+  
 
 if __name__ == "__main__":
   main()
