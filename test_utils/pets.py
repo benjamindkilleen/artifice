@@ -93,8 +93,14 @@ def class_from_filename(file_name):
 def breed_class(breed):
   return breeds[breed][0]
 
-def breed_prevalence(breed, scarcity=0):
-  prevalence = breeds[breed][1]
+def breed_prevalence(breed, scarcity=0, test_per_breed=0):
+  """Calculate the prevalence of the breed, given scarcity level, and excluding
+  test_per_breed examples.
+
+  Default inputs yield the total prevalence across both test, train sets.
+
+  """
+  prevalence = breeds[breed][1] - test_per_breed
   return int((1 - scarcity) * prevalence)
 
 
@@ -148,88 +154,115 @@ def make_dataset(record, image_names, annotation_names,
 def create_training_set(train_record_name,
                         images_path='data/pets/images',
                         annotations_path='data/pets/annotations/trimaps',
-                        split_file='data/pets/test_train_split.npy',
                         scarcity=0,
+                        test_per_breed=5,
                         augmentation=None):
-  """Create a new training set.
+  """Create a new training set with the given scarcity and augmentation.
 
   :scarcity: A float in [0,1). Measure of how scarce to make the dataset,
     removing a proportional number from each breed.
+  :test_per_breed: used to calculate the correct scarcity
   :augmentation:
   
   """
-  if not os.path.exists(split_file):
-    raise RuntimeError(f"missing '{split_file}':create original dataset first")
+  assert(0 <= scarcity < 1)
 
-  pass
+  image_names = np.array(sorted(glob(os.path.join(images_path, "*.jpg"))))
+  annotation_names = np.array(sorted(glob(os.path.join(annotations_path, "*.png"))))
 
+  train_indices = []
+  test_indices = []
+  current_breed = ""
+  current_breed_count = 0
+  for i in range(len(image_names)):
+    breed = breed_from_filename(os.path.basename(image_names[i]))
+    if breed != current_breed:
+      current_breed_count = 0
+      current_breed = breed
+    if current_breed_count < breed_prevalence(breed, scarcity, test_per_breed):
+      test_indices.append(i)
+    else:
+      train_indices.append(i)
 
-  
+  logging.info(f"Creating '{train_record_name}'...")
+  make_dataset(train_record_name, 
+               image_names[train_indices], 
+               annotation_names[train_indices],
+               augmentation=augmentation)
+  logging.info("Finished.\n")
+
 
 def create_original_dataset(train_record_name='data/pets/train.tfrecord',
                             test_record_name='data/pets/test.tfrecord',
                             images_path='data/pets/images',
                             annotations_path='data/pets/annotations/trimaps',
-                            split_file='data/pets/test_train_split.npy',
-                            overwrite=False,
-                            num_test=300,
                             test_per_breed=5,
-                            shape=(512,512)):
+                            shape=(512,512),
+                            overwrite=False):
   """Create the dataset from base pets images. Perform test_train split. 
 
-  :split_file: npy file with indices to use for training set.
-  :overwrite: overwrite indices files if they exist. Ignored if either file does
-    not exist.
   :test_per_breed: number of examples to hold back from each breed for
     testing.
   :shape: first two dimensions of image_shape to enforce
-
-  TODO: keep a deterministic test-train split.
-
+  :overwrite: if not true, and both files exist, error.
   """
+
+  if not overwrite and (os.path.exists(train_record_name) and
+                        os.path.exists(test_record_name)):
+    raise RuntimeError("original dataset already exists; set --overwrite-original.")
 
   image_names = np.array(sorted(glob(os.path.join(images_path, "*.jpg"))))
   annotation_names = np.array(sorted(glob(os.path.join(annotations_path, "*.png"))))
-  N = len(image_names)
-  
-  if overwrite or not os.path.exists(split_file):
-    logging.info(f"Creating test-train split with {num_test} test images.")
-    perm = np.random.permutation(N)
-    train_indices = perm[num_test:]
-    test_indices = perm[:num_test]
-    np.save(split_file, (train_indices, test_indices))
-  else:
-    logging.info("Loading saved test-train split.")
-    train_indices, test_indices = np.load(split_file)
-  
-  logging.info(f"Creating '{train_record_name}' with {N - num_test} examples...")
+
+  train_indices = []
+  test_indices = []
+  current_breed = ""
+  current_breed_count = 0
+  for i in range(len(image_names)):
+    # Reserve the last 'test_per_breed' examples for testing
+    breed = breed_from_filename(os.path.basename(image_names[i]))
+    prevalence = breed_prevalence(breed)
+    if breed != current_breed:
+      current_breed_count = 0
+      current_breed = breed
+    if current_breed_count >= prevalence - test_per_breed:
+      test_indices.append(i)
+    else:
+      train_indices.append(i)
+    
+  logging.info(f"Creating '{train_record_name}' with {len(train_indices)} examples...")
   make_dataset(train_record_name, 
                image_names[train_indices], 
                annotation_names[train_indices])
   logging.info("Finished.\n")
 
-  logging.info(f"Creating '{test_record_name}' with {num_test} examples...")  
+  logging.info(f"Creating '{test_record_name}' with {len(test_indices)} examples...")  
   make_dataset(test_record_name,
                image_names[test_indices],
                annotation_names[test_indices])
   logging.info("Finished.")
 
-
 # Temporary stuff, pass in as command args instead
 train_record_name = "data/pets/train.tfrecord"
 test_record_name = "data/pets/test.tfrecord"
 image_shape = (512, 512, 3)
-split_file = "data/pets/test_train_split.npy"
 num_test = 300
+test_per_breed = 5
 
 def cmd_data(args):
   # TODO: configure command line args for this
-  create_original_dataset(train_record_name=train_record_name,
-                          test_record_name=test_record_name,
-                          split_file=split_file,
-                          num_test=num_test,
-                          overwrite=args.overwrite,
-                          shape=(image_shape[0], image_shape[1]))
+  if args.original:
+    create_original_dataset(train_record_name=train_record_name,
+                            test_record_name=test_record_name,
+                            test_per_breed=test_per_breed,
+                            shape=(image_shape[0], image_shape[1]),
+                            overwrite=args.overwrite_original)
+  else:
+    create_training_set(args.train_record,
+                        scarcity=args.scarcity,
+                        test_per_breed=test_per_breed,
+                        augmentation=None)
+
 
 def cmd_train(args):
   train_data = dataset.load(train_record_name)
@@ -237,19 +270,47 @@ def cmd_train(args):
   unet = UNet(image_shape, 3, model_dir=args.model_dir)
   unet.train(train_data, test_data=test_data, overwrite=args.overwrite)
   
-def cmd_test(args):
-  pass
+def cmd_predict(args):
+  raise NotImplementedError("cmd_predict")
   
 def main():
   parser = argparse.ArgumentParser(
     description="Semantic segmentation for the pets dataset.")
-  parser.add_argument('command', choices=['data', 'train', 'test'])
-  parser.add_argument('--model-dir', '-m', nargs='?', 
-                      default='models/pets', const='models/pets',
-                      help='save model checkpoints to MODEL_DIR')
-  parser.add_argument('--overwrite', action='store_true',
-                      help='data: reselect test set\
-train: overwrite MODEL_DIR, if it exists')
+  parser.add_argument('command', choices=['data', 'train', 'predict'])
+  parser.add_argument('--train-record', '-o', nargs='?',
+                      default='data/pets/train.tfrecord', 
+                      const='data/pets/train.tfrecord',
+                      help='tfrecord name for training set')
+  parser.add_argument('--test-record', '-t', nargs='?',
+                      default='data/pets/test.tfrecord', 
+                      const='data/pets/test.tfrecord',
+                      help='tfrecord name for test set')
+  # Data options
+  data_group = parser.add_argument_group(title="data",
+                                         description="data creation options")
+  data_group = parser.add_argument('--overwrite-original', action='store_true'
+                                   help='overwrite original dataset, if it exists')
+  
+  dataset_group = data_group.add_mutually_exclusive_group()
+  dataset_group.add_argument('--original', action='store_true',
+                             help='create the original train, test datasets')
+  dataset_group.add_argument('--scarcity', '-s', nargs='?',
+                             default=0, const=0, type=float,
+                             help='measure of dataset scarcity in [0,1)')
+  
+  # Training options
+  train_group = parser.add_argument_group(title="train",
+                                         description="model training options")
+  train_group.add_argument('--model-dir', '-m', nargs='?', 
+                           default='models/pets', const='models/pets',
+                           help='save model checkpoints to MODEL_DIR')
+  train_group.add_argument('--overwrite', action='store_true',
+                           help='overwrite MODEL_DIR, if it exists')
+
+  # prediction options
+  predict_group = parser.add_argument_group(title="predict",
+                                            description="model prediction options")
+
 
   args = parser.parse_args()
 
@@ -257,6 +318,8 @@ train: overwrite MODEL_DIR, if it exists')
     cmd_data(args)
   elif args.command == 'train':
     cmd_train(args)
+  elif args.command == 'predict':
+    cmd_predict(args)
   else:
     raise RuntimeError()
 
