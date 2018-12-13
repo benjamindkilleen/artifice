@@ -22,7 +22,6 @@ from artifice.labeller import Labeller
 class Model:
   def __init__(self, image_shape, num_classes, sem_model=UNet):
     self.semantic_model = sem_model(image_shape, num_classes)
-    
 
   def train(self, data):
     """Implement the full training scheme for artifice. Unlike most "train"

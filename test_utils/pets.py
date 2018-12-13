@@ -32,7 +32,9 @@ import numpy as np
 import tensorflow as tf
 from glob import glob
 from skimage.transform import resize
+import argparse
 from artifice.utils import img, dataset
+from artifice.semantic_segmentation import UNet
 import logging
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -86,17 +88,18 @@ def class_from_filename(file_name):
   return breeds[match.groups()[0]]
 
 
-def create_dataset(fname,
+def create_dataset(record_dir,
+                   train_record='train.tfrecord',
+                   test_record='test.tfrecord',
                    images_path='data/pets/images',
                    annotations_path='data/pets/annotations/trimaps',
                    shape=(512,512)):
   
   """
-  :fname: tfrecord file to write to
-  :shape: resize images to shape
+  Create the dataset from base pets images, performing test, train split.
   """
 
-  writer = tf.python_io.TFRecordWriter(fname)
+  writer = tf.python_io.TFRecordWriter(os.path.join(record_dir, train_record))
 
   image_names = sorted(glob(os.path.join(images_path, "*.jpg")))
   annotation_names = sorted(glob(os.path.join(annotations_path, "*.png")))
@@ -130,11 +133,42 @@ def create_dataset(fname,
     writer.write(e)
   
   writer.close()
+
+
+# Temporary stuff:
+record_dir = "data/pets/"
+train_record = "train.tfrecord"
+image_shape = (512, 512, 3)
+
+def cmd_data(args):
+  # TODO: configure command line args for this
+  create_dataset(record_dir, shape=shape)
+
+def cmd_train(args):
+  train_data = dataset.load(os.path.join(record_dir, train_record))
+  unet = UNet(image_shape, 3, model_dir=args.model_dir)
+  unet.train(train_data)
   
-    
+def cmd_test(args):
+  pass
+  
 def main():
-  create_dataset("data/pets/pets.tfrecord")
-  
+  parser = argparse.ArgumentParser(
+    description="Semantic segmentation for the pets dataset.")
+  parser.add_argument('command', choices=['data', 'train', 'test'])
+  parser.add_argument('--model-dir', '-m', nargs='?', 
+                      default='models/pets', const='models/pets')
+  args = parser.parse_args()
+
+  if args.command == 'data':
+    cmd_data(args)
+  elif args.command == 'train':
+    cmd_train(args)
+  else:
+    raise RuntimeError()
+
+
+    
 
 if __name__ == "__main__":
   main()
