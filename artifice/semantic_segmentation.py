@@ -15,7 +15,8 @@ import logging
 import tensorflow as tf
 from artifice.utils import dataset
 
-logging.basicConfig(level=logging.INFO, format='%(levelnam)s:%(asctime)s:%(message)s')
+logging.basicConfig(level=logging.DEBUG, 
+                    format='%(levelname)s:%(asctime)s:%(message)s')
 
 
 """A model implementing semantic segmentation.
@@ -37,6 +38,7 @@ class SemanticModel:
   num_steps = 10
   def __init__(self, image_shape, num_classes, model_dir=None):
     self.image_shape = list(image_shape)
+    self.annotation_shape = self.image_shape[:2] + [1]
     assert(len(self.image_shape) == 3)
     self.num_classes = num_classes
 
@@ -48,7 +50,7 @@ class SemanticModel:
     self.model_dir = model_dir
 
   @staticmethod
-  def create(image_shape, num_classes, l2_reg_scale=None):
+  def create(training=True, l2_reg_scale=None):
     raise NotImplementedError("SemanticModel subclass should implement model_fn.")
 
   def train(self, train_data, batch_size=16, test_data=None, overwrite=True):
@@ -56,21 +58,29 @@ class SemanticModel:
     evaluate the model with it, and log the results (at INFO level).
 
     """
-    if overwrite and os.path.exists(self.model_dir):
+    if overwrite and self.model_dir is None:
+      logging.warning("FAIL to overwrite; model_dir is None")
+
+    if (overwrite and self.model_dir is not None
+        and os.path.exists(self.model_dir)):
       rmtree(self.model_dir)
+      
+    if (overwrite and self.model_dir is not None
+        and not os.path.exists(self.model_dir)):
+      os.mkdir(self.model_dir)
 
-    sess = tf.InteractiveSession() # TODO: not this, lazy piece of shit
-
-    self.estimator = tf.estimator.Estimator(model_fn=self.create(training=True),
-                                            model_dir=self.model_dir,
-                                            params=self.params)
-    
     input_train = lambda : (
       train_data.shuffle(self.num_shuffle)
       .batch(batch_size)
       .repeat()
       .make_one_shot_iterator()
       .get_next())
+
+    sess = tf.InteractiveSession() # TODO: not this
+
+    self.estimator = tf.estimator.Estimator(model_fn=self.create(training=True),
+                                            model_dir=self.model_dir,
+                                            params=self.params)
     
     self.estimator.train(input_fn=input_train, steps=self.num_steps)
     
@@ -100,28 +110,16 @@ class SemanticModel:
 
 """Implementation of UNet."""
 class UNet(SemanticModel):
-  @staticmethod
-  def create(training=True, l2_reg_scale=None):
+  def create(self, training=True, l2_reg_scale=None):
     """Create the unet model function for a custom estimator.
-
-    args:
-    :image_shape: shape of input image. Includes channels.
-    :num_classes: number of object classes, including background.
-
-    returns:
-    :image: the input tensor
-    :prediction: the output tensor of the model
-    :annotation: the ground truth tensor
-    :training: placeholder tensor for training boolean
 
     """
     
     logging.info("Creating unet graph...")
 
     def model_fn(features, labels, mode, params):
-      
-      image = tf.reshape(tf.feature_column.input_layer(
-        features, params['feature_columns']), [-1] + self.image_shape)
+      images = tf.reshape(features, [-1] + self.image_shape)
+      annotations = tf.reshape(features, [-1] + self.annotation_shape)
     
       # The UNet architecture has two stages, up and down. We denote layers in the
       # down-stage with "dn" and those in the up stage with "up," even though the
@@ -130,7 +128,7 @@ class UNet(SemanticModel):
       # "upconv-ing."
 
       # block level 1
-      dn_conv1_1 = UNet.conv(image, filters=64, l2_reg_scale=l2_reg_scale,
+      dn_conv1_1 = UNet.conv(images, filters=64, l2_reg_scale=l2_reg_scale,
                              training=training)
       dn_conv1_2 = UNet.conv(dn_conv1_1, filters=64, l2_reg_scale=l2_reg_scale,
                              training=training)
@@ -173,7 +171,7 @@ class UNet(SemanticModel):
 
       # block level 3
       up_conv3_1 = UNet.conv(up_concat4, filters=256, l2_reg_scale=l2_reg_scale)
-      up_conv4_2 = UNet.conv(up_conv3_1, filters=256, l2_reg_scale=l2_reg_scale)
+      up_conv3_2 = UNet.conv(up_conv3_1, filters=256, l2_reg_scale=l2_reg_scale)
       up_deconv3 = UNet.deconv(up_conv3_2, filters=128, l2_reg_scale=l2_reg_scale)
       up_concat3 = tf.concat([dn_conv2_2, up_deconv3], axis=3)
 
@@ -184,7 +182,7 @@ class UNet(SemanticModel):
 
       up_conv1_1 = UNet.conv(up_concat2, filters=64, l2_reg_scale=l2_reg_scale)
       up_conv1_2 = UNet.conv(up_conv1_1, filters=64, l2_reg_scale=l2_reg_scale)
-      annotation_logits = UNet.conv(up_conv1_2, filters=num_classes,
+      annotation_logits = UNet.conv(up_conv1_2, filters=self.num_classes,
                                     kernel_size=[1, 1], activation=None)
 
       predictions = tf.argmax(annotation_logits, 3)
@@ -197,7 +195,7 @@ class UNet(SemanticModel):
       # Calculate loss:
       # TODO: one-hot encode the labels???
       cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(
-        labels=labels, logits=annotation_logits)
+        labels=annotations, logits=annotation_logits)
 
       # Return an optimizer, if mode is TRAIN
       if mode == tf.estimator.ModeKeys.TRAIN:
@@ -209,7 +207,7 @@ class UNet(SemanticModel):
                                           train_op=train_op)
     
       assert mode == tf.estimator.ModeKeys.EVAL
-      accuracy = tf.metrics.accuracy(labels=labels,
+      accuracy = tf.metrics.accuracy(labels=annotations,
                                      predictions=predictions)
       return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=cross_entropy)

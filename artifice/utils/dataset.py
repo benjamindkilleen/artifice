@@ -79,7 +79,7 @@ def scene_from_example_string(example_string):
   return scene_from_feature(example.features.feature)
 
 
-def entry_from_example_tensor(example_string):
+def entry_from_example_proto(example_string):
   features = tf.parse_single_example(
     example_string,
     # Defaults are not specified since both keys are required.
@@ -92,13 +92,13 @@ def entry_from_example_tensor(example_string):
 
   # decode strings
   image = tf.decode_raw(features['image'], tf.uint8)
-  annotation = tf.decode_raw(features['annotation'], tf.uint8)
-
   image = tf.reshape(image, features['image_shape'])
-  annotation = tf.reshape(annotation, features['annotation_shape'])
-  
-  return (image, annotation)
+  image = tf.cast(image, tf.float32) / 255.
 
+  annotation = tf.decode_raw(features['annotation'], tf.uint8)
+  annotation = tf.reshape(annotation, features['annotation_shape'])
+
+  return image, annotation
 
 def write_tfrecord(fname, gen):
   """Write a tfrecord from the generator, gen, which yields a serialized string
@@ -145,6 +145,6 @@ def load(record_name):
   """
   
   data = tf.data.TFRecordDataset(record_name)
-  data.map(entry_from_example_tensor)
+  data = data.map(entry_from_example_proto)
 
   return data

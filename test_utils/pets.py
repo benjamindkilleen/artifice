@@ -105,6 +105,7 @@ def create_dataset(record_dir,
   annotation_names = sorted(glob(os.path.join(annotations_path, "*.png")))
   N = len(image_names)
   
+  # TODO: test train split
   for i in range(N):
     logging.info(f"Writing example {i} of {N}.")
 
