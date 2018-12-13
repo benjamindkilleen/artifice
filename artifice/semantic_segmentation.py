@@ -15,7 +15,7 @@ import logging
 import tensorflow as tf
 from artifice.utils import dataset
 
-logging.basicConfig(level=logging.DEBUG, 
+logging.basicConfig(level=logging.INFO, 
                     format='%(levelname)s:%(asctime)s:%(message)s')
 
 
@@ -35,7 +35,7 @@ class. `prediction` is the network's prediction for that annotation.
 
 class SemanticModel:
   num_shuffle = 10000
-  num_steps = 10
+  learning_rate = 0.001
   def __init__(self, image_shape, num_classes, model_dir=None):
     self.image_shape = list(image_shape)
     self.annotation_shape = self.image_shape[:2] + [1]
@@ -51,9 +51,10 @@ class SemanticModel:
 
   @staticmethod
   def create(training=True, l2_reg_scale=None):
-    raise NotImplementedError("SemanticModel subclass should implement model_fn.")
+    raise NotImplementedError("SemanticModel subclass should implement create().")
 
-  def train(self, train_data, batch_size=16, test_data=None, overwrite=True):
+  def train(self, train_data, batch_size=4, test_data=None, overwrite=False,
+            num_epochs=1):
     """Train the model with tf Dataset object train_data. If test_data is not None,
     evaluate the model with it, and log the results (at INFO level).
 
@@ -69,23 +70,29 @@ class SemanticModel:
         and not os.path.exists(self.model_dir)):
       os.mkdir(self.model_dir)
 
+    # Configure session
+    run_options = tf.RunOptions(report_tensor_allocations_upon_oom = True)
+    run_config = tf.estimator.RunConfig(model_dir=self.model_dir,
+                                        save_checkpoints_steps=50,
+                                        log_step_count_steps=5)
+
     input_train = lambda : (
-      train_data.shuffle(self.num_shuffle)
-      .batch(batch_size)
+      train_data.batch(batch_size)
       .repeat()
       .make_one_shot_iterator()
       .get_next())
 
-    sess = tf.InteractiveSession() # TODO: not this
+    model = tf.estimator.Estimator(model_fn=self.create(training=True),
+                                   model_dir=self.model_dir,
+                                   params=self.params,
+                                   config=run_config)
 
-    self.estimator = tf.estimator.Estimator(model_fn=self.create(training=True),
-                                            model_dir=self.model_dir,
-                                            params=self.params)
-    
-    self.estimator.train(input_fn=input_train, steps=self.num_steps)
+    for epoch in range(num_epochs):
+      logging.info(f"Epoch {epoch} of {num_epochs}.")
+      model.train(input_fn=input_train)
     
     if test_data is not None:
-      logging.info(estimator.evaluate(input_fn=input_test))
+      logging.info(model.evaluate(input_fn=input_test))
 
   def predict(self, test_data):
     """Return the estimator's predictions on test_data.
@@ -100,11 +107,11 @@ class SemanticModel:
       .make_one_shot_iterator()
       .get_next())
   
-    self.estimator = tf.estimator.Estimator(model_fn=self.create(training=False),
-                                            model_dir=self.model_dir,
-                                            params=self.params)
+    model = tf.estimator.Estimator(model_fn=self.create(training=False),
+                                   model_dir=self.model_dir,
+                                   params=self.params)
 
-    predictions = estimator.predict(input_fn=input_pred)
+    predictions = model.predict(input_fn=input_pred)
     return predictions
 
 
@@ -117,10 +124,17 @@ class UNet(SemanticModel):
     
     logging.info("Creating unet graph...")
 
-    def model_fn(features, labels, mode, params):
-      images = tf.reshape(features, [-1] + self.image_shape)
-      annotations = tf.reshape(features, [-1] + self.annotation_shape)
-    
+    def model_function(features, labels, mode, params):
+      images = tf.reshape(features, [-1] + self.image_shape,
+                          name='reshape_images')
+      annotations = tf.reshape(labels, [-1] + self.annotation_shape, 
+                               name='reshape_annotations')
+      annotations_3D = tf.reshape(
+        labels,
+        [-1, self.annotation_shape[0], self.annotation_shape[1]], 
+        name='reshape_annotations_3D')
+      annotations_one_hot = tf.one_hot(annotations_3D, self.num_classes)
+
       # The UNet architecture has two stages, up and down. We denote layers in the
       # down-stage with "dn" and those in the up stage with "up," even though the
       # up_conv layers are just performing regular, dimension-preserving
@@ -182,10 +196,10 @@ class UNet(SemanticModel):
 
       up_conv1_1 = UNet.conv(up_concat2, filters=64, l2_reg_scale=l2_reg_scale)
       up_conv1_2 = UNet.conv(up_conv1_1, filters=64, l2_reg_scale=l2_reg_scale)
-      annotation_logits = UNet.conv(up_conv1_2, filters=self.num_classes,
+      predicted_logits = UNet.conv(up_conv1_2, filters=self.num_classes,
                                     kernel_size=[1, 1], activation=None)
 
-      predictions = tf.argmax(annotation_logits, 3)
+      predictions = tf.argmax(predicted_logits, 3)
 
       # In PREDICT mode, return the output asap.
       if mode == tf.estimator.ModeKeys.PREDICT:
@@ -193,13 +207,12 @@ class UNet(SemanticModel):
           mode=mode, predictions={'annotation' : predictions})
 
       # Calculate loss:
-      # TODO: one-hot encode the labels???
-      cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(
-        labels=annotations, logits=annotation_logits)
+      cross_entropy = tf.losses.softmax_cross_entropy(
+        onehot_labels=annotations_one_hot, logits=predicted_logits)
 
       # Return an optimizer, if mode is TRAIN
       if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.AdamOptimizer(0.001)
+        optimizer = tf.train.AdamOptimizer(self.learning_rate)
         train_op = optimizer.minimize(loss=cross_entropy,
                                       global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode=mode, 
@@ -213,7 +226,7 @@ class UNet(SemanticModel):
                                         loss=cross_entropy)
 
 
-    return model_fn
+    return model_function
     
   @staticmethod
   def conv(inputs, filters=64, kernel_size=[3,3], activation=tf.nn.relu,

@@ -79,27 +79,6 @@ def scene_from_example_string(example_string):
   return scene_from_feature(example.features.feature)
 
 
-def entry_from_example_proto(example_string):
-  features = tf.parse_single_example(
-    example_string,
-    # Defaults are not specified since both keys are required.
-    features={
-      'image': tf.FixedLenFeature([], tf.string),
-      'annotation': tf.FixedLenFeature([], tf.string),
-      'image_shape': tf.FixedLenFeature([3], tf.int64),
-      'annotation_shape': tf.FixedLenFeature([3], tf.int64)
-    })
-
-  # decode strings
-  image = tf.decode_raw(features['image'], tf.uint8)
-  image = tf.reshape(image, features['image_shape'])
-  image = tf.cast(image, tf.float32) / 255.
-
-  annotation = tf.decode_raw(features['annotation'], tf.uint8)
-  annotation = tf.reshape(annotation, features['annotation_shape'])
-
-  return image, annotation
-
 def write_tfrecord(fname, gen):
   """Write a tfrecord from the generator, gen, which yields a serialized string
   to write for every example. Save it to fname."""
@@ -144,6 +123,28 @@ def load(record_name):
   """Load the tfrecord fname, return dataset with parsed tensors.
   """
   
+  def entry_from_example_proto(example_string):
+    features = tf.parse_single_example(
+      example_string,
+      # Defaults are not specified since both keys are required.
+      features={
+        'image': tf.FixedLenFeature([], tf.string),
+        'annotation': tf.FixedLenFeature([], tf.string),
+        'image_shape': tf.FixedLenFeature([3], tf.int64),
+        'annotation_shape': tf.FixedLenFeature([3], tf.int64)
+      })
+
+    # decode strings
+    image = tf.decode_raw(features['image'], tf.uint8)
+    image = tf.reshape(image, features['image_shape'])
+    image = tf.cast(image, tf.float32) / 255.
+    
+    annotation = tf.decode_raw(features['annotation'], tf.uint8)
+    annotation = tf.reshape(annotation, features['annotation_shape'])
+
+    return image, annotation
+
+
   data = tf.data.TFRecordDataset(record_name)
   data = data.map(entry_from_example_proto)
 
