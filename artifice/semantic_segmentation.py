@@ -27,10 +27,7 @@ args:
 In this context, `image` is the input to the model, and `annotation`, is the
 SEMANTIC annotation (groung truth) of `image`, a [image_shape[0],
 image_shape[1], num_classes] shape array which one-hot encoedes each pixel's
-class. `prediction` is the network's prediction for that annotation.
-
-`annotation` is always an array with 3 dimensions.
-
+class.
 """
 
 class SemanticModel:
@@ -77,8 +74,9 @@ class SemanticModel:
                                         log_step_count_steps=5)
 
     input_train = lambda : (
-      train_data.batch(batch_size)
-      .repeat()
+      train_data.shuffle(self.num_shuffle)
+      .batch(batch_size)
+      .repeat(num_epochs)
       .make_one_shot_iterator()
       .get_next())
 
@@ -87,12 +85,15 @@ class SemanticModel:
                                    params=self.params,
                                    config=run_config)
 
-    for epoch in range(num_epochs):
-      logging.info(f"Epoch {epoch} of {num_epochs}.")
-      model.train(input_fn=input_train)
+    model.train(input_fn=input_train)
     
     if test_data is not None:
-      logging.info(model.evaluate(input_fn=input_test))
+      input_test = lambda : (
+        test_data.batch(batch_size)
+        .make_one_shot_iterator()
+        .get_next())
+      eval_result = model.evaluate(input_fn=input_test)
+      logging.info(eval_result)
 
   def predict(self, test_data):
     """Return the estimator's predictions on test_data.
