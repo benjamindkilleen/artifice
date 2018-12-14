@@ -1,6 +1,8 @@
 """Augmentation utils."""
 
 import numpy as np
+from artifice.utils import img
+from collections import Counter
 import logging
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
@@ -23,7 +25,7 @@ class Augmentation():
   """
   def __init__(self, augmentation, N=None):
     self._augmentation = augmentation
-    self.N
+    self.N = N
 
   def __call__(self, image, annotation):
     return self._augmentation(image, annotation)
@@ -44,7 +46,7 @@ class Augmentation():
       return output_scenes
     N = None if (self.N is None or aug.N is None) else self.N * aug.N
     return Augmentation(augmentation, N=N)
-  
+
 
 identity = Augmentation(lambda image, annotation : [image, annotation])
 
@@ -55,11 +57,32 @@ def _flip_horizontal(image, augmentation):
           (flipped_image, flipped_annotation)]
 flip_horizontal = Augmentation(_flip_horizontal, 2)
 
-def _flip_vertical(image, augmentation):
+def _flip_vertical(image, annotation):
   flipped_image = np.flipud(image)
   flipped_annotation = np.flipud(annotation)
   return [(image, annotation),
           (flipped_image, flipped_annotation)]
 flip_vertical = Augmentation(_flip_vertical, 2)
+
+def _random_thumbnail(image, annotation):
+  """Zoom in on a random frame, three_quarters the size of the original image."""
+  shape = (0.75*np.array(image.shape)).astype(np.int)
+  xoffset = np.random.randint(image.shape[0] - shape[0])
+  yoffset = np.random.randint(image.shape[1] - shape[1])
+
+  image_thumb = image[xoffset:xoffset + shape[0], yoffset:yoffset + shape[1]]
+  annotation_thumb = annotation[xoffset:xoffset + shape[0], yoffset:yoffset + shape[1]]
+
+  # Clean up interpolation:
+  counter = Counter(annotation.flatten())
+  label = 1 if counter[1] > counter[2] else 2
+
+  resized_image_thumb = img.resize(image_thumb, image.shape)
+  resized_annotation_thumb = img.resize(
+    annotation_thumb, annotation.shape, label=label)
+
+  return [(image, annotation),
+          (resized_image_thumb, resized_annotation_thumb)]
+
 
 # TODO: more augmentations

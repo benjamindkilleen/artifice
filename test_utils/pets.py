@@ -31,8 +31,8 @@ import os
 import numpy as np
 import tensorflow as tf
 from glob import glob
-from skimage.transform import resize
 import argparse
+from collections import Counter
 from artifice.utils import img, dataset, augment
 from artifice.semantic_segmentation import UNet
 import logging
@@ -84,7 +84,7 @@ breeds = {
 def breed_from_filename(file_name):
   """Gets the integer class label from a file name.
   """
-  match = re.match(r'([A-Za-z_]+)(_[0-9]+\.(png)|(jpg))', file_name, re.I)
+  match = re.match(r'([A-Za-z_]+)(_[0-9]+\.((png)|(jpg)))', file_name, re.I)
   return match.groups()[0]
 
 def class_from_filename(file_name):
@@ -105,22 +105,27 @@ def breed_prevalence(breed, scarcity=0, test_per_breed=0):
 
 
 def make_dataset(record, image_names, annotation_names, 
-                 shape=None, augmentation=None):
+                 shape=None, augmentation=None, overwrite=False):
   """Helper function for making datasets, using absolute lists of files.
 
   :record: name of output tfrecord file to write.
   :image_names: list of file paths to images
-  :iamge_names: list of file paths to annotations, in corresponding order
+  :image_names: list of file paths to annotations, in corresponding order
   :shape: image_names
   :augmentation: an augmentation function, which takes in the image and
     annotation and returns a list like [(image, annotation),].
 
   """
 
+  if not overwrite and os.path.exists(record):
+    raise RuntimeError(f"'{record}' already exists; set --overwrite to ignore")
+
   writer = tf.python_io.TFRecordWriter(record)
   N = len(image_names)
-  for i in range(N):
-    logging.info(f"Writing example {i} of {N}.")
+  indices = np.random.permutation(N)
+  cnt = 0
+  for i in indices:
+    logging.info(f"Writing example {cnt} of {N}.")
     
     image = img.open_as_array(image_names[i])
     mask = img.open_as_array(annotation_names[i])
@@ -132,13 +137,8 @@ def make_dataset(record, image_names, annotation_names,
     
     if shape is not None:
       logging.debug(f"resizing images to shape {shape}")
-      image = (255 * resize(image, (shape[0], shape[1], 3), mode='reflect'))
-      annotation = (255*resize(annotation, shape, mode='reflect'))
-      image = image.astype(np.uint8)
-      annotation = annotation.astype(np.uint8)
-      # Clean up bad classes from interpolation.
-      bad_label = 1 if label == 2 else 2
-      annotation[annotation == bad_label] = label
+      image = img.resize(image, (shape[0], shape[1], 3))
+      annotation = img.resize(annotation, shape, label=label)
 
     if augmentation is not None:
       for scene in augmentation(image, annotation):
@@ -147,6 +147,7 @@ def make_dataset(record, image_names, annotation_names,
     else:
       e = dataset.example_string_from_scene(image, annotation)
       writer.write(e)
+    cnt += 1
 
   writer.close()
 
@@ -156,13 +157,14 @@ def create_training_set(train_record_name,
                         annotations_path='data/pets/annotations/trimaps',
                         scarcity=0,
                         test_per_breed=5,
-                        augmentation=None):
+                        **kwargs):
   """Create a new training set with the given scarcity and augmentation.
 
   :scarcity: A float in [0,1). Measure of how scarce to make the dataset,
     removing a proportional number from each breed.
   :test_per_breed: used to calculate the correct scarcity
   :augmentation:
+  :overwrite:
   
   """
   assert(0 <= scarcity < 1)
@@ -171,24 +173,20 @@ def create_training_set(train_record_name,
   annotation_names = np.array(sorted(glob(os.path.join(annotations_path, "*.png"))))
 
   train_indices = []
-  test_indices = []
+  counter = Counter()
   current_breed = ""
   current_breed_count = 0
   for i in range(len(image_names)):
     breed = breed_from_filename(os.path.basename(image_names[i]))
-    if breed != current_breed:
-      current_breed_count = 0
-      current_breed = breed
-    if current_breed_count < breed_prevalence(breed, scarcity, test_per_breed):
-      test_indices.append(i)
-    else:
+    counter.update([breed])
+    if counter[breed] < breed_prevalence(breed, scarcity, test_per_breed):
       train_indices.append(i)
 
   logging.info(f"Creating '{train_record_name}'...")
   make_dataset(train_record_name, 
                image_names[train_indices], 
                annotation_names[train_indices],
-               augmentation=augmentation)
+               **kwargs)
   logging.info("Finished.\n")
 
 
@@ -197,35 +195,28 @@ def create_original_dataset(train_record_name='data/pets/train.tfrecord',
                             images_path='data/pets/images',
                             annotations_path='data/pets/annotations/trimaps',
                             test_per_breed=5,
-                            shape=(512,512),
-                            overwrite=False):
+                            **kwargs):
   """Create the dataset from base pets images. Perform test_train split. 
 
   :test_per_breed: number of examples to hold back from each breed for
     testing.
   :shape: first two dimensions of image_shape to enforce
-  :overwrite: if not true, and both files exist, error.
   """
-
-  if not overwrite and (os.path.exists(train_record_name) and
-                        os.path.exists(test_record_name)):
-    raise RuntimeError("original dataset already exists; set --overwrite-original.")
 
   image_names = np.array(sorted(glob(os.path.join(images_path, "*.jpg"))))
   annotation_names = np.array(sorted(glob(os.path.join(annotations_path, "*.png"))))
 
   train_indices = []
   test_indices = []
-  current_breed = ""
-  current_breed_count = 0
+  counter = Counter()
   for i in range(len(image_names)):
     # Reserve the last 'test_per_breed' examples for testing
+    # TODO: debug why this made 263 files in test set
+    # Current training set has 7127 files. At least mutex.
     breed = breed_from_filename(os.path.basename(image_names[i]))
     prevalence = breed_prevalence(breed)
-    if breed != current_breed:
-      current_breed_count = 0
-      current_breed = breed
-    if current_breed_count >= prevalence - test_per_breed:
+    counter.update([breed])
+    if counter[breed] >= prevalence - test_per_breed:
       test_indices.append(i)
     else:
       train_indices.append(i)
@@ -233,18 +224,21 @@ def create_original_dataset(train_record_name='data/pets/train.tfrecord',
   logging.info(f"Creating '{train_record_name}' with {len(train_indices)} examples...")
   make_dataset(train_record_name, 
                image_names[train_indices], 
-               annotation_names[train_indices])
+               annotation_names[train_indices],
+               **kwargs)
   logging.info("Finished.\n")
 
   logging.info(f"Creating '{test_record_name}' with {len(test_indices)} examples...")  
   make_dataset(test_record_name,
                image_names[test_indices],
-               annotation_names[test_indices])
+               annotation_names[test_indices],
+               **kwargs)
   logging.info("Finished.")
 
 # Temporary stuff, pass in as command args instead
 train_record_name = "data/pets/train.tfrecord"
 test_record_name = "data/pets/test.tfrecord"
+shape = (512, 512)
 image_shape = (512, 512, 3)
 num_test = 300
 test_per_breed = 5
@@ -252,16 +246,18 @@ test_per_breed = 5
 def cmd_data(args):
   # TODO: configure command line args for this
   if args.original:
-    create_original_dataset(train_record_name=train_record_name,
-                            test_record_name=test_record_name,
+    create_original_dataset(train_record_name=args.train_record,
+                            test_record_name=args.test_record,
                             test_per_breed=test_per_breed,
-                            shape=(image_shape[0], image_shape[1]),
-                            overwrite=args.overwrite_original)
+                            shape=shape,
+                            overwrite=args.overwrite)
   else:
     create_training_set(args.train_record,
                         scarcity=args.scarcity,
                         test_per_breed=test_per_breed,
-                        augmentation=None)
+                        augmentation=None,
+                        overwrite=args.overwrite,
+                        shape=shape)
 
 
 def cmd_train(args):
@@ -285,13 +281,9 @@ def main():
                       default='data/pets/test.tfrecord', 
                       const='data/pets/test.tfrecord',
                       help='tfrecord name for test set')
+
   # Data options
-  data_group = parser.add_argument_group(title="data",
-                                         description="data creation options")
-  data_group = parser.add_argument('--overwrite-original', action='store_true'
-                                   help='overwrite original dataset, if it exists')
-  
-  dataset_group = data_group.add_mutually_exclusive_group()
+  dataset_group = parser.add_mutually_exclusive_group()
   dataset_group.add_argument('--original', action='store_true',
                              help='create the original train, test datasets')
   dataset_group.add_argument('--scarcity', '-s', nargs='?',
@@ -304,13 +296,12 @@ def main():
   train_group.add_argument('--model-dir', '-m', nargs='?', 
                            default='models/pets', const='models/pets',
                            help='save model checkpoints to MODEL_DIR')
-  train_group.add_argument('--overwrite', action='store_true',
-                           help='overwrite MODEL_DIR, if it exists')
+  train_group.add_argument('--overwrite', '-f', action='store_true',
+                           help='overwrite objects')
 
   # prediction options
   predict_group = parser.add_argument_group(title="predict",
                                             description="model prediction options")
-
 
   args = parser.parse_args()
 

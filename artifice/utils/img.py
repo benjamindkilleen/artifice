@@ -3,6 +3,7 @@
 
 import numpy as np
 from PIL import Image
+from skimage import transform
 
 def grayscale(image):
   """Convert an n-channel image to grayscale, with ndim = 3, using the luminosity
@@ -21,6 +22,12 @@ def grayscale(image):
   else:
     return image.mean(axis=2).reshape(*out_shape).astype(np.uint8)
   
+
+def resize(image, shape, label=None):
+  resized = (255*transform.resize(image, shape, mode='reflect')).astype(np.uint8)
+  if label is not None: 
+    resized[resized != 0] = label
+  return resized
 
 def open_as_array(fname):
   im = Image.open(fname)

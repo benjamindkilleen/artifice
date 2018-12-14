@@ -31,7 +31,7 @@ class.
 """
 
 class SemanticModel:
-  num_shuffle = 10000
+  num_shuffle = 1000
   learning_rate = 0.001
   def __init__(self, image_shape, num_classes, model_dir=None):
     self.image_shape = list(image_shape)
