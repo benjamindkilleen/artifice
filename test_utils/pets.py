@@ -235,6 +235,7 @@ def create_original_dataset(train_record_name='data/pets/train.tfrecord',
                **kwargs)
   logging.info("Finished.")
 
+
 # Temporary stuff, pass in as command args instead
 train_record_name = "data/pets/train.tfrecord"
 test_record_name = "data/pets/test.tfrecord"
@@ -242,6 +243,7 @@ shape = (512, 512)
 image_shape = (512, 512, 3)
 num_test = 300
 test_per_breed = 5
+
 
 def cmd_data(args):
   # TODO: configure command line args for this
@@ -261,15 +263,19 @@ def cmd_data(args):
 
 
 def cmd_train(args):
-  train_data = dataset.load(train_record_name)
-  test_data = dataset.load(test_record_name)
+  logging.info(f"loading train '{args.train_record}' and test '{args.test_record}'")
+  train_data = dataset.load(args.train_record)
+  test_data = dataset.load(args.test_record) # TODO: value check
   unet = UNet(image_shape, 3, model_dir=args.model_dir)
   unet.train(train_data, test_data=test_data, overwrite=args.overwrite)
+
   
 def cmd_predict(args):
   raise NotImplementedError("cmd_predict")
+
   
 def main():
+  # TODO: consolidate input/output options for different things.
   parser = argparse.ArgumentParser(
     description="Semantic segmentation for the pets dataset.")
   parser.add_argument('command', choices=['data', 'train', 'predict'])
@@ -278,7 +284,7 @@ def main():
                       const='data/pets/train.tfrecord',
                       help='tfrecord name for training set')
   parser.add_argument('--test-record', '-t', nargs='?',
-                      default='data/pets/test.tfrecord', 
+                      default='data/pets/test.tfrecord',
                       const='data/pets/test.tfrecord',
                       help='tfrecord name for test set')
 
@@ -292,7 +298,9 @@ def main():
   
   # Training options
   train_group = parser.add_argument_group(title="train",
-                                         description="model training options")
+                                          description="""Train the model.
+Evaluate accuracy with the test set, if provided.""")
+  # TODO: change this to go with test-record -o option
   train_group.add_argument('--model-dir', '-m', nargs='?', 
                            default='models/pets', const='models/pets',
                            help='save model checkpoints to MODEL_DIR')
@@ -301,7 +309,9 @@ def main():
 
   # prediction options
   predict_group = parser.add_argument_group(title="predict",
-                                            description="model prediction options")
+                                            description="Predict segmentations.")
+  predict_group.add_argument('--input', '-i', nargs='+',
+                             help="prediction input images")
 
   args = parser.parse_args()
 

@@ -74,7 +74,6 @@ def scene_from_example_string(example_string):
 
   example = tf.train.Example()
   example.ParseFromString(example_string)
-  print(example)
 
   return scene_from_feature(example.features.feature)
 
@@ -95,6 +94,10 @@ def read_tfrecord(fname, parse_example_string=scene_from_example_string):
   parse_example to turn each serialized tf string into a value returned from the
   generator. parse_example=None, then just return the unparsed string on each
   call to the generator.
+  
+  Note that this is not intended for any training/testing pipeline but rather
+  for accessing the actual data.
+
   """
 
   if parse_example_string == None:

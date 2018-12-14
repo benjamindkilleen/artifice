@@ -86,14 +86,24 @@ class SemanticModel:
                                    config=run_config)
 
     model.train(input_fn=input_train)
+
+    # TODO: training accuracy
+    # logging.info("evaluating training accuracy")
+    # input_eval = lambda : (
+    #   train_data.batch(batch_size)
+    #   .make_one_shot_iterator()
+    #   .get_next())
+    # eval_result = model.evaluate(input_fn=input_eval)
+    # logging.info(eval_result)
     
     if test_data is not None:
+      logging.info("evaluating test accuracy")
       input_test = lambda : (
         test_data.batch(batch_size)
         .make_one_shot_iterator()
         .get_next())
-      eval_result = model.evaluate(input_fn=input_test)
-      logging.info(eval_result)
+      test_result = model.evaluate(input_fn=input_test)
+      logging.info(test_result)
 
   def predict(self, test_data):
     """Return the estimator's predictions on test_data.
@@ -223,8 +233,10 @@ class UNet(SemanticModel):
       assert mode == tf.estimator.ModeKeys.EVAL
       accuracy = tf.metrics.accuracy(labels=annotations,
                                      predictions=predictions)
+      eval_metrics = {'accuracy' : accuracy}
       return tf.estimator.EstimatorSpec(mode=mode,
-                                        loss=cross_entropy)
+                                        loss=cross_entropy,
+                                        eval_metric_ops=eval_metrics)
 
 
     return model_function
