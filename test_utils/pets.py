@@ -257,7 +257,7 @@ def cmd_data(args):
     create_training_set(args.train_record,
                         scarcity=args.scarcity,
                         test_per_breed=test_per_breed,
-                        augmentation=None,
+                        augmentation=augment.join(args.augmentations),
                         overwrite=args.overwrite,
                         shape=shape)
 
@@ -272,7 +272,7 @@ def cmd_train(args):
   
 def cmd_predict(args):
   raise NotImplementedError("cmd_predict")
-
+  
   
 def main():
   # TODO: consolidate input/output options for different things.
@@ -289,18 +289,26 @@ def main():
                       help='tfrecord name for test set')
 
   # Data options
+  print(list(augment.premade.keys()))
+  data_group = parser.add_argument_group(title='data',
+                                         description="Generate data.")
+  data_group.add_argument('--augmentations', '--aug', '-a', 
+                          nargs='+', default = [],
+                          help=f"""augmentations to use:
+  '{' '.join(list(augment.premade.keys()))}'""")
   dataset_group = parser.add_mutually_exclusive_group()
   dataset_group.add_argument('--original', action='store_true',
                              help='create the original train, test datasets')
   dataset_group.add_argument('--scarcity', '-s', nargs='?',
                              default=0, const=0, type=float,
                              help='measure of dataset scarcity in [0,1)')
+
+  
   
   # Training options
   train_group = parser.add_argument_group(title="train",
                                           description="""Train the model.
 Evaluate accuracy with the test set, if provided.""")
-  # TODO: change this to go with test-record -o option
   train_group.add_argument('--model-dir', '-m', nargs='?', 
                            default='models/pets', const='models/pets',
                            help='save model checkpoints to MODEL_DIR')

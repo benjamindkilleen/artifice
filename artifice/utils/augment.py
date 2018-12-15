@@ -23,7 +23,7 @@ class Augmentation():
   :N: optional argument giving the number of scenes the augmentation outputs. 
 
   """
-  def __init__(self, augmentation, N=None):
+  def __init__(self, augmentation=lambda i, a : [(i,a)], N=None):
     self._augmentation = augmentation
     self.N = N
 
@@ -32,25 +32,25 @@ class Augmentation():
 
   def __add__(self, aug):
     def augmentation(image, annotation):
-      return self.__call__(image,annotation) + aug.__call__(image,annotation)[1:]
+      return self._augmentation(image,annotation) + aug._augmentation(image,annotation)[1:]
     N = None if (self.N is None or aug.N is None) else self.N + aug.N - 1
     
     return Augmentation(augmentation, N=N)
 
   def __mul__(self, aug):
     def augmentation(image, annotation):
-      scenes = self.__call__(image, annotation)
+      scenes = self._augmentation(image, annotation)
       output_scenes = []
       for scene in scenes:
-        output_scenes += aug.__call__(*scene)
+        output_scenes += aug._augmentation(*scene)
       return output_scenes
     N = None if (self.N is None or aug.N is None) else self.N * aug.N
     return Augmentation(augmentation, N=N)
 
 
-identity = Augmentation(lambda image, annotation : [image, annotation])
+identity = Augmentation()
 
-def _flip_horizontal(image, augmentation):
+def _flip_horizontal(image, annotation):
   flipped_image = np.fliplr(image)
   flipped_annotation = np.fliplr(annotation)
   return [(image, annotation),
@@ -83,6 +83,35 @@ def _random_thumbnail(image, annotation):
 
   return [(image, annotation),
           (resized_image_thumb, resized_annotation_thumb)]
+random_thumbnail = Augmentation(_random_thumbnail, 2)
 
 
+premade = {
+  'identity'         : identity,
+  'flip_horizontal'  : flip_horizontal,
+  'fliph'            : flip_horizontal,
+  'flip_vertical'    : flip_vertical,
+  'flipv'            : flip_vertical,
+  'random_thumbnail' : random_thumbnail,
+  'rtn'              : random_thumbnail
+}
+
+
+def join(augs):
+  """Accept a list of names of augmentations, or augmentation objects
+  themselves, and coalesce into a single augmentation.
+  """
+
+  aug_out = Augmentation()
+  for aug in augs:
+    if type(aug) == str:
+      assert(premade.get(aug) is not None)
+      aug_out += premade[aug]
+    elif type(aug) == Augmentation:
+      aug_out += aug
+    else:
+      raise RuntimeError("unrecogignized augmentation")
+
+  return aug_out
+  
 # TODO: more augmentations
