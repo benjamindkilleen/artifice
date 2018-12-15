@@ -1,0 +1,35 @@
+==> pets_s-0.0_aug-fliph-rtn/train.err <==
+INFO:{'accuracy': 0.7518487, 'loss': 0.5697177, 'global_step': 5346}
+
+==> pets_s-0.0_aug-fliph/train.err <==
+INFO:{'accuracy': 0.7669153, 'loss': 0.5426151, 'global_step': 3564}
+
+==> pets_s-0.0/train.err <==
+INFO:{'accuracy': 0.7361435, 'loss': 0.6393301, 'global_step': 1782}
+
+==> pets_s-0.3_aug-fliph-rtn/train.err <==
+INFO:{'accuracy': 0.7572323, 'loss': 0.5861286, 'global_step': 3719}
+
+==> pets_s-0.3_aug-fliph/train.err <==
+INFO:{'accuracy': 0.75052005, 'loss': 0.6048297, 'global_step': 2479}
+
+==> pets_s-0.3/train.err <==
+INFO:{'accuracy': 0.73109615, 'loss': 0.65499455, 'global_step': 1240}
+
+==> pets_s-0.6_aug-fliph-rtn/train.err <==
+INFO:{'accuracy': 0.74398595, 'loss': 0.61123437, 'global_step': 2118}
+
+==> pets_s-0.6_aug-fliph/train.err <==
+INFO:{'accuracy': 0.73823684, 'loss': 0.6350233, 'global_step': 1412}
+
+==> pets_s-0.6/train.err <==
+INFO:{'accuracy': 0.70423615, 'loss': 0.7293029, 'global_step': 706}
+
+==> pets_s-0.9_aug-fliph-rtn/train.err <==
+INFO:{'accuracy': 0.6621061, 'loss': 0.83901346, 'global_step': 497}
+
+==> pets_s-0.9_aug-fliph/train.err <==
+INFO:{'accuracy': 0.6363963, 'loss': 0.89245945, 'global_step': 331}
+
+==> pets_s-0.9/train.err <==
+INFO:{'accuracy': 0.58949065, 'loss': 0.9467836, 'global_step': 166}
