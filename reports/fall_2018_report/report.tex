@@ -7,6 +7,13 @@
 \graphicspath{ {images/} }
 \usepackage[caption=false,font=footnotesize]{subfig}
 
+\makeatletter
+\def\endthebibliography{%
+  \def\@noitemerr{\@latex@warning{Empty `thebibliography' environment}}%
+  \endlist
+}
+\makeatother
+
 \DeclareMathOperator{\vol}{Vol}
 
 \title{Object Detection in Scientific Images (DRAFT)}
@@ -349,7 +356,7 @@ Thanks to Michael Maire for input and guidance, as well as William Irvine for
 access to image data from his laboratory.
 
 \bibliographystyle{IEEEtran}
-\bibliography{IEEEabrv, report}
+\bibliography{report}
 
 \end{document}
 %%% Local Variables:
