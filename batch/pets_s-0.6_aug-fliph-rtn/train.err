@@ -1,0 +1,1839 @@
+/home/killeen/.local/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+INFO:loading train 'data/pets/train_s-0.6_aug-fliph-rtn.tfrecord' and test 'data/pets/test.tfrecord'
+INFO:Creating unet graph...
+INFO:tensorflow:Using config: {'_model_dir': 'models/pets_s-0.6_aug-fliph-rtn', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': 50, '_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 5, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7f3f8d56cef0>, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}
+INFO:Using config: {'_model_dir': 'models/pets_s-0.6_aug-fliph-rtn', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': 50, '_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 5, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7f3f8d56cef0>, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}
+INFO:tensorflow:Calling model_fn.
+INFO:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:Done calling model_fn.
+INFO:tensorflow:Create CheckpointSaverHook.
+INFO:Create CheckpointSaverHook.
+INFO:tensorflow:Graph was finalized.
+INFO:Graph was finalized.
+2018-12-15 00:22:09.719508: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2018-12-15 00:22:09.933336: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1392] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:08:00.0
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2018-12-15 00:22:09.933401: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1471] Adding visible gpu devices: 0
+2018-12-15 00:22:10.233672: I tensorflow/core/common_runtime/gpu/gpu_device.cc:952] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-12-15 00:22:10.233764: I tensorflow/core/common_runtime/gpu/gpu_device.cc:958]      0 
+2018-12-15 00:22:10.233776: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   N 
+2018-12-15 00:22:10.234085: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1084] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10763 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:tensorflow:Running local_init_op.
+INFO:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:Done running local_init_op.
+INFO:tensorflow:Saving checkpoints for 0 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 0 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:loss = 1.5809888, step = 0
+INFO:loss = 1.5809888, step = 0
+INFO:tensorflow:global_step/sec: 0.3961
+INFO:global_step/sec: 0.3961
+INFO:tensorflow:loss = 1.2133113, step = 5 (12.623 sec)
+INFO:loss = 1.2133113, step = 5 (12.623 sec)
+INFO:tensorflow:global_step/sec: 0.426956
+INFO:global_step/sec: 0.426956
+INFO:tensorflow:loss = 1.1257409, step = 10 (11.710 sec)
+INFO:loss = 1.1257409, step = 10 (11.710 sec)
+INFO:tensorflow:global_step/sec: 0.427166
+INFO:global_step/sec: 0.427166
+INFO:tensorflow:loss = 1.0828348, step = 15 (11.705 sec)
+INFO:loss = 1.0828348, step = 15 (11.705 sec)
+INFO:tensorflow:global_step/sec: 0.426022
+INFO:global_step/sec: 0.426022
+INFO:tensorflow:loss = 1.0430795, step = 20 (11.736 sec)
+INFO:loss = 1.0430795, step = 20 (11.736 sec)
+INFO:tensorflow:global_step/sec: 0.427472
+INFO:global_step/sec: 0.427472
+INFO:tensorflow:loss = 1.0725604, step = 25 (11.697 sec)
+INFO:loss = 1.0725604, step = 25 (11.697 sec)
+INFO:tensorflow:global_step/sec: 0.427385
+INFO:global_step/sec: 0.427385
+INFO:tensorflow:loss = 1.0388544, step = 30 (11.699 sec)
+INFO:loss = 1.0388544, step = 30 (11.699 sec)
+INFO:tensorflow:global_step/sec: 0.426097
+INFO:global_step/sec: 0.426097
+INFO:tensorflow:loss = 1.0234799, step = 35 (11.735 sec)
+INFO:loss = 1.0234799, step = 35 (11.735 sec)
+INFO:tensorflow:global_step/sec: 0.427358
+INFO:global_step/sec: 0.427358
+INFO:tensorflow:loss = 1.0735016, step = 40 (11.700 sec)
+INFO:loss = 1.0735016, step = 40 (11.700 sec)
+INFO:tensorflow:global_step/sec: 0.425853
+INFO:global_step/sec: 0.425853
+INFO:tensorflow:loss = 0.9701828, step = 45 (11.741 sec)
+INFO:loss = 0.9701828, step = 45 (11.741 sec)
+INFO:tensorflow:Saving checkpoints for 50 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 50 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.396312
+INFO:global_step/sec: 0.396312
+INFO:tensorflow:loss = 1.1862043, step = 50 (12.616 sec)
+INFO:loss = 1.1862043, step = 50 (12.616 sec)
+INFO:tensorflow:global_step/sec: 0.426277
+INFO:global_step/sec: 0.426277
+INFO:tensorflow:loss = 1.0019222, step = 55 (11.729 sec)
+INFO:loss = 1.0019222, step = 55 (11.729 sec)
+INFO:tensorflow:global_step/sec: 0.406356
+INFO:global_step/sec: 0.406356
+INFO:tensorflow:loss = 0.9804827, step = 60 (12.304 sec)
+INFO:loss = 0.9804827, step = 60 (12.304 sec)
+INFO:tensorflow:global_step/sec: 0.402589
+INFO:global_step/sec: 0.402589
+INFO:tensorflow:loss = 1.0229654, step = 65 (12.420 sec)
+INFO:loss = 1.0229654, step = 65 (12.420 sec)
+INFO:tensorflow:global_step/sec: 0.398538
+INFO:global_step/sec: 0.398538
+INFO:tensorflow:loss = 1.0055268, step = 70 (12.546 sec)
+INFO:loss = 1.0055268, step = 70 (12.546 sec)
+INFO:tensorflow:global_step/sec: 0.406126
+INFO:global_step/sec: 0.406126
+INFO:tensorflow:loss = 1.055436, step = 75 (12.311 sec)
+INFO:loss = 1.055436, step = 75 (12.311 sec)
+INFO:tensorflow:global_step/sec: 0.408637
+INFO:global_step/sec: 0.408637
+INFO:tensorflow:loss = 1.0319542, step = 80 (12.236 sec)
+INFO:loss = 1.0319542, step = 80 (12.236 sec)
+INFO:tensorflow:global_step/sec: 0.405279
+INFO:global_step/sec: 0.405279
+INFO:tensorflow:loss = 1.0029184, step = 85 (12.337 sec)
+INFO:loss = 1.0029184, step = 85 (12.337 sec)
+INFO:tensorflow:global_step/sec: 0.402608
+INFO:global_step/sec: 0.402608
+INFO:tensorflow:loss = 0.94953233, step = 90 (12.419 sec)
+INFO:loss = 0.94953233, step = 90 (12.419 sec)
+INFO:tensorflow:global_step/sec: 0.407923
+INFO:global_step/sec: 0.407923
+INFO:tensorflow:loss = 0.9966307, step = 95 (12.257 sec)
+INFO:loss = 0.9966307, step = 95 (12.257 sec)
+INFO:tensorflow:Saving checkpoints for 100 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 100 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.368366
+INFO:global_step/sec: 0.368366
+INFO:tensorflow:loss = 0.9814342, step = 100 (13.574 sec)
+INFO:loss = 0.9814342, step = 100 (13.574 sec)
+INFO:tensorflow:global_step/sec: 0.405324
+INFO:global_step/sec: 0.405324
+INFO:tensorflow:loss = 0.9681707, step = 105 (12.335 sec)
+INFO:loss = 0.9681707, step = 105 (12.335 sec)
+INFO:tensorflow:global_step/sec: 0.404838
+INFO:global_step/sec: 0.404838
+INFO:tensorflow:loss = 0.98163766, step = 110 (12.351 sec)
+INFO:loss = 0.98163766, step = 110 (12.351 sec)
+INFO:tensorflow:global_step/sec: 0.405857
+INFO:global_step/sec: 0.405857
+INFO:tensorflow:loss = 1.0436231, step = 115 (12.320 sec)
+INFO:loss = 1.0436231, step = 115 (12.320 sec)
+INFO:tensorflow:global_step/sec: 0.407767
+INFO:global_step/sec: 0.407767
+INFO:tensorflow:loss = 1.0211606, step = 120 (12.262 sec)
+INFO:loss = 1.0211606, step = 120 (12.262 sec)
+INFO:tensorflow:global_step/sec: 0.403997
+INFO:global_step/sec: 0.403997
+INFO:tensorflow:loss = 0.97531396, step = 125 (12.376 sec)
+INFO:loss = 0.97531396, step = 125 (12.376 sec)
+INFO:tensorflow:global_step/sec: 0.403465
+INFO:global_step/sec: 0.403465
+INFO:tensorflow:loss = 0.9432214, step = 130 (12.393 sec)
+INFO:loss = 0.9432214, step = 130 (12.393 sec)
+INFO:tensorflow:global_step/sec: 0.402182
+INFO:global_step/sec: 0.402182
+INFO:tensorflow:loss = 0.97755796, step = 135 (12.432 sec)
+INFO:loss = 0.97755796, step = 135 (12.432 sec)
+INFO:tensorflow:global_step/sec: 0.40386
+INFO:global_step/sec: 0.40386
+INFO:tensorflow:loss = 0.93212545, step = 140 (12.381 sec)
+INFO:loss = 0.93212545, step = 140 (12.381 sec)
+INFO:tensorflow:global_step/sec: 0.404656
+INFO:global_step/sec: 0.404656
+INFO:tensorflow:loss = 0.92133766, step = 145 (12.356 sec)
+INFO:loss = 0.92133766, step = 145 (12.356 sec)
+INFO:tensorflow:Saving checkpoints for 150 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 150 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.379865
+INFO:global_step/sec: 0.379865
+INFO:tensorflow:loss = 1.0800724, step = 150 (13.163 sec)
+INFO:loss = 1.0800724, step = 150 (13.163 sec)
+INFO:tensorflow:global_step/sec: 0.404149
+INFO:global_step/sec: 0.404149
+INFO:tensorflow:loss = 0.97164667, step = 155 (12.372 sec)
+INFO:loss = 0.97164667, step = 155 (12.372 sec)
+INFO:tensorflow:global_step/sec: 0.406624
+INFO:global_step/sec: 0.406624
+INFO:tensorflow:loss = 0.94662, step = 160 (12.296 sec)
+INFO:loss = 0.94662, step = 160 (12.296 sec)
+INFO:tensorflow:global_step/sec: 0.400883
+INFO:global_step/sec: 0.400883
+INFO:tensorflow:loss = 1.0135704, step = 165 (12.473 sec)
+INFO:loss = 1.0135704, step = 165 (12.473 sec)
+INFO:tensorflow:global_step/sec: 0.402378
+INFO:global_step/sec: 0.402378
+INFO:tensorflow:loss = 1.0346671, step = 170 (12.426 sec)
+INFO:loss = 1.0346671, step = 170 (12.426 sec)
+INFO:tensorflow:global_step/sec: 0.403378
+INFO:global_step/sec: 0.403378
+INFO:tensorflow:loss = 0.926412, step = 175 (12.395 sec)
+INFO:loss = 0.926412, step = 175 (12.395 sec)
+INFO:tensorflow:global_step/sec: 0.39997
+INFO:global_step/sec: 0.39997
+INFO:tensorflow:loss = 0.92465436, step = 180 (12.501 sec)
+INFO:loss = 0.92465436, step = 180 (12.501 sec)
+INFO:tensorflow:global_step/sec: 0.403044
+INFO:global_step/sec: 0.403044
+INFO:tensorflow:loss = 0.95918727, step = 185 (12.406 sec)
+INFO:loss = 0.95918727, step = 185 (12.406 sec)
+INFO:tensorflow:global_step/sec: 0.400975
+INFO:global_step/sec: 0.400975
+INFO:tensorflow:loss = 0.95260096, step = 190 (12.470 sec)
+INFO:loss = 0.95260096, step = 190 (12.470 sec)
+INFO:tensorflow:global_step/sec: 0.403122
+INFO:global_step/sec: 0.403122
+INFO:tensorflow:loss = 0.9861723, step = 195 (12.403 sec)
+INFO:loss = 0.9861723, step = 195 (12.403 sec)
+INFO:tensorflow:Saving checkpoints for 200 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 200 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.37768
+INFO:global_step/sec: 0.37768
+INFO:tensorflow:loss = 0.91608036, step = 200 (13.239 sec)
+INFO:loss = 0.91608036, step = 200 (13.239 sec)
+INFO:tensorflow:global_step/sec: 0.406593
+INFO:global_step/sec: 0.406593
+INFO:tensorflow:loss = 0.9616102, step = 205 (12.297 sec)
+INFO:loss = 0.9616102, step = 205 (12.297 sec)
+INFO:tensorflow:global_step/sec: 0.402857
+INFO:global_step/sec: 0.402857
+INFO:tensorflow:loss = 0.8964322, step = 210 (12.411 sec)
+INFO:loss = 0.8964322, step = 210 (12.411 sec)
+INFO:tensorflow:global_step/sec: 0.393403
+INFO:global_step/sec: 0.393403
+INFO:tensorflow:loss = 0.9529773, step = 215 (12.710 sec)
+INFO:loss = 0.9529773, step = 215 (12.710 sec)
+INFO:tensorflow:global_step/sec: 0.404164
+INFO:global_step/sec: 0.404164
+INFO:tensorflow:loss = 0.8844013, step = 220 (12.372 sec)
+INFO:loss = 0.8844013, step = 220 (12.372 sec)
+INFO:tensorflow:global_step/sec: 0.402681
+INFO:global_step/sec: 0.402681
+INFO:tensorflow:loss = 0.91489, step = 225 (12.416 sec)
+INFO:loss = 0.91489, step = 225 (12.416 sec)
+INFO:tensorflow:global_step/sec: 0.401083
+INFO:global_step/sec: 0.401083
+INFO:tensorflow:loss = 0.9507888, step = 230 (12.466 sec)
+INFO:loss = 0.9507888, step = 230 (12.466 sec)
+INFO:tensorflow:global_step/sec: 0.404376
+INFO:global_step/sec: 0.404376
+INFO:tensorflow:loss = 0.84965837, step = 235 (12.365 sec)
+INFO:loss = 0.84965837, step = 235 (12.365 sec)
+INFO:tensorflow:global_step/sec: 0.406008
+INFO:global_step/sec: 0.406008
+INFO:tensorflow:loss = 0.8880564, step = 240 (12.315 sec)
+INFO:loss = 0.8880564, step = 240 (12.315 sec)
+INFO:tensorflow:global_step/sec: 0.405768
+INFO:global_step/sec: 0.405768
+INFO:tensorflow:loss = 0.9643816, step = 245 (12.323 sec)
+INFO:loss = 0.9643816, step = 245 (12.323 sec)
+INFO:tensorflow:Saving checkpoints for 250 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 250 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.376384
+INFO:global_step/sec: 0.376384
+INFO:tensorflow:loss = 1.0286553, step = 250 (13.284 sec)
+INFO:loss = 1.0286553, step = 250 (13.284 sec)
+INFO:tensorflow:global_step/sec: 0.405122
+INFO:global_step/sec: 0.405122
+INFO:tensorflow:loss = 0.90945673, step = 255 (12.342 sec)
+INFO:loss = 0.90945673, step = 255 (12.342 sec)
+INFO:tensorflow:global_step/sec: 0.408481
+INFO:global_step/sec: 0.408481
+INFO:tensorflow:loss = 0.9496105, step = 260 (12.240 sec)
+INFO:loss = 0.9496105, step = 260 (12.240 sec)
+INFO:tensorflow:global_step/sec: 0.404064
+INFO:global_step/sec: 0.404064
+INFO:tensorflow:loss = 0.88561714, step = 265 (12.374 sec)
+INFO:loss = 0.88561714, step = 265 (12.374 sec)
+INFO:tensorflow:global_step/sec: 0.398493
+INFO:global_step/sec: 0.398493
+INFO:tensorflow:loss = 0.87525564, step = 270 (12.548 sec)
+INFO:loss = 0.87525564, step = 270 (12.548 sec)
+INFO:tensorflow:global_step/sec: 0.4053
+INFO:global_step/sec: 0.4053
+INFO:tensorflow:loss = 1.0806706, step = 275 (12.336 sec)
+INFO:loss = 1.0806706, step = 275 (12.336 sec)
+INFO:tensorflow:global_step/sec: 0.407306
+INFO:global_step/sec: 0.407306
+INFO:tensorflow:loss = 0.9315965, step = 280 (12.276 sec)
+INFO:loss = 0.9315965, step = 280 (12.276 sec)
+INFO:tensorflow:global_step/sec: 0.402628
+INFO:global_step/sec: 0.402628
+INFO:tensorflow:loss = 0.90712726, step = 285 (12.418 sec)
+INFO:loss = 0.90712726, step = 285 (12.418 sec)
+INFO:tensorflow:global_step/sec: 0.396884
+INFO:global_step/sec: 0.396884
+INFO:tensorflow:loss = 0.89760226, step = 290 (12.598 sec)
+INFO:loss = 0.89760226, step = 290 (12.598 sec)
+INFO:tensorflow:global_step/sec: 0.405395
+INFO:global_step/sec: 0.405395
+INFO:tensorflow:loss = 0.8868557, step = 295 (12.334 sec)
+INFO:loss = 0.8868557, step = 295 (12.334 sec)
+INFO:tensorflow:Saving checkpoints for 300 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 300 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.372282
+INFO:global_step/sec: 0.372282
+INFO:tensorflow:loss = 0.8304859, step = 300 (13.431 sec)
+INFO:loss = 0.8304859, step = 300 (13.431 sec)
+INFO:tensorflow:global_step/sec: 0.397796
+INFO:global_step/sec: 0.397796
+INFO:tensorflow:loss = 0.8430753, step = 305 (12.569 sec)
+INFO:loss = 0.8430753, step = 305 (12.569 sec)
+INFO:tensorflow:global_step/sec: 0.401885
+INFO:global_step/sec: 0.401885
+INFO:tensorflow:loss = 0.8737948, step = 310 (12.441 sec)
+INFO:loss = 0.8737948, step = 310 (12.441 sec)
+INFO:tensorflow:global_step/sec: 0.408215
+INFO:global_step/sec: 0.408215
+INFO:tensorflow:loss = 0.8603649, step = 315 (12.248 sec)
+INFO:loss = 0.8603649, step = 315 (12.248 sec)
+INFO:tensorflow:global_step/sec: 0.403418
+INFO:global_step/sec: 0.403418
+INFO:tensorflow:loss = 0.88563895, step = 320 (12.394 sec)
+INFO:loss = 0.88563895, step = 320 (12.394 sec)
+INFO:tensorflow:global_step/sec: 0.400029
+INFO:global_step/sec: 0.400029
+INFO:tensorflow:loss = 0.8725395, step = 325 (12.499 sec)
+INFO:loss = 0.8725395, step = 325 (12.499 sec)
+INFO:tensorflow:global_step/sec: 0.407548
+INFO:global_step/sec: 0.407548
+INFO:tensorflow:loss = 0.9677798, step = 330 (12.268 sec)
+INFO:loss = 0.9677798, step = 330 (12.268 sec)
+INFO:tensorflow:global_step/sec: 0.400445
+INFO:global_step/sec: 0.400445
+INFO:tensorflow:loss = 0.9193131, step = 335 (12.486 sec)
+INFO:loss = 0.9193131, step = 335 (12.486 sec)
+INFO:tensorflow:global_step/sec: 0.398227
+INFO:global_step/sec: 0.398227
+INFO:tensorflow:loss = 0.8314744, step = 340 (12.556 sec)
+INFO:loss = 0.8314744, step = 340 (12.556 sec)
+INFO:tensorflow:global_step/sec: 0.397587
+INFO:global_step/sec: 0.397587
+INFO:tensorflow:loss = 1.0407547, step = 345 (12.576 sec)
+INFO:loss = 1.0407547, step = 345 (12.576 sec)
+INFO:tensorflow:Saving checkpoints for 350 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 350 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.37174
+INFO:global_step/sec: 0.37174
+INFO:tensorflow:loss = 0.88128644, step = 350 (13.450 sec)
+INFO:loss = 0.88128644, step = 350 (13.450 sec)
+INFO:tensorflow:global_step/sec: 0.402286
+INFO:global_step/sec: 0.402286
+INFO:tensorflow:loss = 0.7942011, step = 355 (12.429 sec)
+INFO:loss = 0.7942011, step = 355 (12.429 sec)
+INFO:tensorflow:global_step/sec: 0.39615
+INFO:global_step/sec: 0.39615
+INFO:tensorflow:loss = 0.86394805, step = 360 (12.621 sec)
+INFO:loss = 0.86394805, step = 360 (12.621 sec)
+INFO:tensorflow:global_step/sec: 0.405625
+INFO:global_step/sec: 0.405625
+INFO:tensorflow:loss = 0.9689786, step = 365 (12.327 sec)
+INFO:loss = 0.9689786, step = 365 (12.327 sec)
+INFO:tensorflow:global_step/sec: 0.4026
+INFO:global_step/sec: 0.4026
+INFO:tensorflow:loss = 0.8751577, step = 370 (12.419 sec)
+INFO:loss = 0.8751577, step = 370 (12.419 sec)
+INFO:tensorflow:global_step/sec: 0.401833
+INFO:global_step/sec: 0.401833
+INFO:tensorflow:loss = 0.7204754, step = 375 (12.443 sec)
+INFO:loss = 0.7204754, step = 375 (12.443 sec)
+INFO:tensorflow:global_step/sec: 0.405792
+INFO:global_step/sec: 0.405792
+INFO:tensorflow:loss = 0.7768378, step = 380 (12.321 sec)
+INFO:loss = 0.7768378, step = 380 (12.321 sec)
+INFO:tensorflow:global_step/sec: 0.404668
+INFO:global_step/sec: 0.404668
+INFO:tensorflow:loss = 0.87489784, step = 385 (12.356 sec)
+INFO:loss = 0.87489784, step = 385 (12.356 sec)
+INFO:tensorflow:global_step/sec: 0.402622
+INFO:global_step/sec: 0.402622
+INFO:tensorflow:loss = 0.9063977, step = 390 (12.419 sec)
+INFO:loss = 0.9063977, step = 390 (12.419 sec)
+INFO:tensorflow:global_step/sec: 0.40578
+INFO:global_step/sec: 0.40578
+INFO:tensorflow:loss = 1.0027127, step = 395 (12.322 sec)
+INFO:loss = 1.0027127, step = 395 (12.322 sec)
+INFO:tensorflow:Saving checkpoints for 400 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 400 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.37782
+INFO:global_step/sec: 0.37782
+INFO:tensorflow:loss = 0.84270465, step = 400 (13.234 sec)
+INFO:loss = 0.84270465, step = 400 (13.234 sec)
+INFO:tensorflow:global_step/sec: 0.406315
+INFO:global_step/sec: 0.406315
+INFO:tensorflow:loss = 0.747274, step = 405 (12.305 sec)
+INFO:loss = 0.747274, step = 405 (12.305 sec)
+INFO:tensorflow:global_step/sec: 0.403195
+INFO:global_step/sec: 0.403195
+INFO:tensorflow:loss = 0.88149714, step = 410 (12.401 sec)
+INFO:loss = 0.88149714, step = 410 (12.401 sec)
+INFO:tensorflow:global_step/sec: 0.403875
+INFO:global_step/sec: 0.403875
+INFO:tensorflow:loss = 0.87608504, step = 415 (12.380 sec)
+INFO:loss = 0.87608504, step = 415 (12.380 sec)
+INFO:tensorflow:global_step/sec: 0.405379
+INFO:global_step/sec: 0.405379
+INFO:tensorflow:loss = 0.79305804, step = 420 (12.334 sec)
+INFO:loss = 0.79305804, step = 420 (12.334 sec)
+INFO:tensorflow:global_step/sec: 0.40512
+INFO:global_step/sec: 0.40512
+INFO:tensorflow:loss = 0.7535197, step = 425 (12.342 sec)
+INFO:loss = 0.7535197, step = 425 (12.342 sec)
+INFO:tensorflow:global_step/sec: 0.403375
+INFO:global_step/sec: 0.403375
+INFO:tensorflow:loss = 0.99185747, step = 430 (12.395 sec)
+INFO:loss = 0.99185747, step = 430 (12.395 sec)
+INFO:tensorflow:global_step/sec: 0.401956
+INFO:global_step/sec: 0.401956
+INFO:tensorflow:loss = 0.7670169, step = 435 (12.439 sec)
+INFO:loss = 0.7670169, step = 435 (12.439 sec)
+INFO:tensorflow:global_step/sec: 0.403607
+INFO:global_step/sec: 0.403607
+INFO:tensorflow:loss = 0.7407192, step = 440 (12.388 sec)
+INFO:loss = 0.7407192, step = 440 (12.388 sec)
+INFO:tensorflow:global_step/sec: 0.403102
+INFO:global_step/sec: 0.403102
+INFO:tensorflow:loss = 1.0321977, step = 445 (12.404 sec)
+INFO:loss = 1.0321977, step = 445 (12.404 sec)
+INFO:tensorflow:Saving checkpoints for 450 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 450 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.373827
+INFO:global_step/sec: 0.373827
+INFO:tensorflow:loss = 0.87001926, step = 450 (13.375 sec)
+INFO:loss = 0.87001926, step = 450 (13.375 sec)
+INFO:tensorflow:global_step/sec: 0.4046
+INFO:global_step/sec: 0.4046
+INFO:tensorflow:loss = 0.7610865, step = 455 (12.358 sec)
+INFO:loss = 0.7610865, step = 455 (12.358 sec)
+INFO:tensorflow:global_step/sec: 0.40347
+INFO:global_step/sec: 0.40347
+INFO:tensorflow:loss = 0.80092454, step = 460 (12.392 sec)
+INFO:loss = 0.80092454, step = 460 (12.392 sec)
+INFO:tensorflow:global_step/sec: 0.404799
+INFO:global_step/sec: 0.404799
+INFO:tensorflow:loss = 0.9283959, step = 465 (12.352 sec)
+INFO:loss = 0.9283959, step = 465 (12.352 sec)
+INFO:tensorflow:global_step/sec: 0.404312
+INFO:global_step/sec: 0.404312
+INFO:tensorflow:loss = 0.77051574, step = 470 (12.367 sec)
+INFO:loss = 0.77051574, step = 470 (12.367 sec)
+INFO:tensorflow:global_step/sec: 0.404858
+INFO:global_step/sec: 0.404858
+INFO:tensorflow:loss = 0.9143564, step = 475 (12.350 sec)
+INFO:loss = 0.9143564, step = 475 (12.350 sec)
+INFO:tensorflow:global_step/sec: 0.406575
+INFO:global_step/sec: 0.406575
+INFO:tensorflow:loss = 0.77584684, step = 480 (12.298 sec)
+INFO:loss = 0.77584684, step = 480 (12.298 sec)
+INFO:tensorflow:global_step/sec: 0.402681
+INFO:global_step/sec: 0.402681
+INFO:tensorflow:loss = 0.7652855, step = 485 (12.416 sec)
+INFO:loss = 0.7652855, step = 485 (12.416 sec)
+INFO:tensorflow:global_step/sec: 0.399699
+INFO:global_step/sec: 0.399699
+INFO:tensorflow:loss = 0.7392746, step = 490 (12.509 sec)
+INFO:loss = 0.7392746, step = 490 (12.509 sec)
+INFO:tensorflow:global_step/sec: 0.405511
+INFO:global_step/sec: 0.405511
+INFO:tensorflow:loss = 0.82539207, step = 495 (12.330 sec)
+INFO:loss = 0.82539207, step = 495 (12.330 sec)
+INFO:tensorflow:Saving checkpoints for 500 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 500 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.374561
+INFO:global_step/sec: 0.374561
+INFO:tensorflow:loss = 0.8434835, step = 500 (13.349 sec)
+INFO:loss = 0.8434835, step = 500 (13.349 sec)
+INFO:tensorflow:global_step/sec: 0.398631
+INFO:global_step/sec: 0.398631
+INFO:tensorflow:loss = 0.79050606, step = 505 (12.543 sec)
+INFO:loss = 0.79050606, step = 505 (12.543 sec)
+INFO:tensorflow:global_step/sec: 0.403676
+INFO:global_step/sec: 0.403676
+INFO:tensorflow:loss = 0.7583879, step = 510 (12.386 sec)
+INFO:loss = 0.7583879, step = 510 (12.386 sec)
+INFO:tensorflow:global_step/sec: 0.403989
+INFO:global_step/sec: 0.403989
+INFO:tensorflow:loss = 0.7283447, step = 515 (12.377 sec)
+INFO:loss = 0.7283447, step = 515 (12.377 sec)
+INFO:tensorflow:global_step/sec: 0.398192
+INFO:global_step/sec: 0.398192
+INFO:tensorflow:loss = 0.74086124, step = 520 (12.557 sec)
+INFO:loss = 0.74086124, step = 520 (12.557 sec)
+INFO:tensorflow:global_step/sec: 0.405735
+INFO:global_step/sec: 0.405735
+INFO:tensorflow:loss = 0.8120532, step = 525 (12.323 sec)
+INFO:loss = 0.8120532, step = 525 (12.323 sec)
+INFO:tensorflow:global_step/sec: 0.403643
+INFO:global_step/sec: 0.403643
+INFO:tensorflow:loss = 0.7583283, step = 530 (12.387 sec)
+INFO:loss = 0.7583283, step = 530 (12.387 sec)
+INFO:tensorflow:global_step/sec: 0.40558
+INFO:global_step/sec: 0.40558
+INFO:tensorflow:loss = 0.80520153, step = 535 (12.328 sec)
+INFO:loss = 0.80520153, step = 535 (12.328 sec)
+INFO:tensorflow:global_step/sec: 0.406625
+INFO:global_step/sec: 0.406625
+INFO:tensorflow:loss = 0.9404725, step = 540 (12.296 sec)
+INFO:loss = 0.9404725, step = 540 (12.296 sec)
+INFO:tensorflow:global_step/sec: 0.39853
+INFO:global_step/sec: 0.39853
+INFO:tensorflow:loss = 0.8448864, step = 545 (12.546 sec)
+INFO:loss = 0.8448864, step = 545 (12.546 sec)
+INFO:tensorflow:Saving checkpoints for 550 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 550 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.369326
+INFO:global_step/sec: 0.369326
+INFO:tensorflow:loss = 0.7021303, step = 550 (13.538 sec)
+INFO:loss = 0.7021303, step = 550 (13.538 sec)
+INFO:tensorflow:global_step/sec: 0.402868
+INFO:global_step/sec: 0.402868
+INFO:tensorflow:loss = 0.84100056, step = 555 (12.411 sec)
+INFO:loss = 0.84100056, step = 555 (12.411 sec)
+INFO:tensorflow:global_step/sec: 0.401368
+INFO:global_step/sec: 0.401368
+INFO:tensorflow:loss = 0.7941654, step = 560 (12.458 sec)
+INFO:loss = 0.7941654, step = 560 (12.458 sec)
+INFO:tensorflow:global_step/sec: 0.402757
+INFO:global_step/sec: 0.402757
+INFO:tensorflow:loss = 0.74641174, step = 565 (12.414 sec)
+INFO:loss = 0.74641174, step = 565 (12.414 sec)
+INFO:tensorflow:global_step/sec: 0.399806
+INFO:global_step/sec: 0.399806
+INFO:tensorflow:loss = 0.88076735, step = 570 (12.506 sec)
+INFO:loss = 0.88076735, step = 570 (12.506 sec)
+INFO:tensorflow:global_step/sec: 0.395596
+INFO:global_step/sec: 0.395596
+INFO:tensorflow:loss = 0.6462102, step = 575 (12.639 sec)
+INFO:loss = 0.6462102, step = 575 (12.639 sec)
+INFO:tensorflow:global_step/sec: 0.40381
+INFO:global_step/sec: 0.40381
+INFO:tensorflow:loss = 0.745195, step = 580 (12.382 sec)
+INFO:loss = 0.745195, step = 580 (12.382 sec)
+INFO:tensorflow:global_step/sec: 0.405085
+INFO:global_step/sec: 0.405085
+INFO:tensorflow:loss = 0.7830169, step = 585 (12.343 sec)
+INFO:loss = 0.7830169, step = 585 (12.343 sec)
+INFO:tensorflow:global_step/sec: 0.407084
+INFO:global_step/sec: 0.407084
+INFO:tensorflow:loss = 0.71127313, step = 590 (12.282 sec)
+INFO:loss = 0.71127313, step = 590 (12.282 sec)
+INFO:tensorflow:global_step/sec: 0.404005
+INFO:global_step/sec: 0.404005
+INFO:tensorflow:loss = 0.7689101, step = 595 (12.376 sec)
+INFO:loss = 0.7689101, step = 595 (12.376 sec)
+INFO:tensorflow:Saving checkpoints for 600 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 600 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.377959
+INFO:global_step/sec: 0.377959
+INFO:tensorflow:loss = 0.7656645, step = 600 (13.229 sec)
+INFO:loss = 0.7656645, step = 600 (13.229 sec)
+INFO:tensorflow:global_step/sec: 0.399008
+INFO:global_step/sec: 0.399008
+INFO:tensorflow:loss = 0.7336476, step = 605 (12.531 sec)
+INFO:loss = 0.7336476, step = 605 (12.531 sec)
+INFO:tensorflow:global_step/sec: 0.403758
+INFO:global_step/sec: 0.403758
+INFO:tensorflow:loss = 0.8641428, step = 610 (12.384 sec)
+INFO:loss = 0.8641428, step = 610 (12.384 sec)
+INFO:tensorflow:global_step/sec: 0.404448
+INFO:global_step/sec: 0.404448
+INFO:tensorflow:loss = 0.79779613, step = 615 (12.362 sec)
+INFO:loss = 0.79779613, step = 615 (12.362 sec)
+INFO:tensorflow:global_step/sec: 0.403436
+INFO:global_step/sec: 0.403436
+INFO:tensorflow:loss = 0.7315326, step = 620 (12.394 sec)
+INFO:loss = 0.7315326, step = 620 (12.394 sec)
+INFO:tensorflow:global_step/sec: 0.403216
+INFO:global_step/sec: 0.403216
+INFO:tensorflow:loss = 0.7936476, step = 625 (12.400 sec)
+INFO:loss = 0.7936476, step = 625 (12.400 sec)
+INFO:tensorflow:global_step/sec: 0.407167
+INFO:global_step/sec: 0.407167
+INFO:tensorflow:loss = 0.7908285, step = 630 (12.280 sec)
+INFO:loss = 0.7908285, step = 630 (12.280 sec)
+INFO:tensorflow:global_step/sec: 0.402964
+INFO:global_step/sec: 0.402964
+INFO:tensorflow:loss = 0.6913651, step = 635 (12.408 sec)
+INFO:loss = 0.6913651, step = 635 (12.408 sec)
+INFO:tensorflow:global_step/sec: 0.404782
+INFO:global_step/sec: 0.404782
+INFO:tensorflow:loss = 0.6944676, step = 640 (12.352 sec)
+INFO:loss = 0.6944676, step = 640 (12.352 sec)
+INFO:tensorflow:global_step/sec: 0.402629
+INFO:global_step/sec: 0.402629
+INFO:tensorflow:loss = 0.724677, step = 645 (12.418 sec)
+INFO:loss = 0.724677, step = 645 (12.418 sec)
+INFO:tensorflow:Saving checkpoints for 650 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 650 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.37457
+INFO:global_step/sec: 0.37457
+INFO:tensorflow:loss = 0.77403796, step = 650 (13.349 sec)
+INFO:loss = 0.77403796, step = 650 (13.349 sec)
+INFO:tensorflow:global_step/sec: 0.402598
+INFO:global_step/sec: 0.402598
+INFO:tensorflow:loss = 0.68769467, step = 655 (12.419 sec)
+INFO:loss = 0.68769467, step = 655 (12.419 sec)
+INFO:tensorflow:global_step/sec: 0.406126
+INFO:global_step/sec: 0.406126
+INFO:tensorflow:loss = 0.7212552, step = 660 (12.311 sec)
+INFO:loss = 0.7212552, step = 660 (12.311 sec)
+INFO:tensorflow:global_step/sec: 0.404075
+INFO:global_step/sec: 0.404075
+INFO:tensorflow:loss = 0.7350411, step = 665 (12.374 sec)
+INFO:loss = 0.7350411, step = 665 (12.374 sec)
+INFO:tensorflow:global_step/sec: 0.407082
+INFO:global_step/sec: 0.407082
+INFO:tensorflow:loss = 0.76856464, step = 670 (12.282 sec)
+INFO:loss = 0.76856464, step = 670 (12.282 sec)
+INFO:tensorflow:global_step/sec: 0.402206
+INFO:global_step/sec: 0.402206
+INFO:tensorflow:loss = 0.6737155, step = 675 (12.431 sec)
+INFO:loss = 0.6737155, step = 675 (12.431 sec)
+INFO:tensorflow:global_step/sec: 0.396474
+INFO:global_step/sec: 0.396474
+INFO:tensorflow:loss = 0.7808014, step = 680 (12.611 sec)
+INFO:loss = 0.7808014, step = 680 (12.611 sec)
+INFO:tensorflow:global_step/sec: 0.405013
+INFO:global_step/sec: 0.405013
+INFO:tensorflow:loss = 0.8437234, step = 685 (12.345 sec)
+INFO:loss = 0.8437234, step = 685 (12.345 sec)
+INFO:tensorflow:global_step/sec: 0.403318
+INFO:global_step/sec: 0.403318
+INFO:tensorflow:loss = 0.8274076, step = 690 (12.397 sec)
+INFO:loss = 0.8274076, step = 690 (12.397 sec)
+INFO:tensorflow:global_step/sec: 0.400829
+INFO:global_step/sec: 0.400829
+INFO:tensorflow:loss = 0.9035759, step = 695 (12.474 sec)
+INFO:loss = 0.9035759, step = 695 (12.474 sec)
+INFO:tensorflow:Saving checkpoints for 700 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 700 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.373511
+INFO:global_step/sec: 0.373511
+INFO:tensorflow:loss = 0.7710697, step = 700 (13.387 sec)
+INFO:loss = 0.7710697, step = 700 (13.387 sec)
+INFO:tensorflow:global_step/sec: 0.407226
+INFO:global_step/sec: 0.407226
+INFO:tensorflow:loss = 0.69189554, step = 705 (12.278 sec)
+INFO:loss = 0.69189554, step = 705 (12.278 sec)
+INFO:tensorflow:global_step/sec: 0.404151
+INFO:global_step/sec: 0.404151
+INFO:tensorflow:loss = 0.72115636, step = 710 (12.372 sec)
+INFO:loss = 0.72115636, step = 710 (12.372 sec)
+INFO:tensorflow:global_step/sec: 0.402609
+INFO:global_step/sec: 0.402609
+INFO:tensorflow:loss = 0.8353751, step = 715 (12.419 sec)
+INFO:loss = 0.8353751, step = 715 (12.419 sec)
+INFO:tensorflow:global_step/sec: 0.405186
+INFO:global_step/sec: 0.405186
+INFO:tensorflow:loss = 0.8979813, step = 720 (12.340 sec)
+INFO:loss = 0.8979813, step = 720 (12.340 sec)
+INFO:tensorflow:global_step/sec: 0.405892
+INFO:global_step/sec: 0.405892
+INFO:tensorflow:loss = 0.743807, step = 725 (12.319 sec)
+INFO:loss = 0.743807, step = 725 (12.319 sec)
+INFO:tensorflow:global_step/sec: 0.405058
+INFO:global_step/sec: 0.405058
+INFO:tensorflow:loss = 0.7663827, step = 730 (12.344 sec)
+INFO:loss = 0.7663827, step = 730 (12.344 sec)
+INFO:tensorflow:global_step/sec: 0.404547
+INFO:global_step/sec: 0.404547
+INFO:tensorflow:loss = 0.6817932, step = 735 (12.359 sec)
+INFO:loss = 0.6817932, step = 735 (12.359 sec)
+INFO:tensorflow:global_step/sec: 0.404898
+INFO:global_step/sec: 0.404898
+INFO:tensorflow:loss = 0.85995466, step = 740 (12.349 sec)
+INFO:loss = 0.85995466, step = 740 (12.349 sec)
+INFO:tensorflow:global_step/sec: 0.404547
+INFO:global_step/sec: 0.404547
+INFO:tensorflow:loss = 0.84455824, step = 745 (12.360 sec)
+INFO:loss = 0.84455824, step = 745 (12.360 sec)
+INFO:tensorflow:Saving checkpoints for 750 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 750 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.374596
+INFO:global_step/sec: 0.374596
+INFO:tensorflow:loss = 0.6946108, step = 750 (13.347 sec)
+INFO:loss = 0.6946108, step = 750 (13.347 sec)
+INFO:tensorflow:global_step/sec: 0.402587
+INFO:global_step/sec: 0.402587
+INFO:tensorflow:loss = 0.8164137, step = 755 (12.420 sec)
+INFO:loss = 0.8164137, step = 755 (12.420 sec)
+INFO:tensorflow:global_step/sec: 0.40574
+INFO:global_step/sec: 0.40574
+INFO:tensorflow:loss = 0.81378275, step = 760 (12.323 sec)
+INFO:loss = 0.81378275, step = 760 (12.323 sec)
+INFO:tensorflow:global_step/sec: 0.398806
+INFO:global_step/sec: 0.398806
+INFO:tensorflow:loss = 0.61714774, step = 765 (12.537 sec)
+INFO:loss = 0.61714774, step = 765 (12.537 sec)
+INFO:tensorflow:global_step/sec: 0.399461
+INFO:global_step/sec: 0.399461
+INFO:tensorflow:loss = 0.8023864, step = 770 (12.517 sec)
+INFO:loss = 0.8023864, step = 770 (12.517 sec)
+INFO:tensorflow:global_step/sec: 0.396135
+INFO:global_step/sec: 0.396135
+INFO:tensorflow:loss = 0.65019894, step = 775 (12.622 sec)
+INFO:loss = 0.65019894, step = 775 (12.622 sec)
+INFO:tensorflow:global_step/sec: 0.400224
+INFO:global_step/sec: 0.400224
+INFO:tensorflow:loss = 0.8606257, step = 780 (12.493 sec)
+INFO:loss = 0.8606257, step = 780 (12.493 sec)
+INFO:tensorflow:global_step/sec: 0.404127
+INFO:global_step/sec: 0.404127
+INFO:tensorflow:loss = 0.7857744, step = 785 (12.372 sec)
+INFO:loss = 0.7857744, step = 785 (12.372 sec)
+INFO:tensorflow:global_step/sec: 0.390187
+INFO:global_step/sec: 0.390187
+INFO:tensorflow:loss = 0.59209496, step = 790 (12.814 sec)
+INFO:loss = 0.59209496, step = 790 (12.814 sec)
+INFO:tensorflow:global_step/sec: 0.402288
+INFO:global_step/sec: 0.402288
+INFO:tensorflow:loss = 0.674104, step = 795 (12.429 sec)
+INFO:loss = 0.674104, step = 795 (12.429 sec)
+INFO:tensorflow:Saving checkpoints for 800 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 800 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.373614
+INFO:global_step/sec: 0.373614
+INFO:tensorflow:loss = 1.0341152, step = 800 (13.383 sec)
+INFO:loss = 1.0341152, step = 800 (13.383 sec)
+INFO:tensorflow:global_step/sec: 0.403977
+INFO:global_step/sec: 0.403977
+INFO:tensorflow:loss = 0.9875826, step = 805 (12.376 sec)
+INFO:loss = 0.9875826, step = 805 (12.376 sec)
+INFO:tensorflow:global_step/sec: 0.406845
+INFO:global_step/sec: 0.406845
+INFO:tensorflow:loss = 0.7281991, step = 810 (12.290 sec)
+INFO:loss = 0.7281991, step = 810 (12.290 sec)
+INFO:tensorflow:global_step/sec: 0.405118
+INFO:global_step/sec: 0.405118
+INFO:tensorflow:loss = 0.8627425, step = 815 (12.342 sec)
+INFO:loss = 0.8627425, step = 815 (12.342 sec)
+INFO:tensorflow:global_step/sec: 0.403528
+INFO:global_step/sec: 0.403528
+INFO:tensorflow:loss = 0.68540466, step = 820 (12.391 sec)
+INFO:loss = 0.68540466, step = 820 (12.391 sec)
+INFO:tensorflow:global_step/sec: 0.404861
+INFO:global_step/sec: 0.404861
+INFO:tensorflow:loss = 0.9661093, step = 825 (12.350 sec)
+INFO:loss = 0.9661093, step = 825 (12.350 sec)
+INFO:tensorflow:global_step/sec: 0.40512
+INFO:global_step/sec: 0.40512
+INFO:tensorflow:loss = 0.733845, step = 830 (12.342 sec)
+INFO:loss = 0.733845, step = 830 (12.342 sec)
+INFO:tensorflow:global_step/sec: 0.403571
+INFO:global_step/sec: 0.403571
+INFO:tensorflow:loss = 0.7757377, step = 835 (12.389 sec)
+INFO:loss = 0.7757377, step = 835 (12.389 sec)
+INFO:tensorflow:global_step/sec: 0.405865
+INFO:global_step/sec: 0.405865
+INFO:tensorflow:loss = 0.7515228, step = 840 (12.319 sec)
+INFO:loss = 0.7515228, step = 840 (12.319 sec)
+INFO:tensorflow:global_step/sec: 0.400996
+INFO:global_step/sec: 0.400996
+INFO:tensorflow:loss = 0.7339777, step = 845 (12.469 sec)
+INFO:loss = 0.7339777, step = 845 (12.469 sec)
+INFO:tensorflow:Saving checkpoints for 850 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 850 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.369773
+INFO:global_step/sec: 0.369773
+INFO:tensorflow:loss = 0.8745522, step = 850 (13.522 sec)
+INFO:loss = 0.8745522, step = 850 (13.522 sec)
+INFO:tensorflow:global_step/sec: 0.405378
+INFO:global_step/sec: 0.405378
+INFO:tensorflow:loss = 0.7627855, step = 855 (12.334 sec)
+INFO:loss = 0.7627855, step = 855 (12.334 sec)
+INFO:tensorflow:global_step/sec: 0.404855
+INFO:global_step/sec: 0.404855
+INFO:tensorflow:loss = 0.8356758, step = 860 (12.350 sec)
+INFO:loss = 0.8356758, step = 860 (12.350 sec)
+INFO:tensorflow:global_step/sec: 0.404738
+INFO:global_step/sec: 0.404738
+INFO:tensorflow:loss = 0.61446476, step = 865 (12.354 sec)
+INFO:loss = 0.61446476, step = 865 (12.354 sec)
+INFO:tensorflow:global_step/sec: 0.407331
+INFO:global_step/sec: 0.407331
+INFO:tensorflow:loss = 0.6747717, step = 870 (12.275 sec)
+INFO:loss = 0.6747717, step = 870 (12.275 sec)
+INFO:tensorflow:global_step/sec: 0.401075
+INFO:global_step/sec: 0.401075
+INFO:tensorflow:loss = 0.8801171, step = 875 (12.467 sec)
+INFO:loss = 0.8801171, step = 875 (12.467 sec)
+INFO:tensorflow:global_step/sec: 0.407568
+INFO:global_step/sec: 0.407568
+INFO:tensorflow:loss = 0.59966683, step = 880 (12.268 sec)
+INFO:loss = 0.59966683, step = 880 (12.268 sec)
+INFO:tensorflow:global_step/sec: 0.407322
+INFO:global_step/sec: 0.407322
+INFO:tensorflow:loss = 0.62321836, step = 885 (12.275 sec)
+INFO:loss = 0.62321836, step = 885 (12.275 sec)
+INFO:tensorflow:global_step/sec: 0.404537
+INFO:global_step/sec: 0.404537
+INFO:tensorflow:loss = 0.59626377, step = 890 (12.360 sec)
+INFO:loss = 0.59626377, step = 890 (12.360 sec)
+INFO:tensorflow:global_step/sec: 0.407426
+INFO:global_step/sec: 0.407426
+INFO:tensorflow:loss = 0.6752059, step = 895 (12.272 sec)
+INFO:loss = 0.6752059, step = 895 (12.272 sec)
+INFO:tensorflow:Saving checkpoints for 900 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 900 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.374556
+INFO:global_step/sec: 0.374556
+INFO:tensorflow:loss = 0.75156444, step = 900 (13.350 sec)
+INFO:loss = 0.75156444, step = 900 (13.350 sec)
+INFO:tensorflow:global_step/sec: 0.403216
+INFO:global_step/sec: 0.403216
+INFO:tensorflow:loss = 0.74503475, step = 905 (12.400 sec)
+INFO:loss = 0.74503475, step = 905 (12.400 sec)
+INFO:tensorflow:global_step/sec: 0.403174
+INFO:global_step/sec: 0.403174
+INFO:tensorflow:loss = 0.70627123, step = 910 (12.402 sec)
+INFO:loss = 0.70627123, step = 910 (12.402 sec)
+INFO:tensorflow:global_step/sec: 0.404612
+INFO:global_step/sec: 0.404612
+INFO:tensorflow:loss = 0.6336211, step = 915 (12.358 sec)
+INFO:loss = 0.6336211, step = 915 (12.358 sec)
+INFO:tensorflow:global_step/sec: 0.394316
+INFO:global_step/sec: 0.394316
+INFO:tensorflow:loss = 0.6861386, step = 920 (12.680 sec)
+INFO:loss = 0.6861386, step = 920 (12.680 sec)
+INFO:tensorflow:global_step/sec: 0.407572
+INFO:global_step/sec: 0.407572
+INFO:tensorflow:loss = 0.62209463, step = 925 (12.268 sec)
+INFO:loss = 0.62209463, step = 925 (12.268 sec)
+INFO:tensorflow:global_step/sec: 0.407322
+INFO:global_step/sec: 0.407322
+INFO:tensorflow:loss = 0.69436383, step = 930 (12.276 sec)
+INFO:loss = 0.69436383, step = 930 (12.276 sec)
+INFO:tensorflow:global_step/sec: 0.39499
+INFO:global_step/sec: 0.39499
+INFO:tensorflow:loss = 0.65997493, step = 935 (12.658 sec)
+INFO:loss = 0.65997493, step = 935 (12.658 sec)
+INFO:tensorflow:global_step/sec: 0.406353
+INFO:global_step/sec: 0.406353
+INFO:tensorflow:loss = 0.69105023, step = 940 (12.305 sec)
+INFO:loss = 0.69105023, step = 940 (12.305 sec)
+INFO:tensorflow:global_step/sec: 0.407291
+INFO:global_step/sec: 0.407291
+INFO:tensorflow:loss = 0.76140654, step = 945 (12.276 sec)
+INFO:loss = 0.76140654, step = 945 (12.276 sec)
+INFO:tensorflow:Saving checkpoints for 950 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 950 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.373557
+INFO:global_step/sec: 0.373557
+INFO:tensorflow:loss = 0.67092323, step = 950 (13.385 sec)
+INFO:loss = 0.67092323, step = 950 (13.385 sec)
+INFO:tensorflow:global_step/sec: 0.404988
+INFO:global_step/sec: 0.404988
+INFO:tensorflow:loss = 0.5943731, step = 955 (12.346 sec)
+INFO:loss = 0.5943731, step = 955 (12.346 sec)
+INFO:tensorflow:global_step/sec: 0.404789
+INFO:global_step/sec: 0.404789
+INFO:tensorflow:loss = 0.7035512, step = 960 (12.352 sec)
+INFO:loss = 0.7035512, step = 960 (12.352 sec)
+INFO:tensorflow:global_step/sec: 0.408331
+INFO:global_step/sec: 0.408331
+INFO:tensorflow:loss = 0.79308283, step = 965 (12.245 sec)
+INFO:loss = 0.79308283, step = 965 (12.245 sec)
+INFO:tensorflow:global_step/sec: 0.401351
+INFO:global_step/sec: 0.401351
+INFO:tensorflow:loss = 0.56580746, step = 970 (12.458 sec)
+INFO:loss = 0.56580746, step = 970 (12.458 sec)
+INFO:tensorflow:global_step/sec: 0.403054
+INFO:global_step/sec: 0.403054
+INFO:tensorflow:loss = 0.86704856, step = 975 (12.405 sec)
+INFO:loss = 0.86704856, step = 975 (12.405 sec)
+INFO:tensorflow:global_step/sec: 0.400315
+INFO:global_step/sec: 0.400315
+INFO:tensorflow:loss = 0.55263823, step = 980 (12.490 sec)
+INFO:loss = 0.55263823, step = 980 (12.490 sec)
+INFO:tensorflow:global_step/sec: 0.399446
+INFO:global_step/sec: 0.399446
+INFO:tensorflow:loss = 0.66216135, step = 985 (12.517 sec)
+INFO:loss = 0.66216135, step = 985 (12.517 sec)
+INFO:tensorflow:global_step/sec: 0.402928
+INFO:global_step/sec: 0.402928
+INFO:tensorflow:loss = 0.7670557, step = 990 (12.409 sec)
+INFO:loss = 0.7670557, step = 990 (12.409 sec)
+INFO:tensorflow:global_step/sec: 0.404049
+INFO:global_step/sec: 0.404049
+INFO:tensorflow:loss = 0.7818315, step = 995 (12.375 sec)
+INFO:loss = 0.7818315, step = 995 (12.375 sec)
+INFO:tensorflow:Saving checkpoints for 1000 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1000 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.371329
+INFO:global_step/sec: 0.371329
+INFO:tensorflow:loss = 0.83781016, step = 1000 (13.466 sec)
+INFO:loss = 0.83781016, step = 1000 (13.466 sec)
+INFO:tensorflow:global_step/sec: 0.402556
+INFO:global_step/sec: 0.402556
+INFO:tensorflow:loss = 0.6455949, step = 1005 (12.420 sec)
+INFO:loss = 0.6455949, step = 1005 (12.420 sec)
+INFO:tensorflow:global_step/sec: 0.404762
+INFO:global_step/sec: 0.404762
+INFO:tensorflow:loss = 0.9138768, step = 1010 (12.353 sec)
+INFO:loss = 0.9138768, step = 1010 (12.353 sec)
+INFO:tensorflow:global_step/sec: 0.406917
+INFO:global_step/sec: 0.406917
+INFO:tensorflow:loss = 0.6644589, step = 1015 (12.287 sec)
+INFO:loss = 0.6644589, step = 1015 (12.287 sec)
+INFO:tensorflow:global_step/sec: 0.403942
+INFO:global_step/sec: 0.403942
+INFO:tensorflow:loss = 0.56819206, step = 1020 (12.378 sec)
+INFO:loss = 0.56819206, step = 1020 (12.378 sec)
+INFO:tensorflow:global_step/sec: 0.406359
+INFO:global_step/sec: 0.406359
+INFO:tensorflow:loss = 0.6313852, step = 1025 (12.304 sec)
+INFO:loss = 0.6313852, step = 1025 (12.304 sec)
+INFO:tensorflow:global_step/sec: 0.406217
+INFO:global_step/sec: 0.406217
+INFO:tensorflow:loss = 0.6345411, step = 1030 (12.309 sec)
+INFO:loss = 0.6345411, step = 1030 (12.309 sec)
+INFO:tensorflow:global_step/sec: 0.406137
+INFO:global_step/sec: 0.406137
+INFO:tensorflow:loss = 0.81932104, step = 1035 (12.311 sec)
+INFO:loss = 0.81932104, step = 1035 (12.311 sec)
+INFO:tensorflow:global_step/sec: 0.406193
+INFO:global_step/sec: 0.406193
+INFO:tensorflow:loss = 0.87330925, step = 1040 (12.309 sec)
+INFO:loss = 0.87330925, step = 1040 (12.309 sec)
+INFO:tensorflow:global_step/sec: 0.406688
+INFO:global_step/sec: 0.406688
+INFO:tensorflow:loss = 0.94040453, step = 1045 (12.294 sec)
+INFO:loss = 0.94040453, step = 1045 (12.294 sec)
+INFO:tensorflow:Saving checkpoints for 1050 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1050 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.373609
+INFO:global_step/sec: 0.373609
+INFO:tensorflow:loss = 0.7028532, step = 1050 (13.383 sec)
+INFO:loss = 0.7028532, step = 1050 (13.383 sec)
+INFO:tensorflow:global_step/sec: 0.406127
+INFO:global_step/sec: 0.406127
+INFO:tensorflow:loss = 0.6806646, step = 1055 (12.311 sec)
+INFO:loss = 0.6806646, step = 1055 (12.311 sec)
+INFO:tensorflow:global_step/sec: 0.405972
+INFO:global_step/sec: 0.405972
+INFO:tensorflow:loss = 0.7377385, step = 1060 (12.316 sec)
+INFO:loss = 0.7377385, step = 1060 (12.316 sec)
+INFO:tensorflow:global_step/sec: 0.401768
+INFO:global_step/sec: 0.401768
+INFO:tensorflow:loss = 0.96745074, step = 1065 (12.445 sec)
+INFO:loss = 0.96745074, step = 1065 (12.445 sec)
+INFO:tensorflow:global_step/sec: 0.398564
+INFO:global_step/sec: 0.398564
+INFO:tensorflow:loss = 1.0758189, step = 1070 (12.545 sec)
+INFO:loss = 1.0758189, step = 1070 (12.545 sec)
+INFO:tensorflow:global_step/sec: 0.403151
+INFO:global_step/sec: 0.403151
+INFO:tensorflow:loss = 0.816306, step = 1075 (12.402 sec)
+INFO:loss = 0.816306, step = 1075 (12.402 sec)
+INFO:tensorflow:global_step/sec: 0.405365
+INFO:global_step/sec: 0.405365
+INFO:tensorflow:loss = 0.9253626, step = 1080 (12.335 sec)
+INFO:loss = 0.9253626, step = 1080 (12.335 sec)
+INFO:tensorflow:global_step/sec: 0.401557
+INFO:global_step/sec: 0.401557
+INFO:tensorflow:loss = 0.60812074, step = 1085 (12.452 sec)
+INFO:loss = 0.60812074, step = 1085 (12.452 sec)
+INFO:tensorflow:global_step/sec: 0.404522
+INFO:global_step/sec: 0.404522
+INFO:tensorflow:loss = 0.6852428, step = 1090 (12.360 sec)
+INFO:loss = 0.6852428, step = 1090 (12.360 sec)
+INFO:tensorflow:global_step/sec: 0.403765
+INFO:global_step/sec: 0.403765
+INFO:tensorflow:loss = 0.84232616, step = 1095 (12.383 sec)
+INFO:loss = 0.84232616, step = 1095 (12.383 sec)
+INFO:tensorflow:Saving checkpoints for 1100 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1100 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.376308
+INFO:global_step/sec: 0.376308
+INFO:tensorflow:loss = 0.8265009, step = 1100 (13.287 sec)
+INFO:loss = 0.8265009, step = 1100 (13.287 sec)
+INFO:tensorflow:global_step/sec: 0.403567
+INFO:global_step/sec: 0.403567
+INFO:tensorflow:loss = 0.7500583, step = 1105 (12.389 sec)
+INFO:loss = 0.7500583, step = 1105 (12.389 sec)
+INFO:tensorflow:global_step/sec: 0.403531
+INFO:global_step/sec: 0.403531
+INFO:tensorflow:loss = 0.7254505, step = 1110 (12.391 sec)
+INFO:loss = 0.7254505, step = 1110 (12.391 sec)
+INFO:tensorflow:global_step/sec: 0.406834
+INFO:global_step/sec: 0.406834
+INFO:tensorflow:loss = 0.56012064, step = 1115 (12.290 sec)
+INFO:loss = 0.56012064, step = 1115 (12.290 sec)
+INFO:tensorflow:global_step/sec: 0.405747
+INFO:global_step/sec: 0.405747
+INFO:tensorflow:loss = 0.72940665, step = 1120 (12.323 sec)
+INFO:loss = 0.72940665, step = 1120 (12.323 sec)
+INFO:tensorflow:global_step/sec: 0.404089
+INFO:global_step/sec: 0.404089
+INFO:tensorflow:loss = 0.6546557, step = 1125 (12.374 sec)
+INFO:loss = 0.6546557, step = 1125 (12.374 sec)
+INFO:tensorflow:global_step/sec: 0.40833
+INFO:global_step/sec: 0.40833
+INFO:tensorflow:loss = 0.7863064, step = 1130 (12.245 sec)
+INFO:loss = 0.7863064, step = 1130 (12.245 sec)
+INFO:tensorflow:global_step/sec: 0.393072
+INFO:global_step/sec: 0.393072
+INFO:tensorflow:loss = 0.50274444, step = 1135 (12.720 sec)
+INFO:loss = 0.50274444, step = 1135 (12.720 sec)
+INFO:tensorflow:global_step/sec: 0.402332
+INFO:global_step/sec: 0.402332
+INFO:tensorflow:loss = 0.7720777, step = 1140 (12.428 sec)
+INFO:loss = 0.7720777, step = 1140 (12.428 sec)
+INFO:tensorflow:global_step/sec: 0.403295
+INFO:global_step/sec: 0.403295
+INFO:tensorflow:loss = 0.62833804, step = 1145 (12.398 sec)
+INFO:loss = 0.62833804, step = 1145 (12.398 sec)
+INFO:tensorflow:Saving checkpoints for 1150 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1150 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.378583
+INFO:global_step/sec: 0.378583
+INFO:tensorflow:loss = 0.91646475, step = 1150 (13.207 sec)
+INFO:loss = 0.91646475, step = 1150 (13.207 sec)
+INFO:tensorflow:global_step/sec: 0.405008
+INFO:global_step/sec: 0.405008
+INFO:tensorflow:loss = 0.68945587, step = 1155 (12.345 sec)
+INFO:loss = 0.68945587, step = 1155 (12.345 sec)
+INFO:tensorflow:global_step/sec: 0.399105
+INFO:global_step/sec: 0.399105
+INFO:tensorflow:loss = 0.7257744, step = 1160 (12.528 sec)
+INFO:loss = 0.7257744, step = 1160 (12.528 sec)
+INFO:tensorflow:global_step/sec: 0.406096
+INFO:global_step/sec: 0.406096
+INFO:tensorflow:loss = 0.7560814, step = 1165 (12.313 sec)
+INFO:loss = 0.7560814, step = 1165 (12.313 sec)
+INFO:tensorflow:global_step/sec: 0.407676
+INFO:global_step/sec: 0.407676
+INFO:tensorflow:loss = 0.69544524, step = 1170 (12.264 sec)
+INFO:loss = 0.69544524, step = 1170 (12.264 sec)
+INFO:tensorflow:global_step/sec: 0.405958
+INFO:global_step/sec: 0.405958
+INFO:tensorflow:loss = 0.74547654, step = 1175 (12.317 sec)
+INFO:loss = 0.74547654, step = 1175 (12.317 sec)
+INFO:tensorflow:global_step/sec: 0.407582
+INFO:global_step/sec: 0.407582
+INFO:tensorflow:loss = 0.80363005, step = 1180 (12.267 sec)
+INFO:loss = 0.80363005, step = 1180 (12.267 sec)
+INFO:tensorflow:global_step/sec: 0.402832
+INFO:global_step/sec: 0.402832
+INFO:tensorflow:loss = 0.7798101, step = 1185 (12.412 sec)
+INFO:loss = 0.7798101, step = 1185 (12.412 sec)
+INFO:tensorflow:global_step/sec: 0.40139
+INFO:global_step/sec: 0.40139
+INFO:tensorflow:loss = 0.6164952, step = 1190 (12.457 sec)
+INFO:loss = 0.6164952, step = 1190 (12.457 sec)
+INFO:tensorflow:global_step/sec: 0.408274
+INFO:global_step/sec: 0.408274
+INFO:tensorflow:loss = 1.2060273, step = 1195 (12.247 sec)
+INFO:loss = 1.2060273, step = 1195 (12.247 sec)
+INFO:tensorflow:Saving checkpoints for 1200 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1200 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.375644
+INFO:global_step/sec: 0.375644
+INFO:tensorflow:loss = 0.6059447, step = 1200 (13.311 sec)
+INFO:loss = 0.6059447, step = 1200 (13.311 sec)
+INFO:tensorflow:global_step/sec: 0.405506
+INFO:global_step/sec: 0.405506
+INFO:tensorflow:loss = 0.6774848, step = 1205 (12.330 sec)
+INFO:loss = 0.6774848, step = 1205 (12.330 sec)
+INFO:tensorflow:global_step/sec: 0.405983
+INFO:global_step/sec: 0.405983
+INFO:tensorflow:loss = 0.7815799, step = 1210 (12.316 sec)
+INFO:loss = 0.7815799, step = 1210 (12.316 sec)
+INFO:tensorflow:global_step/sec: 0.404137
+INFO:global_step/sec: 0.404137
+INFO:tensorflow:loss = 0.72763765, step = 1215 (12.372 sec)
+INFO:loss = 0.72763765, step = 1215 (12.372 sec)
+INFO:tensorflow:global_step/sec: 0.406861
+INFO:global_step/sec: 0.406861
+INFO:tensorflow:loss = 1.0574238, step = 1220 (12.289 sec)
+INFO:loss = 1.0574238, step = 1220 (12.289 sec)
+INFO:tensorflow:global_step/sec: 0.405668
+INFO:global_step/sec: 0.405668
+INFO:tensorflow:loss = 0.62124217, step = 1225 (12.325 sec)
+INFO:loss = 0.62124217, step = 1225 (12.325 sec)
+INFO:tensorflow:global_step/sec: 0.401956
+INFO:global_step/sec: 0.401956
+INFO:tensorflow:loss = 0.59684837, step = 1230 (12.439 sec)
+INFO:loss = 0.59684837, step = 1230 (12.439 sec)
+INFO:tensorflow:global_step/sec: 0.406835
+INFO:global_step/sec: 0.406835
+INFO:tensorflow:loss = 0.77706045, step = 1235 (12.290 sec)
+INFO:loss = 0.77706045, step = 1235 (12.290 sec)
+INFO:tensorflow:global_step/sec: 0.414628
+INFO:global_step/sec: 0.414628
+INFO:tensorflow:loss = 0.5834556, step = 1240 (12.059 sec)
+INFO:loss = 0.5834556, step = 1240 (12.059 sec)
+INFO:tensorflow:global_step/sec: 0.413902
+INFO:global_step/sec: 0.413902
+INFO:tensorflow:loss = 0.9687796, step = 1245 (12.080 sec)
+INFO:loss = 0.9687796, step = 1245 (12.080 sec)
+INFO:tensorflow:Saving checkpoints for 1250 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1250 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.385353
+INFO:global_step/sec: 0.385353
+INFO:tensorflow:loss = 0.7498017, step = 1250 (12.975 sec)
+INFO:loss = 0.7498017, step = 1250 (12.975 sec)
+INFO:tensorflow:global_step/sec: 0.416538
+INFO:global_step/sec: 0.416538
+INFO:tensorflow:loss = 0.60167104, step = 1255 (12.004 sec)
+INFO:loss = 0.60167104, step = 1255 (12.004 sec)
+INFO:tensorflow:global_step/sec: 0.417949
+INFO:global_step/sec: 0.417949
+INFO:tensorflow:loss = 0.75738347, step = 1260 (11.963 sec)
+INFO:loss = 0.75738347, step = 1260 (11.963 sec)
+INFO:tensorflow:global_step/sec: 0.412901
+INFO:global_step/sec: 0.412901
+INFO:tensorflow:loss = 0.7166779, step = 1265 (12.109 sec)
+INFO:loss = 0.7166779, step = 1265 (12.109 sec)
+INFO:tensorflow:global_step/sec: 0.413886
+INFO:global_step/sec: 0.413886
+INFO:tensorflow:loss = 0.57745165, step = 1270 (12.081 sec)
+INFO:loss = 0.57745165, step = 1270 (12.081 sec)
+INFO:tensorflow:global_step/sec: 0.413586
+INFO:global_step/sec: 0.413586
+INFO:tensorflow:loss = 0.7118553, step = 1275 (12.089 sec)
+INFO:loss = 0.7118553, step = 1275 (12.089 sec)
+INFO:tensorflow:global_step/sec: 0.414289
+INFO:global_step/sec: 0.414289
+INFO:tensorflow:loss = 0.7336545, step = 1280 (12.069 sec)
+INFO:loss = 0.7336545, step = 1280 (12.069 sec)
+INFO:tensorflow:global_step/sec: 0.400843
+INFO:global_step/sec: 0.400843
+INFO:tensorflow:loss = 0.69175303, step = 1285 (12.474 sec)
+INFO:loss = 0.69175303, step = 1285 (12.474 sec)
+INFO:tensorflow:global_step/sec: 0.410911
+INFO:global_step/sec: 0.410911
+INFO:tensorflow:loss = 0.754153, step = 1290 (12.168 sec)
+INFO:loss = 0.754153, step = 1290 (12.168 sec)
+INFO:tensorflow:global_step/sec: 0.413214
+INFO:global_step/sec: 0.413214
+INFO:tensorflow:loss = 0.9008863, step = 1295 (12.100 sec)
+INFO:loss = 0.9008863, step = 1295 (12.100 sec)
+INFO:tensorflow:Saving checkpoints for 1300 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1300 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.37698
+INFO:global_step/sec: 0.37698
+INFO:tensorflow:loss = 0.612667, step = 1300 (13.264 sec)
+INFO:loss = 0.612667, step = 1300 (13.264 sec)
+INFO:tensorflow:global_step/sec: 0.409477
+INFO:global_step/sec: 0.409477
+INFO:tensorflow:loss = 0.6783845, step = 1305 (12.210 sec)
+INFO:loss = 0.6783845, step = 1305 (12.210 sec)
+INFO:tensorflow:global_step/sec: 0.409904
+INFO:global_step/sec: 0.409904
+INFO:tensorflow:loss = 0.5969962, step = 1310 (12.198 sec)
+INFO:loss = 0.5969962, step = 1310 (12.198 sec)
+INFO:tensorflow:global_step/sec: 0.409504
+INFO:global_step/sec: 0.409504
+INFO:tensorflow:loss = 0.535188, step = 1315 (12.210 sec)
+INFO:loss = 0.535188, step = 1315 (12.210 sec)
+INFO:tensorflow:global_step/sec: 0.41495
+INFO:global_step/sec: 0.41495
+INFO:tensorflow:loss = 0.6848187, step = 1320 (12.050 sec)
+INFO:loss = 0.6848187, step = 1320 (12.050 sec)
+INFO:tensorflow:global_step/sec: 0.412738
+INFO:global_step/sec: 0.412738
+INFO:tensorflow:loss = 0.69283205, step = 1325 (12.115 sec)
+INFO:loss = 0.69283205, step = 1325 (12.115 sec)
+INFO:tensorflow:global_step/sec: 0.413276
+INFO:global_step/sec: 0.413276
+INFO:tensorflow:loss = 0.6390266, step = 1330 (12.098 sec)
+INFO:loss = 0.6390266, step = 1330 (12.098 sec)
+INFO:tensorflow:global_step/sec: 0.41098
+INFO:global_step/sec: 0.41098
+INFO:tensorflow:loss = 0.5942838, step = 1335 (12.166 sec)
+INFO:loss = 0.5942838, step = 1335 (12.166 sec)
+INFO:tensorflow:global_step/sec: 0.412597
+INFO:global_step/sec: 0.412597
+INFO:tensorflow:loss = 0.5828601, step = 1340 (12.118 sec)
+INFO:loss = 0.5828601, step = 1340 (12.118 sec)
+INFO:tensorflow:global_step/sec: 0.411151
+INFO:global_step/sec: 0.411151
+INFO:tensorflow:loss = 0.5899559, step = 1345 (12.161 sec)
+INFO:loss = 0.5899559, step = 1345 (12.161 sec)
+INFO:tensorflow:Saving checkpoints for 1350 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1350 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.382488
+INFO:global_step/sec: 0.382488
+INFO:tensorflow:loss = 0.5376969, step = 1350 (13.072 sec)
+INFO:loss = 0.5376969, step = 1350 (13.072 sec)
+INFO:tensorflow:global_step/sec: 0.408901
+INFO:global_step/sec: 0.408901
+INFO:tensorflow:loss = 0.5997439, step = 1355 (12.228 sec)
+INFO:loss = 0.5997439, step = 1355 (12.228 sec)
+INFO:tensorflow:global_step/sec: 0.411813
+INFO:global_step/sec: 0.411813
+INFO:tensorflow:loss = 0.64377886, step = 1360 (12.141 sec)
+INFO:loss = 0.64377886, step = 1360 (12.141 sec)
+INFO:tensorflow:global_step/sec: 0.414098
+INFO:global_step/sec: 0.414098
+INFO:tensorflow:loss = 0.6236087, step = 1365 (12.074 sec)
+INFO:loss = 0.6236087, step = 1365 (12.074 sec)
+INFO:tensorflow:global_step/sec: 0.414091
+INFO:global_step/sec: 0.414091
+INFO:tensorflow:loss = 0.5354236, step = 1370 (12.075 sec)
+INFO:loss = 0.5354236, step = 1370 (12.075 sec)
+INFO:tensorflow:global_step/sec: 0.410007
+INFO:global_step/sec: 0.410007
+INFO:tensorflow:loss = 0.9111109, step = 1375 (12.195 sec)
+INFO:loss = 0.9111109, step = 1375 (12.195 sec)
+INFO:tensorflow:global_step/sec: 0.413056
+INFO:global_step/sec: 0.413056
+INFO:tensorflow:loss = 0.648261, step = 1380 (12.105 sec)
+INFO:loss = 0.648261, step = 1380 (12.105 sec)
+INFO:tensorflow:global_step/sec: 0.414101
+INFO:global_step/sec: 0.414101
+INFO:tensorflow:loss = 0.48472774, step = 1385 (12.074 sec)
+INFO:loss = 0.48472774, step = 1385 (12.074 sec)
+INFO:tensorflow:global_step/sec: 0.411697
+INFO:global_step/sec: 0.411697
+INFO:tensorflow:loss = 0.5545838, step = 1390 (12.145 sec)
+INFO:loss = 0.5545838, step = 1390 (12.145 sec)
+INFO:tensorflow:global_step/sec: 0.410811
+INFO:global_step/sec: 0.410811
+INFO:tensorflow:loss = 0.6428161, step = 1395 (12.171 sec)
+INFO:loss = 0.6428161, step = 1395 (12.171 sec)
+INFO:tensorflow:Saving checkpoints for 1400 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1400 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.383802
+INFO:global_step/sec: 0.383802
+INFO:tensorflow:loss = 0.5030203, step = 1400 (13.028 sec)
+INFO:loss = 0.5030203, step = 1400 (13.028 sec)
+INFO:tensorflow:global_step/sec: 0.414579
+INFO:global_step/sec: 0.414579
+INFO:tensorflow:loss = 0.6131965, step = 1405 (12.060 sec)
+INFO:loss = 0.6131965, step = 1405 (12.060 sec)
+INFO:tensorflow:global_step/sec: 0.414293
+INFO:global_step/sec: 0.414293
+INFO:tensorflow:loss = 0.55119765, step = 1410 (12.068 sec)
+INFO:loss = 0.55119765, step = 1410 (12.068 sec)
+INFO:tensorflow:global_step/sec: 0.413504
+INFO:global_step/sec: 0.413504
+INFO:tensorflow:loss = 0.6872394, step = 1415 (12.092 sec)
+INFO:loss = 0.6872394, step = 1415 (12.092 sec)
+INFO:tensorflow:global_step/sec: 0.411728
+INFO:global_step/sec: 0.411728
+INFO:tensorflow:loss = 0.49110258, step = 1420 (12.144 sec)
+INFO:loss = 0.49110258, step = 1420 (12.144 sec)
+INFO:tensorflow:global_step/sec: 0.413341
+INFO:global_step/sec: 0.413341
+INFO:tensorflow:loss = 0.4724014, step = 1425 (12.097 sec)
+INFO:loss = 0.4724014, step = 1425 (12.097 sec)
+INFO:tensorflow:global_step/sec: 0.410635
+INFO:global_step/sec: 0.410635
+INFO:tensorflow:loss = 0.61559206, step = 1430 (12.176 sec)
+INFO:loss = 0.61559206, step = 1430 (12.176 sec)
+INFO:tensorflow:global_step/sec: 0.411883
+INFO:global_step/sec: 0.411883
+INFO:tensorflow:loss = 0.47862402, step = 1435 (12.140 sec)
+INFO:loss = 0.47862402, step = 1435 (12.140 sec)
+INFO:tensorflow:global_step/sec: 0.413536
+INFO:global_step/sec: 0.413536
+INFO:tensorflow:loss = 0.5793821, step = 1440 (12.091 sec)
+INFO:loss = 0.5793821, step = 1440 (12.091 sec)
+INFO:tensorflow:global_step/sec: 0.414803
+INFO:global_step/sec: 0.414803
+INFO:tensorflow:loss = 0.627989, step = 1445 (12.054 sec)
+INFO:loss = 0.627989, step = 1445 (12.054 sec)
+INFO:tensorflow:Saving checkpoints for 1450 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1450 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.388341
+INFO:global_step/sec: 0.388341
+INFO:tensorflow:loss = 0.8542674, step = 1450 (12.875 sec)
+INFO:loss = 0.8542674, step = 1450 (12.875 sec)
+INFO:tensorflow:global_step/sec: 0.413763
+INFO:global_step/sec: 0.413763
+INFO:tensorflow:loss = 0.5430268, step = 1455 (12.084 sec)
+INFO:loss = 0.5430268, step = 1455 (12.084 sec)
+INFO:tensorflow:global_step/sec: 0.413089
+INFO:global_step/sec: 0.413089
+INFO:tensorflow:loss = 0.7570599, step = 1460 (12.104 sec)
+INFO:loss = 0.7570599, step = 1460 (12.104 sec)
+INFO:tensorflow:global_step/sec: 0.414575
+INFO:global_step/sec: 0.414575
+INFO:tensorflow:loss = 0.72218347, step = 1465 (12.060 sec)
+INFO:loss = 0.72218347, step = 1465 (12.060 sec)
+INFO:tensorflow:global_step/sec: 0.413693
+INFO:global_step/sec: 0.413693
+INFO:tensorflow:loss = 0.6745868, step = 1470 (12.086 sec)
+INFO:loss = 0.6745868, step = 1470 (12.086 sec)
+INFO:tensorflow:global_step/sec: 0.415855
+INFO:global_step/sec: 0.415855
+INFO:tensorflow:loss = 0.903245, step = 1475 (12.023 sec)
+INFO:loss = 0.903245, step = 1475 (12.023 sec)
+INFO:tensorflow:global_step/sec: 0.41271
+INFO:global_step/sec: 0.41271
+INFO:tensorflow:loss = 0.6851986, step = 1480 (12.115 sec)
+INFO:loss = 0.6851986, step = 1480 (12.115 sec)
+INFO:tensorflow:global_step/sec: 0.411304
+INFO:global_step/sec: 0.411304
+INFO:tensorflow:loss = 0.6121948, step = 1485 (12.157 sec)
+INFO:loss = 0.6121948, step = 1485 (12.157 sec)
+INFO:tensorflow:global_step/sec: 0.414547
+INFO:global_step/sec: 0.414547
+INFO:tensorflow:loss = 0.7613465, step = 1490 (12.061 sec)
+INFO:loss = 0.7613465, step = 1490 (12.061 sec)
+INFO:tensorflow:global_step/sec: 0.416426
+INFO:global_step/sec: 0.416426
+INFO:tensorflow:loss = 0.7409185, step = 1495 (12.007 sec)
+INFO:loss = 0.7409185, step = 1495 (12.007 sec)
+INFO:tensorflow:Saving checkpoints for 1500 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1500 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.386579
+INFO:global_step/sec: 0.386579
+INFO:tensorflow:loss = 0.72388923, step = 1500 (12.934 sec)
+INFO:loss = 0.72388923, step = 1500 (12.934 sec)
+INFO:tensorflow:global_step/sec: 0.417159
+INFO:global_step/sec: 0.417159
+INFO:tensorflow:loss = 0.78362113, step = 1505 (11.985 sec)
+INFO:loss = 0.78362113, step = 1505 (11.985 sec)
+INFO:tensorflow:global_step/sec: 0.412652
+INFO:global_step/sec: 0.412652
+INFO:tensorflow:loss = 0.65488887, step = 1510 (12.117 sec)
+INFO:loss = 0.65488887, step = 1510 (12.117 sec)
+INFO:tensorflow:global_step/sec: 0.414139
+INFO:global_step/sec: 0.414139
+INFO:tensorflow:loss = 0.5304723, step = 1515 (12.074 sec)
+INFO:loss = 0.5304723, step = 1515 (12.074 sec)
+INFO:tensorflow:global_step/sec: 0.40885
+INFO:global_step/sec: 0.40885
+INFO:tensorflow:loss = 0.52587366, step = 1520 (12.229 sec)
+INFO:loss = 0.52587366, step = 1520 (12.229 sec)
+INFO:tensorflow:global_step/sec: 0.405244
+INFO:global_step/sec: 0.405244
+INFO:tensorflow:loss = 0.6671787, step = 1525 (12.338 sec)
+INFO:loss = 0.6671787, step = 1525 (12.338 sec)
+INFO:tensorflow:global_step/sec: 0.414578
+INFO:global_step/sec: 0.414578
+INFO:tensorflow:loss = 0.82700294, step = 1530 (12.060 sec)
+INFO:loss = 0.82700294, step = 1530 (12.060 sec)
+INFO:tensorflow:global_step/sec: 0.412916
+INFO:global_step/sec: 0.412916
+INFO:tensorflow:loss = 0.48216137, step = 1535 (12.109 sec)
+INFO:loss = 0.48216137, step = 1535 (12.109 sec)
+INFO:tensorflow:global_step/sec: 0.414292
+INFO:global_step/sec: 0.414292
+INFO:tensorflow:loss = 0.67358494, step = 1540 (12.069 sec)
+INFO:loss = 0.67358494, step = 1540 (12.069 sec)
+INFO:tensorflow:global_step/sec: 0.413396
+INFO:global_step/sec: 0.413396
+INFO:tensorflow:loss = 0.6726361, step = 1545 (12.095 sec)
+INFO:loss = 0.6726361, step = 1545 (12.095 sec)
+INFO:tensorflow:Saving checkpoints for 1550 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1550 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.381947
+INFO:global_step/sec: 0.381947
+INFO:tensorflow:loss = 0.7479075, step = 1550 (13.091 sec)
+INFO:loss = 0.7479075, step = 1550 (13.091 sec)
+INFO:tensorflow:global_step/sec: 0.413383
+INFO:global_step/sec: 0.413383
+INFO:tensorflow:loss = 0.5651786, step = 1555 (12.095 sec)
+INFO:loss = 0.5651786, step = 1555 (12.095 sec)
+INFO:tensorflow:global_step/sec: 0.414596
+INFO:global_step/sec: 0.414596
+INFO:tensorflow:loss = 0.6180825, step = 1560 (12.060 sec)
+INFO:loss = 0.6180825, step = 1560 (12.060 sec)
+INFO:tensorflow:global_step/sec: 0.412135
+INFO:global_step/sec: 0.412135
+INFO:tensorflow:loss = 0.5826974, step = 1565 (12.132 sec)
+INFO:loss = 0.5826974, step = 1565 (12.132 sec)
+INFO:tensorflow:global_step/sec: 0.413165
+INFO:global_step/sec: 0.413165
+INFO:tensorflow:loss = 0.5396705, step = 1570 (12.102 sec)
+INFO:loss = 0.5396705, step = 1570 (12.102 sec)
+INFO:tensorflow:global_step/sec: 0.413875
+INFO:global_step/sec: 0.413875
+INFO:tensorflow:loss = 0.58079207, step = 1575 (12.081 sec)
+INFO:loss = 0.58079207, step = 1575 (12.081 sec)
+INFO:tensorflow:global_step/sec: 0.414483
+INFO:global_step/sec: 0.414483
+INFO:tensorflow:loss = 0.9010812, step = 1580 (12.063 sec)
+INFO:loss = 0.9010812, step = 1580 (12.063 sec)
+INFO:tensorflow:global_step/sec: 0.412673
+INFO:global_step/sec: 0.412673
+INFO:tensorflow:loss = 0.59082633, step = 1585 (12.116 sec)
+INFO:loss = 0.59082633, step = 1585 (12.116 sec)
+INFO:tensorflow:global_step/sec: 0.414142
+INFO:global_step/sec: 0.414142
+INFO:tensorflow:loss = 0.74925965, step = 1590 (12.073 sec)
+INFO:loss = 0.74925965, step = 1590 (12.073 sec)
+INFO:tensorflow:global_step/sec: 0.41355
+INFO:global_step/sec: 0.41355
+INFO:tensorflow:loss = 0.6929337, step = 1595 (12.091 sec)
+INFO:loss = 0.6929337, step = 1595 (12.091 sec)
+INFO:tensorflow:Saving checkpoints for 1600 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1600 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.38116
+INFO:global_step/sec: 0.38116
+INFO:tensorflow:loss = 0.61925817, step = 1600 (13.118 sec)
+INFO:loss = 0.61925817, step = 1600 (13.118 sec)
+INFO:tensorflow:global_step/sec: 0.414653
+INFO:global_step/sec: 0.414653
+INFO:tensorflow:loss = 0.6556103, step = 1605 (12.058 sec)
+INFO:loss = 0.6556103, step = 1605 (12.058 sec)
+INFO:tensorflow:global_step/sec: 0.413591
+INFO:global_step/sec: 0.413591
+INFO:tensorflow:loss = 0.56234604, step = 1610 (12.089 sec)
+INFO:loss = 0.56234604, step = 1610 (12.089 sec)
+INFO:tensorflow:global_step/sec: 0.412485
+INFO:global_step/sec: 0.412485
+INFO:tensorflow:loss = 0.5241372, step = 1615 (12.122 sec)
+INFO:loss = 0.5241372, step = 1615 (12.122 sec)
+INFO:tensorflow:global_step/sec: 0.411778
+INFO:global_step/sec: 0.411778
+INFO:tensorflow:loss = 0.5656736, step = 1620 (12.142 sec)
+INFO:loss = 0.5656736, step = 1620 (12.142 sec)
+INFO:tensorflow:global_step/sec: 0.414667
+INFO:global_step/sec: 0.414667
+INFO:tensorflow:loss = 0.7418404, step = 1625 (12.058 sec)
+INFO:loss = 0.7418404, step = 1625 (12.058 sec)
+INFO:tensorflow:global_step/sec: 0.415179
+INFO:global_step/sec: 0.415179
+INFO:tensorflow:loss = 0.5925508, step = 1630 (12.043 sec)
+INFO:loss = 0.5925508, step = 1630 (12.043 sec)
+INFO:tensorflow:global_step/sec: 0.414199
+INFO:global_step/sec: 0.414199
+INFO:tensorflow:loss = 0.5842841, step = 1635 (12.071 sec)
+INFO:loss = 0.5842841, step = 1635 (12.071 sec)
+INFO:tensorflow:global_step/sec: 0.40608
+INFO:global_step/sec: 0.40608
+INFO:tensorflow:loss = 0.70781606, step = 1640 (12.313 sec)
+INFO:loss = 0.70781606, step = 1640 (12.313 sec)
+INFO:tensorflow:global_step/sec: 0.41326
+INFO:global_step/sec: 0.41326
+INFO:tensorflow:loss = 0.72073483, step = 1645 (12.099 sec)
+INFO:loss = 0.72073483, step = 1645 (12.099 sec)
+INFO:tensorflow:Saving checkpoints for 1650 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1650 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.383689
+INFO:global_step/sec: 0.383689
+INFO:tensorflow:loss = 0.7661668, step = 1650 (13.031 sec)
+INFO:loss = 0.7661668, step = 1650 (13.031 sec)
+INFO:tensorflow:global_step/sec: 0.413218
+INFO:global_step/sec: 0.413218
+INFO:tensorflow:loss = 0.4635, step = 1655 (12.100 sec)
+INFO:loss = 0.4635, step = 1655 (12.100 sec)
+INFO:tensorflow:global_step/sec: 0.413474
+INFO:global_step/sec: 0.413474
+INFO:tensorflow:loss = 0.9215082, step = 1660 (12.093 sec)
+INFO:loss = 0.9215082, step = 1660 (12.093 sec)
+INFO:tensorflow:global_step/sec: 0.413747
+INFO:global_step/sec: 0.413747
+INFO:tensorflow:loss = 0.8746852, step = 1665 (12.085 sec)
+INFO:loss = 0.8746852, step = 1665 (12.085 sec)
+INFO:tensorflow:global_step/sec: 0.402182
+INFO:global_step/sec: 0.402182
+INFO:tensorflow:loss = 0.55549586, step = 1670 (12.432 sec)
+INFO:loss = 0.55549586, step = 1670 (12.432 sec)
+INFO:tensorflow:global_step/sec: 0.412576
+INFO:global_step/sec: 0.412576
+INFO:tensorflow:loss = 0.5880679, step = 1675 (12.119 sec)
+INFO:loss = 0.5880679, step = 1675 (12.119 sec)
+INFO:tensorflow:global_step/sec: 0.412751
+INFO:global_step/sec: 0.412751
+INFO:tensorflow:loss = 0.7140093, step = 1680 (12.114 sec)
+INFO:loss = 0.7140093, step = 1680 (12.114 sec)
+INFO:tensorflow:global_step/sec: 0.412344
+INFO:global_step/sec: 0.412344
+INFO:tensorflow:loss = 0.7849793, step = 1685 (12.126 sec)
+INFO:loss = 0.7849793, step = 1685 (12.126 sec)
+INFO:tensorflow:global_step/sec: 0.414434
+INFO:global_step/sec: 0.414434
+INFO:tensorflow:loss = 0.7534831, step = 1690 (12.065 sec)
+INFO:loss = 0.7534831, step = 1690 (12.065 sec)
+INFO:tensorflow:global_step/sec: 0.415363
+INFO:global_step/sec: 0.415363
+INFO:tensorflow:loss = 0.7236677, step = 1695 (12.038 sec)
+INFO:loss = 0.7236677, step = 1695 (12.038 sec)
+INFO:tensorflow:Saving checkpoints for 1700 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1700 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.381713
+INFO:global_step/sec: 0.381713
+INFO:tensorflow:loss = 0.8934524, step = 1700 (13.099 sec)
+INFO:loss = 0.8934524, step = 1700 (13.099 sec)
+INFO:tensorflow:global_step/sec: 0.407761
+INFO:global_step/sec: 0.407761
+INFO:tensorflow:loss = 0.6014637, step = 1705 (12.262 sec)
+INFO:loss = 0.6014637, step = 1705 (12.262 sec)
+INFO:tensorflow:global_step/sec: 0.406706
+INFO:global_step/sec: 0.406706
+INFO:tensorflow:loss = 0.704432, step = 1710 (12.294 sec)
+INFO:loss = 0.704432, step = 1710 (12.294 sec)
+INFO:tensorflow:global_step/sec: 0.408679
+INFO:global_step/sec: 0.408679
+INFO:tensorflow:loss = 0.7582795, step = 1715 (12.235 sec)
+INFO:loss = 0.7582795, step = 1715 (12.235 sec)
+INFO:tensorflow:global_step/sec: 0.415904
+INFO:global_step/sec: 0.415904
+INFO:tensorflow:loss = 0.74972534, step = 1720 (12.022 sec)
+INFO:loss = 0.74972534, step = 1720 (12.022 sec)
+INFO:tensorflow:global_step/sec: 0.414127
+INFO:global_step/sec: 0.414127
+INFO:tensorflow:loss = 0.79564536, step = 1725 (12.074 sec)
+INFO:loss = 0.79564536, step = 1725 (12.074 sec)
+INFO:tensorflow:global_step/sec: 0.416474
+INFO:global_step/sec: 0.416474
+INFO:tensorflow:loss = 0.4877556, step = 1730 (12.006 sec)
+INFO:loss = 0.4877556, step = 1730 (12.006 sec)
+INFO:tensorflow:global_step/sec: 0.409878
+INFO:global_step/sec: 0.409878
+INFO:tensorflow:loss = 0.6759772, step = 1735 (12.198 sec)
+INFO:loss = 0.6759772, step = 1735 (12.198 sec)
+INFO:tensorflow:global_step/sec: 0.409633
+INFO:global_step/sec: 0.409633
+INFO:tensorflow:loss = 0.81010973, step = 1740 (12.206 sec)
+INFO:loss = 0.81010973, step = 1740 (12.206 sec)
+INFO:tensorflow:global_step/sec: 0.400054
+INFO:global_step/sec: 0.400054
+INFO:tensorflow:loss = 0.71078146, step = 1745 (12.498 sec)
+INFO:loss = 0.71078146, step = 1745 (12.498 sec)
+INFO:tensorflow:Saving checkpoints for 1750 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1750 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.365533
+INFO:global_step/sec: 0.365533
+INFO:tensorflow:loss = 1.153633, step = 1750 (13.679 sec)
+INFO:loss = 1.153633, step = 1750 (13.679 sec)
+INFO:tensorflow:global_step/sec: 0.403125
+INFO:global_step/sec: 0.403125
+INFO:tensorflow:loss = 0.66931814, step = 1755 (12.403 sec)
+INFO:loss = 0.66931814, step = 1755 (12.403 sec)
+INFO:tensorflow:global_step/sec: 0.405005
+INFO:global_step/sec: 0.405005
+INFO:tensorflow:loss = 0.84558463, step = 1760 (12.345 sec)
+INFO:loss = 0.84558463, step = 1760 (12.345 sec)
+INFO:tensorflow:global_step/sec: 0.410839
+INFO:global_step/sec: 0.410839
+INFO:tensorflow:loss = 1.0101361, step = 1765 (12.170 sec)
+INFO:loss = 1.0101361, step = 1765 (12.170 sec)
+INFO:tensorflow:global_step/sec: 0.410835
+INFO:global_step/sec: 0.410835
+INFO:tensorflow:loss = 0.7635017, step = 1770 (12.170 sec)
+INFO:loss = 0.7635017, step = 1770 (12.170 sec)
+INFO:tensorflow:global_step/sec: 0.410918
+INFO:global_step/sec: 0.410918
+INFO:tensorflow:loss = 0.6047486, step = 1775 (12.168 sec)
+INFO:loss = 0.6047486, step = 1775 (12.168 sec)
+INFO:tensorflow:global_step/sec: 0.410921
+INFO:global_step/sec: 0.410921
+INFO:tensorflow:loss = 0.67954665, step = 1780 (12.168 sec)
+INFO:loss = 0.67954665, step = 1780 (12.168 sec)
+INFO:tensorflow:global_step/sec: 0.416149
+INFO:global_step/sec: 0.416149
+INFO:tensorflow:loss = 0.5817555, step = 1785 (12.015 sec)
+INFO:loss = 0.5817555, step = 1785 (12.015 sec)
+INFO:tensorflow:global_step/sec: 0.416647
+INFO:global_step/sec: 0.416647
+INFO:tensorflow:loss = 0.63128144, step = 1790 (12.000 sec)
+INFO:loss = 0.63128144, step = 1790 (12.000 sec)
+INFO:tensorflow:global_step/sec: 0.414005
+INFO:global_step/sec: 0.414005
+INFO:tensorflow:loss = 0.71933234, step = 1795 (12.077 sec)
+INFO:loss = 0.71933234, step = 1795 (12.077 sec)
+INFO:tensorflow:Saving checkpoints for 1800 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1800 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.386943
+INFO:global_step/sec: 0.386943
+INFO:tensorflow:loss = 0.91369754, step = 1800 (12.922 sec)
+INFO:loss = 0.91369754, step = 1800 (12.922 sec)
+INFO:tensorflow:global_step/sec: 0.416597
+INFO:global_step/sec: 0.416597
+INFO:tensorflow:loss = 0.87884927, step = 1805 (12.002 sec)
+INFO:loss = 0.87884927, step = 1805 (12.002 sec)
+INFO:tensorflow:global_step/sec: 0.414056
+INFO:global_step/sec: 0.414056
+INFO:tensorflow:loss = 0.636805, step = 1810 (12.076 sec)
+INFO:loss = 0.636805, step = 1810 (12.076 sec)
+INFO:tensorflow:global_step/sec: 0.40754
+INFO:global_step/sec: 0.40754
+INFO:tensorflow:loss = 0.74330795, step = 1815 (12.268 sec)
+INFO:loss = 0.74330795, step = 1815 (12.268 sec)
+INFO:tensorflow:global_step/sec: 0.41803
+INFO:global_step/sec: 0.41803
+INFO:tensorflow:loss = 0.597188, step = 1820 (11.961 sec)
+INFO:loss = 0.597188, step = 1820 (11.961 sec)
+INFO:tensorflow:global_step/sec: 0.416115
+INFO:global_step/sec: 0.416115
+INFO:tensorflow:loss = 0.60129076, step = 1825 (12.016 sec)
+INFO:loss = 0.60129076, step = 1825 (12.016 sec)
+INFO:tensorflow:global_step/sec: 0.415979
+INFO:global_step/sec: 0.415979
+INFO:tensorflow:loss = 0.9437153, step = 1830 (12.020 sec)
+INFO:loss = 0.9437153, step = 1830 (12.020 sec)
+INFO:tensorflow:global_step/sec: 0.418405
+INFO:global_step/sec: 0.418405
+INFO:tensorflow:loss = 0.4853165, step = 1835 (11.950 sec)
+INFO:loss = 0.4853165, step = 1835 (11.950 sec)
+INFO:tensorflow:global_step/sec: 0.413935
+INFO:global_step/sec: 0.413935
+INFO:tensorflow:loss = 0.6448443, step = 1840 (12.079 sec)
+INFO:loss = 0.6448443, step = 1840 (12.079 sec)
+INFO:tensorflow:global_step/sec: 0.417268
+INFO:global_step/sec: 0.417268
+INFO:tensorflow:loss = 0.89882463, step = 1845 (11.983 sec)
+INFO:loss = 0.89882463, step = 1845 (11.983 sec)
+INFO:tensorflow:Saving checkpoints for 1850 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1850 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.385816
+INFO:global_step/sec: 0.385816
+INFO:tensorflow:loss = 0.7012677, step = 1850 (12.960 sec)
+INFO:loss = 0.7012677, step = 1850 (12.960 sec)
+INFO:tensorflow:global_step/sec: 0.410956
+INFO:global_step/sec: 0.410956
+INFO:tensorflow:loss = 0.7535882, step = 1855 (12.167 sec)
+INFO:loss = 0.7535882, step = 1855 (12.167 sec)
+INFO:tensorflow:global_step/sec: 0.41712
+INFO:global_step/sec: 0.41712
+INFO:tensorflow:loss = 0.75312614, step = 1860 (11.987 sec)
+INFO:loss = 0.75312614, step = 1860 (11.987 sec)
+INFO:tensorflow:global_step/sec: 0.412532
+INFO:global_step/sec: 0.412532
+INFO:tensorflow:loss = 0.8475114, step = 1865 (12.121 sec)
+INFO:loss = 0.8475114, step = 1865 (12.121 sec)
+INFO:tensorflow:global_step/sec: 0.428277
+INFO:global_step/sec: 0.428277
+INFO:tensorflow:loss = 0.6726121, step = 1870 (11.674 sec)
+INFO:loss = 0.6726121, step = 1870 (11.674 sec)
+INFO:tensorflow:global_step/sec: 0.436314
+INFO:global_step/sec: 0.436314
+INFO:tensorflow:loss = 0.7921948, step = 1875 (11.460 sec)
+INFO:loss = 0.7921948, step = 1875 (11.460 sec)
+INFO:tensorflow:global_step/sec: 0.435872
+INFO:global_step/sec: 0.435872
+INFO:tensorflow:loss = 0.50938445, step = 1880 (11.471 sec)
+INFO:loss = 0.50938445, step = 1880 (11.471 sec)
+INFO:tensorflow:global_step/sec: 0.435509
+INFO:global_step/sec: 0.435509
+INFO:tensorflow:loss = 0.58580154, step = 1885 (11.481 sec)
+INFO:loss = 0.58580154, step = 1885 (11.481 sec)
+INFO:tensorflow:global_step/sec: 0.434889
+INFO:global_step/sec: 0.434889
+INFO:tensorflow:loss = 0.6296454, step = 1890 (11.498 sec)
+INFO:loss = 0.6296454, step = 1890 (11.498 sec)
+INFO:tensorflow:global_step/sec: 0.434842
+INFO:global_step/sec: 0.434842
+INFO:tensorflow:loss = 0.79423654, step = 1895 (11.498 sec)
+INFO:loss = 0.79423654, step = 1895 (11.498 sec)
+INFO:tensorflow:Saving checkpoints for 1900 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1900 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.399034
+INFO:global_step/sec: 0.399034
+INFO:tensorflow:loss = 0.6704453, step = 1900 (12.531 sec)
+INFO:loss = 0.6704453, step = 1900 (12.531 sec)
+INFO:tensorflow:global_step/sec: 0.436273
+INFO:global_step/sec: 0.436273
+INFO:tensorflow:loss = 0.5613125, step = 1905 (11.460 sec)
+INFO:loss = 0.5613125, step = 1905 (11.460 sec)
+INFO:tensorflow:global_step/sec: 0.436521
+INFO:global_step/sec: 0.436521
+INFO:tensorflow:loss = 0.7566977, step = 1910 (11.454 sec)
+INFO:loss = 0.7566977, step = 1910 (11.454 sec)
+INFO:tensorflow:global_step/sec: 0.436265
+INFO:global_step/sec: 0.436265
+INFO:tensorflow:loss = 0.5586263, step = 1915 (11.461 sec)
+INFO:loss = 0.5586263, step = 1915 (11.461 sec)
+INFO:tensorflow:global_step/sec: 0.437268
+INFO:global_step/sec: 0.437268
+INFO:tensorflow:loss = 0.60482734, step = 1920 (11.435 sec)
+INFO:loss = 0.60482734, step = 1920 (11.435 sec)
+INFO:tensorflow:global_step/sec: 0.437451
+INFO:global_step/sec: 0.437451
+INFO:tensorflow:loss = 0.8122113, step = 1925 (11.430 sec)
+INFO:loss = 0.8122113, step = 1925 (11.430 sec)
+INFO:tensorflow:global_step/sec: 0.437695
+INFO:global_step/sec: 0.437695
+INFO:tensorflow:loss = 0.50938076, step = 1930 (11.423 sec)
+INFO:loss = 0.50938076, step = 1930 (11.423 sec)
+INFO:tensorflow:global_step/sec: 0.437159
+INFO:global_step/sec: 0.437159
+INFO:tensorflow:loss = 0.67985404, step = 1935 (11.437 sec)
+INFO:loss = 0.67985404, step = 1935 (11.437 sec)
+INFO:tensorflow:global_step/sec: 0.436959
+INFO:global_step/sec: 0.436959
+INFO:tensorflow:loss = 0.66060376, step = 1940 (11.443 sec)
+INFO:loss = 0.66060376, step = 1940 (11.443 sec)
+INFO:tensorflow:global_step/sec: 0.437316
+INFO:global_step/sec: 0.437316
+INFO:tensorflow:loss = 0.6571943, step = 1945 (11.433 sec)
+INFO:loss = 0.6571943, step = 1945 (11.433 sec)
+INFO:tensorflow:Saving checkpoints for 1950 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 1950 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.402691
+INFO:global_step/sec: 0.402691
+INFO:tensorflow:loss = 0.5130145, step = 1950 (12.416 sec)
+INFO:loss = 0.5130145, step = 1950 (12.416 sec)
+INFO:tensorflow:global_step/sec: 0.437412
+INFO:global_step/sec: 0.437412
+INFO:tensorflow:loss = 0.80156946, step = 1955 (11.431 sec)
+INFO:loss = 0.80156946, step = 1955 (11.431 sec)
+INFO:tensorflow:global_step/sec: 0.436679
+INFO:global_step/sec: 0.436679
+INFO:tensorflow:loss = 0.6178768, step = 1960 (11.450 sec)
+INFO:loss = 0.6178768, step = 1960 (11.450 sec)
+INFO:tensorflow:global_step/sec: 0.43703
+INFO:global_step/sec: 0.43703
+INFO:tensorflow:loss = 0.61742765, step = 1965 (11.441 sec)
+INFO:loss = 0.61742765, step = 1965 (11.441 sec)
+INFO:tensorflow:global_step/sec: 0.437348
+INFO:global_step/sec: 0.437348
+INFO:tensorflow:loss = 0.5737714, step = 1970 (11.433 sec)
+INFO:loss = 0.5737714, step = 1970 (11.433 sec)
+INFO:tensorflow:global_step/sec: 0.436086
+INFO:global_step/sec: 0.436086
+INFO:tensorflow:loss = 0.65444046, step = 1975 (11.465 sec)
+INFO:loss = 0.65444046, step = 1975 (11.465 sec)
+INFO:tensorflow:global_step/sec: 0.437081
+INFO:global_step/sec: 0.437081
+INFO:tensorflow:loss = 0.69263446, step = 1980 (11.440 sec)
+INFO:loss = 0.69263446, step = 1980 (11.440 sec)
+INFO:tensorflow:global_step/sec: 0.436419
+INFO:global_step/sec: 0.436419
+INFO:tensorflow:loss = 0.60282063, step = 1985 (11.457 sec)
+INFO:loss = 0.60282063, step = 1985 (11.457 sec)
+INFO:tensorflow:global_step/sec: 0.435739
+INFO:global_step/sec: 0.435739
+INFO:tensorflow:loss = 0.6300168, step = 1990 (11.475 sec)
+INFO:loss = 0.6300168, step = 1990 (11.475 sec)
+INFO:tensorflow:global_step/sec: 0.436115
+INFO:global_step/sec: 0.436115
+INFO:tensorflow:loss = 0.7128903, step = 1995 (11.465 sec)
+INFO:loss = 0.7128903, step = 1995 (11.465 sec)
+INFO:tensorflow:Saving checkpoints for 2000 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 2000 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.402113
+INFO:global_step/sec: 0.402113
+INFO:tensorflow:loss = 0.71468633, step = 2000 (12.435 sec)
+INFO:loss = 0.71468633, step = 2000 (12.435 sec)
+INFO:tensorflow:global_step/sec: 0.435264
+INFO:global_step/sec: 0.435264
+INFO:tensorflow:loss = 0.5753079, step = 2005 (11.487 sec)
+INFO:loss = 0.5753079, step = 2005 (11.487 sec)
+INFO:tensorflow:global_step/sec: 0.435009
+INFO:global_step/sec: 0.435009
+INFO:tensorflow:loss = 0.7515892, step = 2010 (11.494 sec)
+INFO:loss = 0.7515892, step = 2010 (11.494 sec)
+INFO:tensorflow:global_step/sec: 0.435311
+INFO:global_step/sec: 0.435311
+INFO:tensorflow:loss = 0.8256562, step = 2015 (11.486 sec)
+INFO:loss = 0.8256562, step = 2015 (11.486 sec)
+INFO:tensorflow:global_step/sec: 0.434644
+INFO:global_step/sec: 0.434644
+INFO:tensorflow:loss = 0.6038791, step = 2020 (11.504 sec)
+INFO:loss = 0.6038791, step = 2020 (11.504 sec)
+INFO:tensorflow:global_step/sec: 0.435344
+INFO:global_step/sec: 0.435344
+INFO:tensorflow:loss = 0.6638553, step = 2025 (11.485 sec)
+INFO:loss = 0.6638553, step = 2025 (11.485 sec)
+INFO:tensorflow:global_step/sec: 0.435437
+INFO:global_step/sec: 0.435437
+INFO:tensorflow:loss = 0.57393783, step = 2030 (11.483 sec)
+INFO:loss = 0.57393783, step = 2030 (11.483 sec)
+INFO:tensorflow:global_step/sec: 0.435575
+INFO:global_step/sec: 0.435575
+INFO:tensorflow:loss = 0.69507056, step = 2035 (11.479 sec)
+INFO:loss = 0.69507056, step = 2035 (11.479 sec)
+INFO:tensorflow:global_step/sec: 0.435754
+INFO:global_step/sec: 0.435754
+INFO:tensorflow:loss = 0.54789525, step = 2040 (11.475 sec)
+INFO:loss = 0.54789525, step = 2040 (11.475 sec)
+INFO:tensorflow:global_step/sec: 0.436366
+INFO:global_step/sec: 0.436366
+INFO:tensorflow:loss = 0.5503476, step = 2045 (11.458 sec)
+INFO:loss = 0.5503476, step = 2045 (11.458 sec)
+INFO:tensorflow:Saving checkpoints for 2050 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 2050 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.402198
+INFO:global_step/sec: 0.402198
+INFO:tensorflow:loss = 0.8270229, step = 2050 (12.432 sec)
+INFO:loss = 0.8270229, step = 2050 (12.432 sec)
+INFO:tensorflow:global_step/sec: 0.436433
+INFO:global_step/sec: 0.436433
+INFO:tensorflow:loss = 0.5869204, step = 2055 (11.457 sec)
+INFO:loss = 0.5869204, step = 2055 (11.457 sec)
+INFO:tensorflow:global_step/sec: 0.436577
+INFO:global_step/sec: 0.436577
+INFO:tensorflow:loss = 0.64879274, step = 2060 (11.453 sec)
+INFO:loss = 0.64879274, step = 2060 (11.453 sec)
+INFO:tensorflow:global_step/sec: 0.436238
+INFO:global_step/sec: 0.436238
+INFO:tensorflow:loss = 0.8247753, step = 2065 (11.462 sec)
+INFO:loss = 0.8247753, step = 2065 (11.462 sec)
+INFO:tensorflow:global_step/sec: 0.435961
+INFO:global_step/sec: 0.435961
+INFO:tensorflow:loss = 0.8153624, step = 2070 (11.469 sec)
+INFO:loss = 0.8153624, step = 2070 (11.469 sec)
+INFO:tensorflow:global_step/sec: 0.436066
+INFO:global_step/sec: 0.436066
+INFO:tensorflow:loss = 0.52256346, step = 2075 (11.466 sec)
+INFO:loss = 0.52256346, step = 2075 (11.466 sec)
+INFO:tensorflow:global_step/sec: 0.435989
+INFO:global_step/sec: 0.435989
+INFO:tensorflow:loss = 0.55203205, step = 2080 (11.468 sec)
+INFO:loss = 0.55203205, step = 2080 (11.468 sec)
+INFO:tensorflow:global_step/sec: 0.435289
+INFO:global_step/sec: 0.435289
+INFO:tensorflow:loss = 0.5836115, step = 2085 (11.487 sec)
+INFO:loss = 0.5836115, step = 2085 (11.487 sec)
+INFO:tensorflow:global_step/sec: 0.435748
+INFO:global_step/sec: 0.435748
+INFO:tensorflow:loss = 0.69185805, step = 2090 (11.475 sec)
+INFO:loss = 0.69185805, step = 2090 (11.475 sec)
+INFO:tensorflow:global_step/sec: 0.435492
+INFO:global_step/sec: 0.435492
+INFO:tensorflow:loss = 0.58994085, step = 2095 (11.481 sec)
+INFO:loss = 0.58994085, step = 2095 (11.481 sec)
+INFO:tensorflow:Saving checkpoints for 2100 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 2100 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.401946
+INFO:global_step/sec: 0.401946
+INFO:tensorflow:loss = 0.60113597, step = 2100 (12.440 sec)
+INFO:loss = 0.60113597, step = 2100 (12.440 sec)
+INFO:tensorflow:global_step/sec: 0.435348
+INFO:global_step/sec: 0.435348
+INFO:tensorflow:loss = 0.62875545, step = 2105 (11.485 sec)
+INFO:loss = 0.62875545, step = 2105 (11.485 sec)
+INFO:tensorflow:global_step/sec: 0.43482
+INFO:global_step/sec: 0.43482
+INFO:tensorflow:loss = 0.5243688, step = 2110 (11.499 sec)
+INFO:loss = 0.5243688, step = 2110 (11.499 sec)
+INFO:tensorflow:global_step/sec: 0.434777
+INFO:global_step/sec: 0.434777
+INFO:tensorflow:loss = 0.5540341, step = 2115 (11.500 sec)
+INFO:loss = 0.5540341, step = 2115 (11.500 sec)
+INFO:tensorflow:Saving checkpoints for 2118 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:Saving checkpoints for 2118 into models/pets_s-0.6_aug-fliph-rtn/model.ckpt.
+INFO:tensorflow:Loss for final step: 0.78288674.
+INFO:Loss for final step: 0.78288674.
+INFO:evaluating test accuracy
+INFO:tensorflow:Calling model_fn.
+INFO:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:Done calling model_fn.
+INFO:tensorflow:Starting evaluation at 2018-12-15-07:49:17
+INFO:Starting evaluation at 2018-12-15-07:49:17
+INFO:tensorflow:Graph was finalized.
+INFO:Graph was finalized.
+2018-12-15 01:49:17.512514: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1471] Adding visible gpu devices: 0
+2018-12-15 01:49:17.512563: I tensorflow/core/common_runtime/gpu/gpu_device.cc:952] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-12-15 01:49:17.512576: I tensorflow/core/common_runtime/gpu/gpu_device.cc:958]      0 
+2018-12-15 01:49:17.512584: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   N 
+2018-12-15 01:49:17.512734: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1084] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10763 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:tensorflow:Restoring parameters from models/pets_s-0.6_aug-fliph-rtn/model.ckpt-2118
+INFO:Restoring parameters from models/pets_s-0.6_aug-fliph-rtn/model.ckpt-2118
+INFO:tensorflow:Running local_init_op.
+INFO:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:Done running local_init_op.
+INFO:tensorflow:Finished evaluation at 2018-12-15-07:50:20
+INFO:Finished evaluation at 2018-12-15-07:50:20
+INFO:tensorflow:Saving dict for global step 2118: accuracy = 0.74398595, global_step = 2118, loss = 0.61123437
+INFO:Saving dict for global step 2118: accuracy = 0.74398595, global_step = 2118, loss = 0.61123437
+INFO:tensorflow:Saving 'checkpoint_path' summary for global step 2118: models/pets_s-0.6_aug-fliph-rtn/model.ckpt-2118
+INFO:Saving 'checkpoint_path' summary for global step 2118: models/pets_s-0.6_aug-fliph-rtn/model.ckpt-2118
+INFO:{'accuracy': 0.74398595, 'loss': 0.61123437, 'global_step': 2118}

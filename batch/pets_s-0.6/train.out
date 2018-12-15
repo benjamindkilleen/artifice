@@ -1,0 +1,38 @@
+INFO: activate-binutils_linux-64.sh made the following environmental changes:
++ADDR2LINE=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-addr2line
++AR=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-ar
++AS=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-as
++CXXFILT=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-c++filt
++ELFEDIT=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-elfedit
++GPROF=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-gprof
++HOST=x86_64-conda_cos6-linux-gnu
++LD_GOLD=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-ld.gold
++LD=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-ld
++NM=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-nm
++OBJCOPY=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-objcopy
++OBJDUMP=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-objdump
++RANLIB=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-ranlib
++READELF=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-readelf
++SIZE=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-size
++STRINGS=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-strings
++STRIP=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-strip
+INFO: activate-gcc_linux-64.sh made the following environmental changes:
++CC=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-cc
++CFLAGS=-march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -pipe
++_CONDA_PYTHON_SYSCONFIGDATA_NAME=_sysconfigdata_x86_64_conda_cos6_linux_gnu
++CPPFLAGS=-DNDEBUG -D_FORTIFY_SOURCE=2 -O2
++CPP=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-cpp
++DEBUG_CFLAGS=-march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-all -fno-plt -Og -g -Wall -Wextra -fvar-tracking-assignments -pipe
++DEBUG_CPPFLAGS=-D_DEBUG -D_FORTIFY_SOURCE=2 -Og
++GCC_AR=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-gcc-ar
++GCC_NM=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-gcc-nm
++GCC_RANLIB=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-gcc-ranlib
++GCC=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-gcc
++LDFLAGS=-Wl,-O2 -Wl,--sort-common -Wl,--as-needed -Wl,-z,relro -Wl,-z,now
+INFO: activate-gxx_linux-64.sh made the following environmental changes:
++CXXFLAGS=-fvisibility-inlines-hidden -std=c++17 -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-strong -fno-plt -O2 -pipe
++CXX=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-c++
++DEBUG_CXXFLAGS=-fvisibility-inlines-hidden -std=c++17 -fmessage-length=0 -march=nocona -mtune=haswell -ftree-vectorize -fPIC -fstack-protector-all -fno-plt -Og -g -Wall -Wextra -fvar-tracking-assignments -pipe
++GXX=/software/Anaconda3-5.0.1-el7-x86_64/envs/DL_GPU_cuda_9.0/bin/x86_64-conda_cos6-linux-gnu-g++
+Starting training...
+Finished.

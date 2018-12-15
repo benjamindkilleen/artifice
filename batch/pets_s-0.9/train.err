@@ -1,0 +1,201 @@
+/home/killeen/.local/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+INFO:loading train 'data/pets/train_s-0.9.tfrecord' and test 'data/pets/test.tfrecord'
+INFO:Creating unet graph...
+INFO:tensorflow:Using config: {'_model_dir': 'models/pets_s-0.9', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': 50, '_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 5, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7fd7c2e43ba8>, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}
+INFO:Using config: {'_model_dir': 'models/pets_s-0.9', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': 50, '_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 5, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7fd7c2e43ba8>, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}
+INFO:tensorflow:Calling model_fn.
+INFO:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:Done calling model_fn.
+INFO:tensorflow:Create CheckpointSaverHook.
+INFO:Create CheckpointSaverHook.
+INFO:tensorflow:Graph was finalized.
+INFO:Graph was finalized.
+2018-12-14 12:20:02.647328: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2018-12-14 12:20:02.935123: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1392] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:08:00.0
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2018-12-14 12:20:02.935222: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1471] Adding visible gpu devices: 0
+2018-12-14 12:20:13.169013: I tensorflow/core/common_runtime/gpu/gpu_device.cc:952] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-12-14 12:20:13.169098: I tensorflow/core/common_runtime/gpu/gpu_device.cc:958]      0 
+2018-12-14 12:20:13.169116: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   N 
+2018-12-14 12:20:13.169630: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1084] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10763 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:tensorflow:Running local_init_op.
+INFO:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:Done running local_init_op.
+INFO:tensorflow:Saving checkpoints for 0 into models/pets_s-0.9/model.ckpt.
+INFO:Saving checkpoints for 0 into models/pets_s-0.9/model.ckpt.
+INFO:tensorflow:loss = 1.433745, step = 0
+INFO:loss = 1.433745, step = 0
+INFO:tensorflow:global_step/sec: 0.42405
+INFO:global_step/sec: 0.42405
+INFO:tensorflow:loss = 1.0749296, step = 5 (11.791 sec)
+INFO:loss = 1.0749296, step = 5 (11.791 sec)
+INFO:tensorflow:global_step/sec: 0.454895
+INFO:global_step/sec: 0.454895
+INFO:tensorflow:loss = 1.047152, step = 10 (10.991 sec)
+INFO:loss = 1.047152, step = 10 (10.991 sec)
+INFO:tensorflow:global_step/sec: 0.45477
+INFO:global_step/sec: 0.45477
+INFO:tensorflow:loss = 1.046383, step = 15 (10.995 sec)
+INFO:loss = 1.046383, step = 15 (10.995 sec)
+INFO:tensorflow:global_step/sec: 0.453247
+INFO:global_step/sec: 0.453247
+INFO:tensorflow:loss = 1.0396092, step = 20 (11.031 sec)
+INFO:loss = 1.0396092, step = 20 (11.031 sec)
+INFO:tensorflow:global_step/sec: 0.453993
+INFO:global_step/sec: 0.453993
+INFO:tensorflow:loss = 1.0492808, step = 25 (11.014 sec)
+INFO:loss = 1.0492808, step = 25 (11.014 sec)
+INFO:tensorflow:global_step/sec: 0.453085
+INFO:global_step/sec: 0.453085
+INFO:tensorflow:loss = 1.0836776, step = 30 (11.035 sec)
+INFO:loss = 1.0836776, step = 30 (11.035 sec)
+INFO:tensorflow:global_step/sec: 0.452574
+INFO:global_step/sec: 0.452574
+INFO:tensorflow:loss = 1.0825605, step = 35 (11.048 sec)
+INFO:loss = 1.0825605, step = 35 (11.048 sec)
+INFO:tensorflow:global_step/sec: 0.452495
+INFO:global_step/sec: 0.452495
+INFO:tensorflow:loss = 1.0516351, step = 40 (11.050 sec)
+INFO:loss = 1.0516351, step = 40 (11.050 sec)
+INFO:tensorflow:global_step/sec: 0.452636
+INFO:global_step/sec: 0.452636
+INFO:tensorflow:loss = 1.063589, step = 45 (11.046 sec)
+INFO:loss = 1.063589, step = 45 (11.046 sec)
+INFO:tensorflow:Saving checkpoints for 50 into models/pets_s-0.9/model.ckpt.
+INFO:Saving checkpoints for 50 into models/pets_s-0.9/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.42538
+INFO:global_step/sec: 0.42538
+INFO:tensorflow:loss = 1.0469842, step = 50 (11.754 sec)
+INFO:loss = 1.0469842, step = 50 (11.754 sec)
+INFO:tensorflow:global_step/sec: 0.451637
+INFO:global_step/sec: 0.451637
+INFO:tensorflow:loss = 1.0213068, step = 55 (11.071 sec)
+INFO:loss = 1.0213068, step = 55 (11.071 sec)
+INFO:tensorflow:global_step/sec: 0.452668
+INFO:global_step/sec: 0.452668
+INFO:tensorflow:loss = 1.0041151, step = 60 (11.046 sec)
+INFO:loss = 1.0041151, step = 60 (11.046 sec)
+INFO:tensorflow:global_step/sec: 0.451587
+INFO:global_step/sec: 0.451587
+INFO:tensorflow:loss = 1.0006487, step = 65 (11.072 sec)
+INFO:loss = 1.0006487, step = 65 (11.072 sec)
+INFO:tensorflow:global_step/sec: 0.452874
+INFO:global_step/sec: 0.452874
+INFO:tensorflow:loss = 0.9905366, step = 70 (11.041 sec)
+INFO:loss = 0.9905366, step = 70 (11.041 sec)
+INFO:tensorflow:global_step/sec: 0.451957
+INFO:global_step/sec: 0.451957
+INFO:tensorflow:loss = 1.0444031, step = 75 (11.063 sec)
+INFO:loss = 1.0444031, step = 75 (11.063 sec)
+INFO:tensorflow:global_step/sec: 0.4529
+INFO:global_step/sec: 0.4529
+INFO:tensorflow:loss = 0.9767019, step = 80 (11.040 sec)
+INFO:loss = 0.9767019, step = 80 (11.040 sec)
+INFO:tensorflow:global_step/sec: 0.452437
+INFO:global_step/sec: 0.452437
+INFO:tensorflow:loss = 1.0307434, step = 85 (11.051 sec)
+INFO:loss = 1.0307434, step = 85 (11.051 sec)
+INFO:tensorflow:global_step/sec: 0.452765
+INFO:global_step/sec: 0.452765
+INFO:tensorflow:loss = 1.0116783, step = 90 (11.043 sec)
+INFO:loss = 1.0116783, step = 90 (11.043 sec)
+INFO:tensorflow:global_step/sec: 0.452238
+INFO:global_step/sec: 0.452238
+INFO:tensorflow:loss = 0.94563484, step = 95 (11.056 sec)
+INFO:loss = 0.94563484, step = 95 (11.056 sec)
+INFO:tensorflow:Saving checkpoints for 100 into models/pets_s-0.9/model.ckpt.
+INFO:Saving checkpoints for 100 into models/pets_s-0.9/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.425494
+INFO:global_step/sec: 0.425494
+INFO:tensorflow:loss = 1.0012392, step = 100 (11.751 sec)
+INFO:loss = 1.0012392, step = 100 (11.751 sec)
+INFO:tensorflow:global_step/sec: 0.451591
+INFO:global_step/sec: 0.451591
+INFO:tensorflow:loss = 0.9846258, step = 105 (11.072 sec)
+INFO:loss = 0.9846258, step = 105 (11.072 sec)
+INFO:tensorflow:global_step/sec: 0.452204
+INFO:global_step/sec: 0.452204
+INFO:tensorflow:loss = 1.0824995, step = 110 (11.057 sec)
+INFO:loss = 1.0824995, step = 110 (11.057 sec)
+INFO:tensorflow:global_step/sec: 0.452081
+INFO:global_step/sec: 0.452081
+INFO:tensorflow:loss = 0.95957124, step = 115 (11.060 sec)
+INFO:loss = 0.95957124, step = 115 (11.060 sec)
+INFO:tensorflow:global_step/sec: 0.452677
+INFO:global_step/sec: 0.452677
+INFO:tensorflow:loss = 1.0235358, step = 120 (11.045 sec)
+INFO:loss = 1.0235358, step = 120 (11.045 sec)
+INFO:tensorflow:global_step/sec: 0.451504
+INFO:global_step/sec: 0.451504
+INFO:tensorflow:loss = 0.98761404, step = 125 (11.074 sec)
+INFO:loss = 0.98761404, step = 125 (11.074 sec)
+INFO:tensorflow:global_step/sec: 0.452438
+INFO:global_step/sec: 0.452438
+INFO:tensorflow:loss = 0.941377, step = 130 (11.051 sec)
+INFO:loss = 0.941377, step = 130 (11.051 sec)
+INFO:tensorflow:global_step/sec: 0.451974
+INFO:global_step/sec: 0.451974
+INFO:tensorflow:loss = 1.0184667, step = 135 (11.063 sec)
+INFO:loss = 1.0184667, step = 135 (11.063 sec)
+INFO:tensorflow:global_step/sec: 0.452594
+INFO:global_step/sec: 0.452594
+INFO:tensorflow:loss = 0.99180883, step = 140 (11.047 sec)
+INFO:loss = 0.99180883, step = 140 (11.047 sec)
+INFO:tensorflow:global_step/sec: 0.451358
+INFO:global_step/sec: 0.451358
+INFO:tensorflow:loss = 1.0103738, step = 145 (11.078 sec)
+INFO:loss = 1.0103738, step = 145 (11.078 sec)
+INFO:tensorflow:Saving checkpoints for 150 into models/pets_s-0.9/model.ckpt.
+INFO:Saving checkpoints for 150 into models/pets_s-0.9/model.ckpt.
+INFO:tensorflow:global_step/sec: 0.425778
+INFO:global_step/sec: 0.425778
+INFO:tensorflow:loss = 0.97944635, step = 150 (11.743 sec)
+INFO:loss = 0.97944635, step = 150 (11.743 sec)
+INFO:tensorflow:global_step/sec: 0.452286
+INFO:global_step/sec: 0.452286
+INFO:tensorflow:loss = 0.97003376, step = 155 (11.055 sec)
+INFO:loss = 0.97003376, step = 155 (11.055 sec)
+INFO:tensorflow:global_step/sec: 0.451164
+INFO:global_step/sec: 0.451164
+INFO:tensorflow:loss = 0.8954215, step = 160 (11.083 sec)
+INFO:loss = 0.8954215, step = 160 (11.083 sec)
+INFO:tensorflow:global_step/sec: 0.281914
+INFO:global_step/sec: 0.281914
+INFO:tensorflow:loss = 0.94952595, step = 165 (17.736 sec)
+INFO:loss = 0.94952595, step = 165 (17.736 sec)
+INFO:tensorflow:Saving checkpoints for 166 into models/pets_s-0.9/model.ckpt.
+INFO:Saving checkpoints for 166 into models/pets_s-0.9/model.ckpt.
+INFO:tensorflow:Loss for final step: 0.94952595.
+INFO:Loss for final step: 0.94952595.
+INFO:evaluating test accuracy
+INFO:tensorflow:Calling model_fn.
+INFO:Calling model_fn.
+INFO:tensorflow:Done calling model_fn.
+INFO:Done calling model_fn.
+INFO:tensorflow:Starting evaluation at 2018-12-14-18:26:59
+INFO:Starting evaluation at 2018-12-14-18:26:59
+INFO:tensorflow:Graph was finalized.
+INFO:Graph was finalized.
+2018-12-14 12:26:59.466513: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1471] Adding visible gpu devices: 0
+2018-12-14 12:26:59.466559: I tensorflow/core/common_runtime/gpu/gpu_device.cc:952] Device interconnect StreamExecutor with strength 1 edge matrix:
+2018-12-14 12:26:59.466571: I tensorflow/core/common_runtime/gpu/gpu_device.cc:958]      0 
+2018-12-14 12:26:59.466579: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   N 
+2018-12-14 12:26:59.466723: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1084] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10763 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:tensorflow:Restoring parameters from models/pets_s-0.9/model.ckpt-166
+INFO:Restoring parameters from models/pets_s-0.9/model.ckpt-166
+INFO:tensorflow:Running local_init_op.
+INFO:Running local_init_op.
+INFO:tensorflow:Done running local_init_op.
+INFO:Done running local_init_op.
+INFO:tensorflow:Finished evaluation at 2018-12-14-18:28:00
+INFO:Finished evaluation at 2018-12-14-18:28:00
+INFO:tensorflow:Saving dict for global step 166: accuracy = 0.58949065, global_step = 166, loss = 0.9467836
+INFO:Saving dict for global step 166: accuracy = 0.58949065, global_step = 166, loss = 0.9467836
+INFO:tensorflow:Saving 'checkpoint_path' summary for global step 166: models/pets_s-0.9/model.ckpt-166
+INFO:Saving 'checkpoint_path' summary for global step 166: models/pets_s-0.9/model.ckpt-166
+INFO:{'accuracy': 0.58949065, 'loss': 0.9467836, 'global_step': 166}
