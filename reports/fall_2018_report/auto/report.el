@@ -34,6 +34,7 @@
     "fig:artifice-graph"
     "fig:dependency-graphs"
     "sec:method"
+    "sec:evaluation"
     "fig:gyros"
     "fig:coupled-spheres"
     "fig:example-experiments"

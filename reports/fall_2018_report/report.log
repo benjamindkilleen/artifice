@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.5.24)  17 DEC 2018 20:51
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex 2015.5.24)  17 DEC 2018 21:16
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -741,21 +741,21 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 \c__siunitx_mathtt_int=\count177
 
-<images/free_fall.png, id=33, 428.60126pt x 315.1775pt>
+<images/free_fall.png, id=37, 428.60126pt x 315.1775pt>
 File: images/free_fall.png Graphic file (type png)
 
 <use images/free_fall.png>
 Package pdftex.def Info: images/free_fall.png used on input line 98.
 (pdftex.def)             Requested size: 252.0pt x 185.31348pt.
 
-<images/traditional_graph.pdf, id=38, 382.5492pt x 165.7392pt>
+<images/traditional_graph.pdf, id=42, 382.5492pt x 165.7392pt>
 File: images/traditional_graph.pdf Graphic file (type pdf)
 
 <use images/traditional_graph.pdf>
 Package pdftex.def Info: images/traditional_graph.pdf used on input line 129.
 (pdftex.def)             Requested size: 237.36346pt x 102.83562pt.
 
-<images/artifice_graph.pdf, id=39, 459.63718pt x 305.22029pt>
+<images/artifice_graph.pdf, id=43, 459.63718pt x 305.22029pt>
 File: images/artifice_graph.pdf Graphic file (type pdf)
 
 <use images/artifice_graph.pdf>
@@ -771,25 +771,25 @@ Underfull \vbox (badness 6348) has occurred while \output is active []
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
-<images/gyros.png, id=163, 803.0pt x 602.25pt>
+<images/gyros.png, id=167, 803.0pt x 602.25pt>
 File: images/gyros.png Graphic file (type png)
  <use images/gyros.png>
-Package pdftex.def Info: images/gyros.png used on input line 291.
+Package pdftex.def Info: images/gyros.png used on input line 294.
 (pdftex.def)             Requested size: 124.31668pt x 93.23877pt.
 
-<images/coupled_spheres.png, id=164, 513.92pt x 513.92pt>
+<images/coupled_spheres.png, id=168, 513.92pt x 513.92pt>
 File: images/coupled_spheres.png Graphic file (type png)
 
 <use images/coupled_spheres.png>
-Package pdftex.def Info: images/coupled_spheres.png used on input line 296.
+Package pdftex.def Info: images/coupled_spheres.png used on input line 299.
 (pdftex.def)             Requested size: 93.23872pt x 93.23877pt.
- (./report.bbl
+ [3 <./images/gyros.png (PNG copy)> <./images/coupled_spheres.png (PNG copy)>] 
+(./report.bbl
 Underfull \hbox (badness 10000) in paragraph at lines 26--34
 \OT1/ptm/m/n/8 4824-[]imagenet-[]classi^^Lcation-[]with-[]deep-[]convolutional-
 []neural-[]networks .
  []
 
-[3 <./images/gyros.png (PNG copy)> <./images/coupled_spheres.png (PNG copy)>]
 ** WARNING: IEEEtran.bst: No hyphenation pattern has been
 ** loaded for the language `en'. Using the pattern for
 ** the default language instead.
@@ -804,26 +804,26 @@ Missing character: There is no ¡ in font ptmr7t!
 Missing character: There is no Ã in font ptmr7t!
 Missing character: There is no ± in font ptmr7t!
 )
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 359.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 366.
  [4
 
 ]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 359.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 366.
  (./report.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 359.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 359.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 366.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 366.
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 9D4FC15656B0F545EEF75C22125F84CB;179.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 359.
+(rerunfilecheck)             Checksum: A629C690BB2EC877C9C66B00B6AA5E55;224.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 366.
  ) 
 Here is how much of TeX's memory you used:
- 16066 strings out of 493089
- 316621 string characters out of 6134842
- 358472 words of memory out of 5000000
- 19391 multiletter control sequences out of 15000+600000
+ 16069 strings out of 493089
+ 316657 string characters out of 6134842
+ 359505 words of memory out of 5000000
+ 19393 multiletter control sequences out of 15000+600000
  47075 words of font info for 105 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 39i,10n,47p,10380b,856s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 39i,10n,47p,10380b,708s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/local/texlive/2015/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
 exlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/local/te
 xlive/2015/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/tex
@@ -842,10 +842,10 @@ st/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/t
 ype1/urw/times/utmbi8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/
 times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utmr
 i8a.pfb>
-Output written on report.pdf (4 pages, 723522 bytes).
+Output written on report.pdf (4 pages, 723694 bytes).
 PDF statistics:
- 269 PDF objects out of 1000 (max. 8388607)
- 192 compressed objects within 2 object streams
- 33 named destinations out of 1000 (max. 500000)
- 58 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 273 PDF objects out of 1000 (max. 8388607)
+ 196 compressed objects within 2 object streams
+ 34 named destinations out of 1000 (max. 500000)
+ 66 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -283,6 +283,9 @@ generate labels $Y'$ such that
 extracted objects, this yields an augmented dataset approximating
 $X_a \sim f_a$.
 
+\section{Evaluation}
+\label{sec:evaluation}
+
 \begin{figure}
   \centering
   \subfloat[Gyroscopic Model]{
@@ -294,7 +297,6 @@ $X_a \sim f_a$.
     \includegraphics[height=0.37\linewidth]{coupled_spheres}
     \label{fig:coupled-spheres}
   }
-
   \caption[example experiments]{Example images from scientific experiments:
     \textbf{(a)} gyroscopic model for topological metamaterials
     \cite{nash_topological_2015}. Each dot is bound inside the circle
@@ -313,29 +315,34 @@ or ``ground truth,'' $Y$. In well established datasets, $\tilde{Y}$ and $Y$ are
 nearly identical, but we must rely on one or a few human labelers for what
 should be unambiguous quantities. For testing, we calculate $\tilde{Y}$ from the
 known parameters of the simulation, and we emulate a human labeler by
-introducing small perturbations to $\tilde{Y}$, producing $Y$. Part of
-our goal is to train a DCNN with predictions $\hat{Y}$ that more closely
-approximate $\tilde{Y}$ than the labels $Y$. Simulated experiments allow us to
-test this performance.
+introducing small perturbations to $\tilde{Y}$, producing $Y$. Part of our goal
+is to train a DCNN that more closely predicts $\tilde{Y}$ than the labels
+$Y$. Simulated experiments allow us to test this performance.
 
 Figure \ref{fig:coupled-spheres} shows one such experiment. In this case, two
 spheres with different masses rotate in free space, coupled by an invisible
 spring. The goal of the Coupled Spheres experiment is to recover physical
-properties of the spring using $(x,y)$ positions of the two spheres. Imposed
-constraints include the $z$-coordinate of each sphere, which is set to the
-image-plane, as well as each sphere's apparent size. Inherent constraints
-include the physical properties of the spring, \textit{e.g.} the spring constant
-and relaxed length. Adverse noise, which in this case includes any shadows,
-lighting effects, and possible occlusion, also presents a challenge for
-detection.
-
-To demonstrate our method's resilience to inherent constraints, we intend to
-train a DCNN on one experiment and evaluate its performance on experiments with
+properties of the spring using $(x,y)$ positions of the two spheres. These
+physical properties comprise the general principles underlying the dataset. To
+evaluate our method's agnosticism toward general principles, we intend to train
+a DCNN on one experiment and evaluate its performance on experiments with
 different simulated springs. This simple example illustrates the general
 resilience that we wish to develop.
 
 \section{Discussion}
 \label{sec:discussion}
+
+We have illustrated the problem of applying predictive models like DCNNs to
+scientific images without proper care. We have proposed a method, boundary-aware
+augmentation, that addresses this issue by considering a uniform distribution
+over the data region $\chi$. Although this method is (in theory) successful in
+created an augmented dataset which is agnostic to general principles, the
+resulting dataset $X$ is also agnostic to any other non-uniformities in
+$X_0$. We have also not addressed the reasonable constraint of temporal
+continuity. Instead, we chose to consider isolated frames with an
+\emph{arbitrary} rather than \emph{temporal} ordering, but we could consider
+instead the uniform distribution of paths that an object could take from one
+frame to the next, within some reasonable maximum.
 
 % TODO: not in the paper, ignoring everything, all of law's natures, in addition
 % to GPs
