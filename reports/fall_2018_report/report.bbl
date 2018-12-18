@@ -37,12 +37,43 @@ J.~Deng, W.~Dong, R.~Socher, L.-J. Li, K.~Li, and L.~Fei-Fei,
   ``\BIBforeignlanguage{en}{{ImageNet}: {A} {Large}-{Scale} {Hierarchical}
   {Image} {Database}},'' p.~8.
 
+\bibitem{simonyan_very_2014}
+\BIBentryALTinterwordspacing
+K.~Simonyan and A.~Zisserman, ``Very {Deep} {Convolutional} {Networks} for
+  {Large}-{Scale} {Image} {Recognition},'' \emph{arXiv:1409.1556 [cs]}, Sep.
+  2014, arXiv: 1409.1556. [Online]. Available:
+  \url{http://arxiv.org/abs/1409.1556}
+\BIBentrySTDinterwordspacing
+
+\bibitem{szegedy_going_2014}
+\BIBentryALTinterwordspacing
+C.~Szegedy, W.~Liu, Y.~Jia, P.~Sermanet, S.~Reed, D.~Anguelov, D.~Erhan,
+  V.~Vanhoucke, and A.~Rabinovich, ``Going {Deeper} with {Convolutions},''
+  \emph{arXiv:1409.4842 [cs]}, Sep. 2014, arXiv: 1409.4842. [Online].
+  Available: \url{http://arxiv.org/abs/1409.4842}
+\BIBentrySTDinterwordspacing
+
+\bibitem{he_deep_2015}
+\BIBentryALTinterwordspacing
+K.~He, X.~Zhang, S.~Ren, and J.~Sun, ``Deep {Residual} {Learning} for {Image}
+  {Recognition},'' \emph{arXiv:1512.03385 [cs]}, Dec. 2015, arXiv: 1512.03385.
+  [Online]. Available: \url{http://arxiv.org/abs/1512.03385}
+\BIBentrySTDinterwordspacing
+
 \bibitem{lin_microsoft_2014}
 \BIBentryALTinterwordspacing
 T.-Y. Lin, M.~Maire, S.~Belongie, L.~Bourdev, R.~Girshick, J.~Hays, P.~Perona,
   D.~Ramanan, C.~L. Zitnick, and P.~Dollár, ``Microsoft {COCO}: {Common}
   {Objects} in {Context},'' \emph{arXiv:1405.0312 [cs]}, May 2014, arXiv:
   1405.0312. [Online]. Available: \url{http://arxiv.org/abs/1405.0312}
+\BIBentrySTDinterwordspacing
+
+\bibitem{ronneberger_u-net:_2015}
+\BIBentryALTinterwordspacing
+O.~Ronneberger, P.~Fischer, and T.~Brox, ``U-{Net}: {Convolutional} {Networks}
+  for {Biomedical} {Image} {Segmentation},'' \emph{arXiv:1505.04597 [cs]}, May
+  2015, arXiv: 1505.04597. [Online]. Available:
+  \url{http://arxiv.org/abs/1505.04597}
 \BIBentrySTDinterwordspacing
 
 \bibitem{settles_active_2012}
@@ -53,38 +84,16 @@ B.~Settles, ``Active {Learning},'' \emph{Synthesis Lectures on Artificial
   \url{https://www.morganclaypool.com/doi/abs/10.2200/S00429ED1V01Y201207AIM018}
 \BIBentrySTDinterwordspacing
 
-\bibitem{kao_localization-aware_2018}
+\bibitem{duquevieira_simple_2012}
 \BIBentryALTinterwordspacing
-C.-C. Kao, T.-Y. Lee, P.~Sen, and M.-Y. Liu, ``Localization-{Aware} {Active}
-  {Learning} for {Object} {Detection},'' \emph{arXiv:1801.05124 [cs]}, Jan.
-  2018, arXiv: 1801.05124. [Online]. Available:
-  \url{http://arxiv.org/abs/1801.05124}
+{Duquevieira}, ``Simple basket ball fall,'' Jan. 2012. [Online]. Available:
+  \url{https://commons.wikimedia.org/wiki/File:Fall.png}
 \BIBentrySTDinterwordspacing
 
-\bibitem{jain_active_2016}
-S.~D. Jain and K.~Grauman, ``Active {Image} {Segmentation} {Propagation},'' in
-  \emph{2016 {IEEE} {Conference} on {Computer} {Vision} and {Pattern}
-  {Recognition} ({CVPR})}, Jun. 2016, pp. 2864--2873.
-
-\bibitem{ronneberger_u-net:_2015}
+\bibitem{munroe_wikipedian_nodate}
 \BIBentryALTinterwordspacing
-O.~Ronneberger, P.~Fischer, and T.~Brox, ``U-{Net}: {Convolutional} {Networks}
-  for {Biomedical} {Image} {Segmentation},'' \emph{arXiv:1505.04597 [cs]}, May
-  2015, arXiv: 1505.04597. [Online]. Available:
-  \url{http://arxiv.org/abs/1505.04597}
-\BIBentrySTDinterwordspacing
-
-\bibitem{torralba_unbiased_2011}
-A.~Torralba and A.~A. Efros, ``Unbiased look at dataset bias,'' in \emph{{CVPR}
-  2011}, Jun. 2011, pp. 1521--1528.
-
-\bibitem{nash_topological_2015}
-\BIBentryALTinterwordspacing
-L.~M. Nash, D.~Kleckner, A.~Read, V.~Vitelli, A.~M. Turner, and W.~T.~M.
-  Irvine, ``Topological mechanics of gyroscopic metamaterials,''
-  \emph{Proceedings of the National Academy of Sciences}, vol. 112, no.~47, pp.
-  14\,495--14\,500, 2015. [Online]. Available:
-  \url{http://www.pnas.org/content/112/47/14495}
+R.~Munroe, ``Wikipedian {Protester}.'' [Online]. Available:
+  \url{https://xkcd.com/285/}
 \BIBentrySTDinterwordspacing
 
 \bibitem{vezhnevets_active_2012}
@@ -110,6 +119,23 @@ D.~Pathak, P.~Krahenbuhl, J.~Donahue, T.~Darrell, and A.~A. Efros,
   {Computer} {Vision} and {Pattern} {Recognition} ({CVPR})}}.\hskip 1em plus
   0.5em minus 0.4em\relax Las Vegas, NV, USA: IEEE, Jun. 2016, pp. 2536--2544.
   [Online]. Available: \url{http://ieeexplore.ieee.org/document/7780647/}
+\BIBentrySTDinterwordspacing
+
+\bibitem{justel_multivariate_1997}
+\BIBentryALTinterwordspacing
+A.~Justel, D.~Peña, and R.~Zamar, ``A multivariate {Kolmogorov}-{Smirnov} test
+  of goodness of fit,'' \emph{Statistics \& Probability Letters}, vol.~35,
+  no.~3, pp. 251--259, Oct. 1997. [Online]. Available:
+  \url{http://www.sciencedirect.com/science/article/pii/S0167715297000205}
+\BIBentrySTDinterwordspacing
+
+\bibitem{nash_topological_2015}
+\BIBentryALTinterwordspacing
+L.~M. Nash, D.~Kleckner, A.~Read, V.~Vitelli, A.~M. Turner, and W.~T.~M.
+  Irvine, ``Topological mechanics of gyroscopic metamaterials,''
+  \emph{Proceedings of the National Academy of Sciences}, vol. 112, no.~47, pp.
+  14\,495--14\,500, 2015. [Online]. Available:
+  \url{http://www.pnas.org/content/112/47/14495}
 \BIBentrySTDinterwordspacing
 
 \end{thebibliography}
