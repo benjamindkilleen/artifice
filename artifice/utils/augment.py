@@ -24,18 +24,26 @@ class Augmentation():
 
   """
   def __init__(self, augmentation=lambda i, a : [(i,a)], N=None):
-    self._augmentation = augmentation
+    # TODO: check types
+    self._augfs = augmentation if type(augmentation) == list else [augmentation]
     self.N = N
 
   def __call__(self, image, annotation):
-    return self._augmentation(image, annotation)
+    output_scenes = []
+    for augf in self._augfs:
+      output_scenes += augf(image, annotation)
+    return output_scenes
 
-  def __add__(self, aug):
-    def augmentation(image, annotation):
-      return self._augmentation(image,annotation) + aug._augmentation(image,annotation)[1:]
-    N = None if (self.N is None or aug.N is None) else self.N + aug.N - 1
-    
-    return Augmentation(augmentation, N=N)
+  def __add__(self, other):
+    augfs = self._augfs + other._augfs[1:]
+    N = None if (self.N is None or other.N is None) else self.N + other.N - 1
+    return Augmentation()
+
+  def __radd__(self, other):
+    if other == 0:
+      return self
+    else:
+      return self.__add__(other)
 
   def __mul__(self, aug):
     def augmentation(image, annotation):
@@ -44,6 +52,11 @@ class Augmentation():
       for scene in scenes:
         output_scenes += aug._augmentation(*scene)
       return output_scenes
+      
+    augfs = []
+    for augf in self._augfs:
+      
+      
     N = None if (self.N is None or aug.N is None) else self.N * aug.N
     return Augmentation(augmentation, N=N)
 
