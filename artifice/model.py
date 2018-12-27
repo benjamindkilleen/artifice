@@ -15,25 +15,21 @@ Training scheme:
 import tensorflow as tf
 
 from artifice.semantic_segmentation import UNet
-from artifice.labeller import Labeller
 
 """Artifice's full detection scheme.
 """
 class Model:
   def __init__(self, image_shape, num_classes, sem_model=UNet):
-    self.semantic_model = sem_model(image_shape, num_classes)
-
+    self._semantic_model = sem_model(image_shape, num_classes)
+    
   def train(self, data):
     """Implement the full training scheme for artifice. Unlike most "train"
-    functions for a tensorflow, this does not perform a test-train
-    split. 
+    functions for tensorflow, this does not perform a test-train split.
 
-    In user mode, this will 
-    
     """
 
     # load the dataset, with or without full annotations?
 
     # obtain semantic annotations
     
-    
+  

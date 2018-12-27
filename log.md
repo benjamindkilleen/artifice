@@ -392,3 +392,6 @@ For the coupled springs experiment, maybe apply different walls for each
 object. These walls constitute known *boundaries*, within which the experiment
 produces a sample from the natural distribution, but you want to sample
 uniformly within chi.
+
+
+## December 20, 2018

@@ -141,7 +141,7 @@ def make_dataset(record, image_names, annotation_names,
       annotation = img.resize(annotation, shape, label=label)
 
     if augmentation is not None:
-      for scene in augmentation(image, annotation):
+      for scene in augmentation((image, annotation)):
         e = dataset.example_string_from_scene(*scene)
         writer.write(e)
     else:
@@ -289,7 +289,6 @@ def main():
                       help='tfrecord name for test set')
 
   # Data options
-  print(list(augment.premade.keys()))
   data_group = parser.add_argument_group(title='data',
                                          description="Generate data.")
   data_group.add_argument('--augmentations', '--aug', '-a', 

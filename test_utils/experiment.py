@@ -521,7 +521,7 @@ class Experiment:
       image, annotation = scene
       
       if 'tfrecord' in self.output_formats:
-        e = dataset.example_string_from_scene(*scene)
+        e = dataset.proto_from_scene(scene)
         tfrecord_writer.write(e)
         
       if 'mp4' in self.output_formats:

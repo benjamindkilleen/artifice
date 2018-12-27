@@ -1,6 +1,9 @@
 """Augmentation utils."""
 
 import numpy as np
+import itertools
+import functools
+from functional import compose
 from artifice.utils import img
 from collections import Counter
 import logging
@@ -8,36 +11,42 @@ import logging
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 class Augmentation():
-  """An augmentation is a "function" that takes a scene (image, annotation) and
-  returns a list of scenes. By convenction, the first pair is always the
-  original scene.
+  """An augmentation is a callable that takes a scene (image, annotation) and
+  returns an iterable of scenes. Mathematically, it is a set of transformations.
+  Regardless of transformations, the first scene yielded is always the
+  original.
 
   Augmentations can be added together, without duplicating the original scene,
   using the "+" operator. This applies each augmentation to the original images
-  separately.
+  separately. Augmentations can also be "multiplied" (in a cartesian,
+  compositional sense) together. This applies aug1 to every output of aug2.
 
-  Augmentations can also be multiplied together. This applies aug1 to every
-  output of aug2 (excluding the identity).
-
-  :augmentation: the augmentation function
-  :N: optional argument giving the number of scenes the augmentation outputs. 
+  Ideally, augmentations should be built up from small augmentation functions
+  through addition or multiplication. When called, scenes are then generated as
+  lazily as possible.
 
   """
-  def __init__(self, augmentation=lambda i, a : [(i,a)], N=None):
-    # TODO: check types
-    self._augfs = augmentation if type(augmentation) == list else [augmentation]
-    self.N = N
+  def __init__(self, transformations=[]):
+    """input:
+    :transformations: iterable of transformation functions (scene -> scene). Can
+      also be a single callable.
+    """
+    if callable(transformations):
+      self._transformations = iter([transformations])
+    else:
+      self._transformations = iter(transformations)
 
-  def __call__(self, image, annotation):
-    output_scenes = []
-    for augf in self._augfs:
-      output_scenes += augf(image, annotation)
-    return output_scenes
+  def __len__(self):
+    return len(self._transformations) + 1
+      
+  def __call__(self, scene):
+    yield scene
+    for t in self._transformations:
+      yield t(scene)
 
   def __add__(self, other):
-    augfs = self._augfs + other._augfs[1:]
-    N = None if (self.N is None or other.N is None) else self.N + other.N - 1
-    return Augmentation()
+    ts = itertools.chain(self._transformations, other._transformations)
+    return Augmentation(ts)
 
   def __radd__(self, other):
     if other == 0:
@@ -45,40 +54,29 @@ class Augmentation():
     else:
       return self.__add__(other)
 
-  def __mul__(self, aug):
-    def augmentation(image, annotation):
-      scenes = self._augmentation(image, annotation)
-      output_scenes = []
-      for scene in scenes:
-        output_scenes += aug._augmentation(*scene)
-      return output_scenes
-      
-    augfs = []
-    for augf in self._augfs:
-      
-      
-    N = None if (self.N is None or aug.N is None) else self.N * aug.N
-    return Augmentation(augmentation, N=N)
+  def __mul__(self, other):
+    pairs = itertools.product(self._transformations, other._transformations)
+    ts = itertools.starmap(compose, pairs)
+    return Augmentation(ts)
 
 
-identity = Augmentation()
-
-def _flip_horizontal(image, annotation):
+def _flip_horizontal(scene):
+  image, annotation = scene
   flipped_image = np.fliplr(image)
   flipped_annotation = np.fliplr(annotation)
-  return [(image, annotation),
-          (flipped_image, flipped_annotation)]
-flip_horizontal = Augmentation(_flip_horizontal, 2)
+  return iter([(image, annotation),
+               (flipped_image, flipped_annotation)])
 
-def _flip_vertical(image, annotation):
+def _flip_vertical(scene):
+  image, annotation = scene
   flipped_image = np.flipud(image)
   flipped_annotation = np.flipud(annotation)
-  return [(image, annotation),
-          (flipped_image, flipped_annotation)]
-flip_vertical = Augmentation(_flip_vertical, 2)
+  return iter([(image, annotation),
+               (flipped_image, flipped_annotation)])
 
-def _random_thumbnail(image, annotation):
+def _random_thumbnail(scene):
   """Zoom in on a random frame, three_quarters the size of the original image."""
+  image, annotation = scene
   shape = (0.75*np.array(image.shape)).astype(np.int)
   xoffset = np.random.randint(image.shape[0] - shape[0])
   yoffset = np.random.randint(image.shape[1] - shape[1])
@@ -94,10 +92,15 @@ def _random_thumbnail(image, annotation):
   resized_annotation_thumb = img.resize(
     annotation_thumb, annotation.shape, label=label)
 
-  return [(image, annotation),
-          (resized_image_thumb, resized_annotation_thumb)]
-random_thumbnail = Augmentation(_random_thumbnail, 2)
+  return iter([(image, annotation),
+               (resized_image_thumb, resized_annotation_thumb)])
 
+
+# Premade augmentations
+identity = Augmentation()
+flip_horizontal = Augmentation(_flip_horizontal, 2)
+flip_vertical = Augmentation(_flip_vertical, 2)
+random_thumbnail = Augmentation(_random_thumbnail, 2)
 
 premade = {
   'identity'         : identity,
@@ -108,7 +111,6 @@ premade = {
   'random_thumbnail' : random_thumbnail,
   'rtn'              : random_thumbnail
 }
-
 
 def join(augs):
   """Accept a list of names of augmentations, or augmentation objects
@@ -126,5 +128,3 @@ def join(augs):
       raise RuntimeError("unrecogignized augmentation")
 
   return aug_out
-  
-# TODO: more augmentations

@@ -31,7 +31,7 @@ class.
 """
 
 class SemanticModel:
-  num_shuffle = 1000
+  num_shuffle = 10000
   learning_rate = 0.001
   def __init__(self, image_shape, num_classes, model_dir=None):
     self.image_shape = list(image_shape)
@@ -130,6 +130,8 @@ class SemanticModel:
 class UNet(SemanticModel):
   def create(self, training=True, l2_reg_scale=None):
     """Create the unet model function for a custom estimator.
+
+    TODO: Implement variable depth UNet.
 
     """
     
