@@ -15,8 +15,13 @@ import logging
 import tensorflow as tf
 from artifice.utils import dataset
 
-logging.basicConfig(level=logging.INFO, 
+logging.basicConfig(level=logging.DEBUG, 
                     format='%(levelname)s:%(asctime)s:%(message)s')
+
+
+# TODO: allow for customizing these values
+batch_size = 4
+
 
 
 """A model implementing semantic segmentation.
@@ -29,7 +34,6 @@ SEMANTIC annotation (groung truth) of `image`, a [image_shape[0],
 image_shape[1], num_classes] shape array which one-hot encoedes each pixel's
 class.
 """
-
 class SemanticModel:
   num_shuffle = 10000
   learning_rate = 0.001
@@ -50,8 +54,7 @@ class SemanticModel:
   def create(training=True, l2_reg_scale=None):
     raise NotImplementedError("SemanticModel subclass should implement create().")
 
-  def train(self, train_data, batch_size=4, test_data=None, overwrite=False,
-            num_epochs=1):
+  def train(self, train_data, test_data=None, overwrite=False, num_epochs=1):
     """Train the model with tf Dataset object train_data. If test_data is not None,
     evaluate the model with it, and log the results (at INFO level).
 
@@ -105,7 +108,7 @@ class SemanticModel:
       test_result = model.evaluate(input_fn=input_test)
       logging.info(test_result)
 
-  def predict(self, test_data):
+  def predict(self, test_data, num_examples=-1):
     """Return the estimator's predictions on test_data.
 
     """
@@ -113,8 +116,12 @@ class SemanticModel:
       logging.warning("prediction FAILED (no model_dir)")
       return None
 
+    if 0 < num_examples < batch_size:
+      num_examples = batch_size
+
     input_pred = lambda : (
-      test_data.batch(batch_size)
+      test_data.take(num_examples)
+      .batch(batch_size)
       .make_one_shot_iterator()
       .get_next())
   
@@ -140,13 +147,7 @@ class UNet(SemanticModel):
     def model_function(features, labels, mode, params):
       images = tf.reshape(features, [-1] + self.image_shape,
                           name='reshape_images')
-      annotations = tf.reshape(labels, [-1] + self.annotation_shape, 
-                               name='reshape_annotations')
-      annotations_3D = tf.reshape(
-        labels,
-        [-1, self.annotation_shape[0], self.annotation_shape[1]], 
-        name='reshape_annotations_3D')
-      annotations_one_hot = tf.one_hot(annotations_3D, self.num_classes)
+
 
       # The UNet architecture has two stages, up and down. We denote layers in the
       # down-stage with "dn" and those in the up stage with "up," even though the
@@ -212,12 +213,22 @@ class UNet(SemanticModel):
       predicted_logits = UNet.conv(up_conv1_2, filters=self.num_classes,
                                     kernel_size=[1, 1], activation=None)
 
-      predictions = tf.argmax(predicted_logits, 3)
+      predictions = tf.argmax(predicted_logits, axis=3)
 
       # In PREDICT mode, return the output asap.
       if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(
-          mode=mode, predictions={'annotation' : predictions})
+          mode=mode, predictions={'image' : images,
+                                  'annotation' : predictions})
+
+      # Get "ground truth" for other modes.
+      annotations = tf.reshape(labels, [-1] + self.annotation_shape, 
+                               name='reshape_annotations')
+      annotations_3D = tf.reshape(
+        labels,
+        [-1, self.annotation_shape[0], self.annotation_shape[1]], 
+        name='reshape_annotations_3D')
+      annotations_one_hot = tf.one_hot(annotations_3D, self.num_classes)
 
       # Calculate loss:
       cross_entropy = tf.losses.softmax_cross_entropy(

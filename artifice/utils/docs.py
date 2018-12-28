@@ -8,25 +8,39 @@ data augmentation.
 - predict: run artifice on input examples, showing predictions.
 """
 
+command_choices = ['experiment', 'predict']
 command_help = "Artifice command to run."
 
-input_help = """\
-Input file:
+input_help = """Input:
 - experiment: tfrecord containing examples.
+- predict: tfrecord containing examples to predict
 """
 
-output_help = """\
-Output file:
-- experiment: directory to store the trained model in.
+output_help = """Output:
+- experiment: not used. Set model-dir.
+- predict: directory to save outputs (created if nonexistent)
+  OR 'show' to display predictions using matplotlib (DEFAULT)
 """
 
-overwrite_help = """\
+model_dir_help = """Model directory.
+- experiment: continues training from model_dir. Created if nonexistent.
+- predict: REQUIRED for prediction.
+"""
+
+overwrite_help = """
 - experiment: overwrite existing model; restart training from scratch.
 """
 
 image_shape_help = """\
-First two dimensions of the image.
-"""
+Shape of the image. Must be 3D. Grayscale uses 1 for last dimension."""
 
-epochs_help = """\
-Number of training EPOCHS. Default is -1, repeats indefinitely.  """
+epochs_help = """Number of training EPOCHS. Default is -1, repeats indefinitely."""
+
+num_examples_help = """
+- experiment: not used
+- predict: limit prediction to NUM_EXAMPLES from INPUT. -1 takes all
+  examples. Default is 1 example. If OUTPUT == 'show', must be no more than 10."""
+
+num_classes_help = """\
+Number of classes, including background. Can be larger than necessary. Default
+is 3."""
