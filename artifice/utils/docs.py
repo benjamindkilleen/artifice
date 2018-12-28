@@ -27,3 +27,6 @@ overwrite_help = """\
 image_shape_help = """\
 First two dimensions of the image.
 """
+
+epochs_help = """\
+Number of training EPOCHS. Default is -1, repeats indefinitely.  """

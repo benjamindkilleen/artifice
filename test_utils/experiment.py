@@ -20,8 +20,11 @@ import matplotlib.pyplot as plt
 from skimage import draw
 from inspect import signature
 import subprocess as sp
-
+import tensorflow as tf
 from artifice.utils import dataset, img
+import logging
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
 
 
 INFINITY = 10e9
@@ -388,7 +391,7 @@ class Experiment:
     u_hat = self.unproject(Xi)
     v = self.camera_location
     mag_v = np.linalg.norm(v)
-    cos_th = np.dot(u,v) / (u_hat * mag_v)
+    cos_th = np.dot(u_hat,v) / mag_v
     u = (mag_v / cos_th) * u_hat
     return v + u
   
@@ -459,9 +462,13 @@ class Experiment:
 
     return image, annotation
     
-  def run(self, verbose=False):
+  def run(self, verbose=None):
     """Generate the dataset in each format.
+    
     """
+
+    if verbose is not None:
+      logging.warning("verbose is depricated")
 
     if len(self.output_formats) == 0:
       # TODO: raise error?
@@ -470,16 +477,15 @@ class Experiment:
     # Instantiate writers and fnames for each format
     if 'tfrecord' in self.output_formats:
       tfrecord_fname = self.fname + '.tfrecord'
-      tfrecord_writer = tf.python_io.TFRecordWriter(fname)
-      if verbose:
-        print("Writing tfrecord to {}...".format(mp4_image_fname))
+      tfrecord_writer = tf.python_io.TFRecordWriter(tfrecord_fname)
+      logging.info("Writing tfrecord to {}".format(tfrecord_fname))
 
     if 'mp4' in self.output_formats:
       mp4_image_fname = self.fname + '.mp4'
       mp4_annotation_fname = self.fname + '_annotation.mp4'
 
-      if verbose:
-        print("Writing video to {}...".format(mp4_image_fname))
+      
+      logging.info("Writing video to {}".format(mp4_image_fname))
       image_cmd = [
         'ffmpeg',
         '-y',              # overwrite existing files
@@ -515,8 +521,7 @@ class Experiment:
     # step through all the frames, rendering each scene with time-dependence if
     # necessary.
     for t in range(self.N):
-      if verbose:
-        print("Rendering scene {} of {}...".format(t, self.N))
+      logging.info("Rendering scene {} of {}...".format(t, self.N))
       scene = self.render_scene(t)
       image, annotation = scene
       
@@ -532,6 +537,8 @@ class Experiment:
 
     if 'tfrecord' in self.output_formats:
       tfrecord_writer.close()
+      logging.info("Finished writing tfrecord.")
+
     if 'mp4' in self.output_formats:
       mp4_image_proc.stdin.close()
       mp4_image_proc.wait()
@@ -540,6 +547,7 @@ class Experiment:
       mp4_annotation_proc.stdin.close()
       mp4_annotation_proc.wait()
       mp4_annotation_log.close()
+      logging.info("Finished writing video.")
 
       
 class BallExperiment(Experiment):

@@ -9,9 +9,12 @@ $ARTIFICE)
 import vapory
 import numpy as np
 import matplotlib.pyplot as plt
-
 from test_utils import experiment
 from artifice.utils import dataset
+import logging
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
 
 # Main parameters
 debug = False
@@ -24,7 +27,7 @@ frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
-output_formats = {'mp4'}                 # write to a video
+output_formats = {'tfrecord', 'mp4'}     # output formats
 fname = root + 'coupled_spheres'         # extensions from output_formats
 image_shape = (512, 512)                 # image shape
 num_classes = 2                          # including background
@@ -35,30 +38,33 @@ r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
 x1 = -240            # initial x position (cm)
 y1 = 0               # initial y position
-vx1 = -30              # initial x velocity (cm/s)
-vy1 = 20            # initial y velocity
+vx1 = 50            # initial x velocity (cm/s)
+vy1 = -50            # initial y velocity
 
 # ball 2
 r2 = 30
 m2 = 27
 x2 = 240
 y2 = 0
-vx2 = 30
-vy2 = 20
+vx2 = -50
+vy2 = -125
 
 # Spring parameters
 k = 15                          # (N / m)
-relaxed_length = 300            # (cm)
+relaxed_length = 200            # (cm)
 
 # Add walls at the boundary of the image plane
-do_walls = False                # TODO: fix this behavior
+do_walls = True                # TODO: fix this behavior
 
 #################### CONFIGURABLE OPTIONS ABOVE ####################
 
 # spring:
 l0 = relaxed_length / 100
 def spring(l):
-  """Return the force in Newtons exerted by the spring as a function of its length
+  """
+  :l: distance between masses, in meters
+
+  Return the force in Newtons exerted by the spring as a function of its length
   `l`. Negative force is attractive, positive repulsive. In center-of-mass polar
   coordinates, this should be (will be) a radial force.
 
@@ -87,26 +93,30 @@ def calculate_acceleration(x1, x2):
 def impose_walls():
   """Impose the walls at the boundary of the image_plane on the CURRENT state of
   the system.
-  `walls` consists of left, top, right, bottom bounds.
+  `walls` consists of top, left, bottom, right bounds.
   """
   if not do_walls:
     return
-  
+
   global current, walls
   for objNum in ['1', '2']:
     xk = 'x' + objNum
     vk = 'v' + objNum
-    if current[xk][0] < walls[0]:
-      current[xk][0] = 2*walls[0] - current[xk][0]
+    if current[xk][0] < walls[1]:
+      logging.debug(f"bouncing off left wall at {walls[1]}")
+      current[xk][0] = 2*walls[1] - current[xk][0]
       current[vk][0] *= -1
-    if current[xk][0] > walls[2]:
-      current[xk][0] = 2*walls[2] - current[xk][0]
+    if current[xk][0] > walls[3]:
+      logging.debug(f"bouncing off right wall at {walls[3]}")
+      current[xk][0] = 2*walls[3] - current[xk][0]
       current[vk][0] *= -1
-    if current[xk][1] > walls[1]:
-      current[xk][1] = 2*walls[1] - current[xk][1]
+    if current[xk][1] > walls[0]:
+      logging.debug(f"bouncing off top wall at {walls[0]}")
+      current[xk][1] = 2*walls[0] - current[xk][1]
       current[vk][1] *= -1
-    if current[xk][1] < walls[3]:
-      current[xk][1] = 2*walls[3] - current[xk][1]
+    if current[xk][1] < walls[2]:
+      logging.debug(f"bouncing off bottom wall at {walls[2]}")
+      current[xk][1] = 2*walls[2] - current[xk][1]
       current[vk][1] *= -1
 
 
@@ -143,7 +153,8 @@ p
 
     # Correct for bouncing off of walls
     impose_walls()
-    
+
+    logging.debug("position:{},{}".format(current['x1'], current['x2']))
     n -= 1
 
     
@@ -179,7 +190,6 @@ def main():
   
   # initial state, in SI units
   global initial, current
-
   initial = {}
   initial['x1'] = np.array([x1, y1]) / 100.
   initial['v1'] = np.array([vx1, vy1]) / 100.
@@ -210,9 +220,11 @@ def main():
 
   if do_walls:
     global walls
-    walls = np.zeros(4)        # left, top, right, bottom
-    walls[:2] = exp.unproject((0, 0))[:2]
-    walls[2:] = exp.unproject(image_shape)[:2]
+    walls = np.zeros(4)         # top, left, bottom, right
+    walls[:2] = exp.unproject_to_image_plane((0, 0))[:2]
+    walls[2:] = exp.unproject_to_image_plane(image_shape)[:2]
+    logging.info("walls: {}".format(walls))
+    walls /= 100.               # convert to meters
 
   exp.add_object(s1)
   exp.add_object(s2)
@@ -222,7 +234,7 @@ def main():
     plt.imshow(image[:,:,0], cmap='gray')
     plt.show()
   else:
-    exp.run(verbose=True)
+    exp.run()
 
 
 if __name__ == "__main__":
