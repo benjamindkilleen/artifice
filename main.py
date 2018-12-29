@@ -26,24 +26,18 @@ def cmd_predict(args):
   unet = UNet(args.image_shape, args.num_classes[0], model_dir=args.model_dir[0])
   predictions = unet.predict(data, num_examples=args.num_examples[0])
 
-  for i, prediction in enumerate(predictions):
-    logging.info("prediction {}".format(i))
-    logging.debug("image shape: {}".format(prediction['image'].shape))
-    logging.debug("annotation shape: {}".format(prediction['annotation'].shape))
-    if args.output[0] == 'show':
-      fig, (image_ax, pred_ax) = plt.subplots(1, 2)
-      image_ax.imshow(np.squeeze(prediction['image']))
-      image_ax.set_title("Original Image")
-      
-      pred_ax.imshow(prediction['annotation'])
-      pred_ax.set_title("Predicted Annotation")
-    else:
-      raise NotImplementedError("use show")
-
   if args.output[0] == 'show':
+    prediction = next(predictions)
+    fig, (image_ax, pred_ax) = plt.subplots(1, 2)
+    image_ax.imshow(np.squeeze(prediction['image']))
+    image_ax.set_title("Original Image")
+    pred_ax.imshow(prediction['annotation'])
+    pred_ax.set_title("Predicted Annotation")
     plt.show()
+  else:
+    raise NotImplementedError("use show")
 
-  
+    
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('command', choices=docs.command_choices,
@@ -65,7 +59,7 @@ def main():
                       default=[-1], type=int,
                       help=docs.epochs_help)
   parser.add_argument('--num_examples', '-n', nargs=1,
-                      default=[1], type=int,
+                      default=[-1], type=int,
                       help=docs.num_examples_help)
   parser.add_argument('--num_classes', '--classes', '-c', nargs=1,
                       default=[3], type=int,

@@ -19,7 +19,7 @@ input_help = """Input:
 output_help = """Output:
 - experiment: not used. Set model-dir.
 - predict: directory to save outputs (created if nonexistent)
-  OR 'show' to display predictions using matplotlib (DEFAULT)
+  OR 'show' to display one prediction using matplotlib (DEFAULT)
 """
 
 model_dir_help = """Model directory.
@@ -38,8 +38,8 @@ epochs_help = """Number of training EPOCHS. Default is -1, repeats indefinitely.
 
 num_examples_help = """
 - experiment: not used
-- predict: limit prediction to NUM_EXAMPLES from INPUT. -1 takes all
-  examples. Default is 1 example. If OUTPUT == 'show', must be no more than 10."""
+- predict: limit prediction to NUM_EXAMPLES from INPUT. -1 (DEFAULT) takes all
+  examples."""
 
 num_classes_help = """\
 Number of classes, including background. Can be larger than necessary. Default
