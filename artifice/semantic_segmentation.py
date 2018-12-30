@@ -16,7 +16,7 @@ import tensorflow as tf
 from artifice.utils import dataset
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -55,17 +55,22 @@ class SemanticModel:
     raise NotImplementedError("SemanticModel subclass should implement create().")
 
   def train(self, train_data, num_eval=100, test_data=None, overwrite=False,
-            num_epochs=1):
+            num_epochs=1, eval_secs=600, save_steps=100):
     """Train the model with tf Dataset object train_data. If test_data is not None,
     evaluate the model with it, and log the results (at INFO level).
 
     :train_data: tf.Dataset (raw) to use for training
-    :num_eval: number of examples to reserve from train_data for evaluation.
+    :num_eval: number of examples to reserve from train_data for
+      evaluation. Ignored if eval_secs is 0.
     :test_data: tf.Dataset used for final testing
     :overwrite: overwrite the existing model
+    :eval_secs: do evaluation every EVAL_SECS. Default = 600. Set to 0 for no
+      evaluation.
 
     """
-    assert num_eval >= 0
+    assert num_eval >= 0 and eval_secs >= 0
+    if eval_secs == 0:
+      num_eval = 0
 
     if overwrite and self.model_dir is None:
       logger.warning("FAIL to overwrite; model_dir is None")
@@ -79,7 +84,6 @@ class SemanticModel:
       os.mkdir(self.model_dir)
 
     # Configure session
-    save_steps = 20
     run_options = tf.RunOptions(report_tensor_allocations_upon_oom = True)
     run_config = tf.estimator.RunConfig(model_dir=self.model_dir,
                                         save_checkpoints_steps=save_steps,
@@ -112,7 +116,7 @@ class SemanticModel:
       train_spec = tf.estimator.TrainSpec(input_fn=input_train)
       eval_spec = tf.estimator.EvalSpec(input_fn=input_eval,
                                         steps=num_eval // batch_size,
-                                        throttle_secs=5)
+                                        throttle_secs=eval_secs)
       tf.estimator.train_and_evaluate(model, train_spec, eval_spec)
     
     if test_data is not None:
@@ -226,7 +230,8 @@ class UNet(SemanticModel):
       predicted_logits = UNet.conv(up_conv1_2, filters=self.num_classes,
                                     kernel_size=[1, 1], activation=None)
       
-      predictions = tf.argmax(predicted_logits, axis=3)
+      predictions = tf.reshape(tf.argmax(predicted_logits, axis=3),
+                               [-1] + self.annotation_shape)
 
       # In PREDICT mode, return the output asap.
       if mode == tf.estimator.ModeKeys.PREDICT:
@@ -235,7 +240,7 @@ class UNet(SemanticModel):
                                   'annotation' : predictions})
 
       # Get "ground truth" for other modes.
-      annotations = tf.reshape(labels, [-1] + self.annotation_shape)
+      annotations = tf.cast(tf.reshape(labels, [-1] + self.annotation_shape), tf.int64)
       annotations_3D = tf.reshape(
         labels,
         [-1, self.annotation_shape[0], self.annotation_shape[1]])
@@ -257,17 +262,14 @@ class UNet(SemanticModel):
       assert mode == tf.estimator.ModeKeys.EVAL
       accuracy = tf.metrics.accuracy(labels=annotations,
                                      predictions=predictions)
-      
-      logger.debug("annotations shape:", annotations.shape)
-      logger.debug("predictions shape:", predictions.shape)
 
       # TODO: Somehow, the shape of predictions is gettign skewed at runtime,
       # but not at setup. I think this might be what messed up training. Fix asap.
       eval_metrics = {'accuracy' : accuracy}
-      for objId in range(1, self.num_classes + 1):
-        eval_metrics[f'object_{objId}_precision'] = tf.metrics.precision_at_k(
+      for objId in range(self.num_classes):
+        eval_metrics[f'class={objId}_precision'] = tf.metrics.precision_at_k(
           labels=annotations,
-          predictions=predictions,
+          predictions=predicted_logits,
           k=1,
           class_id=objId)
     

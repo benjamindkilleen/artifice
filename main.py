@@ -22,7 +22,8 @@ def cmd_experiment(args):
   logger.info(f"training from experiment '{args.input[0]}'")
   data = dataset.load(args.input[0])
   unet = UNet(args.image_shape, args.num_classes[0], model_dir=args.model_dir[0])
-  unet.train(data, overwrite=args.overwrite, num_epochs=args.epochs[0])
+  unet.train(data, overwrite=args.overwrite, num_epochs=args.epochs[0], 
+             eval_secs=args.eval_secs[0])
 
 
 def cmd_predict(args):
@@ -42,7 +43,7 @@ def cmd_predict(args):
       image_ax.set_title("Original Image")
       truth_ax.imshow(np.squeeze(annotation))
       truth_ax.set_title("Annotation")
-      pred_ax.imshow(prediction['annotation'])
+      pred_ax.imshow(np.squeeze(prediction['annotation']))
       pred_ax.set_title("Predicted Annotation")
       plt.show()
   else:
@@ -73,12 +74,21 @@ def main():
                       default=[-1], type=int,
                       help=docs.num_examples_help)
   parser.add_argument('--num_classes', '--classes', '-c', nargs=1,
-                      default=[3], type=int,
+                      default=[2], type=int,
                       help=docs.num_classes_help)
+  eval_time = parser.add_mutually_exclusive_group()
+  eval_time.add_argument('--eval_secs', nargs=1,
+                         default=[1200], type=int,
+                         help=docs.eval_secs_help)
+  eval_time.add_argument('--eval_mins', nargs=1,
+                         default=[None], type=int,
+                         help=docs.eval_mins_help)
 
   args = parser.parse_args()
 
   if args.command == 'experiment':
+    if args.eval_mins[0] is not None:
+      args.eval_secs[0] = args.eval_mins[0] * 60
     cmd_experiment(args)
   elif args.command == 'predict':
     if args.output is None:

@@ -44,3 +44,12 @@ num_examples_help = """
 num_classes_help = """\
 Number of classes, including background. Can be larger than necessary. Default
 is 3."""
+
+eval_secs_help = """\
+- experiment: evaluate model every EVAL_SECS during training. Default = 1200. Set
+  to 0 for no evaluation.
+"""
+
+eval_mins_help = """\
+- experiment: see EVAL_SECS. Default is 20 minutes (1200 seconds).
+"""
