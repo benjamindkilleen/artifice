@@ -13,7 +13,8 @@ from test_utils import experiment
 from artifice.utils import dataset
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 # Main parameters

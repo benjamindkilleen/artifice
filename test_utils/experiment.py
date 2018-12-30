@@ -24,7 +24,8 @@ import tensorflow as tf
 from artifice.utils import dataset, img
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 INFINITY = 10e9

@@ -15,13 +15,13 @@ import logging
 import tensorflow as tf
 from artifice.utils import dataset
 
-logging.basicConfig(level=logging.DEBUG, 
-                    format='%(levelname)s:%(asctime)s:%(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
+tf.logging.set_verbosity(tf.logging.INFO)
 
 # TODO: allow for customizing these values
 batch_size = 4
-
 
 
 """A model implementing semantic segmentation.
@@ -36,7 +36,7 @@ class.
 """
 class SemanticModel:
   num_shuffle = 10000
-  learning_rate = 0.001
+  learning_rate = 0.01
   def __init__(self, image_shape, num_classes, model_dir=None):
     self.image_shape = list(image_shape)
     self.annotation_shape = self.image_shape[:2] + [1]
@@ -54,13 +54,21 @@ class SemanticModel:
   def create(training=True, l2_reg_scale=None):
     raise NotImplementedError("SemanticModel subclass should implement create().")
 
-  def train(self, train_data, test_data=None, overwrite=False, num_epochs=1):
+  def train(self, train_data, num_eval=100, test_data=None, overwrite=False,
+            num_epochs=1):
     """Train the model with tf Dataset object train_data. If test_data is not None,
     evaluate the model with it, and log the results (at INFO level).
 
+    :train_data: tf.Dataset (raw) to use for training
+    :num_eval: number of examples to reserve from train_data for evaluation.
+    :test_data: tf.Dataset used for final testing
+    :overwrite: overwrite the existing model
+
     """
+    assert num_eval >= 0
+
     if overwrite and self.model_dir is None:
-      logging.warning("FAIL to overwrite; model_dir is None")
+      logger.warning("FAIL to overwrite; model_dir is None")
 
     if (overwrite and self.model_dir is not None
         and os.path.exists(self.model_dir)):
@@ -71,57 +79,61 @@ class SemanticModel:
       os.mkdir(self.model_dir)
 
     # Configure session
+    save_steps = 20
     run_options = tf.RunOptions(report_tensor_allocations_upon_oom = True)
     run_config = tf.estimator.RunConfig(model_dir=self.model_dir,
-                                        save_checkpoints_steps=50,
+                                        save_checkpoints_steps=save_steps,
                                         log_step_count_steps=5)
-
+    
     input_train = lambda : (
-      train_data.shuffle(self.num_shuffle)
+      train_data.skip(num_eval)
+      .shuffle(self.num_shuffle)
       .batch(batch_size)
       .repeat(num_epochs)
       .make_one_shot_iterator()
       .get_next())
 
+    # Train the model. (Might take a while.)
     model = tf.estimator.Estimator(model_fn=self.create(training=True),
                                    model_dir=self.model_dir,
                                    params=self.params,
                                    config=run_config)
 
-    model.train(input_fn=input_train)
-
-    # TODO: training accuracy
-    # logging.info("evaluating training accuracy")
-    # input_eval = lambda : (
-    #   train_data.batch(batch_size)
-    #   .make_one_shot_iterator()
-    #   .get_next())
-    # eval_result = model.evaluate(input_fn=input_eval)
-    # logging.info(eval_result)
+    if num_eval == 0:
+      logger.info("train...")
+      model.train(input_fn=input_train)
+    else:
+      logger.info("train and evaluate...")
+      input_eval = lambda : (
+        train_data.take(num_eval)
+        .batch(batch_size)
+        .make_one_shot_iterator()
+        .get_next())
+      train_spec = tf.estimator.TrainSpec(input_fn=input_train)
+      eval_spec = tf.estimator.EvalSpec(input_fn=input_eval,
+                                        steps=num_eval // batch_size,
+                                        throttle_secs=5)
+      tf.estimator.train_and_evaluate(model, train_spec, eval_spec)
     
     if test_data is not None:
-      logging.info("evaluating test accuracy")
+      logger.info("evaluating test accuracy")
       input_test = lambda : (
         test_data.batch(batch_size)
         .make_one_shot_iterator()
         .get_next())
       test_result = model.evaluate(input_fn=input_test)
-      logging.info(test_result)
+      logger.info(test_result)
 
-  def predict(self, test_data, num_examples=-1):
+  def predict(self, test_data):
     """Return the estimator's predictions on test_data.
 
     """
     if self.model_dir is None:
-      logging.warning("prediction FAILED (no model_dir)")
+      logger.warning("prediction FAILED (no model_dir)")
       return None
 
-    if 0 < num_examples < batch_size:
-      num_examples = batch_size
-
     input_pred = lambda : (
-      test_data.take(num_examples)
-      .batch(batch_size)
+      test_data.batch(batch_size)
       .make_one_shot_iterator()
       .get_next())
   
@@ -142,11 +154,10 @@ class UNet(SemanticModel):
 
     """
     
-    logging.info("Creating unet graph...")
+    logger.info("Creating unet graph...")
 
     def model_function(features, labels, mode, params):
-      images = tf.reshape(features, [-1] + self.image_shape,
-                          name='reshape_images')
+      images = tf.reshape(features, [-1] + self.image_shape)
 
 
       # The UNet architecture has two stages, up and down. We denote layers in the
@@ -203,16 +214,18 @@ class UNet(SemanticModel):
       up_deconv3 = UNet.deconv(up_conv3_2, filters=128, l2_reg_scale=l2_reg_scale)
       up_concat3 = tf.concat([dn_conv2_2, up_deconv3], axis=3)
 
+      # block level 2
       up_conv2_1 = UNet.conv(up_concat3, filters=128, l2_reg_scale=l2_reg_scale)
       up_conv2_2 = UNet.conv(up_conv2_1, filters=128, l2_reg_scale=l2_reg_scale)
       up_deconv2 = UNet.deconv(up_conv2_2, filters=64, l2_reg_scale=l2_reg_scale)
       up_concat2 = tf.concat([dn_conv1_2, up_deconv2], axis=3)
 
+      # block level 1
       up_conv1_1 = UNet.conv(up_concat2, filters=64, l2_reg_scale=l2_reg_scale)
       up_conv1_2 = UNet.conv(up_conv1_1, filters=64, l2_reg_scale=l2_reg_scale)
       predicted_logits = UNet.conv(up_conv1_2, filters=self.num_classes,
                                     kernel_size=[1, 1], activation=None)
-
+      
       predictions = tf.argmax(predicted_logits, axis=3)
 
       # In PREDICT mode, return the output asap.
@@ -222,12 +235,10 @@ class UNet(SemanticModel):
                                   'annotation' : predictions})
 
       # Get "ground truth" for other modes.
-      annotations = tf.reshape(labels, [-1] + self.annotation_shape, 
-                               name='reshape_annotations')
+      annotations = tf.reshape(labels, [-1] + self.annotation_shape)
       annotations_3D = tf.reshape(
         labels,
-        [-1, self.annotation_shape[0], self.annotation_shape[1]], 
-        name='reshape_annotations_3D')
+        [-1, self.annotation_shape[0], self.annotation_shape[1]])
       annotations_one_hot = tf.one_hot(annotations_3D, self.num_classes)
 
       # Calculate loss:
@@ -246,13 +257,26 @@ class UNet(SemanticModel):
       assert mode == tf.estimator.ModeKeys.EVAL
       accuracy = tf.metrics.accuracy(labels=annotations,
                                      predictions=predictions)
+      
+      logger.debug("annotations shape:", annotations.shape)
+      logger.debug("predictions shape:", predictions.shape)
+
+      # TODO: Somehow, the shape of predictions is gettign skewed at runtime,
+      # but not at setup. I think this might be what messed up training. Fix asap.
       eval_metrics = {'accuracy' : accuracy}
+      for objId in range(1, self.num_classes + 1):
+        eval_metrics[f'object_{objId}_precision'] = tf.metrics.precision_at_k(
+          labels=annotations,
+          predictions=predictions,
+          k=1,
+          class_id=objId)
+    
       return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=cross_entropy,
                                         eval_metric_ops=eval_metrics)
 
-
     return model_function
+
     
   @staticmethod
   def conv(inputs, filters=64, kernel_size=[3,3], activation=tf.nn.relu,

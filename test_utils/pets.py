@@ -37,7 +37,9 @@ from artifice.utils import img, dataset, augment
 from artifice.semantic_segmentation import UNet
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # breed_name -> (class, count)
 breeds = {

@@ -8,7 +8,8 @@ from artifice.utils import img
 from collections import Counter
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class Augmentation():
   """An augmentation is a callable that takes a scene (image, annotation) and
