@@ -15,10 +15,9 @@ import logging
 import tensorflow as tf
 from artifice.utils import dataset
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
 tf.logging.set_verbosity(tf.logging.INFO)
+
+logger = logging.getLogger('artifice')
 
 # TODO: allow for customizing these values
 batch_size = 4
@@ -163,7 +162,6 @@ class UNet(SemanticModel):
     def model_function(features, labels, mode, params):
       images = tf.reshape(features, [-1] + self.image_shape)
 
-
       # The UNet architecture has two stages, up and down. We denote layers in the
       # down-stage with "dn" and those in the up stage with "up," even though the
       # up_conv layers are just performing regular, dimension-preserving
@@ -237,14 +235,19 @@ class UNet(SemanticModel):
       if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(
           mode=mode, predictions={'image' : images,
-                                  'annotation' : predictions})
+                                  'annotation' : tf.cast(predictions, np.uint8)})
 
       # Get "ground truth" for other modes.
       annotations = tf.cast(tf.reshape(labels, [-1] + self.annotation_shape), tf.int64)
       annotations_3D = tf.reshape(
-        labels,
+        annotations,
         [-1, self.annotation_shape[0], self.annotation_shape[1]])
       annotations_one_hot = tf.one_hot(annotations_3D, self.num_classes)
+
+      logger.debug("predicted_logits: {} {}".format(
+        predicted_logits.shape, predicted_logits.dtype))
+      logger.debug("annotations_one_hot: {} {}".format(
+        annotations_one_hot.shape, annotations_one_hot.dtype))
 
       # Calculate loss:
       cross_entropy = tf.losses.softmax_cross_entropy(
@@ -262,12 +265,12 @@ class UNet(SemanticModel):
       assert mode == tf.estimator.ModeKeys.EVAL
       accuracy = tf.metrics.accuracy(labels=annotations,
                                      predictions=predictions)
-
-      # TODO: Somehow, the shape of predictions is gettign skewed at runtime,
-      # but not at setup. I think this might be what messed up training. Fix asap.
+      
+      # TODO: somehow, we're getting very high (99.5%) accuracy for objId 1 (the
+      # balls), but the prediction images are messed up somehow. Figure out why.
       eval_metrics = {'accuracy' : accuracy}
       for objId in range(self.num_classes):
-        eval_metrics[f'class={objId}_precision'] = tf.metrics.precision_at_k(
+        eval_metrics[f'class_{objId}_precision'] = tf.metrics.precision_at_k(
           labels=annotations,
           predictions=predicted_logits,
           k=1,

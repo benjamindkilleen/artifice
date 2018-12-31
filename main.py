@@ -2,16 +2,19 @@
 
 """
 
+import logging
+logger = logging.getLogger('artifice')
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(levelname)s:artifice:%(message)s'))
+logger.addHandler(handler)
+
 import os
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 from artifice.utils import docs, dataset
 from artifice.semantic_segmentation import UNet
-import logging
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 logger.debug(f"using Python{3} sanity check.")

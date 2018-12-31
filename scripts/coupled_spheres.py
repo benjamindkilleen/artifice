@@ -13,10 +13,6 @@ from test_utils import experiment
 from artifice.utils import dataset
 import logging
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-
 # Main parameters
 debug = False
 seconds = 30
