@@ -16,5 +16,8 @@ source activate DL_GPU_cuda_9.0
 cd /project2/glk/artifice
 
 echo "Starting training..."
-python main.py experiment -i data/coupled_spheres/coupled_spheres.tfrecord -m models/experiment --epochs -1
+python main.py experiment \
+    -i data/coupled_spheres/coupled_spheres.tfrecord \
+    -m models/experiment \
+    --epochs -1
 echo "Finished."

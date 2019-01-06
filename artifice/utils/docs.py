@@ -18,8 +18,8 @@ input_help = """Input:
 
 output_help = """Output:
 - experiment: not used. Set model-dir.
-- predict: directory to save outputs (created if nonexistent)
-  OR 'show' to display one prediction using matplotlib (DEFAULT)
+- predict: TODO: directory to save outputs (created if nonexistent)
+  OR 'show' to display one prediction at a time using matplotlib (DEFAULT)
 """
 
 model_dir_help = """Model directory.
@@ -52,4 +52,8 @@ eval_secs_help = """\
 
 eval_mins_help = """\
 - experiment: see EVAL_SECS. Default is 20 minutes (1200 seconds).
+"""
+
+l2_reg_help = """\
+L2 regularization factor. Default = 0.0001. l2_reg = 0 disables regularization.
 """

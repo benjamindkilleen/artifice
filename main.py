@@ -24,7 +24,8 @@ logger.debug(f"using Python{3} sanity check.")
 def cmd_experiment(args):
   logger.info(f"training from experiment '{args.input[0]}'")
   data = dataset.load(args.input[0])
-  unet = UNet(args.image_shape, args.num_classes[0], model_dir=args.model_dir[0])
+  unet = UNet(args.image_shape, args.num_classes[0], model_dir=args.model_dir[0],
+              l2_reg_scale=args.l2_reg[0])
   unet.train(data, overwrite=args.overwrite, num_epochs=args.epochs[0], 
              eval_secs=args.eval_secs[0])
 
@@ -41,16 +42,28 @@ def cmd_predict(args):
       if 0 < args.num_examples[0] <= i:
         break
       image, annotation = next(originals)
-      fig, (image_ax, truth_ax, pred_ax) = plt.subplots(1, 3)
-      image_ax.imshow(np.squeeze(image), cmap='gray')
-      image_ax.set_title("Original Image")
-      truth_ax.imshow(np.squeeze(annotation))
-      truth_ax.set_title("Annotation")
-      pred_ax.imshow(np.squeeze(prediction['annotation']))
-      pred_ax.set_title("Predicted Annotation")
+      fig, axes = plt.subplots(3,2)
+      axes[0,0].imshow(np.squeeze(image), cmap='gray')
+      axes[0,0].set_title("Original Image")
+      axes[0,1].axis('off')
+      
+      axes[1,0].imshow(prediction['logits'][:,:,0], cmap='magma')
+      axes[1,0].set_title("Id=0")
+      axes[1,1].imshow(prediction['logits'][:,:,1], cmap='magma')
+      axes[1,1].set_title("Id=1")
+
+      axes[2,0].imshow(np.squeeze(annotation))
+      axes[2,0].set_title("Annotation")
+      axes[2,1].imshow(np.squeeze(prediction['annotation']))
+      axes[2,1].set_title("Predicted Annotation")
       plt.show()
   else:
     raise NotImplementedError("use show")
+
+
+def cmd_evaluate(args):
+  logger.info("Evaluate")
+  # TODO: evaluate command
 
     
 def main():
@@ -73,19 +86,22 @@ def main():
   parser.add_argument('--epochs', '-e', nargs=1,
                       default=[-1], type=int,
                       help=docs.epochs_help)
-  parser.add_argument('--num_examples', '-n', nargs=1,
+  parser.add_argument('--num-examples', '-n', nargs=1,
                       default=[-1], type=int,
                       help=docs.num_examples_help)
-  parser.add_argument('--num_classes', '--classes', '-c', nargs=1,
+  parser.add_argument('--num-classes', '--classes', '-c', nargs=1,
                       default=[2], type=int,
                       help=docs.num_classes_help)
   eval_time = parser.add_mutually_exclusive_group()
-  eval_time.add_argument('--eval_secs', nargs=1,
+  eval_time.add_argument('--eval-secs', nargs=1,
                          default=[1200], type=int,
                          help=docs.eval_secs_help)
-  eval_time.add_argument('--eval_mins', nargs=1,
+  eval_time.add_argument('--eval-mins', nargs=1,
                          default=[None], type=int,
                          help=docs.eval_mins_help)
+  parser.add_argument('--l2-reg', nargs=1,
+                      default=[0.0001], type=float,
+                      help=docs.l2_reg_help)
 
   args = parser.parse_args()
 
