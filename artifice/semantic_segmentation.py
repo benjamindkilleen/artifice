@@ -13,7 +13,6 @@ import numpy as np
 import logging
 
 import tensorflow as tf
-from artifice.utils import dataset
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -22,6 +21,7 @@ logger = logging.getLogger('artifice')
 # TODO: allow for customizing these values
 batch_size = 1
   
+
 
 def median_frequency_weights(annotations_one_hot, num_classes):
   """Calculate the weight tensor given one-hot annotations, using Median Frequency
@@ -41,6 +41,28 @@ def median_frequency_weights(annotations_one_hot, num_classes):
   return tf.multiply(annotations_one_hot, tf.cast(class_weights, tf.float32))
 
 
+def crop(image, shape, batched = True):
+    """Crop IMAGE (possibly batched) to SHAPE, centering as much as possible
+    (tending toward the upper left when rounding.
+    """
+
+    logger.debug(f"cropping {image.shape} to {shape}")
+
+    if batched:
+      height = image.shape[1]
+      width = image.shape[2]
+    else:
+      height = image.shape[0]
+      width = image.shape[1]
+
+    offset_height = (height - shape[0]) // 2
+    offset_width  = (width - shape[1]) // 2
+
+    return tf.image.crop_to_bounding_box(image,
+                                         offset_height, offset_width,
+                                         shape[0], shape[1])
+
+
 """A model implementing semantic segmentation.
 args:
 * channels: number of channels in the image (grayscale by default)
@@ -54,6 +76,7 @@ class.
 class SemanticModel:
   num_shuffle = 10000
   learning_rate = 0.01
+  momentum = 0.99
   def __init__(self, image_shape, num_classes, model_dir=None, l2_reg_scale=None):
     self.image_shape = list(image_shape)
     self.annotation_shape = self.image_shape[:2] + [1]
@@ -117,8 +140,6 @@ class SemanticModel:
                                    params=self.params,
                                    config=run_config)
 
-    # TODO: initialize weights
-
     if num_eval == 0:
       logger.info("train...")
       model.train(input_fn=input_train)
@@ -166,9 +187,7 @@ class SemanticModel:
 
 
   def create(self, training=True):
-    """Create the model function for a custom estimator.
-
-    """
+    """Create the model function for a custom estimator."""
     
     def model_function(features, labels, mode, params):
       images = tf.reshape(features, [-1] + self.image_shape)
@@ -199,6 +218,10 @@ class SemanticModel:
       weights = tf.argmax(weights * annotations_one_hot, axis=3)
       logger.debug("weights: {}".format(weights.shape))
 
+      # TODO: give boundaries greater weight (boundaries currently not encoded,
+      # could also predict a second annotation level encoding position,
+      # somehow.)
+
       # Calculate loss:
       cross_entropy = tf.losses.softmax_cross_entropy(
         onehot_labels=annotations_one_hot,
@@ -207,8 +230,9 @@ class SemanticModel:
 
       # Return an optimizer, if mode is TRAIN
       if mode == tf.estimator.ModeKeys.TRAIN:
-        # TODO: momentum optimizer.
-        optimizer = tf.train.AdamOptimizer(self.learning_rate)
+        optimizer = tf.train.MomentumOptimizer(self.learning_rate, self.momentum)
+        # TODO: allow choice between these
+        # optimizer = tf.train.AdamOptimizer(self.learning_rate)
         train_op = optimizer.minimize(loss=cross_entropy,
                                       global_step=tf.train.get_global_step())
         return tf.estimator.EstimatorSpec(mode=mode, 
@@ -242,6 +266,8 @@ class SemanticModel:
 
 """Implementation of UNet."""
 class UNet(SemanticModel):
+  padding = 96 # net removes 92 pixels on each side? (only if input image has
+  # shape such that pooling layers evenly divide it)
   def infer(self, images, training=True):  
     """The UNet architecture has two stages, up and down. We denote layers in the
     down-stage with "dn" and those in the up stage with "up," even though the
@@ -250,59 +276,93 @@ class UNet(SemanticModel):
     "upconv-ing."
 
     """
+    
+    # TODO: reformat test data to be of a size that can be correctly padded, or
+    # implement tiling. (Going to have to do tiling eventually, but would rather
+    # stick to 512x512 inputs size, or larger? Make experiment test data
+    # accordingly.
+
+    # TODO: tile inputs
+
+    logger.debug(f"inputs: {images.shape}")
+
+    paddings = tf.constant([[0,0],
+                            [self.padding, self.padding],
+                            [self.padding, self.padding],
+                            [0,0]])
+    padded = tf.pad(images, paddings, mode='REFLECT')
+
+    logger.debug(f"padded: {padded.shape}")
 
     # block level 1
-    dn_conv1_1 = self.conv(images, filters=64, training=training)
+    dn_conv1_1 = self.conv(padded, filters=64, training=training)
     dn_conv1_2 = self.conv(dn_conv1_1, filters=64, training=training)
     dn_pool1 = self.pool(dn_conv1_2)
+    logger.debug(f"dn_pool1: {dn_pool1.shape}")    
     
     # block level 2
     dn_conv2_1 = self.conv(dn_pool1, filters=128, training=training)
     dn_conv2_2 = self.conv(dn_conv2_1, filters=128, training=training)
     dn_pool2 = self.pool(dn_conv2_2)
+    logger.debug(f"dn_pool1: {dn_pool2.shape}")
     
     # block level 3
     dn_conv3_1 = self.conv(dn_pool2, filters=256, training=training)
     dn_conv3_2 = self.conv(dn_conv3_1, filters=256, training=training)
     dn_pool3 = self.pool(dn_conv3_2)
+    logger.debug(f"dn_pool3: {dn_pool3.shape}")
     
     # block level 4
     dn_conv4_1 = self.conv(dn_pool3, filters=512, training=training)
     dn_conv4_2 = self.conv(dn_conv4_1, filters=512, training=training)
     dn_pool4 = self.pool(dn_conv4_2)
+    logger.debug(f"dn_pool4: {dn_pool4.shape}")
     
     # block level 5 (bottom). No max pool; instead deconv and concat.
     dn_conv5_1 = self.conv(dn_pool4, filters=1024, training=training)
     dn_conv5_2 = self.conv(dn_conv5_1, filters=1024, training=training)
     up_deconv5 = self.deconv(dn_conv5_2, filters=512)
-    up_concat5 = tf.concat([dn_conv4_2, up_deconv5], axis=3)
+    up_concat5 = tf.concat([crop(dn_conv4_2, up_deconv5.shape[1:3]),
+                            up_deconv5], axis=3)
+    logger.debug(f"up_concat5: {up_concat5.shape}")
     
     # block level 4 (going up)
     up_conv4_1 = self.conv(up_concat5, filters=512)
     up_conv4_2 = self.conv(up_conv4_1, filters=512)
     up_deconv4 = self.deconv(up_conv4_2, filters=256)
-    up_concat4 = tf.concat([dn_conv3_2, up_deconv4], axis=3)
+    up_concat4 = tf.concat([crop(dn_conv3_2, up_deconv4.shape[1:3]),
+                            up_deconv4], axis=3)
+    logger.debug(f"up_concat4: {up_concat4.shape}")
     
     # block level 3
     up_conv3_1 = self.conv(up_concat4, filters=256)
     up_conv3_2 = self.conv(up_conv3_1, filters=256)
     up_deconv3 = self.deconv(up_conv3_2, filters=128)
-    up_concat3 = tf.concat([dn_conv2_2, up_deconv3], axis=3)
+    up_concat3 = tf.concat([crop(dn_conv2_2, up_deconv3.shape[1:3]),
+                            up_deconv3], axis=3)
+    logger.debug(f"up_concat3: {up_concat3.shape}")
     
     # block level 2
     up_conv2_1 = self.conv(up_concat3, filters=128)
     up_conv2_2 = self.conv(up_conv2_1, filters=128)
     up_deconv2 = self.deconv(up_conv2_2, filters=64)
-    up_concat2 = tf.concat([dn_conv1_2, up_deconv2], axis=3)
-    
+    up_concat2 = tf.concat([crop(dn_conv1_2, up_deconv2.shape[1:3]),
+                            up_deconv2], axis=3)
+    logger.debug(f"up_concat2: {up_concat2.shape}")
+
+
     # block level 1
     up_conv1_1 = self.conv(up_concat2, filters=64)
     up_conv1_2 = self.conv(up_conv1_1, filters=64)
-    return self.conv(up_conv1_2, filters=self.num_classes,
-                     kernel_size=[1, 1], activation=None)
+    logits = self.conv(up_conv1_2, filters=self.num_classes,
+                       kernel_size=[1, 1], activation=None)
+    logger.debug(f"logits: {logits.shape}")
+    cropped_logits = crop(logits, images.shape[1:3])
+    logger.debug(f"cropped_logits: {cropped_logits.shape}")
+    return cropped_logits
     
   def conv(self, inputs, filters=64, kernel_size=[3,3], activation=tf.nn.relu,
-           training=True):
+           training=True, padding='valid'):
     """Apply a single convolutional layer with the given activation function applied
     afterword. If l2_reg_scale is not None, specifies the Lambda factor for
     weight normalization in the kernels. If training is not None, indicates that
@@ -321,7 +381,7 @@ class UNet(SemanticModel):
       inputs=inputs,
       filters=filters,
       kernel_size=kernel_size,
-      padding="same",
+      padding=padding,
       activation=activation,
       kernel_initializer=initializer,
       kernel_regularizer=regularizer)
@@ -342,7 +402,7 @@ class UNet(SemanticModel):
     """Apply 2x2 maxpooling."""
     return tf.layers.max_pooling2d(inputs=inputs, pool_size=[2, 2], strides=2)
 
-  def deconv(self, inputs, filters):
+  def deconv(self, inputs, filters, padding='valid'):
     """Perform "de-convolution" or "up-conv" to the inputs, increasing shape."""
     if self.l2_reg_scale is None:
       regularizer = None
@@ -357,7 +417,7 @@ class UNet(SemanticModel):
       filters=filters,
       strides=[2, 2],
       kernel_size=[2, 2],
-      padding="same",
+      padding=padding,
       activation=tf.nn.relu,
       kernel_initializer=initializer,
       kernel_regularizer=regularizer)
