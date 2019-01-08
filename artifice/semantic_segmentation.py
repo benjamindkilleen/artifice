@@ -22,23 +22,23 @@ logger = logging.getLogger('artifice')
 batch_size = 1
   
 
-
-def median_frequency_weights(annotations_one_hot, num_classes):
-  """Calculate the weight tensor given one-hot annotations, using Median Frequency
-  balancing.
+def compute_balanced_weights(annotations, num_classes):
+  """Calculate the weight tensor given annotations, like sklearn's
+  compute_class_weight().
 
   """
-  
-  counts = tf.bincount(tf.cast(annotations_one_hot, tf.int32),
-                       minlength=num_classes, dtype=tf.float64)
-  median = tf.contrib.distributions.percentile(
-    counts, q=50., interpolation='lower')
-  median += tf.contrib.distributions.percentile(
-    counts, q=50., interpolation='higher')
-  median /= 2.
-  class_weights = median / counts
-  class_weights /= tf.norm(class_weights, ord=1)
-  return tf.multiply(annotations_one_hot, tf.cast(class_weights, tf.float32))
+
+  counts = tf.bincount(tf.cast(annotations, tf.int32), 
+                       minlength=num_classes, maxlength=num_classes,
+                       dtype=tf.float64)
+  num_samples = tf.cast(
+    tf.constant(batch_size) * tf.reduce_prod(annotations.shape[1:]), 
+    tf.float64)
+  class_weights = num_samples / (num_classes * counts)
+  class_weights = class_weights / tf.norm(class_weights)
+
+  weights = tf.gather(class_weights, annotations)[:,:,:,0]
+  return weights
 
 
 def crop(image, shape, batched = True):
@@ -199,7 +199,6 @@ class SemanticModel:
 
       # In PREDICT mode, return the output asap.
       if mode == tf.estimator.ModeKeys.PREDICT:
-        predicted_logits = tf.cast(255*predicted_logits, tf.uint8)
         return tf.estimator.EstimatorSpec(
           mode=mode, predictions={'image' : images,
                                   'logits' : predicted_logits,
@@ -214,8 +213,8 @@ class SemanticModel:
       logger.debug("predicted_logits: {}".format(predicted_logits.shape))
 
       # weight by class frequency
-      weights = median_frequency_weights(annotations_one_hot, self.num_classes)
-      weights = tf.argmax(weights * annotations_one_hot, axis=3)
+      weights = compute_balanced_weights(annotations, self.num_classes)
+      # weights = tf.argmax(weights * annotations_one_hot, axis=3)
       logger.debug("weights: {}".format(weights.shape))
 
       # TODO: give boundaries greater weight (boundaries currently not encoded,
@@ -267,7 +266,11 @@ class SemanticModel:
 """Implementation of UNet."""
 class UNet(SemanticModel):
   padding = 96 # net removes 92 pixels on each side? (only if input image has
-  # shape such that pooling layers evenly divide it)
+  # shape such that pooling layers evenly divide it) 
+
+  # TODO: adjust test data such that all these divisions happen cleanly, or
+  # allow for tiling.
+
   def infer(self, images, training=True):  
     """The UNet architecture has two stages, up and down. We denote layers in the
     down-stage with "dn" and those in the up stage with "up," even though the
@@ -284,7 +287,7 @@ class UNet(SemanticModel):
 
     # TODO: tile inputs
 
-    logger.debug(f"inputs: {images.shape}")
+    logger.debug(f"images: {images.shape}")
 
     paddings = tf.constant([[0,0],
                             [self.padding, self.padding],

@@ -2,12 +2,12 @@
   from ._conv import register_converters as _register_converters
 DEBUG:artifice:using Python3 sanity check.
 INFO:artifice:training from experiment 'data/coupled_spheres/coupled_spheres.tfrecord'
-INFO:tensorflow:Using config: {'_model_dir': 'models/experiment', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': 100, '_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 5, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7fa6399f93c8>, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}
+INFO:tensorflow:Using config: {'_model_dir': 'models/experiment', '_tf_random_seed': None, '_save_summary_steps': 100, '_save_checkpoints_steps': 100, '_save_checkpoints_secs': None, '_session_config': None, '_keep_checkpoint_max': 5, '_keep_checkpoint_every_n_hours': 10000, '_log_step_count_steps': 5, '_train_distribute': None, '_device_fn': None, '_service': None, '_cluster_spec': <tensorflow.python.training.server_lib.ClusterSpec object at 0x7f8321e77358>, '_task_type': 'worker', '_task_id': 0, '_global_id_in_cluster': 0, '_master': '', '_evaluation_master': '', '_is_chief': True, '_num_ps_replicas': 0, '_num_worker_replicas': 1}
 INFO:artifice:train and evaluate...
 INFO:tensorflow:Running training and evaluation locally (non-distributed).
 INFO:tensorflow:Start train and evaluate loop. The evaluate will happen after 1200 secs (eval_spec.throttle_secs) or training is finished.
 INFO:tensorflow:Calling model_fn.
-DEBUG:artifice:inputs: (?, 512, 512, 1)
+DEBUG:artifice:images: (?, 512, 512, 1)
 DEBUG:artifice:padded: (?, 704, 704, 1)
 DEBUG:artifice:dn_pool1: (?, 350, 350, 64)
 DEBUG:artifice:dn_pool1: (?, 173, 173, 128)
@@ -30,60 +30,50 @@ DEBUG:artifice:weights: (?, 512, 512)
 INFO:tensorflow:Done calling model_fn.
 INFO:tensorflow:Create CheckpointSaverHook.
 INFO:tensorflow:Graph was finalized.
-2019-01-07 12:23:15.584582: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
-2019-01-07 12:23:15.800428: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1392] Found device 0 with properties: 
+2019-01-07 22:00:10.544533: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX2 FMA
+2019-01-07 22:00:10.760711: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1392] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
 pciBusID: 0000:08:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-01-07 12:23:15.800503: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1471] Adding visible gpu devices: 0
-2019-01-07 12:23:16.099628: I tensorflow/core/common_runtime/gpu/gpu_device.cc:952] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-01-07 12:23:16.102797: I tensorflow/core/common_runtime/gpu/gpu_device.cc:958]      0 
-2019-01-07 12:23:16.102842: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   N 
-2019-01-07 12:23:16.103215: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1084] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10763 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-01-07 22:00:10.763613: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1471] Adding visible gpu devices: 0
+2019-01-07 22:00:11.407234: I tensorflow/core/common_runtime/gpu/gpu_device.cc:952] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-01-07 22:00:11.410075: I tensorflow/core/common_runtime/gpu/gpu_device.cc:958]      0 
+2019-01-07 22:00:11.410102: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   N 
+2019-01-07 22:00:11.410591: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1084] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10763 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:tensorflow:Restoring parameters from models/experiment/model.ckpt-500
 INFO:tensorflow:Running local_init_op.
 INFO:tensorflow:Done running local_init_op.
-INFO:tensorflow:Saving checkpoints for 0 into models/experiment/model.ckpt.
-INFO:tensorflow:loss = 1.3333418, step = 0
-INFO:tensorflow:global_step/sec: 0.897414
-INFO:tensorflow:loss = 0.018975971, step = 5 (5.574 sec)
-INFO:tensorflow:global_step/sec: 1.11081
-INFO:tensorflow:loss = 0.011473324, step = 10 (4.502 sec)
-INFO:tensorflow:global_step/sec: 1.10991
-INFO:tensorflow:loss = 0.0075225355, step = 15 (4.503 sec)
-INFO:tensorflow:global_step/sec: 1.10868
-INFO:tensorflow:loss = 0.005128545, step = 20 (4.510 sec)
-INFO:tensorflow:global_step/sec: 1.10974
-INFO:tensorflow:loss = 0.0008158687, step = 25 (4.506 sec)
-INFO:tensorflow:global_step/sec: 1.10951
-INFO:tensorflow:loss = 0.00075144874, step = 30 (4.506 sec)
-INFO:tensorflow:global_step/sec: 1.10981
-INFO:tensorflow:loss = 0.00070515857, step = 35 (4.505 sec)
-INFO:tensorflow:global_step/sec: 1.10785
-INFO:tensorflow:loss = 0.00046699002, step = 40 (4.513 sec)
-INFO:tensorflow:global_step/sec: 1.10713
-INFO:tensorflow:loss = 0.0006555823, step = 45 (4.516 sec)
-INFO:tensorflow:global_step/sec: 1.10601
-INFO:tensorflow:loss = 0.00018404263, step = 50 (4.521 sec)
-INFO:tensorflow:global_step/sec: 1.10698
-INFO:tensorflow:loss = 0.0003562259, step = 55 (4.517 sec)
-INFO:tensorflow:global_step/sec: 1.10751
-INFO:tensorflow:loss = 0.00030647917, step = 60 (4.514 sec)
-INFO:tensorflow:global_step/sec: 1.10464
-INFO:tensorflow:loss = 0.00020428102, step = 65 (4.527 sec)
-INFO:tensorflow:global_step/sec: 1.1053
-INFO:tensorflow:loss = 0.00019258705, step = 70 (4.523 sec)
-INFO:tensorflow:global_step/sec: 1.10515
-INFO:tensorflow:loss = 9.318172e-05, step = 75 (4.523 sec)
-INFO:tensorflow:global_step/sec: 1.10591
-INFO:tensorflow:loss = 0.00018164396, step = 80 (4.522 sec)
-INFO:tensorflow:global_step/sec: 1.10315
-INFO:tensorflow:loss = 0.00015604371, step = 85 (4.532 sec)
-INFO:tensorflow:global_step/sec: 1.09786
-INFO:tensorflow:loss = 0.00013178568, step = 90 (4.554 sec)
-INFO:tensorflow:global_step/sec: 1.1001
-INFO:tensorflow:loss = 3.015059e-05, step = 95 (4.545 sec)
-INFO:tensorflow:Saving checkpoints for 100 into models/experiment/model.ckpt.
-INFO:tensorflow:global_step/sec: 0.95348
-INFO:tensorflow:loss = 8.782226e-05, step = 100 (5.245 sec)
-INFO:tensorflow:global_step/sec: 1.10417
-INFO:tensorflow:loss = 3.485822e-05, step = 105 (4.528 sec)
+INFO:tensorflow:Saving checkpoints for 500 into models/experiment/model.ckpt.
+INFO:tensorflow:loss = 0.0009957814, step = 500
+INFO:tensorflow:global_step/sec: 0.917368
+INFO:tensorflow:loss = 0.0013489551, step = 505 (5.453 sec)
+INFO:tensorflow:global_step/sec: 1.11519
+INFO:tensorflow:loss = 0.0014083423, step = 510 (4.489 sec)
+INFO:tensorflow:global_step/sec: 1.11137
+INFO:tensorflow:loss = 0.0013372244, step = 515 (4.492 sec)
+INFO:tensorflow:global_step/sec: 1.11622
+INFO:tensorflow:loss = 0.0013435851, step = 520 (4.479 sec)
+INFO:tensorflow:global_step/sec: 1.11518
+INFO:tensorflow:loss = 0.0013108558, step = 525 (4.484 sec)
+INFO:tensorflow:global_step/sec: 1.11194
+INFO:tensorflow:loss = 0.0012893905, step = 530 (4.497 sec)
+INFO:tensorflow:global_step/sec: 1.11049
+INFO:tensorflow:loss = 0.0012989874, step = 535 (4.502 sec)
+INFO:tensorflow:global_step/sec: 1.11369
+INFO:tensorflow:loss = 0.001353846, step = 540 (4.490 sec)
+INFO:tensorflow:global_step/sec: 1.11163
+INFO:tensorflow:loss = 0.001241171, step = 545 (4.498 sec)
+INFO:tensorflow:global_step/sec: 1.1088
+INFO:tensorflow:loss = 0.0012451857, step = 550 (4.509 sec)
+INFO:tensorflow:global_step/sec: 1.10833
+INFO:tensorflow:loss = 0.0012974354, step = 555 (4.511 sec)
+INFO:tensorflow:global_step/sec: 1.10902
+INFO:tensorflow:loss = 0.0011236854, step = 560 (4.509 sec)
+INFO:tensorflow:global_step/sec: 1.10758
+INFO:tensorflow:loss = 0.001216319, step = 565 (4.513 sec)
+INFO:tensorflow:global_step/sec: 1.10635
+INFO:tensorflow:loss = 0.0011872635, step = 570 (4.519 sec)
+INFO:tensorflow:global_step/sec: 1.10388
+INFO:tensorflow:loss = 0.0011644895, step = 575 (4.529 sec)
+INFO:tensorflow:global_step/sec: 1.10762
+INFO:tensorflow:loss = 0.0011383162, step = 580 (4.514 sec)

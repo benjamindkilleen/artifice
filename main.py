@@ -47,10 +47,12 @@ def cmd_predict(args):
       axes[0,0].set_title("Original Image")
       axes[0,1].axis('off')
       
-      axes[1,0].imshow(prediction['logits'][:,:,0], cmap='magma')
+      im = axes[1,0].imshow(prediction['logits'][:,:,0], cmap='magma')
       axes[1,0].set_title("Id=0")
-      axes[1,1].imshow(prediction['logits'][:,:,1], cmap='magma')
+      fig.colorbar(im, ax=axes[1,0], orientation='vertical')
+      im = axes[1,1].imshow(prediction['logits'][:,:,1], cmap='magma')
       axes[1,1].set_title("Id=1")
+      fig.colorbar(im, ax=axes[1,1], orientation='vertical')
 
       axes[2,0].imshow(np.squeeze(annotation))
       axes[2,0].set_title("Annotation")
