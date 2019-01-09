@@ -394,4 +394,27 @@ produces a sample from the natural distribution, but you want to sample
 uniformly within chi.
 
 
-## December 20, 2018
+## January 9, 2019
+
+Feedback on Report:
+* Related works section is nice, summarizing all the related works, etc. Where I
+  believe I am. Here are the other nearest people, the ways they've tried to do
+  similar or related things. Performance of academic mastery. This is a "symptom
+  of mature work."
+* Bad form to use the citation as a subject in the sentence.
+* Some people use a macro for "et al" to make sure it's not treated as end of
+  sentence, not broken up over two lines.
+* Every equation needs to be numbered.
+* Forgot a backslash with "mathbb".
+* More schematic figures that unify the mathy things you're talking
+  about. Figures always enhance understanding.
+* When you have a new variable, best if you have some way of having it appear
+  first in a numbered equation OR have it appear in some table that defines
+  variables and equations.
+* Paint in broad strokes what the query strategy is for. Fill in someone who has
+  no idea what active learning is what the query strategy is doing. What are the
+  parts/outcomes of active learning that I'm drawing on.
+* More schematic diagrams that use this idea that distribution is what matters,
+  and we don't want to recognize it. Visual ways to illustrate that.
+* For illustrative purposes, the shadows in the example.
+* Annotation space is not in that figure.
