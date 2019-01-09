@@ -1,4 +1,7 @@
-"""Create tfrecord files from the pets dataset.
+"""
+THIS TEST FILE IS DEPRECATED. It is no longer supported.
+
+Create tfrecord files from the pets dataset.
 
 For the sake of this example, we ignore the different breeds of dogs and cats,
 instead mapping every example to one of two classes, either dog or cat. We

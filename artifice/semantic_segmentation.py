@@ -5,6 +5,14 @@ We implement the U-Net segmentation architecture
 (http://arxiv.org/abs/1505.04597), loosely inspired by implementation at:
 https://github.com/tks10/segmentation_unet/
 
+Notes:
+We consider two types of augmentations: standard and
+boundary-aware. Boundary-aware augmentations have to be done in between training
+runs, so a Trainer object could use multiple runs through this, and apply
+boundary-aware augmentations in between runs, saving them in a separate
+tfrecord, but standard augmentations can be done on-the-fly without being
+stored, so they should be done here.
+
 """
 
 import os
@@ -20,7 +28,7 @@ logger = logging.getLogger('artifice')
 
 # TODO: allow for customizing these values
 batch_size = 1
-  
+prefetch_buffer_size = 1  
 
 def compute_balanced_weights(annotations, num_classes):
   """Calculate the weight tensor given annotations, like sklearn's
@@ -91,23 +99,27 @@ class SemanticModel:
 
     self.model_dir = model_dir
 
-  def train(self, train_data, num_eval=100, test_data=None, overwrite=False,
-            num_epochs=1, eval_secs=600, save_steps=100):
+  def train(self, train_data_input, 
+            eval_data_input=None, 
+            overwrite=False,
+            num_epochs=1,
+            eval_secs=600,
+            save_steps=100,
+            cores=1):
+
     """Train the model with tf Dataset object train_data. If test_data is not None,
     evaluate the model with it, and log the results (at INFO level).
 
-    :train_data: tf.Dataset (raw) to use for training
-    :num_eval: number of examples to reserve from train_data for
-      evaluation. Ignored if eval_secs is 0.
-    :test_data: tf.Dataset used for final testing
+    :train_data_input: DataInput subclass to use for training.
+    :eval_data_input: DataInput subclass to use for evaluation. If None, does no
+      evaluation. 
     :overwrite: overwrite the existing model
     :eval_secs: do evaluation every EVAL_SECS. Default = 600. Set to 0 for no
       evaluation.
+    :cores: number of cores to parallelize over for data processing/augmentation.
 
     """
-    assert num_eval >= 0 and eval_secs >= 0
-    if eval_secs == 0:
-      num_eval = 0
+    assert eval_secs >= 0
 
     if overwrite and self.model_dir is None:
       logger.warning("FAIL to overwrite; model_dir is None")
@@ -126,13 +138,6 @@ class SemanticModel:
                                         save_checkpoints_steps=save_steps,
                                         log_step_count_steps=5)
     
-    input_train = lambda : (
-      train_data.skip(num_eval)
-      .shuffle(self.num_shuffle)
-      .batch(batch_size)
-      .repeat(num_epochs)
-      .make_one_shot_iterator()
-      .get_next())
 
     # Train the model. (Might take a while.)
     model = tf.estimator.Estimator(model_fn=self.create(training=True),
@@ -140,49 +145,30 @@ class SemanticModel:
                                    params=self.params,
                                    config=run_config)
 
-    if num_eval == 0:
+    if eval_data_input is None:
       logger.info("train...")
-      model.train(input_fn=input_train)
+      model.train(input_fn=train_data_input())
     else:
       logger.info("train and evaluate...")
-      input_eval = lambda : (
-        train_data.take(num_eval)
-        .batch(batch_size)
-        .make_one_shot_iterator()
-        .get_next())
-      train_spec = tf.estimator.TrainSpec(input_fn=input_train)
-      eval_spec = tf.estimator.EvalSpec(input_fn=input_eval,
-                                        steps=num_eval // batch_size,
+      train_spec = tf.estimator.TrainSpec(input_fn=train_data_input())
+      eval_spec = tf.estimator.EvalSpec(input_fn=eval_data_input(),
                                         throttle_secs=eval_secs)
       tf.estimator.train_and_evaluate(model, train_spec, eval_spec)
-    
-    if test_data is not None:
-      logger.info("evaluating test accuracy")
-      input_test = lambda : (
-        test_data.batch(batch_size)
-        .make_one_shot_iterator()
-        .get_next())
-      test_result = model.evaluate(input_fn=input_test)
-      logger.info(test_result)
 
-  def predict(self, test_data):
-    """Return the estimator's predictions on test_data.
+
+  def predict(self, data_input):
+    """Return the estimator's predictions on data_input.
 
     """
     if self.model_dir is None:
       logger.warning("prediction FAILED (no model_dir)")
       return None
-
-    input_pred = lambda : (
-      test_data.batch(batch_size)
-      .make_one_shot_iterator()
-      .get_next())
   
     model = tf.estimator.Estimator(model_fn=self.create(training=False),
                                    model_dir=self.model_dir,
                                    params=self.params)
 
-    predictions = model.predict(input_fn=input_pred)
+    predictions = model.predict(input_fn=data_input())
     return predictions
 
 

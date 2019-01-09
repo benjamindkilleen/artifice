@@ -12,8 +12,8 @@ command_choices = ['experiment', 'predict']
 command_help = "Artifice command to run."
 
 input_help = """Input:
-- experiment: tfrecord containing examples.
-- predict: tfrecord containing examples to predict
+- experiment: one or more tfrecord files containing examples.
+- predict: one or more tfrecord files containing examples to predict
 """
 
 output_help = """Output:
@@ -47,13 +47,24 @@ is 3."""
 
 eval_secs_help = """\
 - experiment: evaluate model every EVAL_SECS during training. Default = 1200. Set
-  to 0 for no evaluation.
+  to 0 for no evaluation. Default = 100.
 """
 
 eval_mins_help = """\
 - experiment: see EVAL_SECS. Default is 20 minutes (1200 seconds).
 """
 
+num_eval_help = """\
+- experiment: number of examples to take from the training set for evaluation.
+  Set to 0 for no evaluation.
+"""
+
+eval_data_help = """\
+- experiment: specifies an evaluation set."""
+
 l2_reg_help = """\
 L2 regularization factor. Default = 0.0001. l2_reg = 0 disables regularization.
 """
+
+cores_help = """Number of CPU cores to parallelize over for data
+processing. Set to -1 to use all available cores. Default is -1."""

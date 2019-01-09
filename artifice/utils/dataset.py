@@ -128,14 +128,107 @@ def save_first_scene(fname):
   np.save(os.path.join(root, "example_annotation.npy"), annotation)
 
 
-def load(record_name, parse_entry=tensors_from_proto):
-  """Load the tfrecord fname, return dataset with parsed tensors. By default,
-  parses scenes (image, annotation).
 
+
+"""A DataInput object encompasses all of them. The
+__call__ method for a Data returns an iterator function over the associated
+tf.Dataset.
+* Data objects can be used for evaluation, testing, or prediction. They iterate
+once over the dataset.
+* TrainData is meant for training. It's __call__ method returns an input
+  function that includes shuffling, repeating, etc.
+* 
+
+"""
+class DataInput(object):
+  def __init__(self, dataset, **kwargs):
+    """
+    :dataset: a tf.data.Dataset
+    :batch_size:
+    :num_parallel_calls:
+    """
+    self._dataset = dataset
+    self.batch_size = kwargs.get('batch_size', 1)
+    self.num_parallel_calls = kwargs.get('num_parallel_calls')
+    self.prefetch_buffer_size = kwargs.get('prefetch_buffer_size', 1)
+    self._kwargs = kwargs
+
+  def make_input(self):
+    """Make an input function for an estimator. Can be overwritten by subclasses
+    withouting overwriting __call__."""
+    return lambda : (
+      self._dataset
+      .batch(self.batch_size)
+      .prefetch(self.prefetch_buffer_size)
+      .make_one_shot_iterator()
+      .get_next())
+
+  def __call__(self, *args):
+    return self.make_input(*args)
+
+
+class TrainDataInput(DataInput):
+  def __init__(self, *args, **kwargs):
+    self.num_shuffle = kwargs.get('num_shuffle', 10000)
+    super().__init__(*args, **kwargs)
+
+  def make_input(self, 
+                 num_epochs=1):
+    return lambda : (
+      self._dataset
+      .repeat(num_epochs)
+      .shuffle(self.num_shuffle)
+      .map(lambda *args : args)          # TODO: augmentations
+      .batch(self.batch_size)
+      .prefetch(self.prefetch_buffer_size)
+      .make_one_shot_iterator()
+      .get_next())
+
+
+
+def load(record_names,
+         parse_entry=tensors_from_proto,
+         input_classes=[DataInput],
+         input_sizes=[-1],
+         num_parallel_calls=None,
+         **kwargs):
+  """Load the tfrecord. By default, parses scenes (image, annotation).
+  
+  args:
+  :record_names: one or more tfrecord files.
+  :parse_entry: a function parsing each raw entry in the loaded dataset
+  :num_parallel_calls: see tf.data.Dataset.map
+  :input_classes: list of DataInput or a subclass thereof, determining the type
+    of each data that will be loaded from this tfrecord. A type of None adds
+    None to the list of data_inputs (useful for standardizing calls to this
+    function)
+  :input_sizes: list of sizes corresponding to input_classes. A value of -1
+    takes the remainder of the dataset. Note that a NoneType input class still
+    skips data, so be sure to enter 0 for these entries.
+  :kwargs: additional keyword args for DataInput objects.
   """
-  data = tf.data.TFRecordDataset(record_name)
-  data = data.map(parse_entry)
+  
+  dataset = tf.data.TFRecordDataset(record_names)
+  dataset = dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
 
-  return data
+  data_inputs = []
+  for input_class, input_size in zip(input_classes, input_sizes):
+    assert issubclass(input_class, DataInput)
+    if input_class is None or input_size == 0:
+      data_inputs.append(None)
+    else:
+      data_inputs.append(
+        input_class(dataset.take(input_size)))
+    dataset = dataset.skip(input_size)
+    
+  return data_inputs
 
+def load_single(record_names, train=False, **kwargs):
+  """Wrapper around load that returns a single dataset object."""
+  if train:
+    return load(record_names,
+                input_classes=[dataset.TrainDataInput],
+                **kwargs)
+  else:
+    return load(record_names, **kwargs)
 
