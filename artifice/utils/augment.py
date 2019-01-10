@@ -23,13 +23,20 @@ class Transformation():
   Transformations can be composed (or "added together") using the "+"
   operator.
 
+  Rather than pass in a function, subclasses may optionally define a "transform"
+  method, which is taken at instantiation. This is supported but not preferred.
+
   """
 
   def __init__(self, transform=lambda *scene : scene):
     """
-    :transforms: a transformation function or an iterable of them.
+    :transforms: a transformation function or an iterable of them. Ignored if
+      object has a "transform" method.
     """
-    if callable(transform):
+    if hasattr(self, 'transform'):
+      assert callable(self.transform)
+      self._transforms = [lambda *scene : self.transform(*scene)]
+    elif callable(transform):
       self._transforms = [transform]
     elif hasattr(transform, '__iter__'):
       self._transforms = list(transform)
@@ -48,10 +55,60 @@ class Transformation():
     else:
       return self.__add__(other)
 
-# TODO: various transformations, either taking or defining methods, with
-# transform functions.
 
+"""For many transformations, Simple- and ImageTransformations should be
+sufficient, and they may instantiated with transform functions on their own,
+depending on whether that transform should applied to both image and annotation
+(SimpleTransformation) or to the image alone (ImageTransformation)
+
+Transformations that treat image and annotation separately should inherit from
+Transformation directly.
+"""
+class SimpleTransformation(Transformation):
+  """Applies the same tensor function to both image and annotation."""
+  def __init__(self, function):
+    def transform(image, annnotation):
+      return function(image), function(annotation)
+    super().__init__(transform)
+
+
+class ImageTransformation(Transformation):
+  """Applies a tensor function to the image, leaving annotation."""
+  def __init__(self, function):
+    def transform(image, annnotation):
+      return function(image), function(annotation)
+    super().__init__(transform)
+
+"""The following are transformations that must be instantiated with a
+parameter separate from the arguments given to the transformation function."""
+class AdjustBrightness(ImageTransformation):
+  """Adjust the brightness of the image by delta."""
+  def __init__(self, delta):
+    def transform(image):
+      image = tf.image.adjust_brightness(image, delta)
+      return tf.clip_by_value(image, tf.constant(0), tf.constant(1))
+    super().__init__(transform)
+
+
+class AdjustMeanBrightness(ImageTransformation):
+  """Adjust the mean brightness of grayscale images to mean_brightness. Afterward,
+  clip values as appropriate. Thus the final mean brightness might not be the
+  value passed in. Keep this in mind. 
+
+  """
+  def __init__(self, new_mean): 
+    def transform(image):
+      mean = tf.math.reduce_mean(image)
+      image = tf.image.adjust_brightness(image, tf.constant(new_mean) - mean)
+      return tf.clip_by_value(image, tf.constant(0), tf.constant(1))
+    super().__init__(function)
+
+
+# Transformation instances.
 identity_transformation = Transformation()
+flip_left_right_transformation = SimpleTransformation(tf.image.flip_left_right)
+flip_up_down_transformation = SimpleTransformation(tf.image.flip_up_down)
+invert_brightness_transformation = ImageTransformation(lambda image : 1 - image)
 
 
 
@@ -76,7 +133,7 @@ class Augmentation():
 
   """
 
-  def __init__(self, transformation=[]):
+  def __init__(self, transformation=[], num_parallel_calls=1):
     """
     :transformation: a Transformation object, or an iterable of them.
     
@@ -88,6 +145,13 @@ class Augmentation():
       self._transformations = [identity_transformation] + list(transformation)
     else:
       raise ValueError()    
+
+    self.num_parallel_calls = num_parallel_calls
+    
+
+  def set_num_parallel_calls(self, num_parallel_calls):
+    self.num_parallel_calls = num_parallel_calls
+    return self
 
   def __add__(self, other):
     """Adds the transformations of OTHER, effectively combining the two
@@ -111,13 +175,34 @@ class Augmentation():
 
   def __call__(self, dataset):
     """Take a tf.data.Dataset object and apply transformations to it."""
-
-    # TODO: don't skip over identity, by convention.
+    # TODO: don't skip over identity, by convention?
     for transformation in self._transformations[1:]:
-      dataset = dataset.concatenate(dataset.map(transformation))
+      dataset = dataset.concatenate(dataset.map(transformation,
+                                                self.num_parallel_calls))
       
     return dataset
 
 
+# instantiations of Augmentations
 identity = Augmentation()
+brightness = sum([Augmentation(AdjustMeanBrightness(m)) 
+                  for m in np.arange(0.2, 1, 0.2)])
+
+
+premade = {
+  'identity', identity,
+  'brightness', brightness,
+}
+choices = list(premade.keys())
+
+def join_names(augmentation_names, num_parallel_calls=1):
+  """From an iterable of augmentation_names, return their sum. If
+  augmentation_names is empty, returns identity augmentation.
+
+  """
+  aug = Augmentation()
+  for name in augmentation_names:
+    aug += premade[name]
+  aug.set_num_parallel_calls(num_parallel_calls)
+  return aug
 

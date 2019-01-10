@@ -67,4 +67,6 @@ L2 regularization factor. Default = 0.0001. l2_reg = 0 disables regularization.
 """
 
 cores_help = """Number of CPU cores to parallelize over for data
-processing. Set to -1 to use all available cores. Default is -1."""
+processing/augmentation. Set to -1 to use all available cores. Default is -1."""
+
+augment_help = """experiment: Apply augmentations to the training set."""

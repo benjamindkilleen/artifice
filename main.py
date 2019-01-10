@@ -15,7 +15,7 @@ import os
 import numpy as np
 import argparse
 import matplotlib.pyplot as plt
-from artifice.utils import docs, dataset
+from artifice.utils import docs, dataset, augment
 from artifice.semantic_segmentation import UNet
 from multiprocessing import cpu_count
 
@@ -133,6 +133,10 @@ def main():
   parser.add_argument('--cores', nargs=1,
                       default=[-1], type=int,
                       help=docs.cores_help)
+  parser.add_argument('--augment', '-a', nargs='+',
+                      choices=augment.choices,
+                      default = [],
+                      help=docs.augment_help)
 
   args = parser.parse_args()
 
