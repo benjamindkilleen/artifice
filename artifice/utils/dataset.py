@@ -1,14 +1,13 @@
-"""Functions for reading and writing datasets (mainly in tfrecords), as needed
-by artifice and test_utils.
-
-.tfrecord writer largely based on:
-http://warmspringwinds.github.io/tensorflow/tf-slim/2016/12/21/tfrecords-guide/
+"""Functions for reading and writing datasets in tfrecords, as needed by
+artifice and test_utils. A "scene" is the info needed for a single, labeled
+example. It should always be a 2-tuple, usually (image, annotation),
+although it could also be (image, (annotation, label)).
 
 """
 
 import numpy as np
 import tensorflow as tf
-from artifice.utils import img
+from artifice.utils import img, augment
 import os
 
 def _bytes_feature(value):
@@ -136,8 +135,8 @@ tf.Dataset.
 * Data objects can be used for evaluation, testing, or prediction. They iterate
 once over the dataset.
 * TrainData is meant for training. It's __call__ method returns an input
-  function that includes shuffling, repeating, etc.
-* 
+  function that includes shuffling, repeating, etc. It also allows for
+  augmentation.
 
 """
 class DataInput(object):
@@ -166,24 +165,55 @@ class DataInput(object):
   def __call__(self, *args):
     return self.make_input(*args)
 
-
+"""TrainDataInput is where augmentation takes place. New augmentations can be
+added to it using the add_augmentation() method, or the "+" operator.
+"""
 class TrainDataInput(DataInput):
   def __init__(self, *args, **kwargs):
     self.num_shuffle = kwargs.get('num_shuffle', 10000)
     super().__init__(*args, **kwargs)
+    self.augmentation = kwargs.get('augmentation', augment.identity)
 
-  def make_input(self, 
-                 num_epochs=1):
+  def make_input(self, num_epochs=1):
     return lambda : (
-      self._dataset
-      .repeat(num_epochs)
-      .shuffle(self.num_shuffle)
-      .map(lambda *args : args)          # TODO: augmentations
+      self.augmentation(
+        self._dataset
+        .repeat(num_epochs)
+        .shuffle(self.num_shuffle))
       .batch(self.batch_size)
       .prefetch(self.prefetch_buffer_size)
       .make_one_shot_iterator()
       .get_next())
 
+  def add_augmentation(self, aug):
+    self.augmentation += aug
+    return self
+
+  def __add__(self, other):
+    if issubclass(type(other), augment.Augmentation):
+      return self.add_augmentation(aug)
+    elif issubclass(type(other), TrainDataInput):
+      return self.add_augmentation(other.augmentation)
+    else:
+      raise ValueError(f"unrecognized type '{type(aug)}'")
+
+  def __radd__(self, other):
+    if other == 0:
+      return self
+    else:
+      return self.__add__(other)
+
+  def mul_augmentation(self, aug):
+    self.augmentation *= aug
+    return self
+
+  def __mul__(self, other):
+    if issubclass(type(other), augment.Augmentation):
+      return self.mul_augmentation(aug)
+    elif issubclass(type(other), TrainDataInput):
+      return self.mul_augmentation(other.augmentation)
+    else:
+      raise ValueError(f"unrecognized type '{type(aug)}'")
 
 
 def load(record_names,
@@ -192,7 +222,7 @@ def load(record_names,
          input_sizes=[-1],
          num_parallel_calls=None,
          **kwargs):
-  """Load the tfrecord. By default, parses scenes (image, annotation).
+  """Load the tfrecord as a DataInput object. By default, parses scenes.
   
   args:
   :record_names: one or more tfrecord files.
@@ -206,6 +236,7 @@ def load(record_names,
     takes the remainder of the dataset. Note that a NoneType input class still
     skips data, so be sure to enter 0 for these entries.
   :kwargs: additional keyword args for DataInput objects.
+
   """
   
   dataset = tf.data.TFRecordDataset(record_names)
