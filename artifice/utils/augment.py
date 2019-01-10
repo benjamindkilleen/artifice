@@ -3,7 +3,6 @@
 import numpy as np
 import itertools
 import functools
-from functional import compose
 from artifice.utils import img
 import tensorflow as tf
 import logging
@@ -44,7 +43,9 @@ class Transformation():
       raise ValueError()
 
   def __call__(self, *scene):
-    return functools.reduce(compose, self._transforms)(*scene)
+    for transform in self._transforms:
+      scene = transform(*scene)
+    return scene
 
   def __add__(self, other):
     return Transformation(self._transforms + other._transforms)
@@ -65,18 +66,27 @@ Transformations that treat image and annotation separately should inherit from
 Transformation directly.
 """
 class SimpleTransformation(Transformation):
-  """Applies the same tensor function to both image and annotation."""
+  """Applies the same tensor function to both image and annotation, clipping image
+  values."""
   def __init__(self, function):
     def transform(image, annnotation):
-      return function(image), function(annotation)
+      image = function(image)
+      image = tf.clip_by_value(image,
+                               tf.constant(0, dtype=image.dtype),
+                               tf.constant(1, dtype=image.dtype))
+      return image, function(annotation)
     super().__init__(transform)
 
 
 class ImageTransformation(Transformation):
-  """Applies a tensor function to the image, leaving annotation."""
+  """Applies a tensor function to the image (and clips), leaving annotation."""
   def __init__(self, function):
-    def transform(image, annnotation):
-      return function(image), function(annotation)
+    def transform(image, annotation):
+      image = function(image)
+      image = tf.clip_by_value(image,
+                               tf.constant(0, dtype=image.dtype),
+                               tf.constant(1, dtype=image.dtype))
+      return image, annotation
     super().__init__(transform)
 
 """The following are transformations that must be instantiated with a
@@ -85,8 +95,7 @@ class AdjustBrightness(ImageTransformation):
   """Adjust the brightness of the image by delta."""
   def __init__(self, delta):
     def transform(image):
-      image = tf.image.adjust_brightness(image, delta)
-      return tf.clip_by_value(image, tf.constant(0), tf.constant(1))
+      return tf.image.adjust_brightness(image, delta)
     super().__init__(transform)
 
 
@@ -98,10 +107,10 @@ class AdjustMeanBrightness(ImageTransformation):
   """
   def __init__(self, new_mean): 
     def transform(image):
-      mean = tf.math.reduce_mean(image)
-      image = tf.image.adjust_brightness(image, tf.constant(new_mean) - mean)
-      return tf.clip_by_value(image, tf.constant(0), tf.constant(1))
-    super().__init__(function)
+      mean = tf.reduce_mean(image)
+      delta = tf.constant(new_mean, dtype=mean.dtype) - mean
+      return tf.image.adjust_brightness(image, delta)
+    super().__init__(transform)
 
 
 # Transformation instances.
@@ -133,15 +142,20 @@ class Augmentation():
 
   """
 
-  def __init__(self, transformation=[], num_parallel_calls=1):
+  def __init__(self, transformation=None, num_parallel_calls=1):
     """
-    :transformation: a Transformation object, or an iterable of them.
+    :transformation: a Transformation object, or an iterable of them. Default
+      (None) creates an identity augmentation.
+    
     
     TODO: allow for no-identity augmentations?
     """
-    if issubclass(type(transformation), Transformation):
+    if transformation is None:
+      self._transformations = [identity_transformation]
+    elif issubclass(type(transformation), Transformation):
       self._transformations = [identity_transformation] + [transformation]
     elif hasattr(transformation, '__iter__'):
+      print(len(transformation))
       self._transformations = [identity_transformation] + list(transformation)
     else:
       raise ValueError()    
@@ -155,9 +169,14 @@ class Augmentation():
 
   def __add__(self, other):
     """Adds the transformations of OTHER, effectively combining the two
-    augmentations without any composition."""
-    return Augmentation(self._transformations + other._transformations[1:])
-    
+    augmentations without any composition. Removes the identity from the other.
+
+    """
+    print("adding {} to my {} transformations".format(
+      len(other._transformations[1:]), len(self._transformations)))
+
+    return Augmentation(self._transformations[1:] + other._transformations[1:])
+  
   def __mul__(self, other):
     """Composes each transformation in other onto the end of each transformation in
     self.
@@ -182,20 +201,23 @@ class Augmentation():
       
     return dataset
 
+  def __len__(self):
+    return len(self._transformations)
+
 
 # instantiations of Augmentations
 identity = Augmentation()
 brightness = sum([Augmentation(AdjustMeanBrightness(m)) 
-                  for m in np.arange(0.2, 1, 0.2)])
+                  for m in [0.2, 0.4, 0.6, 0.8]])
 
 
 premade = {
-  'identity', identity,
-  'brightness', brightness,
+  'identity': identity,
+  'brightness': brightness,
 }
 choices = list(premade.keys())
 
-def join_names(augmentation_names, num_parallel_calls=1):
+def join(augmentation_names, num_parallel_calls=1):
   """From an iterable of augmentation_names, return their sum. If
   augmentation_names is empty, returns identity augmentation.
 

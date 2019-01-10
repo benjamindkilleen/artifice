@@ -27,9 +27,11 @@ logger.debug(f"using Python{3} sanity check.")
 def cmd_experiment(args):
   logger.info(f"training from experiment '{args.input[0]}'")
   data_input = dataset.load(args.input, num_parallel_calls=args.cores[0])
+  augmentation = augment.join(args.augment)
   if args.eval_data is not None:
     train_data_input = datset.load_single(args.input, train=True,
-                                          num_parallel_calls=args.cores[0])
+                                          num_parallel_calls=args.cores[0],
+                                          augmentation=augmentation)
     eval_data_input = dataset.load_single(args.eval_data,
                                           num_parallel_calls=args.cores[0])
   else:
@@ -37,7 +39,8 @@ def cmd_experiment(args):
       args.input,
       input_classes=[dataset.DataInput, dataset.TrainDataInput],
       input_sizes=[args.num_eval[0], -1],
-      num_parallel_calls=args.cores[0])
+      num_parallel_calls=args.cores[0],
+      augmentation=augmentation)
 
   unet = UNet(args.image_shape, args.num_classes[0], 
               model_dir=args.model_dir[0],
@@ -51,9 +54,9 @@ def cmd_experiment(args):
 
 def cmd_predict(args):
   logger.info("Predict")
-  data = dataset.load(args.input[0])
+  data_input = dataset.load_single(args.input, num_parallel_calls=args.cores[0])
   unet = UNet(args.image_shape, args.num_classes[0], model_dir=args.model_dir[0])
-  predictions = unet.predict(data)
+  predictions = unet.predict(data_input)
   originals = dataset.read_tfrecord(args.input[0])
 
   if args.output[0] == 'show':
@@ -130,7 +133,7 @@ def main():
   parser.add_argument('--l2-reg', nargs=1,
                       default=[0.0001], type=float,
                       help=docs.l2_reg_help)
-  parser.add_argument('--cores', nargs=1,
+  parser.add_argument('--cores', '--num-parallel-calls', nargs=1,
                       default=[-1], type=int,
                       help=docs.cores_help)
   parser.add_argument('--augment', '-a', nargs='+',

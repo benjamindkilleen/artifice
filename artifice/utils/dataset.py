@@ -162,8 +162,8 @@ class DataInput(object):
       .make_one_shot_iterator()
       .get_next())
 
-  def __call__(self, *args):
-    return self.make_input(*args)
+  def __call__(self, *args, **kwargs):
+    return self.make_input(*args, **kwargs)
 
 """TrainDataInput is where augmentation takes place. New augmentations can be
 added to it using the add_augmentation() method, or the "+" operator.
@@ -176,10 +176,8 @@ class TrainDataInput(DataInput):
 
   def make_input(self, num_epochs=1):
     return lambda : (
-      self.augmentation(
-        self._dataset
-        .repeat(num_epochs)
-        .shuffle(self.num_shuffle))
+      self.augmentation(self._dataset.shuffle(self.num_shuffle))
+      .repeat(num_epochs)
       .batch(self.batch_size)
       .prefetch(self.prefetch_buffer_size)
       .make_one_shot_iterator()
@@ -235,8 +233,8 @@ def load(record_names,
   :input_sizes: list of sizes corresponding to input_classes. A value of -1
     takes the remainder of the dataset. Note that a NoneType input class still
     skips data, so be sure to enter 0 for these entries.
-  :kwargs: additional keyword args for DataInput objects.
-
+  :kwargs: additional keyword args for each DataInput objects. 
+    TODO: allow passing separate kwargs to each object.
   """
   
   dataset = tf.data.TFRecordDataset(record_names)
@@ -249,7 +247,7 @@ def load(record_names,
       data_inputs.append(None)
     else:
       data_inputs.append(
-        input_class(dataset.take(input_size)))
+        input_class(dataset.take(input_size), **kwargs))
     dataset = dataset.skip(input_size)
     
   return data_inputs
@@ -259,7 +257,7 @@ def load_single(record_names, train=False, **kwargs):
   if train:
     return load(record_names,
                 input_classes=[dataset.TrainDataInput],
-                **kwargs)
+                **kwargs)[0]
   else:
-    return load(record_names, **kwargs)
+    return load(record_names, **kwargs)[0]
 

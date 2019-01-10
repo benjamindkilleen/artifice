@@ -19,8 +19,8 @@ import os
 from shutil import rmtree
 import numpy as np
 import logging
-
 import tensorflow as tf
+from artifice.utils import dataset
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -147,10 +147,11 @@ class SemanticModel:
 
     if eval_data_input is None:
       logger.info("train...")
-      model.train(input_fn=train_data_input())
+      model.train(input_fn=train_data_input(num_epochs=num_epochs))
     else:
       logger.info("train and evaluate...")
-      train_spec = tf.estimator.TrainSpec(input_fn=train_data_input())
+      train_spec = tf.estimator.TrainSpec(
+        input_fn=train_data_input(num_epochs=num_epochs))
       eval_spec = tf.estimator.EvalSpec(input_fn=eval_data_input(),
                                         throttle_secs=eval_secs)
       tf.estimator.train_and_evaluate(model, train_spec, eval_spec)
