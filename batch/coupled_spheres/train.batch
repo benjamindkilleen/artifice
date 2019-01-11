@@ -19,5 +19,6 @@ echo "Starting training..."
 python main.py experiment \
     -i data/coupled_spheres/coupled_spheres.tfrecord \
     -m models/experiment \
-    --epochs -1
+    --epochs -1 \
+    --augment brightness
 echo "Finished."

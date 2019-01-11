@@ -43,7 +43,9 @@ def compute_balanced_weights(annotations, num_classes):
     tf.constant(batch_size) * tf.reduce_prod(annotations.shape[1:]), 
     tf.float64)
   class_weights = num_samples / (num_classes * counts)
-  class_weights = class_weights / tf.norm(class_weights)
+  class_weights = class_weights / tf.norm(class_weights, ord=1)
+  class_weights = tf.Print(class_weights, [class_weights],
+                           message='class weights:', first_n=1)
 
   weights = tf.gather(class_weights, annotations)[:,:,:,0]
   return weights
@@ -105,8 +107,8 @@ class SemanticModel:
             num_epochs=1,
             eval_secs=600,
             save_steps=100,
+            log_steps=5,
             cores=1):
-
     """Train the model with tf Dataset object train_data. If test_data is not None,
     evaluate the model with it, and log the results (at INFO level).
 
@@ -136,7 +138,7 @@ class SemanticModel:
     run_options = tf.RunOptions(report_tensor_allocations_upon_oom = True)
     run_config = tf.estimator.RunConfig(model_dir=self.model_dir,
                                         save_checkpoints_steps=save_steps,
-                                        log_step_count_steps=5)
+                                        log_step_count_steps=log_steps)
     
 
     # Train the model. (Might take a while.)
@@ -177,6 +179,7 @@ class SemanticModel:
     """Create the model function for a custom estimator."""
     
     def model_function(features, labels, mode, params):
+      # TODO: images -> image (plural -> singular)
       images = tf.reshape(features, [-1] + self.image_shape)
       predicted_logits = self.infer(images, training=training)
       predictions = tf.reshape(tf.argmax(predicted_logits, axis=3),
@@ -231,13 +234,18 @@ class SemanticModel:
       
       # TODO: somehow, we're getting very high (99.5%) accuracy for objId 1 (the
       # balls), but the prediction images are messed up somehow. Figure out why.
+      # TODO: above still happening
       eval_metrics = {'accuracy' : accuracy}
       for objId in range(self.num_classes):
         weights = tf.gather(annotations_one_hot, objId, axis=3)
+        weights = tf.Print(weights, [weights], message=f'obj_{objId} weights:',
+                           first_n=1)
+        indices = tf.where(tf.equal(tf.constant(objId, dtype=tf.int64), annotations))
+        obj_annotations = tf.gather_nd(annotations, indices)
+        obj_predictions = tf.gather_nd(predictions, indices)
         eval_metrics[f'class_{objId}_accuracy'] = tf.metrics.accuracy(
-          labels=annotations_one_hot,
-          predictions=predictions_one_hot,
-          weights=weights)
+          labels=obj_annotations,
+          predictions=obj_predictions)
     
       return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=cross_entropy,

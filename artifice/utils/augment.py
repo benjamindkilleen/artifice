@@ -155,7 +155,6 @@ class Augmentation():
     elif issubclass(type(transformation), Transformation):
       self._transformations = [identity_transformation] + [transformation]
     elif hasattr(transformation, '__iter__'):
-      print(len(transformation))
       self._transformations = [identity_transformation] + list(transformation)
     else:
       raise ValueError()    
@@ -172,9 +171,6 @@ class Augmentation():
     augmentations without any composition. Removes the identity from the other.
 
     """
-    print("adding {} to my {} transformations".format(
-      len(other._transformations[1:]), len(self._transformations)))
-
     return Augmentation(self._transformations[1:] + other._transformations[1:])
   
   def __mul__(self, other):
