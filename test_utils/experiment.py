@@ -9,7 +9,11 @@ Dependencies:
 On masks and annotations:
 A "mask" is a tuple of arrays, such as those returned by skimage.draw functions,
 which index into the experiment's image space.
-An "annotation" is an array with the same height and width as the experiment's image.
+An "annotation" is an array with the same height and width as the experiment's
+image, containing information about an image and the objects in it. A shallow
+annotation contains just class labels at every pixel. A deeper annotation
+contains scalar information about an object at every pixel, such as the distance
+to its center.
 
 """
 
@@ -127,7 +131,7 @@ class ExperimentObject(DynamicObject):
     assert(semantic_label > 0)
     self.semantic_label = int(semantic_label)
 
-  def compute_mask(experiment):
+  def compute_mask(self, experiment):
     """Compute the mask of the ExperimentObject, given Experiment
     `experiment`.
 
@@ -139,7 +143,18 @@ class ExperimentObject(DynamicObject):
     """
     raise NotImplementedError("compute_mask is specific to each vapory object.")
 
-  
+  def compute_location(self, experiment):
+    """Compute the image-space location of the object. This should be an
+    unambiguous location, such as the center.
+    """
+    raise NotImplementedError()
+
+  def compute_label(self, experiment):
+    """Compute the label for this object. Usually just location and sometimes
+    orientation."""
+    raise NotImplementedError()
+
+
 class ExperimentSphere(ExperimentObject):
   """An ExperimentSphere, representing a vapory.Sphere.
 
@@ -185,7 +200,6 @@ class ExperimentSphere(ExperimentObject):
       return INFINITY
     t1, t2 = ts
 
-    # l = cam_loc + t*v, so d = distance to camera = l - cam_loc = t*v
     d1 = np.linalg.norm(t1*v)
     d2 = np.linalg.norm(t2*v)
 
@@ -214,6 +228,13 @@ class ExperimentSphere(ExperimentObject):
       
     return rr, cc, dd
 
+  def compute_location(self, experiment):
+    assert(len(self.args) != 0)
+    return experiment.project(self.center)
+
+  def compute_label(self, experiment):
+    return self.compute_location(experiment)
+    
   
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
@@ -394,53 +415,47 @@ class Experiment:
     u = (mag_v / cos_th) * u_hat
     return v + u
   
-  def compute_annotation(self):
-    """Computes the annotation for the scene, based on most recent vapory
-    objects created. Each annotation marks the class associated with the pixel.
+  def compute_annotation_label(self):
+    """Computes the annotation and label for the scene, based on most recent vapory
+    objects created.
+
+    The first channel of the annotation always marks class labels.
+    Further channels are more flexible, but in general the second channel should
+    enocde distance. Here, we use an object's compute_location method to get
+    the distance at every point inside an object's annotation.
+
+    The label has a row for every object in the image (which can get flattened
+    for a network).
 
     TODO: currently, only modifies masks due to occlusion by other objects in
     experiment_objects. This is usually sufficient, but in some cases, occlusion
     may occur from static or untracked objects.
 
     """
-    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1),
-                          dtype=np.uint8)
+    label = np.zeros((len(self.experiment_objects), 3), dtype=np.float32)
+    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 2),
+                          dtype=np.float32)
+    annotation[:,:,1] = INFINITY
     object_distance = INFINITY * np.ones(annotation.shape[:2], dtype=np.float64)
     
-    for obj in self.experiment_objects:
+    for i, obj in enumerate(self.experiment_objects):
+      location = obj.compute_location(self)
+      label[i] = location
       rr, cc, dd = obj.compute_mask(self)
-      for i in range(rr.shape[0]):
-        if dd[i] < object_distance[rr[i], cc[i]]:
-          object_distance[rr[i], cc[i]] = dd[i]
-          annotation[rr[i], cc[i], 0] = obj.semantic_label
+      for r, c, d in zip(rr, cc, dd):
+        if d < object_distance[r, c]:
+          object_distance[r, c] = d
+          annotation[r, c, 0] = obj.semantic_label
+          annotation[r, c, 1] = np.linalg.norm(
+            np.array([r,c]) - location)
 
-    return annotation
-    
-  def compute_target(self, *args):
-    """Calculate the target for this ExperimentObject. Called with the same args
-    that The default behavior is to calculate no target, such as for experiments
-    which only desire segmentation annotations. Should be overwritten by subclasses.
-    
-    Target is always a vector. This can represent a classification or some
-    numerical values (more likely).
-    
-    Returns a numpy array containing the targets for the most recent scene. If
-    there are no targets, return None.
-    
-    """
-    # TODO: necessary? Might also belong in ExperimentObject. Unclear.
-    # TODO: calculate_target should be able to see all the args that were passed
-    # into the vapory object, to determine any targets that it needs to, from
-    # those properties.
-    # TODO: associate target vector with each object in segmentation mask, how?
-    
-    return None
+    return annotation, label
     
   def render_scene(self, t=None):
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns a "scene", tuple of `image` and `annotation`.
+    Returns a "scene": (image, (annotation, label))
 
     TODO:
     Call the make_targets() function, implemented by subclasses, that uses
@@ -451,15 +466,18 @@ class Experiment:
     dynamic_objects = [obj(t) for obj in self.dynamic_objects]
     experiment_objects = [obj(t) for obj in self.experiment_objects]
     all_objects = self.static_objects + dynamic_objects + experiment_objects
-    scene = vapory.Scene(self.camera, all_objects, included=self.included)
+    vap_scene = vapory.Scene(self.camera, all_objects, included=self.included)
 
     # image, annotation ndarrays of np.uint8s.
-    image = scene.render(height=self.image_shape[0], width=self.image_shape[1])
+    image = vap_scene.render(height=self.image_shape[0], width=self.image_shape[1])
     if self.mode == 'L':
       image = img.grayscale(image)
-    annotation = self.compute_annotation()  # computes using most recently used args
+    
+    # compute annotation, label using most recently used args, produced by the
+    # render call
+    annotation, label = self.compute_annotation_label()
 
-    return image, annotation
+    return image, (annotation, label)
     
   def run(self, verbose=None):
     """Generate the dataset in each format.
@@ -522,7 +540,7 @@ class Experiment:
     for t in range(self.N):
       logging.info("Rendering scene {} of {}...".format(t, self.N))
       scene = self.render_scene(t)
-      image, annotation = scene
+      image, (annotation, label) = scene
       
       if 'tfrecord' in self.output_formats:
         e = dataset.proto_from_scene(scene)

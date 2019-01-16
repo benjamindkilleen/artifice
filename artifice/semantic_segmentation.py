@@ -180,31 +180,31 @@ class SemanticModel:
     
     def model_function(features, labels, mode, params):
       # TODO: images -> image (plural -> singular)
-      images = tf.reshape(features, [-1] + self.image_shape)
-      predicted_logits = self.infer(images, training=training)
-      predictions = tf.reshape(tf.argmax(predicted_logits, axis=3),
+      image = tf.reshape(features, [-1] + self.image_shape)
+      prediction_logits = self.infer(image, training=training)
+      prediction = tf.reshape(tf.argmax(prediction_logits, axis=3),
                                [-1] + self.annotation_shape)
-      predictions_one_hot = tf.one_hot(tf.reshape(
+      prediction_one_hot = tf.one_hot(tf.reshape(
         predictions, [-1] + self.annotation_shape[:2]), self.num_classes)
 
       # In PREDICT mode, return the output asap.
       if mode == tf.estimator.ModeKeys.PREDICT:
         return tf.estimator.EstimatorSpec(
-          mode=mode, predictions={'image' : images,
-                                  'logits' : predicted_logits,
-                                  'annotation' : predictions})
+          mode=mode, predictions={'image' : image,
+                                  'logits' : prediction_logits,
+                                  'annotation' : prediction})
 
       # Get "ground truth" for other modes.
-      annotations = tf.cast(tf.reshape(labels, [-1] + self.annotation_shape),
-                            tf.int64)
-      annotations_one_hot = tf.one_hot(annotations[:,:,:,0], self.num_classes)
+      annotation, label = labels
+      annotation = tf.cast(tf.reshape(annotation[:,:,:,0], [-1] +
+                                      self.annotation_shape), tf.int64)
+      annotation_one_hot = tf.one_hot(annotation[:,:,:,0], self.num_classes)
 
-      logger.debug("annotations_one_hot: {}".format(annotations_one_hot.shape))
-      logger.debug("predicted_logits: {}".format(predicted_logits.shape))
+      logger.debug("annotation_one_hot: {}".format(annotation_one_hot.shape))
+      logger.debug("prediction_logits: {}".format(prediction_logits.shape))
 
       # weight by class frequency
-      weights = compute_balanced_weights(annotations, self.num_classes)
-      # weights = tf.argmax(weights * annotations_one_hot, axis=3)
+      weights = compute_balanced_weights(annotation, self.num_classes)
       logger.debug("weights: {}".format(weights.shape))
 
       # TODO: give boundaries greater weight (boundaries currently not encoded,
@@ -213,8 +213,8 @@ class SemanticModel:
 
       # Calculate loss:
       cross_entropy = tf.losses.softmax_cross_entropy(
-        onehot_labels=annotations_one_hot,
-        logits=predicted_logits,
+        onehot_labels=annotation_one_hot,
+        logits=prediction_logits,
         weights=weights)
 
       # Return an optimizer, if mode is TRAIN
@@ -229,23 +229,23 @@ class SemanticModel:
                                           train_op=train_op)
     
       assert mode == tf.estimator.ModeKeys.EVAL
-      accuracy = tf.metrics.accuracy(labels=annotations,
-                                     predictions=predictions)
+      accuracy = tf.metrics.accuracy(labels=annotation,
+                                     predictions=prediction)
       
       # TODO: somehow, we're getting very high (99.5%) accuracy for objId 1 (the
       # balls), but the prediction images are messed up somehow. Figure out why.
       # TODO: above still happening
       eval_metrics = {'accuracy' : accuracy}
       for objId in range(self.num_classes):
-        weights = tf.gather(annotations_one_hot, objId, axis=3)
+        weights = tf.gather(annotation_one_hot, objId, axis=3)
         weights = tf.Print(weights, [weights], message=f'obj_{objId} weights:',
                            first_n=1)
-        indices = tf.where(tf.equal(tf.constant(objId, dtype=tf.int64), annotations))
-        obj_annotations = tf.gather_nd(annotations, indices)
-        obj_predictions = tf.gather_nd(predictions, indices)
+        indices = tf.where(tf.equal(tf.constant(objId, dtype=tf.int64), annotation))
+        obj_annotations = tf.gather_nd(annotation, indices)
+        obj_prediction = tf.gather_nd(prediction, indices)
         eval_metrics[f'class_{objId}_accuracy'] = tf.metrics.accuracy(
-          labels=obj_annotations,
-          predictions=obj_predictions)
+          labels=obj_annotation,
+          predictions=obj_prediction)
     
       return tf.estimator.EstimatorSpec(mode=mode,
                                         loss=cross_entropy,
