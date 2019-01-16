@@ -26,14 +26,14 @@ time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'tfrecord', 'mp4'}     # output formats
 fname = root + 'coupled_spheres'         # extensions from output_formats
-image_shape = (512, 512)                 # image shape
+image_shape = (388, 388)                 # image shape
 num_classes = 2                          # including background
 
 # Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
 r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
-x1 = -240            # initial x position (cm)
+x1 = -150            # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = 50            # initial x velocity (cm/s)
 vy1 = -50            # initial y velocity
@@ -41,7 +41,7 @@ vy1 = -50            # initial y velocity
 # ball 2
 r2 = 30
 m2 = 27
-x2 = 240
+x2 = 150
 y2 = 0
 vx2 = -50
 vy2 = -125
@@ -83,7 +83,7 @@ def calculate_acceleration(x1, x2):
   mag_F = spring(mag_l)
   l_hat = l / mag_l
   a1 = mag_F * l_hat / m1
-  a2 = -a1
+  a2 = -mag_F * l_had / m2
   return a1, a2
 
 
@@ -121,7 +121,7 @@ def step(n=1):
   """Update the polar and CM system over n time steps of length dt, using the
   velocity Verlet algorithm, as on
   https://en.wikipedia.org/wiki/Verlet_integration
-p
+
   """
   global initial, current
   dt = time_step

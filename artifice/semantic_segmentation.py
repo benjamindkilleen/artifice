@@ -30,24 +30,24 @@ logger = logging.getLogger('artifice')
 batch_size = 1
 prefetch_buffer_size = 1  
 
-def compute_balanced_weights(annotations, num_classes):
-  """Calculate the weight tensor given annotations, like sklearn's
+def compute_balanced_weights(annotation, num_classes):
+  """Calculate the weight tensor given annotation, like sklearn's
   compute_class_weight().
 
   """
 
-  counts = tf.bincount(tf.cast(annotations, tf.int32), 
+  counts = tf.bincount(tf.cast(annotation, tf.int32), 
                        minlength=num_classes, maxlength=num_classes,
                        dtype=tf.float64)
   num_samples = tf.cast(
-    tf.constant(batch_size) * tf.reduce_prod(annotations.shape[1:]), 
+    tf.constant(batch_size) * tf.reduce_prod(annotation.shape[1:]), 
     tf.float64)
   class_weights = num_samples / (num_classes * counts)
   class_weights = class_weights / tf.norm(class_weights, ord=1)
   class_weights = tf.Print(class_weights, [class_weights],
                            message='class weights:', first_n=1)
 
-  weights = tf.gather(class_weights, annotations)[:,:,:,0]
+  weights = tf.gather(class_weights, annotation)[:,:,:,0]
   return weights
 
 
