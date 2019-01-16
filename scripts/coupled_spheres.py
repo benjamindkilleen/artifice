@@ -35,16 +35,16 @@ r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
 x1 = -150            # initial x position (cm)
 y1 = 0               # initial y position
-vx1 = 50            # initial x velocity (cm/s)
-vy1 = -50            # initial y velocity
+vx1 = 60            # initial x velocity (cm/s)
+vy1 = -60            # initial y velocity
 
 # ball 2
 r2 = 30
 m2 = 27
 x2 = 150
 y2 = 0
-vx2 = -50
-vy2 = -125
+vx2 = -30
+vy2 = -20
 
 # Spring parameters
 k = 15                          # (N / m)
@@ -83,7 +83,7 @@ def calculate_acceleration(x1, x2):
   mag_F = spring(mag_l)
   l_hat = l / mag_l
   a1 = mag_F * l_hat / m1
-  a2 = -mag_F * l_had / m2
+  a2 = -mag_F * l_hat / m2
   return a1, a2
 
 

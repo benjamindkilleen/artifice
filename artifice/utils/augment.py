@@ -206,7 +206,6 @@ identity = Augmentation()
 brightness = sum([Augmentation(AdjustMeanBrightness(m)) 
                   for m in [0.2, 0.4, 0.6, 0.8]])
 
-
 premade = {
   'identity': identity,
   'brightness': brightness,
@@ -224,3 +223,9 @@ def join(augmentation_names, num_parallel_calls=1):
   aug.set_num_parallel_calls(num_parallel_calls)
   return aug
 
+
+"""TODO: We need to design a new type of augmentation that can use any example in the
+whole dataset. Should this be done on the fly? Unclear. Perhaps the
+boundary-aware augmentations simply need to  
+
+"""

@@ -28,7 +28,7 @@ import tensorflow as tf
 from artifice.utils import dataset, img
 import logging
 
-logging.basicConfig(format='%(levelname)s:experiment:%(message)s')
+logging.basicConfig(format='%(levelname)s:experiment:%(message)s', level=logging.INFO)
 
 INFINITY = 10e9
 
@@ -425,7 +425,8 @@ class Experiment:
     the distance at every point inside an object's annotation.
 
     The label has a row for every object in the image (which can get flattened
-    for a network).
+    for a network). The first element of each row always marks whether the
+    object is present in the image.
 
     TODO: currently, only modifies masks due to occlusion by other objects in
     experiment_objects. This is usually sufficient, but in some cases, occlusion
@@ -440,7 +441,8 @@ class Experiment:
     
     for i, obj in enumerate(self.experiment_objects):
       location = obj.compute_location(self)
-      label[i] = location
+      label[i, 0] = 1           # TODO: mark whether the object is actually present
+      label[i, 1:] = location
       rr, cc, dd = obj.compute_mask(self)
       for r, c, d in zip(rr, cc, dd):
         if d < object_distance[r, c]:
