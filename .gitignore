@@ -1,5 +1,5 @@
-data/**.png
-reports/**.png
+data/**/*.png
+reports/**/*.png
 **__pycache__
 povray_practice
 data/
