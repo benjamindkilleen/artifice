@@ -142,7 +142,7 @@ class Augmentation():
 
   """
 
-  def __init__(self, transformation=None, num_parallel_calls=1):
+  def __init__(self, transformation=None, num_parallel_calls=None):
     """
     :transformation: a Transformation object, or an iterable of them. Default
       (None) creates an identity augmentation.
@@ -224,8 +224,39 @@ def join(augmentation_names, num_parallel_calls=1):
   return aug
 
 
-"""TODO: We need to design a new type of augmentation that can use any example in the
-whole dataset. Should this be done on the fly? Unclear. Perhaps the
-boundary-aware augmentations simply need to  
+"""Brainstorm: We need to design a new type of augmentation that can use any
+example in the whole dataset. Should this be done on the fly? Unclear. Perhaps
+the boundary-aware augmentations simply need to
+
+The regular Augmentation object returns a new dataset object that includes the
+old one. To facilitate persistent augmentations, which are aware of the whole
+dataset, we will have to do eager execution, performing these augmentation steps
+before every iteration of training. Essentially, this new augmentation object
+should do the same thing as above, but it should have a method that returns just
+the transformed examples. (Could also just modify above augmentation so that
+identity transformation is not always implied, then have an optional argument
+in the call that preserves it. Yup.)
+
+So but the new method needs to collect statistics for the labels on the whole
+dataset. These should fit in memory; no more than a few items per image. This
+run-through should also assemble a distribution for every pixel (more memory
+intensive, perhaps only use a helpful subsample?) that constructs a reasonable
+background to inpaint with. If no background can be used for a region (object is
+stationary), then fill with noise (TODO: better strategy?)
+
+The new examples will have to be based on statistics in the label space. We'll
+have to look at these distributions as we build it up. For speed's sake, perhaps
+the labels should be stored separately from the tfrecord as well?
+
+All augmentation tfrecords can be stored in a data_dir directory, provided by
+command line. By default, this data_dir can be the same as the tfrecord from
+which it came? Or just a "tmp_data" dir in the cwd?
+
+This type of augmentation should be used by a class in the dataset module. This
+class should be related to DataInput objects, and maybe it can be made from one
+of those, but it is a fundamentally different object. This is not a DataInput
+object, used for feeding data into a network. This is a DataAugmenter object. It
+should take one or more tfrecord files, 
 
 """
+

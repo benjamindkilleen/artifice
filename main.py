@@ -26,16 +26,16 @@ logger.debug(f"using Python{3} sanity check.")
 
 def cmd_experiment(args):
   logger.info(f"training from experiment '{args.input[0]}'")
-  data_input = dataset.load(args.input, num_parallel_calls=args.cores[0])
+
   augmentation = augment.join(args.augment)
   if args.eval_data is not None:
-    train_data_input = datset.load_single(args.input, train=True,
-                                          num_parallel_calls=args.cores[0],
-                                          augmentation=augmentation)
-    eval_data_input = dataset.load_single(args.eval_data,
-                                          num_parallel_calls=args.cores[0])
+    train_data_input = datset.load(args.input, train=True,
+                                   num_parallel_calls=args.cores[0],
+                                   augmentation=augmentation)
+    eval_data_input = dataset.load(args.eval_data,
+                                   num_parallel_calls=args.cores[0])
   else:
-    eval_data_input, train_data_input = dataset.load(
+    eval_data_input, train_data_input = dataset.load_data_input(
       args.input,
       input_classes=[dataset.DataInput, dataset.TrainDataInput],
       input_sizes=[args.num_eval[0], -1],
@@ -54,7 +54,7 @@ def cmd_experiment(args):
 
 def cmd_predict(args):
   logger.info("Predict")
-  data_input = dataset.load_single(args.input, num_parallel_calls=args.cores[0])
+  data_input = dataset.load(args.input, num_parallel_calls=args.cores[0])
   unet = UNet(args.image_shape, args.num_classes[0], model_dir=args.model_dir[0])
   predictions = unet.predict(data_input)
   originals = dataset.read_tfrecord(args.input[0])
@@ -87,8 +87,20 @@ def cmd_predict(args):
 
 def cmd_evaluate(args):
   logger.info("Evaluate")
+  raise NotImplementedError()
   # TODO: evaluate command
 
+
+def cmd_augment(args):
+  """Do a single augmentation "cycle," adding new data based on the provided
+  distribution. (Currently for testing.)
+
+  """
+  logger.info("Augmentation (testing purposes)")
+  dataset.DataAugmenter(args.input,
+                        num_parallel_calls=args.cores[0])
+  # TODO: actual augmentation?
+  
     
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -154,6 +166,10 @@ def main():
     if args.output is None:
       raise ValueError("")
     cmd_predict(args)
+  elif args.command == 'evaluate':
+    cmd_evaluate(args)
+  elif args.command:
+    cmd_augment(args)
   else:
     RuntimeError()
 

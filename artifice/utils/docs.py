@@ -8,7 +8,7 @@ data augmentation.
 - predict: run artifice on input examples, showing predictions.
 """
 
-command_choices = ['experiment', 'predict']
+command_choices = ['experiment', 'predict', 'augment']
 command_help = "Artifice command to run."
 
 input_help = """Input:

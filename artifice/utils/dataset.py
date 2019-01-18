@@ -7,7 +7,7 @@ although it could also be (image, (annotation, label)).
 
 import numpy as np
 import tensorflow as tf
-from artifice.utils import img, augment
+from artifice.utils import augment
 import os
 
 def _bytes_feature(value):
@@ -26,6 +26,8 @@ def proto_from_scene(scene):
   output: 
     example_string: a tf.train.Example, serialized to a string with four
       elements: the original images, as strings, and their shapes.
+
+  TODO: allow for creating an unlabeled example. Include flag in the data?
 
   """
   image, (annotation, label) = scene
@@ -53,9 +55,18 @@ def proto_from_scene(scene):
   example = tf.train.Example(features=features)
   return example.SerializeToString()
 
+def proto_from_tensor_scene(scene):
+  """Create a proto string holding the given scene properly. Useful for writing
+  tfrecord from tf.data.Dataset objects.
+  """
+
 
 def tensor_scene_from_proto(proto):
   """Parse the serialized string PROTO into tensors (IMAGE, ANNOTATION).
+
+  TODO: allow for loading an unlabelled example. Can do this by including a
+  boolean in the data? That's one possibility.
+
   """
   features = tf.parse_single_example(
     proto,
@@ -85,7 +96,11 @@ def tensor_scene_from_proto(proto):
 
 def scene_from_proto(proto):
   """Take a serialized tf.train.Example, as created by proto_from_scene(),
-  and convert it back to a scene."""
+  and convert it back to a scene.
+  
+  TODO: allow for loading an unlabelled example.
+  
+  """
 
   example = tf.train.Example()
   example.ParseFromString(proto)
@@ -144,6 +159,56 @@ def save_first_scene(fname):
   np.save(os.path.join(root, "example_annotation.npy"), annotation)
 
 
+def load_dataset(record_name,
+                 parse_entry=None,
+                 num_parallel_calls=None):
+  """Load the record_name as a tf.data.Dataset"""
+  if parse_entry is None:
+    parse_entry = tensor_scene_from_proto
+  dataset = tf.data.TFRecordDataset(record_name)
+  return dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
+
+  
+class Data(object):
+  """A Data object contains scenes, as defined above. It's mainly useful as a
+  way to save and then distribute data."""
+  def __init__(self, data, **kwargs):
+    """args:
+    :data: a tf.data.Dataset OR tfrecord file name(s) OR another Data
+      subclass. In this case, the other object's _dataset is adopted, allows
+      kwargs to be overwritten.
+    """
+    if issubclass(type(data), Data):
+      self._kwargs = data._kwargs.update(kwargs)
+    else:
+      self._kwargs = kwargs
+
+    self.batch_size = self._kwargs.get('batch_size', 1)
+    self.num_parallel_calls = self._kwargs.get('num_parallel_calls', None)
+    self.parse_entry = self._kwargs.get('parse_entry', None)
+
+    if issubclass(type(data), Data):
+      self._dataset = data._dataset
+    elif issubclass(type(data), tf.data.Dataset):
+      self._dataset = dataset
+    elif type(data) == str or hasattr(data, '__iter__'):
+      self._dataset = load_dataset(data,
+                                   parse_entry=self.parse_entry,
+                                   num_parallel_calls=self.num_parallel_calls)
+    else:
+      raise ValueError(f"unrecognized data type '{type(data)}'")
+
+    
+  def save(self, record_name, encode_entry=proto_from_tensor_scene):
+    """Save the dataset to record_name."""
+    logger.info(f"Writing dataset to {record_name}")
+    dataset = self._dataset.map(encode_entry,
+                                num_parallel_calls=self.num_parallel_calls)
+    writer = tf.data.experimental.TFRecordWriter(record_name)
+    write_op = writer.write(dataset)
+    with tf.Session() as sess:
+      sess.run(write_op)
+
 
 """A DataInput object encompasses all of them. The
 __call__ method for a Data returns an iterator function over the associated
@@ -155,18 +220,14 @@ once over the dataset.
   augmentation.
 
 """
-class DataInput(object):
-  def __init__(self, dataset, **kwargs):
+class DataInput(Data):
+  def __init__(self, *args, **kwargs):
     """
-    :dataset: a tf.data.Dataset
     :batch_size:
     :num_parallel_calls:
     """
-    self._dataset = dataset
-    self.batch_size = kwargs.get('batch_size', 1)
-    self.num_parallel_calls = kwargs.get('num_parallel_calls')
+    super().__init__(*args, **kwargs)
     self.prefetch_buffer_size = kwargs.get('prefetch_buffer_size', 1)
-    self._kwargs = kwargs
 
   def make_input(self):
     """Make an input function for an estimator. Can be overwritten by subclasses
@@ -186,13 +247,14 @@ added to it using the add_augmentation() method, or the "+" operator.
 """
 class TrainDataInput(DataInput):
   def __init__(self, *args, **kwargs):
-    self.num_shuffle = kwargs.get('num_shuffle', 10000)
     super().__init__(*args, **kwargs)
+    self.num_shuffle = kwargs.get('num_shuffle', 10000)
     self.augmentation = kwargs.get('augmentation', augment.identity)
 
   def make_input(self, num_epochs=1):
     return lambda : (
-      self.augmentation(self._dataset.shuffle(self.num_shuffle))
+      self.augmentation(self._dataset)
+      .shuffle(self.num_shuffle) # TODO: shuffle before or after?
       .repeat(num_epochs)
       .batch(self.batch_size)
       .prefetch(self.prefetch_buffer_size)
@@ -209,7 +271,7 @@ class TrainDataInput(DataInput):
     elif issubclass(type(other), TrainDataInput):
       return self.add_augmentation(other.augmentation)
     else:
-      raise ValueError(f"unrecognized type '{type(aug)}'")
+      raise ValueError(f"unrecognized type '{type(other)}'")
 
   def __radd__(self, other):
     if other == 0:
@@ -230,16 +292,17 @@ class TrainDataInput(DataInput):
       raise ValueError(f"unrecognized type '{type(aug)}'")
 
 
-def load(record_names,
-         parse_entry=tensor_scene_from_proto,
-         input_classes=[DataInput],
-         input_sizes=[-1],
-         num_parallel_calls=None,
-         **kwargs):
-  """Load the tfrecord as a DataInput object. By default, parses scenes.
+def load_data_input(record_name,
+                    input_classes=[DataInput],
+                    input_sizes=[-1],
+                    parse_entry=tensor_scene_from_proto,
+                    num_parallel_calls=None,
+                    **kwargs):
+  """Load the tfrecord as a DataInput object. By default, parses
+  scenes. Generalizes load().
   
   args:
-  :record_names: one or more tfrecord files.
+  :record_name: one or more tfrecord files.
   :parse_entry: a function parsing each raw entry in the loaded dataset
   :num_parallel_calls: see tf.data.Dataset.map
   :input_classes: list of DataInput or a subclass thereof, determining the type
@@ -252,9 +315,8 @@ def load(record_names,
   :kwargs: additional keyword args for each DataInput objects. 
     TODO: allow passing separate kwargs to each object.
   """
-  
-  dataset = tf.data.TFRecordDataset(record_names)
-  dataset = dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
+  dataset = load_dataset(record_name, parse_entry=parse_entry,
+                         num_parallel_calls=num_parallel_calls)
 
   data_inputs = []
   for input_class, input_size in zip(input_classes, input_sizes):
@@ -268,12 +330,76 @@ def load(record_names,
     
   return data_inputs
 
-def load_single(record_names, train=False, **kwargs):
-  """Wrapper around load that returns a single dataset object."""
+def load(record_name, train=False, **kwargs):
+  """Wrapper around load that returns a single dataset object. Most often used."""
   if train:
-    return load(record_names,
-                input_classes=[dataset.TrainDataInput],
-                **kwargs)[0]
+    return load_data_input(record_name,
+                           input_classes=[dataset.TrainDataInput],
+                           **kwargs)[0]
   else:
-    return load(record_names, **kwargs)[0]
+    return load_data_input(record_name, **kwargs)[0]
 
+
+"""A DataAugmenter object should work with augmentations to create new tfrecord
+files. It belongs in the dataset module because it should handle all the
+reading/writing of data to files. Perhaps this should be the object that
+processes data initially (i.e. processes label-space, inpainting stuff), then
+the augmentation object can use that data??? Maybe, but probably
+not. We can use transformation objects, maybe, except that those take
+tensors. We'd just have to use eager execution, I guess. So we can still use
+individual transformations, composed or otherwise, and apply them selectively to
+examples in the dataset.
+
+It doesn't matter too much if this step takes a while to run. But it does
+prevent training from happening while it's running? Yeah, probably. Whatever.
+
+Don't actually need to do eager execution. Could just run inside a session,
+which would be fine, after building up the graph. This allows
+augment.Transformation to continue to just use tensor operations, and
+augmentation will be more efficient with a computation graph, etc. 
+
+Ideas:
+- can use tf.data.experimental.enumerate_dataset() to give each original example
+  a unique label. (Returns a transformation function, give to dataset.apply)
+- tf.experimental.
+
+"""
+
+
+def accumulate_labels(dataset, **kwargs):
+  """Given a tf.data.dataset with scene entries (image, (annotation, label)),
+  accumulate the labels.
+
+  Each label should have shape (num_objects, N), so the accumulated labels will
+  have shape (num_images, num_objects, N).
+
+  """
+
+  iterator = dataset.make_initializable_iterator()
+  _, (_, label) = iterator.get_next()
+  
+  with tf.Session() as sess:
+    sess.run(iterator.initializer)
+    logger.debug(sess.run(label))
+
+
+class DataAugmenter(Data):
+  """The DataAugmenter object interfaces with tfrecord files for a labeled
+  dataset to create a new augmentation set (not including the originals).
+
+  It needs:
+  - an initial processing ability, either internal or using a module-level
+    function (more likely).
+  - the ability to apply transformations to select examples of the dataset. Not
+    sure how that's going to happen.
+  - a method to create a DataInput object (or TrainDataInput) using all the
+    tfrecords it has incorporated or created.
+  """
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self._labels = accumulate_labels(self._dataset, **self._kwargs)
+  
+    
+    
+  
