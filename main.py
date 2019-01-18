@@ -23,7 +23,6 @@ from multiprocessing import cpu_count
 logger.debug(f"using Python{3} sanity check.")
 
 
-
 def cmd_experiment(args):
   logger.info(f"training from experiment '{args.input[0]}'")
 
@@ -97,8 +96,30 @@ def cmd_augment(args):
 
   """
   logger.info("Augmentation (testing purposes)")
-  dataset.DataAugmenter(args.input,
-                        num_parallel_calls=args.cores[0])
+  auger = dataset.DataAugmenter(args.input,
+                                num_parallel_calls=args.cores[0])
+  labels = auger.labels
+
+  if args.output[0] == 'show':
+    bins = 50
+    fig, axes = plt.subplots(4, 1, sharex=True, sharey=True)
+    axes[0].hist(labels[:,0,1], bins)
+    axes[0].set_title("Sphere 1 X Positions", pad=-25)
+    
+    axes[1].hist(labels[:,0,2], bins)
+    axes[1].set_title("Sphere 1 Y Positions", pad=-25)
+
+    axes[2].hist(labels[:,1,1], bins)
+    axes[2].set_title("Sphere 2 X Positions", pad=-25)
+    
+    axes[3].hist(labels[:,1,2], bins)
+    axes[3].set_title("Sphere 2 Y Positions", pad=-25)
+
+
+    plt.show()
+  else:
+    raise NotImplementedError("use show")
+  
   # TODO: actual augmentation?
   
     
