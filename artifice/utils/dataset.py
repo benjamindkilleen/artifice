@@ -9,6 +9,11 @@ import numpy as np
 import tensorflow as tf
 from artifice.utils import augment
 import os
+import logging
+
+
+logger = logging.getLogger('artifice')
+
 
 def _bytes_feature(value):
   # Helper function for writing a string to a tfrecord
@@ -86,10 +91,12 @@ def tensor_scene_from_proto(proto):
   image = tf.cast(image, tf.float32) / 255.
 
   annotation = tf.decode_raw(features['annotation'], tf.float32)
-  annotation = tf.reshape(annotation, features['annotation_shape'])
+  annotation = tf.reshape(annotation, features['annotation_shape'],
+                          name='reshape_annotation_proto')
 
-  label = tf.tf.decode_raw(features['annotation'], tf.float32)
-  label = tf.reshape(label, features['label_shape'])
+  label = tf.decode_raw(features['label'], tf.float32)
+  label = tf.reshape(label, features['label_shape'],
+                     name='reshape_label_proto')
 
   return image, (annotation, label)
 
@@ -168,6 +175,7 @@ def load_dataset(record_name,
   dataset = tf.data.TFRecordDataset(record_name)
   return dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
 
+
   
 class Data(object):
   """A Data object contains scenes, as defined above. It's mainly useful as a
@@ -208,6 +216,39 @@ class Data(object):
     write_op = writer.write(dataset)
     with tf.Session() as sess:
       sess.run(write_op)
+
+  def get_labels(self):
+    """Given a tf.data.dataset with scene entries (image, (annotation, label)),
+    accumulate the labels.
+    
+    Each label should have shape (num_objects, N), so the accumulated labels will
+    have shape (num_images, num_objects, N).
+    
+    """
+
+    iterator = self._dataset.make_initializable_iterator()
+    next_scene = iterator.get_next()
+    logger.debug("made label iterator (?)")
+    
+    labels = []
+  
+    with tf.Session() as sess:
+      logger.debug("started session")
+      sess.run(iterator.initializer)
+      logger.debug("initialized iterator, accumulating labels")
+      i = 0
+      while True:
+        try:
+          image, (annotation, label) = sess.run(next_scene)
+          labels.append(label)
+          i += 1
+        except tf.errors.OutOfRangeError:
+          logger.debug(f"finished; accumulated {i} entries")
+          break
+
+    return np.array(labels)
+
+
 
 
 """A DataInput object encompasses all of them. The
@@ -366,21 +407,6 @@ Ideas:
 """
 
 
-def accumulate_labels(dataset, **kwargs):
-  """Given a tf.data.dataset with scene entries (image, (annotation, label)),
-  accumulate the labels.
-
-  Each label should have shape (num_objects, N), so the accumulated labels will
-  have shape (num_images, num_objects, N).
-
-  """
-
-  iterator = dataset.make_initializable_iterator()
-  _, (_, label) = iterator.get_next()
-  
-  with tf.Session() as sess:
-    sess.run(iterator.initializer)
-    logger.debug(sess.run(label))
 
 
 class DataAugmenter(Data):
@@ -398,8 +424,7 @@ class DataAugmenter(Data):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self._labels = accumulate_labels(self._dataset, **self._kwargs)
-  
+    self.labels = self.get_labels()
     
-    
+
   
