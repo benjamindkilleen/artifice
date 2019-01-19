@@ -216,39 +216,37 @@ class Data(object):
     write_op = writer.write(dataset)
     with tf.Session() as sess:
       sess.run(write_op)
-
-  def get_labels(self):
+    
+  def accumulate(self, *accumulators):
     """Given a tf.data.dataset with scene entries (image, (annotation, label)),
-    accumulate the labels.
-    
-    Each label should have shape (num_objects, N), so the accumulated labels will
-    have shape (num_images, num_objects, N).
-    
+    accumulate the labels using given functions.
+
+    An accumulator function should take a scene and an aggregate object. On the
+    first call, aggregate will be None. Afterward, each accumulator will be
+    passed the output from its previous call. Finally, the final call, scene
+    will be None.
+
     """
 
     iterator = self._dataset.make_initializable_iterator()
     next_scene = iterator.get_next()
     logger.debug("made label iterator (?)")
     
-    labels = []
+    aggregates = [None] * len(accumulators)
   
     with tf.Session() as sess:
       logger.debug("started session")
       sess.run(iterator.initializer)
       logger.debug("initialized iterator, accumulating labels")
-      i = 0
       while True:
         try:
           image, (annotation, label) = sess.run(next_scene)
-          labels.append(label)
-          i += 1
+          for i in range(len(accumulators)):
+            aggregates[i] = accumulators[i](scene, aggregates[i])
         except tf.errors.OutOfRangeError:
-          logger.debug(f"finished; accumulated {i} entries")
           break
 
-    return np.array(labels)
-
-
+    return [acc(None, agg) for acc, agg in zip(accumulators, aggregates)]
 
 
 """A DataInput object encompasses all of them. The
@@ -424,7 +422,56 @@ class DataAugmenter(Data):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.labels = self.get_labels()
-    
 
-  
+  @staticmethod
+  def label_accumulator(scene, labels):
+    if labels is None:
+      labels = []
+    if scene is None:
+      return np.array(labels)
+
+    _, (_, label) = scene
+    labels.append(label)
+    return labels
+    
+  @staticmethod
+  def background_accumulator(scene, agg):
+    """Iterate over the dataset, taking a running average of the pixels where no
+    objects exist.
+
+    COMMENTS: Need to make a suitable background image or images to draw from, when
+    inpainting. This should be based on the whole dataset, under the assumption
+    that the camera never moves, although objects in the image do. Maybe there
+    should be a coupled background images produced? We could go through the
+    dataset in order, until we have accumulated enough images to get a good
+    background for all pixels, save that, etc.
+
+    Better yet, can take a running average for all the pixels? This can be a
+    good place to start.
+
+    """
+    if agg is None:
+      assert scene is not None
+      background = np.zeros_like(scene[0])
+      n = np.zeros_like(background, dtype=np.float64)
+    else:
+      background, n = agg
+
+    if scene is None:
+      return background
+
+    image, (annotation, _) = scene
+
+    # Update the elements with a running average
+    bg_indices = np.equal(annotation, 0)
+    indices = np.logical_and(np.not_equal(n, 0), bg_indices)
+    n[indices] += 1
+    background[indices] = (background[indices] + 
+                           (image[indices] - background[indices]) / n[indices])
+
+    # initialize the new background elements
+    indices = np.logical_and(np.equal(n, 0), bg_indices)
+    background[indices] = image[indices]
+    n[indices] += 1
+    
+    return background, n
