@@ -83,10 +83,10 @@ def cmd_augment(args):
                                 num_parallel_calls=args.cores[0])
 
   if args.output[0] == 'show':
-    vis.show_labels(auger.labels)
+    # vis.show_labels(auger.labels)
     vis.show_background(auger.background)
   else:
-    raise NotImplementedError("use show")
+    raise NotImplementedError("use '-o show'")
   
   # TODO: actual augmentation?
   

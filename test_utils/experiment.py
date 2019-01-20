@@ -441,8 +441,8 @@ class Experiment:
     
     for i, obj in enumerate(self.experiment_objects):
       location = obj.compute_location(self)
-      label[i, 0] = 1           # TODO: mark whether the object is actually present
-      label[i, 1:] = location
+      label[i, 0] = 1
+      label[i, 1:3] = location
       rr, cc, dd = obj.compute_mask(self)
       for r, c, d in zip(rr, cc, dd):
         if d < object_distance[r, c]:
@@ -450,6 +450,8 @@ class Experiment:
           annotation[r, c, 0] = obj.semantic_label
           annotation[r, c, 1] = np.linalg.norm(
             np.array([r,c]) - location)
+          if np.linalg.norm(np.array([r,c]) - label[i, 1:3]) < 2:
+            label[i, 0] = 0
 
     return annotation, label
     

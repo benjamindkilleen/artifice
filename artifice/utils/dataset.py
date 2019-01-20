@@ -60,11 +60,14 @@ def proto_from_scene(scene):
   example = tf.train.Example(features=features)
   return example.SerializeToString()
 
+
 def proto_from_tensor_scene(scene):
   """Create a proto string holding the given scene properly. Useful for writing
   tfrecord from tf.data.Dataset objects.
   """
-
+  image, (annotation, label) = scene
+  raise NotImplementedError("implement proto_from_tensor_scene")
+  
 
 def tensor_scene_from_proto(proto):
   """Parse the serialized string PROTO into tensors (IMAGE, ANNOTATION).
@@ -410,8 +413,6 @@ Ideas:
 """
 
 
-
-
 class DataAugmenter(Data):
   """The DataAugmenter object interfaces with tfrecord files for a labeled
   dataset to create a new augmentation set (not including the originals).
@@ -456,7 +457,6 @@ class DataAugmenter(Data):
     indices = background < 0
     background[indices] = np.random.normal(mean, std, size=background[indices].shape)
     return background
-
 
   @staticmethod
   def label_accumulator(scene, labels):

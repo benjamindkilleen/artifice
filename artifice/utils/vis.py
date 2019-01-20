@@ -41,4 +41,5 @@ def show_labels(labels, bins=50):
 
 def show_background(background):
   plt.imshow(np.squeeze(background), cmap='gray')
+  plt.colorbar(orientation='vertical')
   plt.show()
