@@ -233,20 +233,25 @@ class Data(object):
     logger.debug("made label iterator (?)")
     
     aggregates = [None] * len(accumulators)
-  
+    
     with tf.Session() as sess:
-      logger.debug("started session")
       sess.run(iterator.initializer)
-      logger.debug("initialized iterator, accumulating labels")
+      logger.info("initialized iterator, starting accumulation...")
       while True:
         try:
-          image, (annotation, label) = sess.run(next_scene)
+          scene = sess.run(next_scene)
           for i in range(len(accumulators)):
             aggregates[i] = accumulators[i](scene, aggregates[i])
         except tf.errors.OutOfRangeError:
           break
+    
+    logger.info("finished accumulation")
 
-    return [acc(None, agg) for acc, agg in zip(accumulators, aggregates)]
+    aggregates = [acc(None, agg) for acc, agg in zip(accumulators, aggregates)]
+    if len(aggregates) == 1:
+      return aggregates[0]
+    else:
+      return aggregates
 
 
 """A DataInput object encompasses all of them. The
@@ -422,6 +427,36 @@ class DataAugmenter(Data):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
+    self.labels, self.mean_background = self.accumulate(
+      DataAugmenter.label_accumulator,
+      DataAugmenter.mean_background_accumulator)
+    
+    self.background = DataAugmenter.inpaint_background(self.mean_background)
+    
+  @staticmethod
+  def inpaint_background(background, mode='gaussian'):
+    """Inpaint the negative values in background, depending on mode. Returns the
+    new background.
+
+    mode: ['gaussian']
+    - gaussian: draw from a normal distribution with the same mean and stddev as
+      the rest of the background.
+    
+    """
+
+    if mode != 'gaussian':
+      raise NotImplementedError()
+
+    background = background.copy()
+    indices = background >= 0
+
+    mean = background[indices].mean()
+    std = background[indices].std()
+
+    indices = background < 0
+    background[indices] = np.random.normal(mean, std, size=background[indices].shape)
+    return background
+
 
   @staticmethod
   def label_accumulator(scene, labels):
@@ -435,9 +470,12 @@ class DataAugmenter(Data):
     return labels
     
   @staticmethod
-  def background_accumulator(scene, agg):
+  def mean_background_accumulator(scene, agg):
     """Iterate over the dataset, taking a running average of the pixels where no
     objects exist.
+
+    If a pixel has no value by the end of the accumulation (i.e., an object has
+    remained relatively stationory in every example), it is assigned to -1.
 
     COMMENTS: Need to make a suitable background image or images to draw from, when
     inpainting. This should be based on the whole dataset, under the assumption
@@ -452,8 +490,8 @@ class DataAugmenter(Data):
     """
     if agg is None:
       assert scene is not None
-      background = np.zeros_like(scene[0])
-      n = np.zeros_like(background, dtype=np.float64)
+      background = -np.ones_like(scene[0], dtype=np.float64)
+      n = np.zeros_like(background, dtype=np.int64)
     else:
       background, n = agg
 
@@ -463,14 +501,14 @@ class DataAugmenter(Data):
     image, (annotation, _) = scene
 
     # Update the elements with a running average
-    bg_indices = np.equal(annotation, 0)
-    indices = np.logical_and(np.not_equal(n, 0), bg_indices)
+    bg_indices = np.atleast_3d(np.equal(annotation[:,:,0], 0))
+    indices = np.logical_and(background >= 0, bg_indices)
     n[indices] += 1
     background[indices] = (background[indices] + 
                            (image[indices] - background[indices]) / n[indices])
 
     # initialize the new background elements
-    indices = np.logical_and(np.equal(n, 0), bg_indices)
+    indices = np.logical_and(background < 0, bg_indices)
     background[indices] = image[indices]
     n[indices] += 1
     

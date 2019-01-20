@@ -14,8 +14,7 @@ logger.addHandler(handler)
 import os
 import numpy as np
 import argparse
-import matplotlib.pyplot as plt
-from artifice.utils import docs, dataset, augment
+from artifice.utils import docs, dataset, augment, vis
 from artifice.semantic_segmentation import UNet
 from multiprocessing import cpu_count
 
@@ -63,23 +62,7 @@ def cmd_predict(args):
       if 0 < args.num_examples[0] <= i:
         break
       image, annotation = next(originals)
-      fig, axes = plt.subplots(3,2)
-      axes[0,0].imshow(np.squeeze(image), cmap='gray')
-      axes[0,0].set_title("Original Image")
-      axes[0,1].axis('off')
-      
-      im = axes[1,0].imshow(prediction['logits'][:,:,0], cmap='magma')
-      axes[1,0].set_title("Id=0")
-      fig.colorbar(im, ax=axes[1,0], orientation='vertical')
-      im = axes[1,1].imshow(prediction['logits'][:,:,1], cmap='magma')
-      axes[1,1].set_title("Id=1")
-      fig.colorbar(im, ax=axes[1,1], orientation='vertical')
-
-      axes[2,0].imshow(np.squeeze(annotation))
-      axes[2,0].set_title("Annotation")
-      axes[2,1].imshow(np.squeeze(prediction['annotation']))
-      axes[2,1].set_title("Predicted Annotation")
-      plt.show()
+      vis.show_predict(image, annotation, prediction)
   else:
     raise NotImplementedError("use show")
 
@@ -98,25 +81,10 @@ def cmd_augment(args):
   logger.info("Augmentation (testing purposes)")
   auger = dataset.DataAugmenter(args.input,
                                 num_parallel_calls=args.cores[0])
-  labels = auger.labels
 
   if args.output[0] == 'show':
-    bins = 50
-    fig, axes = plt.subplots(4, 1, sharex=True, sharey=True)
-    axes[0].hist(labels[:,0,1], bins)
-    axes[0].set_title("Sphere 1 X Positions", pad=-25)
-    
-    axes[1].hist(labels[:,0,2], bins)
-    axes[1].set_title("Sphere 1 Y Positions", pad=-25)
-
-    axes[2].hist(labels[:,1,1], bins)
-    axes[2].set_title("Sphere 2 X Positions", pad=-25)
-    
-    axes[3].hist(labels[:,1,2], bins)
-    axes[3].set_title("Sphere 2 Y Positions", pad=-25)
-
-
-    plt.show()
+    vis.show_labels(auger.labels)
+    vis.show_background(auger.background)
   else:
     raise NotImplementedError("use show")
   
