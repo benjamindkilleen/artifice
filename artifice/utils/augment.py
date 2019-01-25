@@ -3,7 +3,7 @@
 import numpy as np
 import itertools
 import functools
-from artifice.utils import img
+from artifice.utils import img, inpaint
 import tensorflow as tf
 import logging
 
@@ -150,14 +150,23 @@ extracting and then re-inserting examples."""
 
 class Translation(Transformation):
   """Translate objects in the image so that their new locations match the
-  locations in new_label.
+  locations in new_label. Uses the inpaint function
+
+  :new_label: 
+  :background: background to inpaint with
 
   """
-  def __init__(self, new_label):
+  def __init__(self, new_label, inpainter=inpaint.gaussian, **kwargs):
     def transform(scene):
-      pass                      # TODO: this
+      image, (annotation, label) = scene
+      # get indices associated with the annotation at each position in the label
+      # once we have the indices, extract values with gather_nd
+      # reinsert into image with scatter_update or something
+      # and inpaint the original indices
+      
     super().__init__(transform)
     
+  
 
 
 # Transformation instances.

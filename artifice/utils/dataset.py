@@ -432,11 +432,11 @@ class DataAugmenter(Data):
       DataAugmenter.label_accumulator,
       DataAugmenter.mean_background_accumulator)
     
-    self.background = DataAugmenter.inpaint_background(self.mean_background)
+    self.background = DataAugmenter.fill_background(self.mean_background)
     
   @staticmethod
-  def inpaint_background(background, mode='gaussian'):
-    """Inpaint the negative values in background, depending on mode. Returns the
+  def fill_background(background, mode='gaussian'):
+    """Fill the negative values in background, depending on mode. Returns the
     new background.
 
     mode: ['gaussian']
@@ -475,17 +475,8 @@ class DataAugmenter(Data):
     objects exist.
 
     If a pixel has no value by the end of the accumulation (i.e., an object has
-    remained relatively stationory in every example), it is assigned to -1.
-
-    COMMENTS: Need to make a suitable background image or images to draw from, when
-    inpainting. This should be based on the whole dataset, under the assumption
-    that the camera never moves, although objects in the image do. Maybe there
-    should be a coupled background images produced? We could go through the
-    dataset in order, until we have accumulated enough images to get a good
-    background for all pixels, save that, etc.
-
-    Better yet, can take a running average for all the pixels? This can be a
-    good place to start.
+    remained relatively stationory in every example), it is assigned to -1. Some
+    post-processing is therefore expected.
 
     """
     if agg is None:
@@ -513,3 +504,7 @@ class DataAugmenter(Data):
     n[indices] += 1
     
     return background, n
+
+  @staticmethod
+  def median_background_accumulator(scene, agg):
+    raise NotImplemented("TODO: median_background_accumulator")
