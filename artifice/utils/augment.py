@@ -3,7 +3,7 @@
 import numpy as np
 import itertools
 import functools
-from artifice.utils import img
+from artifice.utils import img, inpaint
 import tensorflow as tf
 import logging
 
@@ -27,7 +27,7 @@ class Transformation():
 
   """
 
-  def __init__(self, transform=lambda *scene : scene):
+  def __init__(self, transform=lambda scene : scene):
     """
     :transforms: a transformation function or an iterable of them. Ignored if
       object has a "transform" method.
@@ -42,10 +42,13 @@ class Transformation():
     else:
       raise ValueError()
 
-  def __call__(self, *scene):
+  def __call__(self, scene):
     for transform in self._transforms:
-      scene = transform(*scene)
+      scene = transform(scene)
     return scene
+
+  def apply(self, dataset, num_parallel_calls=None):
+    return dataset.map(self, num_parallel_calls=num_parallel_calls)
 
   def __add__(self, other):
     return Transformation(self._transforms + other._transforms)
@@ -67,27 +70,56 @@ Transformation directly.
 """
 class SimpleTransformation(Transformation):
   """Applies the same tensor function to both image and annotation, clipping image
-  values."""
-  def __init__(self, function):
-    def transform(image, annnotation):
-      image = function(image)
+  values. Applies a different transform function to the labels
+
+  """
+  def __init__(self, image_transform, label_transform):
+    def transform(scene):
+      image, (annotation, label)
+      image = image_transform(image)
       image = tf.clip_by_value(image,
                                tf.constant(0, dtype=image.dtype),
                                tf.constant(1, dtype=image.dtype))
-      return image, function(annotation)
+      return image, (image_transform(annotation), label_transform(label))
     super().__init__(transform)
-
 
 class ImageTransformation(Transformation):
-  """Applies a tensor function to the image (and clips), leaving annotation."""
+  """Applies a tensor function to the image (and clips values), leaving annotation
+  and label.
+
+  """
   def __init__(self, function):
-    def transform(image, annotation):
+    def transform(scene):
+      image, (annotation, label) = scene
       image = function(image)
       image = tf.clip_by_value(image,
                                tf.constant(0, dtype=image.dtype),
                                tf.constant(1, dtype=image.dtype))
-      return image, annotation
+      return image, (annotation, label)
     super().__init__(transform)
+
+
+class FlipLeftRight(Transformation):
+  def __init__(self):
+    def transform(scene):
+      image, (annotation, label) = scene
+      image = tf.flip_left_right(image)
+      annotation = tf.flip_left_right(annotation)
+      label[:,2] = image.shape[1] - label[:,2]
+      return image, (annotation, label)
+    super().__init__(transform)
+      
+
+class FlipUpDown(Transformation):
+  def __init__(self):
+    def transform(scene):
+      image, (annotation, label) = scene
+      image = tf.flip_up_down(image)
+      annotation = tf.flip_up_down(annotation)
+      label[:,1] = image.shape[0] - label[:,1]
+      return image, (annotation, label)
+    super().__init__(transform)
+
 
 """The following are transformations that must be instantiated with a
 parameter separate from the arguments given to the transformation function."""
@@ -113,49 +145,78 @@ class AdjustMeanBrightness(ImageTransformation):
     super().__init__(transform)
 
 
+"""The following are transformations that introduce truly novel examples by
+extracting and then re-inserting examples."""
+
+class Translation(Transformation):
+  """Translate objects in the image so that their new locations match the
+  locations in new_label. Uses the inpaint function
+
+  :new_label: 
+  :background: background to inpaint with
+
+  """
+  def __init__(self, new_label, inpainter=inpaint.gaussian, **kwargs):
+    def transform(scene):
+      image, (annotation, label) = scene
+      # get indices associated with the annotation at each position in the label
+      # once we have the indices, extract values with gather_nd
+      # reinsert into image with scatter_update or something
+      # and inpaint the original indices
+      
+    super().__init__(transform)
+    
+  
+
+
 # Transformation instances.
 identity_transformation = Transformation()
-flip_left_right_transformation = SimpleTransformation(tf.image.flip_left_right)
-flip_up_down_transformation = SimpleTransformation(tf.image.flip_up_down)
+flip_left_right_transformation = FlipLeftRight()
+flip_up_down_transformation = FlipUpDown()
 invert_brightness_transformation = ImageTransformation(lambda image : 1 - image)
 
 
 
 class Augmentation():
-  """An augmentation is a callable that takes a tf.data.Dataset and applies an
-  augmentation to its elements, returning a larger tf.data.Dataset with the
-  original elements, as well as any added ones, according to the provided
-  Transformation object(s).
+  """An augmentation is a callable that takes a tf.data.Dataset and applies
+  transformations to its elements, returning a tf.data.Dataset with the
+  transformed elements.
 
   The base class performs transformations by mapping them over the whole
   dataset, so the resulting dataset is an integer multiple times
   larger. Subclasses may change this behavior (e.g. BoundaryAwareAugmentation or
   SelectiveAugmentation).
 
-  Augmentations can be added together using the "+" operator. This applies each
-  augmentation to the original images separately, then concatenates
-  them. Augmentations can also be "multiplied" (in a cartesian, compositional
-  sense) together. This applies aug1 to every output of aug2.
+  Augmentations can be added together using the "+" operator. This makes a new
+  Augmentation with the transformations of both. Augmentations can also be
+  "multiplied" (in a cartesian, compositional sense) together. This applies aug1
+  to every output of aug2.
 
   Ideally, complex augmentations should be built up from small augmentations
-  through addition or multiplication.
+  through addition or multiplication. To preserve the original dataset, build up
+  augmentations by adding onto the identity, e.g.
+
+  aug = (Augmentation()+Augmentation(t1))*(Augmentation()+Augmentation(t2+t3))
+
+  will take a dataset d and output:
+
+  {d, t1(d), (t2+t3)(d), (t1+t2+t3)(d)}
 
   """
 
-  def __init__(self, transformation=None, num_parallel_calls=None):
+  def __init__(self, transformation=None, 
+               num_parallel_calls=None):
     """
     :transformation: a Transformation object, or an iterable of them. Default
       (None) creates an identity augmentation.
     
-    
-    TODO: allow for no-identity augmentations?
     """
     if transformation is None:
       self._transformations = [identity_transformation]
     elif issubclass(type(transformation), Transformation):
-      self._transformations = [identity_transformation] + [transformation]
+      self._transformations = [transformation]
     elif hasattr(transformation, '__iter__'):
-      self._transformations = [identity_transformation] + list(transformation)
+      self._transformations = list(transformation)
     else:
       raise ValueError()    
 
@@ -168,10 +229,10 @@ class Augmentation():
 
   def __add__(self, other):
     """Adds the transformations of OTHER, effectively combining the two
-    augmentations without any composition. Removes the identity from the other.
+    augmentations without any composition.
 
     """
-    return Augmentation(self._transformations[1:] + other._transformations[1:])
+    return Augmentation(self._transformations + other._transformations)
   
   def __mul__(self, other):
     """Composes each transformation in other onto the end of each transformation in
@@ -189,13 +250,16 @@ class Augmentation():
       return self.__add__(other)
 
   def __call__(self, dataset):
-    """Take a tf.data.Dataset object and apply transformations to it."""
-    # TODO: don't skip over identity, by convention?
-    for transformation in self._transformations[1:]:
-      dataset = dataset.concatenate(dataset.map(transformation,
-                                                self.num_parallel_calls))
+    """Take a tf.data.Dataset object and apply transformations to it.
+
+    """
+
+    new_dataset = tf.data.Dataset()
+    for transformation in self._transformations:
+      new_dataset = new_dataset.concatenate(
+        transformation.apply(dataset, self.num_parallel_calls))
       
-    return dataset
+    return new_dataset
 
   def __len__(self):
     return len(self._transformations)
@@ -203,8 +267,8 @@ class Augmentation():
 
 # instantiations of Augmentations
 identity = Augmentation()
-brightness = sum([Augmentation(AdjustMeanBrightness(m)) 
-                  for m in [0.2, 0.4, 0.6, 0.8]])
+brightness = identity + sum([Augmentation(AdjustMeanBrightness(m)) 
+                             for m in [0.2, 0.4, 0.6, 0.8]])
 
 premade = {
   'identity': identity,

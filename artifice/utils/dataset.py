@@ -60,11 +60,14 @@ def proto_from_scene(scene):
   example = tf.train.Example(features=features)
   return example.SerializeToString()
 
+
 def proto_from_tensor_scene(scene):
   """Create a proto string holding the given scene properly. Useful for writing
   tfrecord from tf.data.Dataset objects.
   """
-
+  image, (annotation, label) = scene
+  raise NotImplementedError("implement proto_from_tensor_scene")
+  
 
 def tensor_scene_from_proto(proto):
   """Parse the serialized string PROTO into tensors (IMAGE, ANNOTATION).
@@ -216,39 +219,42 @@ class Data(object):
     write_op = writer.write(dataset)
     with tf.Session() as sess:
       sess.run(write_op)
-
-  def get_labels(self):
+    
+  def accumulate(self, *accumulators):
     """Given a tf.data.dataset with scene entries (image, (annotation, label)),
-    accumulate the labels.
-    
-    Each label should have shape (num_objects, N), so the accumulated labels will
-    have shape (num_images, num_objects, N).
-    
+    accumulate the labels using given functions.
+
+    An accumulator function should take a scene and an aggregate object. On the
+    first call, aggregate will be None. Afterward, each accumulator will be
+    passed the output from its previous call. Finally, the final call, scene
+    will be None.
+
     """
 
     iterator = self._dataset.make_initializable_iterator()
     next_scene = iterator.get_next()
     logger.debug("made label iterator (?)")
     
-    labels = []
-  
+    aggregates = [None] * len(accumulators)
+    
     with tf.Session() as sess:
-      logger.debug("started session")
       sess.run(iterator.initializer)
-      logger.debug("initialized iterator, accumulating labels")
-      i = 0
+      logger.info("initialized iterator, starting accumulation...")
       while True:
         try:
-          image, (annotation, label) = sess.run(next_scene)
-          labels.append(label)
-          i += 1
+          scene = sess.run(next_scene)
+          for i in range(len(accumulators)):
+            aggregates[i] = accumulators[i](scene, aggregates[i])
         except tf.errors.OutOfRangeError:
-          logger.debug(f"finished; accumulated {i} entries")
           break
+    
+    logger.info("finished accumulation")
 
-    return np.array(labels)
-
-
+    aggregates = [acc(None, agg) for acc, agg in zip(accumulators, aggregates)]
+    if len(aggregates) == 1:
+      return aggregates[0]
+    else:
+      return aggregates
 
 
 """A DataInput object encompasses all of them. The
@@ -407,8 +413,6 @@ Ideas:
 """
 
 
-
-
 class DataAugmenter(Data):
   """The DataAugmenter object interfaces with tfrecord files for a labeled
   dataset to create a new augmentation set (not including the originals).
@@ -424,7 +428,83 @@ class DataAugmenter(Data):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.labels = self.get_labels()
+    self.labels, self.mean_background = self.accumulate(
+      DataAugmenter.label_accumulator,
+      DataAugmenter.mean_background_accumulator)
     
+    self.background = DataAugmenter.fill_background(self.mean_background)
+    
+  @staticmethod
+  def fill_background(background, mode='gaussian'):
+    """Fill the negative values in background, depending on mode. Returns the
+    new background.
 
-  
+    mode: ['gaussian']
+    - gaussian: draw from a normal distribution with the same mean and stddev as
+      the rest of the background.
+    
+    """
+
+    if mode != 'gaussian':
+      raise NotImplementedError()
+
+    background = background.copy()
+    indices = background >= 0
+
+    mean = background[indices].mean()
+    std = background[indices].std()
+
+    indices = background < 0
+    background[indices] = np.random.normal(mean, std, size=background[indices].shape)
+    return background
+
+  @staticmethod
+  def label_accumulator(scene, labels):
+    if labels is None:
+      labels = []
+    if scene is None:
+      return np.array(labels)
+
+    _, (_, label) = scene
+    labels.append(label)
+    return labels
+    
+  @staticmethod
+  def mean_background_accumulator(scene, agg):
+    """Iterate over the dataset, taking a running average of the pixels where no
+    objects exist.
+
+    If a pixel has no value by the end of the accumulation (i.e., an object has
+    remained relatively stationory in every example), it is assigned to -1. Some
+    post-processing is therefore expected.
+
+    """
+    if agg is None:
+      assert scene is not None
+      background = -np.ones_like(scene[0], dtype=np.float64)
+      n = np.zeros_like(background, dtype=np.int64)
+    else:
+      background, n = agg
+
+    if scene is None:
+      return background
+
+    image, (annotation, _) = scene
+
+    # Update the elements with a running average
+    bg_indices = np.atleast_3d(np.equal(annotation[:,:,0], 0))
+    indices = np.logical_and(background >= 0, bg_indices)
+    n[indices] += 1
+    background[indices] = (background[indices] + 
+                           (image[indices] - background[indices]) / n[indices])
+
+    # initialize the new background elements
+    indices = np.logical_and(background < 0, bg_indices)
+    background[indices] = image[indices]
+    n[indices] += 1
+    
+    return background, n
+
+  @staticmethod
+  def median_background_accumulator(scene, agg):
+    raise NotImplemented("TODO: median_background_accumulator")
