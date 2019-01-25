@@ -43,8 +43,11 @@ def open_as_array(fname):
     raise NotImplementedError("Cannot create image mode '{}'".format(im.mode))
   return image
 
-
 def save(fname, image):
   """Save the array image to png in fname."""
   im = Image.fromarray(image)
   im.save(fname)
+
+
+
+

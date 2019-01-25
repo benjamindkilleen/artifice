@@ -233,8 +233,15 @@ class ExperimentSphere(ExperimentObject):
     return experiment.project(self.center)
 
   def compute_label(self, experiment):
-    return self.compute_location(experiment)
-    
+    """Returns:
+    label: [semantic_label, x pos, y pos]
+
+    TODO: [semantic_label, x pos, y pos, theta, scale]
+    """
+    label = np.empy((3,), dtype=np.float32)
+    label[0] = self.semantic_label
+    label[1:3] = self.compute_location(experiment)
+    return label
   
 class Experiment:
   """An Experiment contains information for generating a dataset, which is done
@@ -425,8 +432,8 @@ class Experiment:
     the distance at every point inside an object's annotation.
 
     The label has a row for every object in the image (which can get flattened
-    for a network). The first element of each row always marks whether the
-    object is present in the image.
+    for a network). The first element of each row contains the semantic label of
+    the object, if it is in the example, or -1 otherwise.
 
     TODO: currently, only modifies masks due to occlusion by other objects in
     experiment_objects. This is usually sufficient, but in some cases, occlusion
@@ -440,11 +447,10 @@ class Experiment:
     object_distance = INFINITY * np.ones(annotation.shape[:2], dtype=np.float64)
     
     for i, obj in enumerate(self.experiment_objects):
-      location = obj.compute_location(self)
-      label[i, 0] = 1
-      label[i, 1:3] = location
+      label[i] = obj.compute_label(self)
       rr, cc, dd = obj.compute_mask(self)
       for r, c, d in zip(rr, cc, dd):
+        # TODO: overwrite objects in the background, if they're not visible.
         if d < object_distance[r, c]:
           object_distance[r, c] = d
           annotation[r, c, 0] = obj.semantic_label

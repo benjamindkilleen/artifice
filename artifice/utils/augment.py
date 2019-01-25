@@ -148,26 +148,67 @@ class AdjustMeanBrightness(ImageTransformation):
 """The following are transformations that introduce truly novel examples by
 extracting and then re-inserting examples."""
 
-class Translation(Transformation):
-  """Translate objects in the image so that their new locations match the
-  locations in new_label. Uses the inpaint function
-
-  :new_label: 
-  :background: background to inpaint with
+class ObjectTransformation(Transformation):
+  """ObjectTransformations are meant to be applied in a single pass-through of the
+  data and then saved. They are intended to be targeted at specific examples,
+  although this is not required.
 
   """
-  def __init__(self, new_label, inpainter=inpaint.gaussian, **kwargs):
+
+
+class Translation(ObjectTransformation):
+  """Translate objects in the image so that their new locations match the
+  locations in new_label. This involves a new translation for each object, in
+  the order of the new labeling. Inpaints with the given inpainter.
+
+  :new_label: required
+  :inpainter: background to inpaint with
+  :object_order: iterable permutation of indices into new_label, determining
+    order of drawn translated object, back-to-front. 
+    Default: same order as labeling.
+  :name: name of the operation, default: translation
+
+  Additional keyword args passed to inpainter as appropriate.
+
+  """
+  def __init__(self, new_label, inpainter=inpaint.background, **kwargs):
+    self.name = kwargs.get('name', self.__class__.__name__)
+    self.object_order = kwargs.get('object_order', range(label.shape[0]))
+
     def transform(scene):
       image, (annotation, label) = scene
+      new_image = tf.identity(image)
+      new_annotation = tf.identity(annotation)
+      for i in self.object_order:
+        indices = tfimg.get_component_indices(annotation, label[i])
+        
+        location = label[i, 1:3]
+        new_location = new_label[i, 1:3]
+        indices_update = tf.cast(
+          new_location - location, tf.int64).reshape([1,1,2])
+        new_indices = tfimg.get_inside(indices + indices_update, image)
+        
+        image_values = tf.gather_nd(image, indices)
+        new_image = inpainter(new_image, **kwargs)
+        new_image = scatter_update(new_image, new_indices, 
+                                   image_values, name=self.name)
+        
+        annotation_values = tf.gather_nd(annotation, indices)
+        new_annotation = inpaint.annotation(new_annotation, indices)
+        new_annotation = scatter_update(new_annotation, new_indices, 
+                                        annotation_values, 
+                                        name='annotation_' + self.name)
+        # TODO: go over this function, check that overly connected components
+        # are being dealt with properly, if that's even necessary. Could just
+        # stop as soon as identical components are detected? That would work.
+
       # get indices associated with the annotation at each position in the label
       # once we have the indices, extract values with gather_nd
       # reinsert into image with scatter_update or something
       # and inpaint the original indices
-      
-    super().__init__(transform)
-    
-  
+      return new_image, (new_annoation, new_label)
 
+    super().__init__(transform)
 
 # Transformation instances.
 identity_transformation = Transformation()
