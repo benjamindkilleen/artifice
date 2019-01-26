@@ -36,7 +36,7 @@ def background(image, indices, **kwargs):
 
   """
   background = kwargs.get(
-    'background', tf.fill(image.shape, tf.constant(0, dtype=image.dtype)))
+    'background', tf.constant(0, image.dtype, image.shape))
   name = kwargs.get('name', 'inpaint_background')
 
   updates = background.gather_nd(indices)

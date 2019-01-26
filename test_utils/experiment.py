@@ -233,14 +233,18 @@ class ExperimentSphere(ExperimentObject):
     return experiment.project(self.center)
 
   def compute_label(self, experiment):
-    """Returns:
-    label: [semantic_label, x pos, y pos]
+    """Computes the label for the object
+    :experiment: the Experiment containing this object
 
-    TODO: [semantic_label, x pos, y pos, theta, scale]
+    Returns: array([semantic_label, x pos, y pos, theta, scale])
+
+    TODO: 
     """
-    label = np.empy((3,), dtype=np.float32)
+    label = np.empy((self.label_dimension,), dtype=np.float32)
     label[0] = self.semantic_label
     label[1:3] = self.compute_location(experiment)
+    label[3] = 0
+    label[4] = 1
     return label
   
 class Experiment:
