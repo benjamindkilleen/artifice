@@ -36,13 +36,13 @@ class Augmentation():
 
   """
 
-  def __init__(self, transformation=None, 
-               num_parallel_calls=None):
+  def __init__(self, **kwargs):
     """
-    :transformation: a Transformation object, or an iterable of them. Default
+    :param transformation: a Transformation object, or an iterable of them. Default
       (None) creates an identity augmentation.
     
     """
+    transformation = kwargs.get('transformation')
     if transformation is None:
       self._transformations = [identity_transformation]
     elif issubclass(type(transformation), Transformation):
@@ -52,7 +52,7 @@ class Augmentation():
     else:
       raise ValueError()    
 
-    self.num_parallel_calls = num_parallel_calls
+    self.num_parallel_calls = kwargs.get('num_parallel_calls')
     
 
   def set_num_parallel_calls(self, num_parallel_calls):
@@ -95,6 +95,8 @@ class Augmentation():
 
   def __len__(self):
     return len(self._transformations)
+
+
 
 
 # instantiations of simple Augmentations

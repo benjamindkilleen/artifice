@@ -10,7 +10,6 @@ Returns: the inpainted image.
 """
 
 import tensorflow as tf
-from artifice.utils import tfimg
 
 def gaussian(image, indices, **kwargs):
   """Inpaints with values drawn from a gaussian distribution, clipping by

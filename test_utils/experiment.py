@@ -34,7 +34,13 @@ INFINITY = 10e9
 
 
 def normalize(X):
-  """Return normalized 1D vector X"""
+  """Normalize a vector.
+
+  :param X: 1-D numpy vector
+  :returns: normalized vector
+  :rtype: same as X
+
+  """
   X = np.array(X)
   assert(len(X.shape) == 1)
   return X / np.linalg.norm(X)
@@ -48,8 +54,13 @@ def perpendicular(X):
                              X[0] - X[1]]))
 
 def quadratic_formula(a,b,c):
-  """Return the two solutions according to the quadratic formula. If no
-  real solutions exist, return None.
+  """Return the two solutions according to the quadratic formula. 
+
+  :param a: 
+  :param b: 
+  :param c: 
+  :returns: two real solutions, or None
+
   """
   sqrt_term = b**2 - 4*a*c
   if sqrt_term < 0:
@@ -63,7 +74,6 @@ class DynamicObject:
   objects in a scene which change from image to image but are not being tracked.
   The vapory object itself is created on every __call__().
 
-  args:
   * vapory_object: the vapory class this ExperimentObject represents.
   * object_args: either a tuple, containing all required arguments for creating
     vapory_object, or a function which creates this tuple (allowing for
@@ -78,6 +88,14 @@ class DynamicObject:
 
   """
   def __init__(self, vapory_object, object_args, *args, **kwargs):
+    """FIXME! briefly describe function
+
+    :param vapory_object: 
+    :param object_args: 
+    :returns: 
+    :rtype: 
+
+    """
     self.vapory_object = vapory_object
     
     if callable(object_args):
@@ -236,15 +254,15 @@ class ExperimentSphere(ExperimentObject):
     """Computes the label for the object
     :experiment: the Experiment containing this object
 
-    Returns: array([semantic_label, x pos, y pos, theta, scale])
+    Returns: array([semantic_label, x pos, y pos, theta, x_scale, y_scale])
 
-    TODO: 
     """
     label = np.empy((self.label_dimension,), dtype=np.float32)
     label[0] = self.semantic_label
     label[1:3] = self.compute_location(experiment)
     label[3] = 0
     label[4] = 1
+    label[5] = 1
     return label
   
 class Experiment:
@@ -616,6 +634,12 @@ def annotation_diff(image, annotation):
   return np.not_equal(bin_image, bin_annotation)
 
 def test():
+  """FIXME! briefly describe function
+
+  :returns: 
+  :rtype: 
+
+  """
   color = lambda col: vapory.Texture(vapory.Pigment('color', col))
   width = 500
   
