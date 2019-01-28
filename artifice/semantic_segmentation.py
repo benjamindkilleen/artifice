@@ -348,7 +348,6 @@ class UNet(SemanticModel):
                             up_deconv2], axis=3)
     logger.debug(f"up_concat2: {up_concat2.shape}")
 
-
     # block level 1
     up_conv1_1 = self.conv(up_concat2, filters=64)
     up_conv1_2 = self.conv(up_conv1_1, filters=64)

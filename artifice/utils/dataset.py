@@ -420,8 +420,6 @@ class DataAugmenter(Data):
   It needs:
   - an initial processing ability, either internal or using a module-level
     function (more likely).
-  - the ability to apply transformations to select examples of the dataset. Not
-    sure how that's going to happen.
   - a method to create a DataInput object (or TrainDataInput) using all the
     tfrecords it has incorporated or created.
   """
