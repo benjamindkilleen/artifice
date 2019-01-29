@@ -82,6 +82,8 @@ def cmd_augment(args):
   auger = dataset.DataAugmenter(args.input,
                                 num_parallel_calls=args.cores[0])
 
+  auger.run()
+
   if args.output[0] == 'show':
     # vis.show_labels(auger.labels)
     vis.show_background(auger.background)

@@ -178,64 +178,113 @@ def load_dataset(record_name,
   dataset = tf.data.TFRecordDataset(record_name)
   return dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
 
+def save_dataset(record_name, dataset,
+                 encode_entry=proto_from_tensor_scene):
+  """FIXME! briefly describe function
 
-  
+  :param record_name: 
+  :param dataset: 
+  :param encode_entry: 
+  :returns: 
+  :rtype: 
+
+  """
+  logger.info(f"Writing dataset to {record_name}")
+  encoded_dataset = dataset.map(encode_entry,
+                                num_parallel_calls=self.num_parallel_calls)
+  writer = tf.data.experimental.TFRecordWriter(record_name)
+  write_op = writer.write(encoded_dataset)
+  with tf.Session() as sess:
+    sess.run(write_op)
+
+
 class Data(object):
   """A Data object contains scenes, as defined above. It's mainly useful as a
-  way to save and then distribute data."""
+  way to save and then distribute data.
+
+  Attributes:
+  :_dataset: the dataset associated with the object, including any
+    augmentations with ObjectTransformations.
+  :_original_dataset: the dataset without any augmentations. This is used mainly
+    for DataAugmenter, which will discard the _dataset object.
+
+  Data subclasses should be instantiated from one another in chains, rarely if
+  ever invoking the Data class directly. Instead, create a DataAugmenter by
+  passing it a DataInput or TrainDataInput object. After running the
+  DataAugmenter instance (either by run() or __call__()).
+
+  Subclasses which do not want to accept keyword arguments from a parent should
+  overwrite them with the **kwargs passed to them directly rather than using
+  `self._kwargs`, as this is left alone.
+
+  Data objects that support augmentation (mainly TrainDataInput and
+  DataAugmenter) use the self.augmentation object. Data objects pass '+' and
+  '*' operations onto their augmentations. The augmentation is not preserved
+  when transforming between Data subclasses (unless explicitly passed as a
+  keyword arg).
+
+  """
+
   def __init__(self, data, **kwargs):
     """args:
-    :data: a tf.data.Dataset OR tfrecord file name(s) OR another Data
+    :param data: a tf.data.Dataset OR tfrecord file name(s) OR another Data
       subclass. In this case, the other object's _dataset is adopted, allows
       kwargs to be overwritten.
     """
     if issubclass(type(data), Data):
-      self._kwargs = data._kwargs.update(kwargs)
+      self._kwargs = data._kwargs.copy()
+      self._kwargs.update(kwargs)
     else:
-      self._kwargs = kwargs
+      self._kwargs = kwargs.copy()
 
     self.batch_size = self._kwargs.get('batch_size', 1)
     self.num_parallel_calls = self._kwargs.get('num_parallel_calls', None)
     self.parse_entry = self._kwargs.get('parse_entry', None)
+    self.augmentation = kwargs.get('augmentation', augment.identity)
 
     if issubclass(type(data), Data):
       self._dataset = data._dataset
+      self._original_dataset = getattr(data, '_original_dataset', data._dataset)
     elif issubclass(type(data), tf.data.Dataset):
-      self._dataset = dataset
+      self._dataset = self._original_dataset = dataset
     elif type(data) == str or hasattr(data, '__iter__'):
-      self._dataset = load_dataset(data,
-                                   parse_entry=self.parse_entry,
-                                   num_parallel_calls=self.num_parallel_calls)
+      self._dataset = self.original_dataset = load_dataset(
+        data, parse_entry=self.parse_entry, 
+        num_parallel_calls=self.num_parallel_calls)
     else:
-      raise ValueError(f"unrecognized data type '{type(data)}'")
+      raise ValueError(f"unrecognized type '{type(data)}'")
 
-    
-  def save(self, record_name, encode_entry=proto_from_tensor_scene):
+
+  def save(self, record_name, **kwargs):
     """Save the dataset to record_name."""
-    logger.info(f"Writing dataset to {record_name}")
-    dataset = self._dataset.map(encode_entry,
-                                num_parallel_calls=self.num_parallel_calls)
-    writer = tf.data.experimental.TFRecordWriter(record_name)
-    write_op = writer.write(dataset)
-    with tf.Session() as sess:
-      sess.run(write_op)
-    
-  def accumulate(self, *accumulators):
-    """Given a tf.data.dataset with scene entries (image, (annotation, label)),
-    accumulate the labels using given functions.
+    save_dataset(record_name, self._dataset, **kwargs)
 
-    An accumulator function should take a scene and an aggregate object. On the
-    first call, aggregate will be None. Afterward, each accumulator will be
-    passed the output from its previous call. Finally, the final call, scene
-    will be None.
+
+  def save_original(self, record_name, **kwargs):
+    """Save the original dataset to record_name."""
+    save_dataset(record_name, self._original_dataset, **kwargs)
+    
+
+  def accumulate(self, accumulators):
+    """Eagerly runs the accumulators across the original_dataset to gather metadata.
+    
+    An accumulator function should take a `scene` and an `aggregate` object. On
+    the first call, `aggregate` will be None. Afterward, each accumulator will
+    be passed the output from its previous call as `scene`. On the final call,
+    `scene` will be None, allowing for post-processing.
+    
+    :param accumulators: a dictionary mapping names to accumulator functions
+    :returns: aggregates from the accumulations, with the same keys as
+      `accumulators`.
+    :rtype: dict
 
     """
 
-    iterator = self._dataset.make_initializable_iterator()
+    iterator = self._original_dataset.make_initializable_iterator()
     next_scene = iterator.get_next()
     logger.debug("made label iterator (?)")
     
-    aggregates = [None] * len(accumulators)
+    aggregates = dict.fromkeys(accumulators.keys())
     
     with tf.Session() as sess:
       sess.run(iterator.initializer)
@@ -243,31 +292,58 @@ class Data(object):
       while True:
         try:
           scene = sess.run(next_scene)
-          for i in range(len(accumulators)):
-            aggregates[i] = accumulators[i](scene, aggregates[i])
+          for k, accumulator in accumulators.items():
+            aggregates[k] = accumulator(scene, aggregates[k])
         except tf.errors.OutOfRangeError:
           break
     
     logger.info("finished accumulation")
+    for k, accumulator in accumulators.items():
+      aggregates[k] = accumulator(None, aggregates[k])
+    return aggregates
 
-    aggregates = [acc(None, agg) for acc, agg in zip(accumulators, aggregates)]
-    if len(aggregates) == 1:
-      return aggregates[0]
+  def add_augmentation(self, aug):
+    self.augmentation += aug
+    return self
+
+  def __add__(self, other):
+    if issubclass(type(other), augment.Augmentation):
+      return self.add_augmentation(aug)
+    elif issubclass(type(other), Data):
+      return self.add_augmentation(other.augmentation)
     else:
-      return aggregates
+      raise ValueError(f"unrecognized type '{type(other)}'")
+
+  def __radd__(self, other):
+    if other == 0:
+      return self
+    else:
+      return self.__add__(other)
+
+  def mul_augmentation(self, aug):
+    self.augmentation *= aug
+    return self
+
+  def __mul__(self, other):
+    if issubclass(type(other), augment.Augmentation):
+      return self.mul_augmentation(aug)
+    elif issubclass(type(other), Data):
+      return self.mul_augmentation(other.augmentation)
+    else:
+      raise ValueError(f"unrecognized type '{type(aug)}'")
 
 
-"""A DataInput object encompasses all of them. The
-__call__ method for a Data returns an iterator function over the associated
-tf.Dataset.
-* Data objects can be used for evaluation, testing, or prediction. They iterate
-once over the dataset.
-* TrainData is meant for training. It's __call__ method returns an input
-  function that includes shuffling, repeating, etc. It also allows for
-  augmentation.
-
-"""
 class DataInput(Data):
+  """A DataInput object encompasses all of them. The
+  __call__ method for a Data returns an iterator function over the associated
+  tf.Dataset.
+  * Data objects can be used for evaluation, testing, or prediction. They iterate
+    once over the dataset.
+  * TrainData is meant for training. It's __call__ method returns an input
+    function that includes shuffling, repeating, etc. It also allows for
+    augmentation.
+  
+  """
   def __init__(self, *args, **kwargs):
     """
     :batch_size:
@@ -289,14 +365,16 @@ class DataInput(Data):
   def __call__(self, *args, **kwargs):
     return self.make_input(*args, **kwargs)
 
-"""TrainDataInput is where augmentation takes place. New augmentations can be
-added to it using the add_augmentation() method, or the "+" operator.
-"""
+
 class TrainDataInput(DataInput):
+  """TrainDataInput is where in-place augmentation takes place. New augmentations
+  can be added to it using the add_augmentation() method, or the "+" operator.
+
+  """
+  
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.num_shuffle = kwargs.get('num_shuffle', 10000)
-    self.augmentation = kwargs.get('augmentation', augment.identity)
 
   def make_input(self, num_epochs=1):
     return lambda : (
@@ -308,36 +386,6 @@ class TrainDataInput(DataInput):
       .make_one_shot_iterator()
       .get_next())
 
-  def add_augmentation(self, aug):
-    self.augmentation += aug
-    return self
-
-  def __add__(self, other):
-    if issubclass(type(other), augment.Augmentation):
-      return self.add_augmentation(aug)
-    elif issubclass(type(other), TrainDataInput):
-      return self.add_augmentation(other.augmentation)
-    else:
-      raise ValueError(f"unrecognized type '{type(other)}'")
-
-  def __radd__(self, other):
-    if other == 0:
-      return self
-    else:
-      return self.__add__(other)
-
-  def mul_augmentation(self, aug):
-    self.augmentation *= aug
-    return self
-
-  def __mul__(self, other):
-    if issubclass(type(other), augment.Augmentation):
-      return self.mul_augmentation(aug)
-    elif issubclass(type(other), TrainDataInput):
-      return self.mul_augmentation(other.augmentation)
-    else:
-      raise ValueError(f"unrecognized type '{type(aug)}'")
-
 
 def load_data_input(record_name,
                     input_classes=[DataInput],
@@ -348,19 +396,19 @@ def load_data_input(record_name,
   """Load the tfrecord as a DataInput object. By default, parses
   scenes. Generalizes load().
   
-  args:
-  :record_name: one or more tfrecord files.
-  :parse_entry: a function parsing each raw entry in the loaded dataset
-  :num_parallel_calls: see tf.data.Dataset.map
-  :input_classes: list of DataInput or a subclass thereof, determining the type
+  :param record_name: one or more tfrecord files.
+  :param parse_entry: a function parsing each raw entry in the loaded dataset
+  :param num_parallel_calls: see tf.data.Dataset.map
+  :param input_classes: list of DataInput or a subclass thereof, determining the type
     of each data that will be loaded from this tfrecord. A type of None adds
     None to the list of data_inputs (useful for standardizing calls to this
     function)
-  :input_sizes: list of sizes corresponding to input_classes. A value of -1
+  :param input_sizes: list of sizes corresponding to input_classes. A value of -1
     takes the remainder of the dataset. Note that a NoneType input class still
     skips data, so be sure to enter 0 for these entries.
-  :kwargs: additional keyword args for each DataInput objects. 
+  :param **kwargs: additional keyword args for each DataInput objects. 
     TODO: allow passing separate kwargs to each object.
+  :returns: list of DataInput objects.
   """
   dataset = load_dataset(record_name, parse_entry=parse_entry,
                          num_parallel_calls=num_parallel_calls)
@@ -387,51 +435,103 @@ def load(record_name, train=False, **kwargs):
     return load_data_input(record_name, **kwargs)[0]
 
 
-"""A DataAugmenter object should work with augmentations to create new tfrecord
-files. It belongs in the dataset module because it should handle all the
-reading/writing of data to files. Perhaps this should be the object that
-processes data initially (i.e. processes label-space, inpainting stuff), then
-the augmentation object can use that data??? Maybe, but probably
-not. We can use transformation objects, maybe, except that those take
-tensors. We'd just have to use eager execution, I guess. So we can still use
-individual transformations, composed or otherwise, and apply them selectively to
-examples in the dataset.
-
-It doesn't matter too much if this step takes a while to run. But it does
-prevent training from happening while it's running? Yeah, probably. Whatever.
-
-Don't actually need to do eager execution. Could just run inside a session,
-which would be fine, after building up the graph. This allows
-augment.Transformation to continue to just use tensor operations, and
-augmentation will be more efficient with a computation graph, etc. 
-
-Ideas:
-- can use tf.data.experimental.enumerate_dataset() to give each original example
-  a unique label. (Returns a transformation function, give to dataset.apply)
-- tf.experimental.
-
-"""
-
-
 class DataAugmenter(Data):
   """The DataAugmenter object interfaces with tfrecord files for a labeled
   dataset to create a new augmentation set (not including the originals).
 
-  It needs:
-  - an initial processing ability, either internal or using a module-level
-    function (more likely).
-  - a method to create a DataInput object (or TrainDataInput) using all the
-    tfrecords it has incorporated or created.
+  Aggregate attributes may be set by keyword arguments (below). These also
+  accept custom accumulators (see Data.accumulate).
+
+  :param labels: label set. Should be used only when the tfrecord is unlabeled.
+  :param background_image: used for inpainting transformed examples.
+  :param prime_examples: indices of examples which are prime for transformation. In
+    principle, a prime example can be any example. When a new, transformed example
+    is introduced, it will be created from a random example in `prime_examples`.
+
   """
+
+  _accs = {'labels' : DataAugmenter.label_accumulator,
+           'background_image' : DataAugmenter.mean_background_accumulator,
+           'prime_examples' : DataAugmenter.prime_examples_accumulator}
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.labels, self.mean_background = self.accumulate(
-      DataAugmenter.label_accumulator,
-      DataAugmenter.mean_background_accumulator)
+
+    accumulators = {}
+    for k, acc in self._accs.items():
+      v = kwargs.get(kw)
+      if v is None:
+        accumulators[k] = acc
+      elif callable(v):
+        accumulators[k] = v
+      else:
+        setattr(self, k, v)
+
+    # May take a while.
+    aggregates = self.accumulate(accumulators)
+
+    for k,v in aggregates.items():
+      setattr(self, k, v)
+
+
+  def run(self, record_name='augmented.tfrecord'):
+    """Run the transformations on self._original_dataset and save novel examples
+    in a new tfrecord file. Update self._dataset to incorporate both datasets.
     
-    self.background = DataAugmenter.fill_background(self.mean_background)
+    :param record_name: where to save the augmented set.
+    :returns: self
+    :rtype: DataAugmenter
+
+    """
+
+    """TODO:
+    1. Determine the new labels that would more evenly sample the label-space
+    2. For each of these, create an augmentation transformation, drawing an
+       example from prime_examples at random.
+    3. Run the augmentation on self._original_dataset 
+    4. save the newly-created dataset in record_name, reload it (forces
+       execution).
+    5. update: self._dataset = self._original_dataset `concat` augmentations
+
+    """
+
+    return self
+
+  def __call__(self, *args, **kwargs):
+    return self.run(*args, **kwargs)
+
+  @staticmethod
+  def prime_examples_accumulator(scene, prime_examples):
+    """Selects all examples as `prime_examples`. 
+
+    TODO: be more selective.
+
+    :param scene: 
+    :param prime_examples: 
+    :returns: 
+    :rtype: 
+
+    """
+    if prime_examples is None:
+      prime_examples = 0
+    if scene is None:
+      return list(range(prime_examples))
+
+    return prime_examples + 1
+
     
+  @staticmethod
+  def label_accumulator(scene, labels):
+    if labels is None:
+      labels = []
+    if scene is None:
+      return np.array(labels)
+
+    _, (_, label) = scene
+    labels.append(label)
+    return labels
+
+  
   @staticmethod
   def fill_background(background, mode='gaussian'):
     """Fill the negative values in background, depending on mode. Returns the
@@ -456,25 +556,13 @@ class DataAugmenter(Data):
     background[indices] = np.random.normal(mean, std, size=background[indices].shape)
     return background
 
-  @staticmethod
-  def label_accumulator(scene, labels):
-    if labels is None:
-      labels = []
-    if scene is None:
-      return np.array(labels)
-
-    _, (_, label) = scene
-    labels.append(label)
-    return labels
     
   @staticmethod
   def mean_background_accumulator(scene, agg):
     """Iterate over the dataset, taking a running average of the pixels where no
     objects exist.
 
-    If a pixel has no value by the end of the accumulation (i.e., an object has
-    remained relatively stationory in every example), it is assigned to -1. Some
-    post-processing is therefore expected.
+    Fills pixels with no values at the end of the accumulation using fill_background.
 
     """
     if agg is None:
@@ -485,7 +573,7 @@ class DataAugmenter(Data):
       background, n = agg
 
     if scene is None:
-      return background
+      return DataAugmenter.fill_background(background)
 
     image, (annotation, _) = scene
 
@@ -502,6 +590,7 @@ class DataAugmenter(Data):
     n[indices] += 1
     
     return background, n
+
 
   @staticmethod
   def median_background_accumulator(scene, agg):

@@ -38,7 +38,9 @@ class Transformation():
       raise ValueError()
 
     self.which_examples = kwargs.get('which_examples')
-
+    if (self.which_examples is not None 
+        and type(self.which_examples) != tf.Tensor):
+      self.which_examples = tf.constant(self.which_examples, tf.int64)
 
   def __call__(self, scene):
     for transform in self._transforms:
@@ -49,7 +51,7 @@ class Transformation():
     if self.which_examples is None:
       return dataset.map(self, num_parallel_calls=num_parallel_calls)
     
-    enumerated = tf.data.experimental.enumerate_dataset(dataset)
+    enumerated = dataset.apply(tf.data.experimental.enumerate_dataset(dataset))
     predicate = lambda t : tf.reduce_any(tf.equal(t[0], self.which_examples))
     filtered = enumerated.filter(predicate)
     return filtered.map(
@@ -287,9 +289,9 @@ class ObjectScaling(ObjectTransformation):
 
 
 # Transformation instances.
-identity_transformation = Transformation()
-flip_left_right_transformation = FlipLeftRight()
-flip_up_down_transformation = FlipUpDown()
-invert_brightness_transformation = ImageTransformation(lambda image : 1 - image)
+identity = Transformation()
+flip_left_right = FlipLeftRight()
+flip_up_down = FlipUpDown()
+invert_brightness = ImageTransformation(lambda image : 1 - image)
 
 
