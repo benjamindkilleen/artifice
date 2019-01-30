@@ -7,7 +7,7 @@ although it could also be (image, (annotation, label)).
 
 import numpy as np
 import tensorflow as tf
-from artifice.utils import augment
+from artifice.utils import augment, tform, inpaint
 import os
 import logging
 
@@ -248,7 +248,7 @@ class Data(object):
     elif issubclass(type(data), tf.data.Dataset):
       self._dataset = self._original_dataset = dataset
     elif type(data) == str or hasattr(data, '__iter__'):
-      self._dataset = self.original_dataset = load_dataset(
+      self._dataset = self._original_dataset = load_dataset(
         data, parse_entry=self.parse_entry, 
         num_parallel_calls=self.num_parallel_calls)
     else:
@@ -450,16 +450,16 @@ class DataAugmenter(Data):
 
   """
 
-  _accs = {'labels' : DataAugmenter.label_accumulator,
-           'background_image' : DataAugmenter.mean_background_accumulator,
-           'prime_examples' : DataAugmenter.prime_examples_accumulator}
-
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
+    
+    self._accs = {'labels' : DataAugmenter.label_accumulator,
+                  'background_image' : DataAugmenter.mean_background_accumulator,
+                  'prime_examples' : DataAugmenter.prime_examples_accumulator}
 
     accumulators = {}
     for k, acc in self._accs.items():
-      v = kwargs.get(kw)
+      v = kwargs.get(k)
       if v is None:
         accumulators[k] = acc
       elif callable(v):
@@ -473,6 +473,17 @@ class DataAugmenter(Data):
     for k,v in aggregates.items():
       setattr(self, k, v)
 
+
+  def compute_new_labels(self):
+    """Create new labels to generate examples from.
+
+    TODO: implement label smoothing, incorporating label-space boundaries.
+
+    :returns: 
+    :rtype: 
+
+    """
+    return tf.expand_dims(self.labels[0], 0)
 
   def run(self, record_name='augmented.tfrecord'):
     """Run the transformations on self._original_dataset and save novel examples
@@ -495,13 +506,18 @@ class DataAugmenter(Data):
     5. update: self._dataset = self._original_dataset `concat` augmentations
 
     """
-    new_labels = tf.expand_dims(self.labels[0], 0)
+    new_labels = self.compute_new_labels()
     
-    transformation = tform.ObjectTransformation(new_labels[0])
-    aug = augment.Augmentation(transformation)
+    transformations = []
+    for new_label in tf.unstack(new_labels, axis=0):
+      transformations.append(tform.ObjectTransformation(
+        new_label,
+        which_examples=0,
+        background=self.background_image))
+    aug = augment.Augmentation(transformations)
     augmented = aug(self._original_dataset)
     save_dataset(record_name, augmented)
-    augmented = load_datset(record_name) # TODO: necessary?
+    # augmented = load_datset(record_name) # TODO: necessary?
     self._dataset = self._original_dataset.concatenate(augmented)
     
     return self

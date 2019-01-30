@@ -13,10 +13,10 @@ def connected_components(annotation, num_classes=2):
   """
   components = []
   for obj_id in range(num_classes):
-    components.append(tf.contrib.images.connected_components(
+    components.append(tf.contrib.image.connected_components(
       tf.equal(annotation[:,:,0], tf.constant(obj_id, annotation.dtype))))
     
-  return tf.stack(components, axis=3, name='connected_components')
+  return tf.stack(components, axis=2, name='connected_components')
 
 
 def connected_component_indices(annotation, semantic_class, location,
@@ -44,10 +44,11 @@ def connected_component_indices(annotation, semantic_class, location,
   y = tf.cast(location[1], tf.int64)
   component_id = components[x,y,semantic_class]
   if component_ids is not None:
-    if component_id in component_ids[semantic_class]:
+    if component_ids[semantic_class, component_id]:
       return None;             # component already encountered
     else:
-      component_ids[semantic_class].add(component_id)
+      # TODO: update component_ids
+      pass
 
   return tf.where(tf.equal(components[:,:,semantic_class], component_id))
 
@@ -63,7 +64,7 @@ def inside(indices, image):
   """
   
   over = tf.greater_equal(indices, tf.constant(0, dtype=indices.dtype))
-  under = tf.less(indices, tf.shape(image))
+  under = tf.less(indices, tf.cast(tf.shape(image)[:2], tf.int64))
   return tf.reduce_any(tf.logical_and(over, under), axis=1, 
                        name='inside')
 

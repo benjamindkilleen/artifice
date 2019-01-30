@@ -34,8 +34,9 @@ def background(image, indices, **kwargs):
   :name: name of the operation
 
   """
-  background = kwargs.get(
-    'background', tf.constant(0, image.dtype, image.shape))
+  background = kwargs.get('background')
+  if background is None:
+    raise NotImplementedError("Need background image.")
   name = kwargs.get('name', 'inpaint_background')
 
   updates = background.gather_nd(indices)

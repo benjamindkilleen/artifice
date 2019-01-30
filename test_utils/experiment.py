@@ -257,7 +257,7 @@ class ExperimentSphere(ExperimentObject):
     Returns: array([semantic_label, x pos, y pos, theta, x_scale, y_scale])
 
     """
-    label = np.empy((self.label_dimension,), dtype=np.float32)
+    label = np.empty((experiment.label_dimension,), dtype=np.float32)
     label[0] = self.semantic_label
     label[1:3] = self.compute_location(experiment)
     label[3] = 0
@@ -299,6 +299,7 @@ class Experiment:
   pix_fmts = {'L' : 'gray', 'RGB' : 'rgb8'}
   supported_formats = {'tfrecord', 'mp4'}
   included = ["colors.inc", "textures.inc"]
+  label_dimension = 6
 
   def __init__(self, image_shape=(512,512), mode='L', num_classes=2, N=1000,
                output_format='tfrecord', fname="data", camera_multiplier=4,
@@ -462,7 +463,8 @@ class Experiment:
     may occur from static or untracked objects.
 
     """
-    label = np.zeros((len(self.experiment_objects), 3), dtype=np.float32)
+    label = np.zeros((len(self.experiment_objects), self.label_dimension),
+                     dtype=np.float32)
     annotation = np.zeros((self.image_shape[0], self.image_shape[1], 2),
                           dtype=np.float32)
     annotation[:,:,1] = INFINITY
@@ -477,7 +479,7 @@ class Experiment:
           object_distance[r, c] = d
           annotation[r, c, 0] = obj.semantic_label
           annotation[r, c, 1] = np.linalg.norm(
-            np.array([r,c]) - location)
+            np.array([r,c]) - label[i, 1:3])
           if np.linalg.norm(np.array([r,c]) - label[i, 1:3]) < 2:
             label[i, 0] = 0
 

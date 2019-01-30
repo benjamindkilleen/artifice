@@ -1,5 +1,11 @@
 """Transformation utils, used to build up augmentations."""
 
+from artifice.utils import inpaint, tfimg
+import tensorflow as tf
+import logging
+
+logger = logging.getLogger('artifice')
+
 class Transformation():
   """A transformation is a callable that takes tensors representing an example
   (usually a scene) and returns a new pair. It should be mappable over a
@@ -22,14 +28,14 @@ class Transformation():
     """
     :param transforms: a transformation function or an iterable of them. Ignored if
       object has a "transform" method.
-    :param which_examples: tensor of indices of examples in the dataset on
-      which to apply the transformation. If None, maps over the whole dataset.
+    :param which_examples: indices of examples in the dataset on which to apply
+      the transformation. If None, maps over the whole dataset. 
     
     """
 
     if hasattr(self, 'transform'):
       assert callable(self.transform)
-      self._transforms = [lambda *scene : self.transform(*scene)]
+      self._transforms = [lambda scene : self.transform(scene)]
     elif callable(transform):
       self._transforms = [transform]
     elif hasattr(transform, '__iter__'):
@@ -40,7 +46,10 @@ class Transformation():
     self.which_examples = kwargs.get('which_examples')
     if (self.which_examples is not None 
         and type(self.which_examples) != tf.Tensor):
-      self.which_examples = tf.constant(self.which_examples, tf.int64, [-1])
+      logger.debug(f"tensoring which_examples: {self.which_examples}")
+      self.which_examples = tf.constant(self.which_examples, tf.int64)
+
+    self._kwargs = kwargs
 
   def __call__(self, scene):
     for transform in self._transforms:
@@ -51,11 +60,11 @@ class Transformation():
     if self.which_examples is None:
       return dataset.map(self, num_parallel_calls=num_parallel_calls)
     
-    enumerated = dataset.apply(tf.data.experimental.enumerate_dataset(dataset))
-    predicate = lambda t : tf.reduce_any(tf.equal(t[0], self.which_examples))
+    enumerated = dataset.apply(tf.contrib.data.enumerate_dataset())
+    predicate = lambda idx, _ : tf.reduce_any(tf.equal(idx, self.which_examples))
     filtered = enumerated.filter(predicate)
     return filtered.map(
-      lambda t : self.__call__(t[1]), num_parallel_calls=num_parallel_calls)
+      lambda _, scene : self.__call__(scene), num_parallel_calls=num_parallel_calls)
 
   def __add__(self, other):
     return Transformation(self._transforms + other._transforms)
@@ -156,11 +165,13 @@ class AdjustMeanBrightness(ImageTransformation):
 extracting and then re-inserting examples."""
 class ObjectTransformation(Transformation):
   def __init__(self, new_label, **kwargs):
+    self.new_label = new_label
     self.name = kwargs.get('name', self.__class__.__name__)
     self.inpainter = kwargs.get('inpainter', inpaint.background)
-    self.object_order = kwargs.get('object_order', range(label.shape[0]))
+    self.object_order = kwargs.get('object_order', range(new_label.shape[0]))
     self.num_classes = kwargs.get('num_classes', 2)
-    super().__init__()
+    self.num_objects = kwargs.get('num_objects', 10)
+    super().__init__(**kwargs)
 
   def transform(self, scene):
     """Transforms `scene` to match `self.new_label`.
@@ -175,21 +186,22 @@ class ObjectTransformation(Transformation):
     new_annotation = tf.identity(annotation)
     
     components = tfimg.connected_components(annotation, num_classes=self.num_classes)
-    component_ids = [set() for _ in range(self.num_classes)]
+    component_ids = tf.constant(
+      False, tf.bool, [self.num_classes, self.num_objects])
     
     for i in self.object_order:
       indices = tfimg.connected_component_indices(
         annotation, label[i,0], label[i, 1:3],
-        num_class=self.num_classes,
+        num_classes=self.num_classes,
         components=components,
-        component_idx=component_ids)
+        component_ids=None)     # TODO: keep track of component_ids
       if indices is None:
         continue;
 
       new_indices, image_values, annotation_values = self.transform_image(
-        image, annotation, label, new_label)
+        image, annotation, label[i], self.new_label[i], num_classes=self.num_classes)
 
-      new_image = self.inpainter(new_image, **kwargs)
+      new_image = self.inpainter(new_image, new_indices, **self._kwargs)
       new_image = scatter_update(new_image, new_indices, 
                                  image_values, name=self.name)
       
@@ -201,7 +213,9 @@ class ObjectTransformation(Transformation):
     return new_image, (new_annotation, new_label)
 
 
-  def transform_indices(self, image, annotation, obj_label, new_obj_label):
+  @staticmethod
+  def transform_image(image, annotation, obj_label, new_obj_label,
+                      num_classes=2):
     """Get the new indices and values for transforming between obj_label and
     new_obj_label.
 
@@ -226,17 +240,21 @@ class ObjectTransformation(Transformation):
     centered_annotation = tf.contrib.image.translate(
       annotation, centering, 'NEAREST')
 
+    logger.debug(f"new_obj_label: {new_obj_label}")
+    logger.debug(f"obj_label: {obj_label}")
     rotation = new_obj_label[3] - obj_label[3]
     rotated_image = tf.contrib.image.rotate(
       centered_image, rotation, 'BILINEAR')
     rotated_annotation = tf.contrib.image.rotate(
       centered_annotation, rotation, 'NEAREST')
 
-    size = new_obj_label[4:6] / obj_label[4:6] * image.shape
+    logger.debug(f"image: {image}")
+    size = tf.cast(new_obj_label[4:6] / obj_label[4:6]
+                   * tf.cast(tf.shape(image)[:2], tf.float32), tf.int32)
     resized_image = tf.image.resize_images(
       rotated_image, size, tf.image.ResizeMethod.BILINEAR)
     resized_annotation = tf.image.resize_images(
-      rotated_annotation, size, tf.image.ResizeMethod.NEAREST)
+      rotated_annotation, size, tf.image.ResizeMethod.NEAREST_NEIGHBOR)
     
     location = new_obj_label[1:3]
     translated_image = tf.contrib.image.translate(
@@ -244,14 +262,15 @@ class ObjectTransformation(Transformation):
     translated_annotation = tf.contrib.image.translate(
       resized_annotation, location, 'NEAREST')
 
-    indices = tfimg.connected_component_indices(
+    new_indices = tfimg.connected_component_indices(
       annotation, obj_label[0], location,
-      num_classes=self.num_classes)
-    indices = get_inside(indices, image)
-    image_values = tf.gather_nd(image, indices)
-    annotation_values = self.get_annotation_values(new_indices, new_obj_label)
+      num_classes=num_classes)
+    new_indices = tfimg.get_inside(new_indices, image)
+    image_values = tf.gather_nd(image, new_indices)
+    annotation_values = ObjectTransformation.get_annotation_values( 
+      new_indices, new_obj_label)
   
-    return indices, image_values, annotation_values
+    return new_indices, image_values, annotation_values
 
   @staticmethod
   def get_annotation_values(new_indices, new_obj_label):
@@ -264,11 +283,12 @@ class ObjectTransformation(Transformation):
 
     """
     
-    differences = new_indices - new_obj_label[1:3].reshape([1,2])
-    distances = tf.norm(ft.cast(differences, tf.float32), axis=1, keepdims=True)
-    semantic_labels = tf.cast(tf.fill(distances.shape, new_obj_label[0]), 
+    differences = (tf.cast(new_indices, tf.float32) -
+                   tf.reshape(new_obj_label[1:3], [1,2]))
+    distances = tf.norm(tf.cast(differences, tf.float32), axis=1, keepdims=True)
+    semantic_labels = tf.cast(tf.fill(tf.shape(distances), new_obj_label[0]),
                               tf.float32)
-    return tf.concat(semantic_labels, distances, axis=1)
+    return tf.concat((semantic_labels, distances), axis=1)
 
 
 # TODO: ObjectTranslation, ObjectRotation, and ObjectScaling subclassed from

@@ -36,13 +36,12 @@ class Augmentation():
 
   """
 
-  def __init__(self, **kwargs):
+  def __init__(self, transformation=None, **kwargs):
     """
     :param transformation: a Transformation object, or an iterable of them. Default
       (None) creates an identity augmentation.
     
     """
-    transformation = kwargs.get('transformation')
     if transformation is None:
       self._transformations = [tform.identity]
     elif issubclass(type(transformation), tform.Transformation):
@@ -98,7 +97,7 @@ class Augmentation():
     :returns: the transformed/augmented dataset
 
     """
-     new_dataset = tf.data.Dataset()
+    new_dataset = tf.data.Dataset()
     for transformation in self._transformations:
       new_dataset = new_dataset.concatenate(
         transformation.apply(dataset, self.num_parallel_calls))
@@ -110,10 +109,9 @@ class Augmentation():
 
 
 
-
 # instantiations of simple Augmentations
 identity = Augmentation()
-brightness = identity + sum([Augmentation(tform.AdjustMeanBrightness(m)) 
+brightness = identity + sum([Augmentation(tform.AdjustMeanBrightness(m))
                              for m in [0.2, 0.4, 0.6, 0.8]])
 
 premade = {
