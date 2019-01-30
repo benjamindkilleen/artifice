@@ -82,11 +82,12 @@ def cmd_augment(args):
   auger = dataset.DataAugmenter(args.input,
                                 num_parallel_calls=args.cores[0])
 
-  auger.run()
-
+  augmented_name = 'data/coupled_spheres/augmented.tfrecord'
+  auger.run(augmented_name)
+  
   if args.output[0] == 'show':
-    # vis.show_labels(auger.labels)
-    vis.show_background(auger.background)
+    for scene in dataset.read_tfrecord(augmented_name):
+      vis.show_scene(scene)
   else:
     raise NotImplementedError("use '-o show'")
   

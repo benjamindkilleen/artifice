@@ -478,7 +478,8 @@ class DataAugmenter(Data):
     """Run the transformations on self._original_dataset and save novel examples
     in a new tfrecord file. Update self._dataset to incorporate both datasets.
     
-    :param record_name: where to save the augmented set.
+    :param record_name: saves the augmented set. Defaults to
+      'augmented.tfrecord' in the current directory.
     :returns: self
     :rtype: DataAugmenter
 
@@ -494,7 +495,15 @@ class DataAugmenter(Data):
     5. update: self._dataset = self._original_dataset `concat` augmentations
 
     """
-
+    new_labels = tf.expand_dims(self.labels[0], 0)
+    
+    transformation = tform.ObjectTransformation(new_labels[0])
+    aug = augment.Augmentation(transformation)
+    augmented = aug(self._original_dataset)
+    save_dataset(record_name, augmented)
+    augmented = load_datset(record_name) # TODO: necessary?
+    self._dataset = self._original_dataset.concatenate(augmented)
+    
     return self
 
   def __call__(self, *args, **kwargs):
@@ -502,9 +511,9 @@ class DataAugmenter(Data):
 
   @staticmethod
   def prime_examples_accumulator(scene, prime_examples):
-    """Selects all examples as `prime_examples`. 
+    """Selects only the first examples as "prime."
 
-    TODO: be more selective.
+    TODO: be more exact with this definition.
 
     :param scene: 
     :param prime_examples: 
@@ -512,12 +521,7 @@ class DataAugmenter(Data):
     :rtype: 
 
     """
-    if prime_examples is None:
-      prime_examples = 0
-    if scene is None:
-      return list(range(prime_examples))
-
-    return prime_examples + 1
+    return [0]
 
     
   @staticmethod

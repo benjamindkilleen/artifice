@@ -1,4 +1,9 @@
-"""Utils for visualizing artifice output. (Mostly for testing)."""
+"""Utils for visualizing artifice output. (Mostly for testing).
+
+TODO: make `show` functions wrappers around `plot` functions, which can be
+called without clearing the matplotlib buffer.
+
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,7 +44,22 @@ def show_labels(labels, bins=50):
   axes[3].set_title("Sphere 2 Y Positions", pad=-25)
   plt.show()
 
+def show_scene(scene):
+  """Shows a scene's image, annotation, and label.
+
+  :param scene: 
+  :returns: 
+  :rtype: 
+
+  """
+  image, (annotation, label) = scene
+
+  fig, axes = plt.subplots(1, 3)
+  axes[0].imshow(np.squeeze(image), cmap='gray')
+  plt.show()
+
 def show_background(background):
   plt.imshow(np.squeeze(background), cmap='gray')
   plt.colorbar(orientation='vertical')
   plt.show()
+

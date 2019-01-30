@@ -40,7 +40,7 @@ class Transformation():
     self.which_examples = kwargs.get('which_examples')
     if (self.which_examples is not None 
         and type(self.which_examples) != tf.Tensor):
-      self.which_examples = tf.constant(self.which_examples, tf.int64)
+      self.which_examples = tf.constant(self.which_examples, tf.int64, [-1])
 
   def __call__(self, scene):
     for transform in self._transforms:
