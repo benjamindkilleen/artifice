@@ -91,7 +91,7 @@ def tensor_scene_from_proto(proto):
   # decode strings
   image = tf.decode_raw(features['image'], tf.uint8)
   image = tf.reshape(image, features['image_shape'])
-  image = tf.cast(image, tf.float32) / 255.
+  image = tf.to_float(image) / 255.
 
   annotation = tf.decode_raw(features['annotation'], tf.float32)
   annotation = tf.reshape(annotation, features['annotation_shape'],
@@ -240,6 +240,7 @@ class Data(object):
     self.batch_size = self._kwargs.get('batch_size', 1)
     self.num_parallel_calls = self._kwargs.get('num_parallel_calls', None)
     self.parse_entry = self._kwargs.get('parse_entry', None)
+    self.image_shape = self._kwargs.get('image_shape', None)
     self.augmentation = kwargs.get('augmentation', augment.identity)
 
     if issubclass(type(data), Data):
@@ -435,6 +436,17 @@ def load(record_name, train=False, **kwargs):
     return load_data_input(record_name, **kwargs)[0]
 
 
+"""TODO: Note:
+
+So, doing this augmentation and update step with tensors just isn't
+working. Better to do:
+1. Accumulate over the dataset initial stuff, like prime examples, etc.
+2. Decide which ObjectTransformation is going to go with which example, except
+   now make it so that ObjectTransformation works on numpy arrays.
+3. Accumulate over the dataset again, but this time write out the new examples
+   to the tfrecord in the accumulation.
+
+"""  
 class DataAugmenter(Data):
   """The DataAugmenter object interfaces with tfrecord files for a labeled
   dataset to create a new augmentation set (not including the originals).
@@ -513,7 +525,7 @@ class DataAugmenter(Data):
       transformations.append(tform.ObjectTransformation(
         new_label,
         which_examples=0,
-        background=self.background_image))
+        background_image=self.background_image))
     aug = augment.Augmentation(transformations)
     augmented = aug(self._original_dataset)
     save_dataset(record_name, augmented)
@@ -593,7 +605,7 @@ class DataAugmenter(Data):
       background, n = agg
 
     if scene is None:
-      return DataAugmenter.fill_background(background)
+      return tf.constant(DataAugmenter.fill_background(background), tf.float32)
 
     image, (annotation, _) = scene
 
@@ -615,3 +627,22 @@ class DataAugmenter(Data):
   @staticmethod
   def median_background_accumulator(scene, agg):
     raise NotImplemented("TODO: median_background_accumulator")
+
+  @staticmethod
+  def image_shape_accumulator(scene, agg):
+    """Get the shape of the images in the dataset.
+
+    :param scene: 
+    :param agg: 
+    :returns: 
+    :rtype: 
+
+    TODO: fix this function
+
+    """
+    if agg is None:
+      image, (annotation, label) = scene
+      return image.shape
+    if scene is None:
+      return agg
+  

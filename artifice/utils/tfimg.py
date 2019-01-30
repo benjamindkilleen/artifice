@@ -40,8 +40,8 @@ def connected_component_indices(annotation, semantic_class, location,
   if components is None:
     components = connected_components(annotation, num_classes=num_classes)
   semantic_class = tf.cast(semantic_class, tf.int64)
-  x = tf.cast(location[0], tf.int64)
-  y = tf.cast(location[1], tf.int64)
+  x = tf.to_int64(location[0])
+  y = tf.to_int64(location[1])
   component_id = components[x,y,semantic_class]
   if component_ids is not None:
     if component_ids[semantic_class, component_id]:
@@ -64,7 +64,7 @@ def inside(indices, image):
   """
   
   over = tf.greater_equal(indices, tf.constant(0, dtype=indices.dtype))
-  under = tf.less(indices, tf.cast(tf.shape(image)[:2], tf.int64))
+  under = tf.less(indices, tf.to_int64(tf.shape(image)[:2]))
   return tf.reduce_any(tf.logical_and(over, under), axis=1, 
                        name='inside')
 

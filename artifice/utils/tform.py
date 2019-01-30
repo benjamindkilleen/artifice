@@ -46,7 +46,6 @@ class Transformation():
     self.which_examples = kwargs.get('which_examples')
     if (self.which_examples is not None 
         and type(self.which_examples) != tf.Tensor):
-      logger.debug(f"tensoring which_examples: {self.which_examples}")
       self.which_examples = tf.constant(self.which_examples, tf.int64)
 
     self._kwargs = kwargs
@@ -168,6 +167,7 @@ class ObjectTransformation(Transformation):
     self.new_label = new_label
     self.name = kwargs.get('name', self.__class__.__name__)
     self.inpainter = kwargs.get('inpainter', inpaint.background)
+    self.background_image = kwargs.get('background_image')
     self.object_order = kwargs.get('object_order', range(new_label.shape[0]))
     self.num_classes = kwargs.get('num_classes', 2)
     self.num_objects = kwargs.get('num_objects', 10)
@@ -182,8 +182,8 @@ class ObjectTransformation(Transformation):
 
     """
     image, (annotation, label) = scene
-    new_image = tf.identity(image)
-    new_annotation = tf.identity(annotation)
+    new_image = tf.Variable(tf.identity(image), validate_shape=False)
+    new_annotation = tf.Variable(tf.identity(annotation), validate_shape=False)
     
     components = tfimg.connected_components(annotation, num_classes=self.num_classes)
     component_ids = tf.constant(
@@ -201,16 +201,18 @@ class ObjectTransformation(Transformation):
       new_indices, image_values, annotation_values = self.transform_image(
         image, annotation, label[i], self.new_label[i], num_classes=self.num_classes)
 
-      new_image = self.inpainter(new_image, new_indices, **self._kwargs)
-      new_image = scatter_update(new_image, new_indices, 
-                                 image_values, name=self.name)
+      # TODO: use self.inpainter
+      new_image = inpaint.background(new_image, new_indices,
+                                     background_image=self.background_image)
+      new_image = tf.scatter_nd_update(new_image, new_indices, 
+                                       image_values, name=self.name)
       
       new_annotation = inpaint.annotation(new_annotation, indices)
-      new_annotation = scatter_update(new_annotation, new_indices, 
-                                      annotation_values, 
-                                      name='annotation_' + self.name)
+      new_annotation = tf.scatter_nd_update(new_annotation, new_indices, 
+                                            annotation_values, 
+                                            name='annotation_' + self.name)
     
-    return new_image, (new_annotation, new_label)
+    return new_image, (new_annotation, self.new_label)
 
 
   @staticmethod
@@ -249,8 +251,8 @@ class ObjectTransformation(Transformation):
       centered_annotation, rotation, 'NEAREST')
 
     logger.debug(f"image: {image}")
-    size = tf.cast(new_obj_label[4:6] / obj_label[4:6]
-                   * tf.cast(tf.shape(image)[:2], tf.float32), tf.int32)
+    size = tf.to_int32(new_obj_label[4:6] / obj_label[4:6] *
+                       tf.to_float(tf.shape(image)[:2])) 
     resized_image = tf.image.resize_images(
       rotated_image, size, tf.image.ResizeMethod.BILINEAR)
     resized_annotation = tf.image.resize_images(
@@ -283,11 +285,10 @@ class ObjectTransformation(Transformation):
 
     """
     
-    differences = (tf.cast(new_indices, tf.float32) -
+    differences = (tf.to_float(new_indices) -
                    tf.reshape(new_obj_label[1:3], [1,2]))
-    distances = tf.norm(tf.cast(differences, tf.float32), axis=1, keepdims=True)
-    semantic_labels = tf.cast(tf.fill(tf.shape(distances), new_obj_label[0]),
-                              tf.float32)
+    distances = tf.norm(tf.to_float(differences), axis=1, keepdims=True)
+    semantic_labels = tf.to_float(tf.fill(tf.shape(distances), new_obj_label[0]))
     return tf.concat((semantic_labels, distances), axis=1)
 
 

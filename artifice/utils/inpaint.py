@@ -25,7 +25,7 @@ def gaussian(image, indices, **kwargs):
   name = kwargs.get('name', 'inpaint_gaussian')
 
   updates = tf.distributions.Normal(mu, std).sample(indices.shape[0])
-  return tf.scatter_update(image, indices, updates, name=name)
+  return tf.scatter_nd_update(image, indices, updates, name=name)
 
 
 def background(image, indices, **kwargs):
@@ -34,13 +34,13 @@ def background(image, indices, **kwargs):
   :name: name of the operation
 
   """
-  background = kwargs.get('background')
-  if background is None:
-    raise NotImplementedError("Need background image.")
+  background_image = kwargs.get('background_image')
+  if background_image is None:
+    background_image = tf.zeros_like(image)
   name = kwargs.get('name', 'inpaint_background')
 
-  updates = background.gather_nd(indices)
-  return tf.scatter_update(image, indices, updates, name=name)
+  updates = tf.gather_nd(background_image, indices)
+  return tf.scatter_nd_update(image, indices, updates, name=name)
 
 
 def annotation(annotation, indices, **kwargs):
@@ -52,10 +52,10 @@ def annotation(annotation, indices, **kwargs):
   name = kwargs.get('name', 'inpaint_annotation')
   
   bg_semantic = tf.constant(bg_semantic, dtype=annotation.dtype)
-  if bg_distance_annotation is None:
+  if bg_distance is None:
     bg_distance = tf.reduce_max(annotation[:,:,:,1])
   else:
     bg_distance = tf.constant(bg_semantic, dtype=annotation.dtype)
 
-  updates = tf.stack([bg_semantic, bg_distance]).reshape(1,1,1,2)
-  return tf.scatter_update(annotation, indices, updates, name=name)
+  updates = tf.reshape(tf.stack([bg_semantic, bg_distance]), [1,1,1,2])
+  return tf.scatter_nd_update(annotation, indices, updates, name=name)

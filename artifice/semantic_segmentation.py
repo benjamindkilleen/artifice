@@ -36,7 +36,7 @@ def compute_balanced_weights(annotation, num_classes):
 
   """
 
-  counts = tf.bincount(tf.cast(annotation, tf.int32), 
+  counts = tf.bincount(tf.to_int32(annotation), 
                        minlength=num_classes, maxlength=num_classes,
                        dtype=tf.float64)
   num_samples = tf.cast(
@@ -196,8 +196,8 @@ class SemanticModel:
 
       # Get "ground truth" for other modes.
       annotation, label = labels
-      annotation = tf.cast(tf.reshape(annotation[:,:,:,0], [-1] +
-                                      self.annotation_shape), tf.int64)
+      annotation = tf.to_int64(tf.reshape(annotation[:,:,:,0], [-1] +
+                                          self.annotation_shape)
       annotation_one_hot = tf.one_hot(annotation[:,:,:,0], self.num_classes)
 
       logger.debug("annotation_one_hot: {}".format(annotation_one_hot.shape))
