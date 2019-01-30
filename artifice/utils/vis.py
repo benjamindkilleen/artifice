@@ -56,6 +56,8 @@ def show_scene(scene):
 
   fig, axes = plt.subplots(1, 3)
   axes[0].imshow(np.squeeze(image), cmap='gray')
+  axes[1].imshow(np.squeeze(annotation))
+  axes[3].text(str(label))
   plt.show()
 
 def show_background(background):
