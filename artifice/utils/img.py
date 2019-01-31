@@ -60,11 +60,11 @@ def inpaint_image_background(image, indices, background_image=None, **kwargs):
 
   """
   if background_image is None:
-    mu = image.mean()
     background_image = np.zeros_like(image)
-
+  
   image[indices] = background_image[indices]
   return image
+
 
 def inpaint_annotation(annotation, indices, location, semantic_label=0,
                        distance_cval=None, **kwargs):

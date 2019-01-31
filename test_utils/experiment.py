@@ -148,7 +148,7 @@ class ExperimentObject(DynamicObject):
     super().__init__(vapory_object, object_args, *args, **kwargs)
     assert(semantic_label > 0)
     self.semantic_label = int(semantic_label)
-
+    
   def compute_mask(self, experiment):
     """Compute the mask of the ExperimentObject, given Experiment
     `experiment`.
@@ -258,7 +258,7 @@ class ExperimentSphere(ExperimentObject):
 
     """
     label = np.empty((experiment.label_dimension,), dtype=np.float32)
-    label[0] = self.semantic_label
+    label[0] = float(self.semantic_label)
     label[1:3] = self.compute_location(experiment)
     label[3] = 0
     label[4] = 1
@@ -480,8 +480,8 @@ class Experiment:
           annotation[r, c, 0] = obj.semantic_label
           annotation[r, c, 1] = np.linalg.norm(
             np.array([r,c]) - label[i, 1:3])
-          if np.linalg.norm(np.array([r,c]) - label[i, 1:3]) < 2:
-            label[i, 0] = 0
+          # if np.linalg.norm(np.array([r,c]) - label[i, 1:3]) < 2:
+          #   label[i, 0] = 0
 
     return annotation, label
     
@@ -575,6 +575,7 @@ class Experiment:
       logging.info("Rendering scene {} of {}...".format(t, self.N))
       scene = self.render_scene(t)
       image, (annotation, label) = scene
+      logging.debug(f"label: {label}")
       
       if 'tfrecord' in self.output_formats:
         e = dataset.proto_from_scene(scene)

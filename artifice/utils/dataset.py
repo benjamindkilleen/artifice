@@ -39,7 +39,13 @@ def proto_from_scene(scene):
   image = np.atleast_3d(image)
   annotation = np.atleast_3d(annotation)
 
-  assert(image.dtype == np.uint8 and annotation.dtype == np.float32)
+  if image.dtype in [np.float32, np.float64]:
+    image = (255 * image).astype(np.uint8)
+  elif image.dtype in [np.uint8, np.int32, np.int64]:
+    image = image.astype(np.uint8)
+  else:
+    raise ValueError(f"image dtype '{image.dtype}' not allowed")
+  annotation = annotation.astype(np.float32)
   image_string = image.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
 
@@ -544,7 +550,7 @@ class DataAugmenter(Data):
     # May take a while
     self.accumulate(augment_accumulator)
 
-    augmented = load_datset(record_name)
+    augmented = load_dataset(record_name)
     self._dataset = self._original_dataset.concatenate(augmented)
 
     return self
@@ -640,7 +646,7 @@ class DataAugmenter(Data):
       background, n = agg
 
     if scene is None:
-      return tf.constant(DataAugmenter.fill_background(background), tf.float32)
+      return DataAugmenter.fill_background(background)
 
     image, (annotation, _) = scene
 

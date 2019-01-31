@@ -7,6 +7,9 @@ called without clearing the matplotlib buffer.
 
 import matplotlib.pyplot as plt
 import numpy as np
+import logging
+
+logger = logging.getLogger('artifice')
 
 def show_predict(image, annotation, prediction):
   """Show the output of the model. Meant for testing."""
@@ -44,21 +47,28 @@ def show_labels(labels, bins=50):
   axes[3].set_title("Sphere 2 Y Positions", pad=-25)
   plt.show()
 
-def show_scene(scene):
-  """Shows a scene's image, annotation, and label.
+def show_scene(*scenes):
+  """Shows a scene's (or multiple) image, annotation, and label.
 
   :param scene: 
   :returns: 
   :rtype: 
 
   """
-  image, (annotation, label) = scene
 
-  fig, axes = plt.subplots(1, 3)
-  axes[0].imshow(np.squeeze(image), cmap='gray')
-  axes[1].imshow(np.squeeze(annotation))
-  axes[3].text(str(label))
-  plt.show()
+  fig, axes = plt.subplots(len(scenes), 3, squeeze=False)
+  for i, scene in enumerate(scenes):
+    image, (annotation, label) = scene
+    axes[i,0].imshow(np.squeeze(image), cmap='gray')
+
+    im = axes[i,1].imshow(annotation[:,:,0])
+    axes[i,1].set_title("Semantic Annotation")
+
+    im = axes[i,2].imshow(np.clip(annotation[:,:,0], 0, 2), cmap='magma')
+    axes[i,2].set_title("Distance Annotation")
+    fig.colorbar(im, ax=axes[i,2], orientation='vertical')
+    plt.show()
+
 
 def show_background(background):
   plt.imshow(np.squeeze(background), cmap='gray')

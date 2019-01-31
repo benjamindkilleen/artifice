@@ -61,7 +61,7 @@ def cmd_predict(args):
     for i, prediction in enumerate(predictions):
       if 0 < args.num_examples[0] <= i:
         break
-      image, annotation = next(originals)
+      image, (annotation, label) = next(originals)
       vis.show_predict(image, annotation, prediction)
   else:
     raise NotImplementedError("use show")

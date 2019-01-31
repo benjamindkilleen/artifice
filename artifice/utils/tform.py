@@ -194,6 +194,9 @@ class ObjectTransformation():
     for i in kwargs.get('object_order', range(new_label.shape[0])):
       obj_label = label[i]
       new_obj_label = new_label[i]
+      assert(obj_label[0] > 0)  # TODO: deal with properly
+      assert(new_obj_label[0] > 0)  # TODO: deal with properly
+      logger.debug(f"Transforming object {i} with semantic label {obj_label[0]}")
       indices = img.connected_component_indices(
         annotation, obj_label[0], obj_label[1:3],
         num_classes=self.num_classes,
@@ -205,10 +208,10 @@ class ObjectTransformation():
       # Center the object in the image
       centering = np.array([image.shape[0] // 2 - obj_label[1],
                             image.shape[1] // 2 - obj_label[2], 0])
-      centered_image = ndimage.interpolation.shift(image, centering)
+      centered_image = ndimage.interpolation.shift(image.copy(), centering)
       centered_annotation = ndimage.interpolation.shift(
-        annotation[:,:,0], centering[:2], order=0)
-      centered_indices = indices + centering[:2]
+        annotation.copy()[:,:,0], centering[:2], order=0)
+      centered_indices = indices[0] + centering[0], indices[1] + centering[1]
 
       # TODO: cut off unnecessary part of image, only cropping that's necessary
       
@@ -217,13 +220,13 @@ class ObjectTransformation():
         centered_image, angle, reshape=False)
       rotated_annotation = ndimage.interpolation.rotate(
         centered_annotation, angle, reshape=False, order=0)
-
+      
       # zoom in on image, according to x_scale, y_scale in label.
       # Note: new image will NOT have the same shape.
       zoom = new_obj_label[4:6] / obj_label[4:6]
-      zoomed_image = ndimage.zoom(rotated_image, [zoom[0], zoom[1], 0])
+      zoomed_image = ndimage.zoom(rotated_image, [zoom[0], zoom[1], 1])
       zoomed_annotation = ndimage.zoom(rotated_annotation, zoom, order=0)
-
+      
       # Translate object to ultimate position in index space
       shift = np.array([new_obj_label[1] - image.shape[0] // 2,
                         new_obj_label[2] - image.shape[1] // 2, 0])
@@ -235,8 +238,6 @@ class ObjectTransformation():
       new_indices = img.connected_component_indices(
         shifted_annotation, new_obj_label[0], new_obj_label[1:3])
       new_indices = img.get_inside(new_indices, image)
-
-      logger.debug(f"new_indices: {new_indices}")
 
       # Erase the object from the image, insert it into the new location.
       new_image = img.inpaint_image_background(
