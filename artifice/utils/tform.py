@@ -1,6 +1,6 @@
 """Transformation utils, used to build up augmentations."""
 
-from artifice.utils import inpaint, tfimg
+from artifice.utils import img, tfimg
 import tensorflow as tf
 import logging
 
@@ -56,14 +56,15 @@ class Transformation():
     return scene
 
   def apply(self, dataset, num_parallel_calls=None):
-    if self.which_examples is None:
-      return dataset.map(self, num_parallel_calls=num_parallel_calls)
-    
-    enumerated = dataset.apply(tf.contrib.data.enumerate_dataset())
-    predicate = lambda idx, _ : tf.reduce_any(tf.equal(idx, self.which_examples))
-    filtered = enumerated.filter(predicate)
-    return filtered.map(
-      lambda _, scene : self.__call__(scene), num_parallel_calls=num_parallel_calls)
+    """Apply the transformation across a dataset.
+
+    :param dataset: 
+    :param num_parallel_calls: 
+    :returns: 
+    :rtype: 
+
+    """
+    return dataset.map(self, num_parallel_calls=num_parallel_calls)
 
   def __add__(self, other):
     return Transformation(self._transforms + other._transforms)
@@ -160,9 +161,10 @@ class AdjustMeanBrightness(ImageTransformation):
     super().__init__(transform)
 
 
-"""The following are transformations that introduce truly novel examples by
-extracting and then re-inserting examples."""
 class ObjectTransformation(Transformation):
+  """Generate a new example by extracting and then transforming individual
+  objects. Should be run on numpy arrays rather than tensors, see
+  DataAugmenter."""
   def __init__(self, new_label, **kwargs):
     self.new_label = new_label
     self.name = kwargs.get('name', self.__class__.__name__)
@@ -173,6 +175,9 @@ class ObjectTransformation(Transformation):
     self.num_objects = kwargs.get('num_objects', 10)
     super().__init__(**kwargs)
 
+  def apply(self, *args, **kwargs):
+    raise RuntimeError("ObjectTransformation cannot be applied to a tf.data.Dataset.")
+    
   def transform(self, scene):
     """Transforms `scene` to match `self.new_label`.
 
@@ -182,25 +187,28 @@ class ObjectTransformation(Transformation):
 
     """
     image, (annotation, label) = scene
-    new_image = tf.Variable(tf.identity(image), validate_shape=False)
-    new_annotation = tf.Variable(tf.identity(annotation), validate_shape=False)
+    new_image = image.copy()
+    new_annotation = annotation.copy()
     
-    components = tfimg.connected_components(annotation, num_classes=self.num_classes)
-    component_ids = tf.constant(
-      False, tf.bool, [self.num_classes, self.num_objects])
+    components = img.connected_components(annotation, num_classes=self.num_classes)
+    component_ids = [set() for _ in range(self.num_classes)]
     
     for i in self.object_order:
-      indices = tfimg.connected_component_indices(
+      indices = img.connected_component_indices(
         annotation, label[i,0], label[i, 1:3],
         num_classes=self.num_classes,
         components=components,
-        component_ids=None)     # TODO: keep track of component_ids
+        component_ids=component_ids)     # TODO: keep track of component_ids
       if indices is None:
         continue;
 
-      new_indices, image_values, annotation_values = self.transform_image(
-        image, annotation, label[i], self.new_label[i], num_classes=self.num_classes)
+      
+      # Do the transformation
+      centering = -obj_label[1:3]   # Move object to the center
+      if True:
+        raise NotImplementedError("TODO ObjectTransformation conversion.")
 
+      
       # TODO: use self.inpainter
       new_image = inpaint.background(new_image, new_indices,
                                      background_image=self.background_image)
@@ -216,7 +224,7 @@ class ObjectTransformation(Transformation):
 
 
   @staticmethod
-  def transform_image(image, annotation, obj_label, new_obj_label,
+  def compute_updates(image, annotation, obj_label, new_obj_label,
                       num_classes=2):
     """Get the new indices and values for transforming between obj_label and
     new_obj_label.
@@ -232,7 +240,7 @@ class ObjectTransformation(Transformation):
     :param annotation: 
     :param obj_label: 
     :param new_obj_label: 
-    :returns: (indices, values) for the transformed object, into the original image.
+    :returns: (indices, image_values, )
     :rtype: tuple of tensors
 
     """
