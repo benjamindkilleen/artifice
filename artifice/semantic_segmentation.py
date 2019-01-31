@@ -197,7 +197,7 @@ class SemanticModel:
       # Get "ground truth" for other modes.
       annotation, label = labels
       annotation = tf.to_int64(tf.reshape(annotation[:,:,:,0], [-1] +
-                                          self.annotation_shape)
+                                          self.annotation_shape))
       annotation_one_hot = tf.one_hot(annotation[:,:,:,0], self.num_classes)
 
       logger.debug("annotation_one_hot: {}".format(annotation_one_hot.shape))

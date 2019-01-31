@@ -5,6 +5,9 @@ import numpy as np
 from PIL import Image
 from skimage import transform
 import scipy
+import logging
+
+logger = logging.getLogger('artifice')
 
 def connected_components(annotation, num_classes=2):
   """Get connected components from an annotation.
@@ -19,9 +22,13 @@ def connected_components(annotation, num_classes=2):
 
   components = np.empty((annotation.shape[0], annotation.shape[1], num_classes),
                         dtype=np.int64)
+
+  # TODO use the number of features returned by scipy.ndimage.label instead of
+  # component_ids
+  
   for obj_id in range(num_classes):
-    components[:,:,obj_id] = scipy.ndimage.measurements.label(
-      annotation[:,:,0] == obj_id)
+    components[:,:,obj_id], _ = scipy.ndimage.label(
+      np.atleast_3d(annotation)[:,:,0] == obj_id)
 
   return components
 
@@ -59,27 +66,96 @@ def inpaint_image_background(image, indices, background_image=None, **kwargs):
   image[indices] = background_image[indices]
   return image
 
-def inpaint_annotation_background(annotation, indices, bg_semantic=0, bg_distance=None
-                                  **kwargs):
-  """Inpaint annotation.
+def inpaint_annotation(annotation, indices, location, semantic_label=0,
+                       distance_cval=None, **kwargs):
+  """Inpaint an annotation.
+
+  If semantic_label == 0, then assume `indices` points to a background region
+  and inpaint accordingly.
+
+  If semantic_label > 0, assume `indices` points to an object region and inpaint
+  with appropriate distance measure.
 
   :param annotation: 3D numpy `annotation` to inpaint
   :param indices: array indices into `annotation`
-  :param bg_semantic: semantic label for `annotation[:,:,0]`. Default is 0.
-  :param bg_distance: Default is `max(annotation[:,:,1])`
+  :param location: object's location in index space.
+    Ignored if `semantic_label = 0`.
+  :param semantic_label: semantic label for `annotation[:,:,0]`. Default is 0
+    (background).
+  :param distance_cval: Constant value to use for background distance. Default
+    is `max(annotation[:,:,1])`. Ignored if `semantic_label > 0`.
   :returns: updated `annotation`
+
   """
   
-  if bg_distance is None:
-    bg_distance = np.max(annotation[:,:,1])
+  if semantic_label == 0:
+    if distance_cval is None:
+      distance_cval = np.max(annotation[:,:,1])
+    values = np.array([[semantic_label, distance_cval]])
+  else:
+    assert location is not None
+    distances = np.linalg.norm(indices[:,:2] - location, axis=1)[:, np.newaxis]
+    values = np.concatenate(
+      (semantic_label * np.ones_like(distances), distances), axis=1)
 
-  value = np.array([bg_semantic, bg_distance])
-  annotation[indices] = value
+  annotation[indices] = values
   return annotation
 
+
+def inpaint_annotation_background(annotation, indices, distance_cval=None,
+                                  **kwargs):
+  """Inpaint a background region pointed to by indices.
+
+  :param annotation: 
+  :param indices: 
+  :param semantic_label: 
+  :param distance_cval: 
+  :returns: updated `annotation`
+  :rtype: 
+
+  """
+  return inpaint_annotation(annotation, indices, None,
+                            semantic_label=0, distance_cval=distance_cval)
+
+
+def inside(indices, image):
+  """Returns a boolean array for which indices are inside image.shape.
+  
+  :param indices: 2D array of indices. Fast axis must have same dimension as shape.
+  :param image: image to compare against
+  :returns: 1-D boolean array
+  
+  """
+  
+  over = np.logical_and(indices[0] >= 0, indices[1] >= 0)
+  under = np.logical_and(indices[0] < image.shape[0],
+                         indices[1] < image.shape[1])
+
+  return np.logical_and(over, under)
+
+
+def get_inside(indices, image):
+  """Get the indices that are inside image's shape.
+
+  :param indices: 2D array of indices. Fast axis must have same dimension as shape.
+  :param image: image to compare against 
+  :returns: a subset of indices.
+  
+  """
+  which = inside(indices, image)
+  return indices[0][which], indices[1][which]
+
+
 def grayscale(image):
-  """Convert an n-channel image to grayscale, with ndim = 3, using the luminosity
-  weighted average if there are three channels. Otherwise, just use the average.
+  """Convert an n-channel, 3D image to grayscale.
+  
+  Use the [luminosity weighted average]
+  (https://www.johndcook.com/blog/2009/08/24/algorithms-convert-color-grayscale/)
+  if there are three channels. Otherwise, just use the average.
+
+  :param image: image to convert
+  :returns: new grayscale image.
+
   """
   image = np.array(image)
   out_shape = (image.shape[0], image.shape[1], 1)

@@ -4,6 +4,7 @@ from artifice.utils import img, tfimg
 import tensorflow as tf
 import logging
 from scipy import ndimage
+import numpy as np
 
 logger = logging.getLogger('artifice')
 
@@ -44,11 +45,6 @@ class Transformation():
     else:
       raise ValueError()
 
-    self.which_examples = kwargs.get('which_examples')
-    if (self.which_examples is not None 
-        and type(self.which_examples) != tf.Tensor):
-      self.which_examples = tf.constant(self.which_examples, tf.int64)
-
     self._kwargs = kwargs
 
   def __call__(self, scene):
@@ -59,9 +55,9 @@ class Transformation():
   def apply(self, dataset, num_parallel_calls=None):
     """Apply the transformation across a dataset.
 
-    :param dataset: 
-    :param num_parallel_calls: 
-    :returns: 
+    :param dataset: tf.data.Dataset instance
+    :param num_parallel_calls: passed to `dataset.map`
+    :returns: new dataset
     :rtype: 
 
     """
@@ -162,39 +158,42 @@ class AdjustMeanBrightness(ImageTransformation):
     super().__init__(transform)
 
 
-class ObjectTransformation(Transformation):
+    
+
+class ObjectTransformation():
   """Generate a new example by extracting and then transforming individual
   objects. Should be run on numpy arrays rather than tensors, see
-  DataAugmenter."""
-  def __init__(self, new_label, **kwargs):
-    self.new_label = new_label
-    self.name = kwargs.get('name', self.__class__.__name__)
-    self.inpainter = kwargs.get('inpainter', inpaint.background)
-    self.background_image = kwargs.get('background_image')
-    self.object_order = kwargs.get('object_order', range(new_label.shape[0]))
-    self.num_classes = kwargs.get('num_classes', 2)
-    self.num_objects = kwargs.get('num_objects', 10)
-    super().__init__(**kwargs)
+  DataAugmenter.
 
-  def apply(self, *args, **kwargs):
-    raise RuntimeError("ObjectTransformation cannot be applied to a tf.data.Dataset.")
-    
-  def transform(self, scene):
-    """Transforms `scene` to match `self.new_label`.
+  """
+  def __init__(self, **kwargs):
+    # self.inpainter = kwargs.get('inpainter', inpaint.background)
+    self.background_image = kwargs.get('background_image')
+    self.num_classes = kwargs.get('num_classes', 2)
+
+  def __call__(self, *args, **kwargs):
+    return self.transform(*args, **kwargs)
+
+  def transform(self, scene, new_label, **kwargs):
+    """Transforms `scene` to match `new_label`.
 
     :param scene: (image, (annotation, label)) tensor tuple
+    :param new_label: use instead of `self.new_label`
     :returns: transformed scene
     :rtype: tuple of tensors
 
     """
     image, (annotation, label) = scene
+    new_image = image.copy()
+    new_annotation = annotation.copy()
     
     components = img.connected_components(annotation, num_classes=self.num_classes)
+    
     component_ids = [set() for _ in range(self.num_classes)]
     
-    for i in self.object_order:
+    for i in kwargs.get('object_order', range(new_label.shape[0])):
       obj_label = label[i]
-      new_obj_label = self.new_label[i]
+      new_obj_label = new_label[i]
       indices = img.connected_component_indices(
         annotation, obj_label[0], obj_label[1:3],
         num_classes=self.num_classes,
@@ -208,124 +207,49 @@ class ObjectTransformation(Transformation):
                             image.shape[1] // 2 - obj_label[2], 0])
       centered_image = ndimage.interpolation.shift(image, centering)
       centered_annotation = ndimage.interpolation.shift(
-        annotation, centering, order=0)
+        annotation[:,:,0], centering[:2], order=0)
       centered_indices = indices + centering[:2]
 
-      # TODO: cut off unnecessary part of image, just over-computation
-
-      angle = np.degrees(new_label[3] - obj_label[3])
+      # TODO: cut off unnecessary part of image, only cropping that's necessary
+      
+      angle = np.degrees(new_obj_label[3] - obj_label[3])
       rotated_image = ndimage.interpolation.rotate(
         centered_image, angle, reshape=False)
       rotated_annotation = ndimage.interpolation.rotate(
         centered_annotation, angle, reshape=False, order=0)
 
-      zoom = (new_obj_label[4:6] / obj_labl[4:6]).append(0)
-      zoomed_image = ndimage.zoom(rotated_image, zoom)
+      # zoom in on image, according to x_scale, y_scale in label.
+      # Note: new image will NOT have the same shape.
+      zoom = new_obj_label[4:6] / obj_label[4:6]
+      zoomed_image = ndimage.zoom(rotated_image, [zoom[0], zoom[1], 0])
       zoomed_annotation = ndimage.zoom(rotated_annotation, zoom, order=0)
-      # TODO: figure out if I have to crop again. Super annoying.
 
-      shift = np.array([new_obj_label[0] - zoomed_image.shape[0] // 2,
-                        new_obj_label[1] - zoomed_image.shape[1] // 2, 0])
+      # Translate object to ultimate position in index space
+      shift = np.array([new_obj_label[1] - image.shape[0] // 2,
+                        new_obj_label[2] - image.shape[1] // 2, 0])
       shifted_image = ndimage.interpolation.shift(zoomed_image, shift)
       shifted_annotation = ndimage.interpolation.shift(
-        zoomed_annotation, shift, order=0)
+        zoomed_annotation, shift[:2], order=0)
 
+      # Get the new indices from the transformed annotation
       new_indices = img.connected_component_indices(
-        shifted_annotation, obj_label[0], new_obj_label)
-      
-      
-      
-      
-      
-      # TODO: use self.inpainter
-      new_image = inpaint.background(new_image, new_indices,
-                                     background_image=self.background_image)
-      new_image = tf.scatter_nd_update(new_image, new_indices, 
-                                       image_values, name=self.name)
-      
-      new_annotation = inpaint.annotation(new_annotation, indices)
-      new_annotation = tf.scatter_nd_update(new_annotation, new_indices, 
-                                            annotation_values, 
-                                            name='annotation_' + self.name)
-    
-    return new_image, (new_annotation, self.new_label)
+        shifted_annotation, new_obj_label[0], new_obj_label[1:3])
+      new_indices = img.get_inside(new_indices, image)
 
+      logger.debug(f"new_indices: {new_indices}")
 
-  @staticmethod
-  def compute_updates(image, annotation, obj_label, new_obj_label,
-                      num_classes=2):
-    """Get the new indices and values for transforming between obj_label and
-    new_obj_label.
+      # Erase the object from the image, insert it into the new location.
+      new_image = img.inpaint_image_background(
+        new_image, indices, background_image = self.background_image)
+      new_image[new_indices] = shifted_image[new_indices]
 
-    1. Translate object to image/annotation center.
-    2. Apply a bilinear rotation to image. Apply nearest-neighbor rotation to
-       annotation.
-    3. Apply bilinear resizing to image. Apply NN resize to annotation.
-    4. Translate back.
-    5. Get components, indices, etc, as above.
+      # Erase the object from the annotation, insert it into the new location.
+      new_annotation = img.inpaint_annotation_background(new_annotation, indices)
+      new_annotation = img.inpaint_annotation(
+        new_annotation, new_indices, new_obj_label[1:3],
+        semantic_label=new_obj_label[0])
 
-    :param image: 
-    :param annotation: 
-    :param obj_label: 
-    :param new_obj_label: 
-    :returns: (indices, image_values, )
-    :rtype: tuple of tensors
-
-    """
-    centering = -obj_label[1:3]   # Get translation to center. (wrong)
-    centered_image = tf.contrib.image.translate(
-      image, centering, 'BILINEAR')
-    centered_annotation = tf.contrib.image.translate(
-      annotation, centering, 'NEAREST')
-
-    logger.debug(f"new_obj_label: {new_obj_label}")
-    logger.debug(f"obj_label: {obj_label}")
-    rotation = new_obj_label[3] - obj_label[3]
-    rotated_image = tf.contrib.image.rotate(
-      centered_image, rotation, 'BILINEAR')
-    rotated_annotation = tf.contrib.image.rotate(
-      centered_annotation, rotation, 'NEAREST')
-
-    logger.debug(f"image: {image}")
-    size = tf.to_int32(new_obj_label[4:6] / obj_label[4:6] *
-                       tf.to_float(tf.shape(image)[:2])) 
-    resized_image = tf.image.resize_images(
-      rotated_image, size, tf.image.ResizeMethod.BILINEAR)
-    resized_annotation = tf.image.resize_images(
-      rotated_annotation, size, tf.image.ResizeMethod.NEAREST_NEIGHBOR)
-    
-    location = new_obj_label[1:3]
-    translated_image = tf.contrib.image.translate(
-      resized_image, location, 'BILINEAR')
-    translated_annotation = tf.contrib.image.translate(
-      resized_annotation, location, 'NEAREST')
-
-    new_indices = tfimg.connected_component_indices(
-      annotation, obj_label[0], location,
-      num_classes=num_classes)
-    new_indices = tfimg.get_inside(new_indices, image)
-    image_values = tf.gather_nd(image, new_indices)
-    annotation_values = ObjectTransformation.get_annotation_values( 
-      new_indices, new_obj_label)
-  
-    return new_indices, image_values, annotation_values
-
-  @staticmethod
-  def get_annotation_values(new_indices, new_obj_label):
-    """Get the values for the new annotation.
-
-    :param new_indices: indices of the new object
-    :param new_obj_label: label for the new object
-    :returns: new annotation_values
-    :rtype: 
-
-    """
-    
-    differences = (tf.to_float(new_indices) -
-                   tf.reshape(new_obj_label[1:3], [1,2]))
-    distances = tf.norm(tf.to_float(differences), axis=1, keepdims=True)
-    semantic_labels = tf.to_float(tf.fill(tf.shape(distances), new_obj_label[0]))
-    return tf.concat((semantic_labels, distances), axis=1)
+    return new_image, (new_annotation, new_label)
 
 
 # TODO: ObjectTranslation, ObjectRotation, and ObjectScaling subclassed from
