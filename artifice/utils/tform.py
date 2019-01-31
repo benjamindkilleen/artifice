@@ -3,6 +3,7 @@
 from artifice.utils import img, tfimg
 import tensorflow as tf
 import logging
+from scipy import ndimage
 
 logger = logging.getLogger('artifice')
 
@@ -187,27 +188,54 @@ class ObjectTransformation(Transformation):
 
     """
     image, (annotation, label) = scene
-    new_image = image.copy()
-    new_annotation = annotation.copy()
     
     components = img.connected_components(annotation, num_classes=self.num_classes)
     component_ids = [set() for _ in range(self.num_classes)]
     
     for i in self.object_order:
+      obj_label = label[i]
+      new_obj_label = self.new_label[i]
       indices = img.connected_component_indices(
-        annotation, label[i,0], label[i, 1:3],
+        annotation, obj_label[0], obj_label[1:3],
         num_classes=self.num_classes,
         components=components,
-        component_ids=component_ids)     # TODO: keep track of component_ids
+        component_ids=component_ids)
       if indices is None:
         continue;
 
-      
-      # Do the transformation
-      centering = -obj_label[1:3]   # Move object to the center
-      if True:
-        raise NotImplementedError("TODO ObjectTransformation conversion.")
+      # Center the object in the image
+      centering = np.array([image.shape[0] // 2 - obj_label[1],
+                            image.shape[1] // 2 - obj_label[2], 0])
+      centered_image = ndimage.interpolation.shift(image, centering)
+      centered_annotation = ndimage.interpolation.shift(
+        annotation, centering, order=0)
+      centered_indices = indices + centering[:2]
 
+      # TODO: cut off unnecessary part of image, just over-computation
+
+      angle = np.degrees(new_label[3] - obj_label[3])
+      rotated_image = ndimage.interpolation.rotate(
+        centered_image, angle, reshape=False)
+      rotated_annotation = ndimage.interpolation.rotate(
+        centered_annotation, angle, reshape=False, order=0)
+
+      zoom = (new_obj_label[4:6] / obj_labl[4:6]).append(0)
+      zoomed_image = ndimage.zoom(rotated_image, zoom)
+      zoomed_annotation = ndimage.zoom(rotated_annotation, zoom, order=0)
+      # TODO: figure out if I have to crop again. Super annoying.
+
+      shift = np.array([new_obj_label[0] - zoomed_image.shape[0] // 2,
+                        new_obj_label[1] - zoomed_image.shape[1] // 2, 0])
+      shifted_image = ndimage.interpolation.shift(zoomed_image, shift)
+      shifted_annotation = ndimage.interpolation.shift(
+        zoomed_annotation, shift, order=0)
+
+      new_indices = img.connected_component_indices(
+        shifted_annotation, obj_label[0], new_obj_label)
+      
+      
+      
+      
       
       # TODO: use self.inpainter
       new_image = inpaint.background(new_image, new_indices,
@@ -244,7 +272,7 @@ class ObjectTransformation(Transformation):
     :rtype: tuple of tensors
 
     """
-    centering = -obj_label[1:3]   # Get translation to center.
+    centering = -obj_label[1:3]   # Get translation to center. (wrong)
     centered_image = tf.contrib.image.translate(
       image, centering, 'BILINEAR')
     centered_annotation = tf.contrib.image.translate(

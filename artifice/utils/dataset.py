@@ -626,7 +626,7 @@ class DataAugmenter(Data):
 
   @staticmethod
   def median_background_accumulator(scene, agg):
-    raise NotImplemented("TODO: median_background_accumulator")
+    raise NotImplementedError("TODO: median_background_accumulator")
 
   @staticmethod
   def image_shape_accumulator(scene, agg):
