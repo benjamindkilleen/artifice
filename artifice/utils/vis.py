@@ -11,6 +11,12 @@ import logging
 
 logger = logging.getLogger('artifice')
 
+def show_image(*images, cmap='gray'):
+  fig, axes = plt.subplots(1,len(images), squeeze=False)
+  for i, image in enumerate(images):
+    axes[i,0].imshow(np.squeeze(image), cmap='gray')
+  plt.show()
+  
 def show_predict(image, annotation, prediction):
   """Show the output of the model. Meant for testing."""
   fig, axes = plt.subplots(3,2)
@@ -64,10 +70,10 @@ def show_scene(*scenes):
     im = axes[i,1].imshow(annotation[:,:,0])
     axes[i,1].set_title("Semantic Annotation")
 
-    im = axes[i,2].imshow(np.clip(annotation[:,:,0], 0, 2), cmap='magma')
+    im = axes[i,2].imshow(np.clip(annotation[:,:,1], 0, 30), cmap='magma')
     axes[i,2].set_title("Distance Annotation")
     fig.colorbar(im, ax=axes[i,2], orientation='vertical')
-    plt.show()
+  plt.show()
 
 
 def show_background(background):

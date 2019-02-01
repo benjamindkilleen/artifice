@@ -524,7 +524,18 @@ class DataAugmenter(Data):
     5. update: self._dataset = self._original_dataset `concat` augmentations
 
     """
-    idx_to_labels = {0 : [self.labels[0]]}
+    label = self.labels[0]
+
+    other_label = label.copy()
+    other_label[0,1:3] = np.array([250,30]) # Small ball lower left
+    other_label[0,3] = 0                    # Rotate small ball
+    other_label[0,4:6] = np.array([0.5,2])  # stretch small ball in x
+
+    other_label[1,1:3] = np.array([30,250]) # Big ball upper right
+    other_label[1,3] = -np.pi/2             # Rotate Big ball
+    other_label[1,4:6] = np.array([2,0.5])  # stretch big ball in y
+
+    idx_to_labels = {0 : [label, other_label]}
 
     transform = tform.ObjectTransformation(
       background_image=self.background_image)

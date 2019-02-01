@@ -94,7 +94,10 @@ def inpaint_annotation(annotation, indices, location, semantic_label=0,
     values = np.array([[semantic_label, distance_cval]])
   else:
     assert location is not None
-    distances = np.linalg.norm(indices[:,:2] - location, axis=1)[:, np.newaxis]
+    differences = ((indices[0] - location[0])[:,np.newaxis],
+                   (indices[1] - location[1])[:,np.newaxis])
+    differences = np.concatenate(differences, axis=1)
+    distances = np.linalg.norm(differences, axis=1)[:, np.newaxis]
     values = np.concatenate(
       (semantic_label * np.ones_like(distances), distances), axis=1)
 

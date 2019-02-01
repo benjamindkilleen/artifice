@@ -86,8 +86,10 @@ def cmd_augment(args):
   auger.run(augmented_name)
   
   if args.output[0] == 'show':
-    for scene in dataset.read_tfrecord(augmented_name):
-      vis.show_scene(scene)
+    scene = dataset.read_tfrecord(augmented_name)
+    original_scene = next(scene)
+    new_scene = next(scene)
+    vis.show_scene(original_scene, new_scene)
   else:
     raise NotImplementedError("use '-o show'")
   

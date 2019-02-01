@@ -1,9 +1,9 @@
 """Transformation utils, used to build up augmentations."""
 
-from artifice.utils import img, tfimg
+from artifice.utils import img, vis
 import tensorflow as tf
 import logging
-from scipy import ndimage
+from scipy.ndimage import interpolation
 import numpy as np
 
 logger = logging.getLogger('artifice')
@@ -196,7 +196,6 @@ class ObjectTransformation():
       new_obj_label = new_label[i]
       assert(obj_label[0] > 0)  # TODO: deal with properly
       assert(new_obj_label[0] > 0)  # TODO: deal with properly
-      logger.debug(f"Transforming object {i} with semantic label {obj_label[0]}")
       indices = img.connected_component_indices(
         annotation, obj_label[0], obj_label[1:3],
         num_classes=self.num_classes,
@@ -208,32 +207,42 @@ class ObjectTransformation():
       # Center the object in the image
       centering = np.array([image.shape[0] // 2 - obj_label[1],
                             image.shape[1] // 2 - obj_label[2], 0])
-      centered_image = ndimage.interpolation.shift(image.copy(), centering)
-      centered_annotation = ndimage.interpolation.shift(
+      centered_image = interpolation.shift(image.copy(), centering)
+      centered_annotation = interpolation.shift(
         annotation.copy()[:,:,0], centering[:2], order=0)
       centered_indices = indices[0] + centering[0], indices[1] + centering[1]
 
-      # TODO: cut off unnecessary part of image, only cropping that's necessary
-      
-      angle = np.degrees(new_obj_label[3] - obj_label[3])
-      rotated_image = ndimage.interpolation.rotate(
-        centered_image, angle, reshape=False)
-      rotated_annotation = ndimage.interpolation.rotate(
-        centered_annotation, angle, reshape=False, order=0)
-      
+      # TODO: cut off unnecessary part of image, only cropping what's necessary
+
       # zoom in on image, according to x_scale, y_scale in label.
       # Note: new image will NOT have the same shape.
       zoom = new_obj_label[4:6] / obj_label[4:6]
-      zoomed_image = ndimage.zoom(rotated_image, [zoom[0], zoom[1], 1])
-      zoomed_annotation = ndimage.zoom(rotated_annotation, zoom, order=0)
+      zoomed_image = interpolation.zoom(centered_image, [zoom[0], zoom[1], 1])
+      zoomed_annotation = interpolation.zoom(centered_annotation, zoom, order=0)
+
+      # rotate the image
+      angle = np.degrees(new_obj_label[3] - obj_label[3])
+      rotated_image = interpolation.rotate(
+        zoomed_image, angle)
+      rotated_annotation = interpolation.rotate(
+        zoomed_annotation, angle, order=0)
+
+      # TODO: enable scaling before or after rotation. How?
+
+      # Pad the image so that the translation doesn't remove information
+      pad_width = np.array([[0,max(0, image.shape[0] - rotated_image.shape[0])],
+                            [0,max(0, image.shape[1] - rotated_image.shape[1])],
+                            [0,0]])
+      padded_image = np.pad(rotated_image, pad_width, 'constant')
+      padded_annotation = np.pad(rotated_annotation, pad_width[:2], 'constant')
       
       # Translate object to ultimate position in index space
-      shift = np.array([new_obj_label[1] - image.shape[0] // 2,
-                        new_obj_label[2] - image.shape[1] // 2, 0])
-      shifted_image = ndimage.interpolation.shift(zoomed_image, shift)
-      shifted_annotation = ndimage.interpolation.shift(
-        zoomed_annotation, shift[:2], order=0)
-
+      shift = np.array([new_obj_label[1] - rotated_image.shape[0] // 2,
+                        new_obj_label[2] - rotated_image.shape[1] // 2, 0])
+      shifted_image = interpolation.shift(padded_image, shift)
+      shifted_annotation = interpolation.shift(
+        padded_annotation, shift[:2], order=0)
+      
       # Get the new indices from the transformed annotation
       new_indices = img.connected_component_indices(
         shifted_annotation, new_obj_label[0], new_obj_label[1:3])
