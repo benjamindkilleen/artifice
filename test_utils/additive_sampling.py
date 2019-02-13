@@ -5,9 +5,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from artifice.utils import video
+import logging
+from sys import argv
+
+logging.basicConfig(level=logging.INFO)
 
 class DistributionComparator:
-  """Implement a Kolmogorov-Smirnov test.
+  """Implement a Kolmogorov-Smirnov test on a 1-D sample.
 
   """
   def __init__(self, sample, **kwargs):
@@ -16,7 +20,8 @@ class DistributionComparator:
     :param sample: a SORTED 1D sample.
 
     """
-    self.sample = sample.sort()
+    assert sample.ndim == 1
+    self.sample = np.sort(sample)
     self._lower = kwargs.get('lower')
     self._upper = kwargs.get('upper')
 
@@ -53,16 +58,44 @@ class DistributionComparator:
   @property
   def n(self):
     return self.sample.shape[0]
+
+  def __getitem__(self, i):
+    """Include self.lower and self.upper in (simple) indexing."""
+    if i < -1:
+      raise ValueError
+    elif i == -1:
+      return self.lower
+    elif i == self.n:
+      return self.upper
+    else:
+      return self.sample[i]
   
-  def difference_at(self, y, signed=False, strict=False, squeeze=True):
+  def interval_at(self, i):
+    """Return the sample interval right of the i'th data point.
+
+    Robust to multiple points being at index i. If there is no data 
+
+    :param i: index of the point left of the interval. May be -1 to indicate the
+    lower boundary.
+    :returns: interval
+    :rtype: 
+
+    """
+    if i >= self.n:
+      raise RuntimeError(f"Cannot get item {i} of sample with {self.n} items.")
+
+    left = self[i]
+    j = i + 1
+    while j < self.n and self[j] == left:
+      j += 1
+    right = self[j]
+        
+    return left,right
+  
+  def difference_at(self, y, strict=False, squeeze=True):
     """Compute the difference :math:`|F_n(y) - F(y)|`.
 
-    :math:`F_n` is the empirical distribution of the sample, :math:`F` is the
-    distribution.
-
     :param y: a single point or array of points
-    :param signed: return the difference between the empirical and the
-    distribution at `y`, without taking the absolute value. Default = False
     :param strict: use a strict comparison. When y is equal to a sample point,
     this computes :math:`\lim_{y' \rightarrow y} |F_n(y) - F(y)|` from the
     left.
@@ -76,94 +109,131 @@ class DistributionComparator:
 
     # [[s_0,s_1,... >= y_0], [s_0,s_1,... >= y_1], ...], (m,n)
     if strict:
-      indicators = np.greater(sample, ys)
+      indicators = np.less(sample, ys)
     else:
-      indicators = np.greater_equal(sample, ys)
+      indicators = np.less_equal(sample, ys)
 
     difference = np.sum(indicators, axis=1) / self.n - self.distribution(y)
     if squeeze:
       difference = np.squeeze(difference)
 
-    if signed:
-      return difference
-    else:
-      return np.absolute(difference)
+    return np.absolute(difference)
 
-  def ks_statistic(self):
-    """Find the KS statistic: sup_y |F_n(y) - F(y)|
+  def _ks_info(self):
+    """Find the interval in which :math:`|F_n(y) - F(y)|` has its supremum.
 
     Calculate the statistic from among the points in the sample. In the case
     where F_n(y) >= F(y), the greatest difference in each interval is at its left
     endpoint (because F is nondecreasing and F_n is constant in the
     interval). In the case where F_n <= F(y), the greatest difference is at the
-    right endpoint, taking the limit in the case of F_n.
+    right endpoint, taking the limit in the case of F_n. There is a third case
+    where F crosses F_n in the interval, but it works out similarly.
 
-    :returns: sup_y |F_n(y) - F(y)|
+    :returns: (diff, (l,r), diffs), where `diff` is the value of the supremum and
+    (l,r) is the interval in which it was found. `differences` is for each interval
+    :rtype: tuple of type (float, (float, float))
+
+    """
+    left_side_diffs = np.empty(self.n + 1)
+    left_side_diffs[0] = self.difference_at(self.lower)
+    left_side_diffs[1:] = self.difference_at(self.sample)
+
+    right_side_diffs = np.empty(self.n + 1)
+    right_side_diffs[:-1] = self.difference_at(self.sample, strict=True)
+    right_side_diffs[-1] = self.difference_at(self.upper, strict=True)
+
+    # Find the interval
+    left_idx = np.argmax(left_side_diffs) - 1 # so that self.lower has idx -1
+    right_idx = np.argmax(right_side_diffs)
+    left_side_diff = left_side_diffs[left_idx]
+    right_side_diff = right_side_diffs[right_idx]
+
+    if left_side_diff > right_side_diff:
+      diff = left_side_diff
+      l = self[left_idx]
+      r = self[left_idx + 1]
+    else:
+      diff = right_side_diff
+      l = self[right_idx - 1]
+      r = self[right_idx]
+
+    differences = np.where(left_side_diffs > right_side_diffs,
+                           left_side_diffs, right_side_diffs)
+
+    return diff, (l,r), differences
+    
+  def ks(self):
+    """Find the KS statistic :math:`\sup_y |F_n(y) - F(y)|`
+
+    Wrapper around _ks_info that returns only the difference. Should also
+    be used for the __call__ method.
+
+    :returns: :math:`\sup_y |F_n(y) - F(y)|`
     :rtype: float
 
     """
-    left_side_differences = np.empty(self.n + 1)
-    right_side_differences = np.empty(self.n + 1)
+    return self._ks_info()[0]
 
-    left_side_differences[0] = self.difference_at(self.lower)
-    left_side_differences[1:] = self.difference_at(self.sample)
+  def ks_interval(self):
+    """Find the interval in which :math:`\sup_y |F_n(y) - F(y)|` is maximized.
 
-    right_side_differences[1:] = self.difference_at(self.sample, strict=True)
-    right_side_differences[-1] = self.difference_at(self.upper, strict=True)
+    :returns: endpoints of the interval
+    :rtype: tuple of floats
 
-    left_idx = np.argmax(left_side_differences)
-    right_idx = np.argmax(right_side_differences)
-    left_value = self.lower if left_idx == 0 else self.sample[left_idx - 1]
-    right_value = (self.upper if right_idx == self.n
-                   else self.sample[right_idx])
+    """
+    return self._ks_info()[1]
 
-    return max(left_value, right_value)
+  def __call__(self):
+    return self.ks()
 
-  def draw_sample(self, lo, hi):
-    """Generate a new sample to insert in the range.
+  def draw_point_in(self, lo, hi):
+    """Generate a new point to insert in the interval.
 
     By default, draw from a uniform distribution between lo and hi, but
     subclasses can implement their own distribution.
 
     :param lo: range lower boundary
     :param hi: range upper boundary
-    :returns: new sample value
+    :returns: new point value
     :rtype: float
 
     """
+    # TODO: determine a better distribution? Requires further analysis.
     return np.random.uniform(lo, hi)
     
-  def new_sample_range(self):
-    """Find the range in which a new sample should be inserted.
+  def new_point_interval(self):
+    """Find the interval in which a new point should be inserted.
 
-    Iterate over the ranges. For each, get the average of the (signed) KS
-    difference at each endpoint, and return the range with the (signed) minimum
-    difference.
+    Get the suprumum of the statistic in each interval, return the maximum after
+    weighting by each interval width.
     
     :returns: lo, hi of the range
     :rtype: tuple
 
     """
-    differences = np.zeros(self.n + 2)
-    differences[0] = self.difference_at(self.lower, signed=True)
-    differences[1:-1] = self.difference_at(self.sample, signed=True)
-    differences[-1] = self.difference_at(self.upper, signed=True)
 
-    range_differences = np.zeros(self.n + 1)
-    for i in range_differences.shape[0]:
-      range_differences[i] = differences[i] + differences[i+1] / 2
+    _, _, differences = self._ks_info()
 
-    which_range = np.argmin(range_differences)
-    if which_range == 0:
-      return self.lower, self.sample[0]
-    elif which_range == self.n:
-      return self.sample[which_range - 1], self.upper
-    else:
-      return self.sample[which_range - 1], self.sample[which_range]
+    weighted_diffs = np.empty_like(differences)
+    for i in range(differences.shape[0]):
+      width = self[i] - self[i-1]
+      weighted_diffs[i] = width * differences[i]
 
-  def new_sample(self):
-    """Return a new sample to insert, performing smoothing."""
-    return self.draw_sample(*self.new_sample_range())
+    idx = np.argmax(weighted_diffs) - 1
+    return self.interval_at(idx)
+
+  
+  def new_point(self):
+    """Return a new point to insert, performing smoothing."""
+    return self.draw_point_in(*self.new_point_interval())
+
+  def insert_new_point(self):
+    """Insert a single new example according to additive matching.
+
+    :returns: self
+
+    """
+    return self.insert(self.new_point())
 
   def insert(self, y, adjust_bounds=False):
     """Insert new sample values y.
@@ -191,15 +261,7 @@ class DistributionComparator:
     indices = np.searchsorted(self.sample, y)
     self.sample = np.insert(self.sample, indices, y)
     return self
-
-  def insert_new_sample(self):
-    """Insert a single new example according to additive matching.
-
-    :returns: self
-
-    """
-    return self.insert(self.new_sample())
-
+  
   def plot_sample(self):
     """Plot the sample histogram.
 
@@ -211,12 +273,14 @@ class DistributionComparator:
     """
     fig, ax = plt.subplots(1,1)
     ax.hist(self.sample, bins = 30, range=(self.lower, self.upper),
-            density=True)
+            density=False)
     ax.set_title('Sample Histogram')
     fig.canvas.draw()
 
-    plot_image = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    return plot_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    plt.close()
+    return image
   
     
 class UniformComparator(DistributionComparator):
@@ -231,20 +295,23 @@ def main():
   :rtype: 
 
   """
+  num_iter = 1 if len(argv) == 1 else int(argv[1])
   n = 100
   lower = -5.
   upper = 5.
-  num_iter = 500
   sample = np.clip(np.random.normal(size=n), lower, upper)
   comparator = UniformComparator(sample, lower=lower, upper=upper)
   frame = comparator.plot_sample()
   
-  writer = video.MP4Writer('additive_smoothing.mp4', frame.shape, fps=50)
+  writer = video.MP4Writer('docs/additive_smoothing.mp4', frame.shape, fps=50)
   writer.write(frame)
-  for i in num_iter:
-    frame = comparator.insert_new_sample().plot_sample()
+  for i in range(num_iter):
+    if i % 10 == 0:
+      logging.info(f"adding {i}/{num_iter}")
+    comparator.insert_new_point()
+    frame = comparator.plot_sample()
     writer.write(frame)
-    
+  
   writer.close()
 
 if __name__ == '__main__':

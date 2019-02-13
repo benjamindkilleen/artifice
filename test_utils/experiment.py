@@ -542,7 +542,7 @@ class Experiment:
         '-y',              # overwrite existing files
         '-f', 'rawvideo',
         '-vcodec', 'rawvideo',
-        '-s', '{}x{}'.format(*self.image_shape), # frame size
+        '-s', '{}x{}'.format(self.image_shape[1], self.image_shape[0]), # frame size
         '-pix_fmt', self.pix_fmts[self.mode],
         '-r', str(self.fps), # frames per second
         '-i', '-',           # input comes from a pipe
@@ -554,7 +554,7 @@ class Experiment:
         '-y',              # overwrite existing files
         '-f', 'rawvideo',
         '-vcodec', 'rawvideo',
-        '-s', '{}x{}'.format(*self.image_shape), # frame size
+        '-s', f'{}x{}'.format(self.image_shape[1], self.image_shape[0]),
         '-pix_fmt', 'rgba',
         '-r', str(self.fps), # frames per second
         '-i', '-',           # input comes from a pipe
