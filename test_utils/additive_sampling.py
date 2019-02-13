@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from artifice.utils import video
 import logging
 from sys import argv
+from scipy.special import erf
+import itertools
 
 logging.basicConfig(level=logging.INFO)
 
@@ -24,6 +26,7 @@ class DistributionComparator:
     self.sample = np.sort(sample)
     self._lower = kwargs.get('lower')
     self._upper = kwargs.get('upper')
+    self._recent_ks = None
 
   def distribution(self, y):
     """A vectorized function on y.
@@ -150,29 +153,32 @@ class DistributionComparator:
 
     if left_side_diff > right_side_diff:
       diff = left_side_diff
-      l = self[left_idx]
-      r = self[left_idx + 1]
+      interval = self.interval_at(left_idx)
     else:
       diff = right_side_diff
-      l = self[right_idx - 1]
-      r = self[right_idx]
+      interval = self.interval_at(right_idx - 1)
 
     differences = np.where(left_side_diffs > right_side_diffs,
                            left_side_diffs, right_side_diffs)
 
-    return diff, (l,r), differences
+    self._recent_ks = diff
+    return diff, interval, differences
     
-  def ks(self):
+  def ks(self, recent=False):
     """Find the KS statistic :math:`\sup_y |F_n(y) - F(y)|`
 
     Wrapper around _ks_info that returns only the difference. Should also
     be used for the __call__ method.
 
+    :param recent: get the most recent value without recalculating, if possible.
     :returns: :math:`\sup_y |F_n(y) - F(y)|`
     :rtype: float
 
     """
-    return self._ks_info()[0]
+    if recent and self._recent_ks is not None:
+      return self._recent_ks
+    else:
+      return self._ks_info()[0]
 
   def ks_interval(self):
     """Find the interval in which :math:`\sup_y |F_n(y) - F(y)|` is maximized.
@@ -182,9 +188,6 @@ class DistributionComparator:
 
     """
     return self._ks_info()[1]
-
-  def __call__(self):
-    return self.ks()
 
   def draw_point_in(self, lo, hi):
     """Generate a new point to insert in the interval.
@@ -212,7 +215,8 @@ class DistributionComparator:
 
     """
 
-    _, _, differences = self._ks_info()
+    diff, interval, differences = self._ks_info()
+    return interval
 
     weighted_diffs = np.empty_like(differences)
     for i in range(differences.shape[0]):
@@ -261,6 +265,31 @@ class DistributionComparator:
     indices = np.searchsorted(self.sample, y)
     self.sample = np.insert(self.sample, indices, y)
     return self
+
+  def smooth(self, threshold=0.01, max_iter=None):
+    """Smooth the sample until its ks statistic is below `threshold`
+
+    :param threshold: Default is 0.01
+    :param max_iter: iteration limit. Default (None) adds points forever until
+    threshold reached.
+    :returns: self
+    :rtype: 
+
+    """
+    if max_iter is None:
+      steps = itertools.count()
+    else:
+      steps = range(max_iter)
+      
+    for i in steps:
+      self.insert_new_point()
+      ks = self.ks(recent=True)
+      if i % 10 == 0:
+        logging.info(f"added {i}/{num_iter}, ks = {ks}")
+      if ks <= threshold:
+        break
+    
+    return self.ks(recent=True)
   
   def plot_sample(self):
     """Plot the sample histogram.
@@ -286,7 +315,15 @@ class DistributionComparator:
 class UniformComparator(DistributionComparator):
   def distribution(self, y):
     return (y - self.lower) / (self.upper - self.lower)
-  
+
+class GaussianComparator(DistributionComparator):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.mu = kwargs.get('mu', 0.)
+    self.std = kwargs.get('std', 1.)
+
+  def distribution(self, y):
+    return 0.5 * (1 + erf((y - self.mu) / (np.sqrt(2) * self.std)))
 
 def main():
   """Show the smoothing for a sharply spiked gaussian.
@@ -299,18 +336,24 @@ def main():
   n = 100
   lower = -5.
   upper = 5.
+  threshold = 0.01
   sample = np.clip(np.random.normal(size=n), lower, upper)
+  # comparator = GaussianComparator(sample, mu=2.5, std=0.5, lower=lower, upper=upper)
   comparator = UniformComparator(sample, lower=lower, upper=upper)
   frame = comparator.plot_sample()
   
   writer = video.MP4Writer('docs/additive_smoothing.mp4', frame.shape, fps=50)
   writer.write(frame)
   for i in range(num_iter):
-    if i % 10 == 0:
-      logging.info(f"adding {i}/{num_iter}")
     comparator.insert_new_point()
+    ks = comparator.ks(recent=True)
+    if i % 10 == 0:
+      logging.info(f"added {i}/{num_iter}, ks = {ks}")
     frame = comparator.plot_sample()
     writer.write(frame)
+    if ks <= threshold:
+      break
+    
   
   writer.close()
 

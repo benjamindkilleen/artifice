@@ -7,7 +7,7 @@ although it could also be (image, (annotation, label)).
 
 import numpy as np
 import tensorflow as tf
-from artifice.utils import augment, tform, inpaint
+from artifice.utils import augment, tform, inpaint, smoothing
 import os
 import logging
 
@@ -480,6 +480,7 @@ class DataAugmenter(Data):
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
+    self._inserted_labels = None
 
     self._accs = {'labels' : DataAugmenter.label_accumulator,
                   'background_image' : DataAugmenter.mean_background_accumulator,
@@ -524,21 +525,14 @@ class DataAugmenter(Data):
     5. update: self._dataset = self._original_dataset `concat` augmentations
 
     """
-    label = self.labels[0]
-
-    other_label = label.copy()
-    other_label[0,1:3] = np.array([250,30])  # Small ball lower left
-    other_label[0,3] = np.pi/2               # Rotate small ball
-    other_label[0,4:6] = np.array([0.5,1.5]) # stretch small ball in x
-
-    other_label[1,1:3] = np.array([30,250])  # Big ball upper right
-    other_label[1,3] = -np.pi/2              # Rotate Big ball
-    other_label[1,4:6] = np.array([1.5,0.5]) # stretch big ball in y
-
-    idx_to_labels = {0 : [label, other_label]}
-
+    if True:
+      raise NotImplementedError()
+  
     transform = tform.ObjectTransformation(
       background_image=self.background_image)
+
+    # Problem: would like to iterate over the labels, because there are a lot of
+    # those, in order to
 
     def augment_accumulator(scene, agg):
       if agg is None:
@@ -569,17 +563,29 @@ class DataAugmenter(Data):
   def __call__(self, *args, **kwargs):
     return self.run(*args, **kwargs)
 
-  def compute_new_labels(self):
-    """Create new labels to generate examples from.
+  def _compute_inserted_labels(self):
+    """Create an iterator over labels required for a uniform label space.
 
-    TODO: implement label smoothing, incorporating label-space boundaries.
-
-    :returns:
+    :returns: iterator over numpy labels
     :rtype:
 
     """
-    return tf.expand_dims(self.labels[0], 0)
+    # TODO: figure out the better place to instantiate and place this code
+    bounds = [None,
+              (0, self.image_shape[0]), # X position
+              (0, self.image_shape[1]), # Y position
+              None,
+              None]
+    smoother = smoothing.MultiSmoother(self.labels, bounds)
+    smoother.smooth()
+    return smoother.inserted
 
+  @property
+  def inserted_labels(self):
+    """Iterator over the labels required to smooth the dataset."""
+    if self._inserted_labels is None:
+      self._inserted_labels = self._compute_inserted_labels()
+    return self._inserted_labels
   
   @staticmethod
   def prime_examples_accumulator(scene, prime_examples):

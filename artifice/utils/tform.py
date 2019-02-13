@@ -156,8 +156,6 @@ class AdjustMeanBrightness(ImageTransformation):
       delta = tf.constant(new_mean, dtype=mean.dtype) - mean
       return tf.image.adjust_brightness(image, delta)
     super().__init__(transform)
-
-
     
 
 class ObjectTransformation():
