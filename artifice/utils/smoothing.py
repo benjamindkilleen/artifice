@@ -14,11 +14,30 @@ all possible examples from the new label points.
 
 import numpy as np
 import itertools
+from sortedcontainers import SortedList
 import logging
+import multiprocessing
+import os
 
 logger = logging.getLogger('artifice')
 
+
 class Smoother(object):
+  pass
+
+
+class KLSmoother(Smoother):
+  """Smooth an N-D sample to some N-D distribution by trying to minimize the KL
+  divergence between the empirical distribution of the sample and the desired
+  distribution. Somehow.
+
+  """
+  
+  pass
+
+
+class KSSmoother(Smoother):
+
   """Implement additive uniform smoothing on each dimension of a sample,
   minimizing the Kolmogorov-Smirnov statistic for a given distribution.
   :math:`\sup_y |F_n(y) - F(y)|`, where :math:`F` is the desired comulative
@@ -42,22 +61,32 @@ class Smoother(object):
 
     """
     assert sample.ndim == 1
-    self.original = sample
-    self.sample = np.sort(sample)
+    self._original = set(sample)      # unique points
+    self._points = set(sample)
+    self.sample = SortedList(sample)
     self._lower = kwargs.get('lower')
     self._upper = kwargs.get('upper')
-    self._inserted = []
-    
+    self._inserted = set()
+
     if self.lower > self.sample[0]:
-      logger.warning(f"Eliminating points below {self.lower} lower bound.")
-      self.sample = self.sample[self.lower <= self.sample] # to keep
+      logger.warning(f"Adjusting lower bound to {self.sample[0]}.")
+      self._lower = self.sample[0]
     if self.upper < self.sample[-1]:
-      logger.warning(f"Eliminating points above {self.upper} upper bound.")
-      self.sample = self.sample[self.upper >= self.sample]  
+      logger.warning(f"Adjusting upper bound to {self.sample[-1]}.")
+      self._upper = self.sample[-1]
     
   @property
   def inserted(self):
-    return np.array(self._inserted)
+    return iter(self._inserted)
+
+  @property
+  def original(self):
+    return iter(self._original)
+
+  @property
+  def points(self):
+    """Unique points in the full sample"""
+    return iter(self._points)
     
   @property
   def lower(self):
@@ -83,7 +112,7 @@ class Smoother(object):
 
   @property
   def n(self):
-    return self.sample.shape[0]
+    return len(self.sample)
 
   def __getitem__(self, i):
     """Include self.lower and self.upper in (simple) indexing."""
@@ -137,11 +166,12 @@ class Smoother(object):
     else:
       values = y[y >= self.lower and y <= self.upper]
       if values.shape[0] == 0:
-        return self.sample
+        return self
     
-    indices = np.searchsorted(self.sample, y)
-    self.sample = np.insert(self.sample, indices, y)
-    self._inserted += y.tolist()
+    for v in y:
+      self.sample.add(v)
+      self._inserted.add(v)
+      self._points.add(v)
     return self
 
   def cdf(self, y):
@@ -155,7 +185,15 @@ class Smoother(object):
     :rtype: 
 
     """
-    return (y - self.lower) / (self.upper - self.lower)
+    width = self.upper - self.lower
+
+    if hasattr(y, '__iter__'):
+      values = np.zeros(len(y))
+      for i, v in enumerate(y):
+        values[i] = (v - self.lower) / width
+      return values
+    else:
+      return (y - self.lower) / width
 
   def draw(self, lo, hi):
     """Draw a random value to insert in the interval `[lo,hi]`.
@@ -178,23 +216,32 @@ class Smoother(object):
   def empirical(self, y, strict=False):
     """Compute empirical distribution of the sample :math:`F_n(y)`.
 
-    :param y: single point or array of poitns
+    :param y: single point or array of points. Default, None, returns the
+    empiricals at every point in the sample.
     :param strict: use a strict comparison. When y is equal to a sample point,
     this computes :math:`\lim_{y' \rightarrow y} F_n(y')` from the left.
     :returns: 
 
-    """
-    ys = np.array(y).reshape(-1, 1)    # [[y_0],[y_1],..., [y_m-1]], (m,1)
-    sample = self.sample[np.newaxis,:] # [[s_0, s_1,..., s_n-1]], (1,n)
+    TODO: see if we can do any better when getting the empiricals for points in
+    the sample.
 
-    # [[s_0,s_1,... >= y_0], [s_0,s_1,... >= y_1], ...], (m,n)
-    if strict:
-      indicators = np.less(sample, ys)
+    """    
+    if type(y) != SortedList:
+      ys = np.array(y).reshape(-1)
     else:
-      indicators = np.less_equal(sample, ys)
+      ys = y
 
-    return np.sum(indicators, axis=1) / self.n
+    values = np.zeros(len(ys))
+    for i, y in enumerate(ys):
+      if strict:
+        count = self.sample.bisect_left(y) # num values < y
+      else:
+        count = self.sample.bisect_right(y) # num values <= y
 
+      values[i] = count / self.n
+
+    return np.squeeze(values)
+  
   def ks_diff(self, y, strict=False):
     """Compute the difference :math:`|F_n(y) - F(y)|`.
 
@@ -208,7 +255,7 @@ class Smoother(object):
 
     return np.absolute(self.empirical(y) - self.cdf(y))
 
-  def _ks_info(self):
+  def _ks_info(self, recent=False):
     """Find the interval and value at which :math:`|F_n(y) - F(y)|` has its
     supremum.
 
@@ -225,13 +272,17 @@ class Smoother(object):
     :rtype: tuple of type (float, (float, float))
 
     """
+
+    if recent and getattr(self, '_recent_ks_info') is not None:
+      return self._recent_ks_info
+
     left_side_diffs = np.empty(self.n + 1)
-    left_side_diffs[0] = self.difference_at(self.lower)
-    left_side_diffs[1:] = self.difference_at(self.sample)
+    left_side_diffs[0] = self.ks_diff(self.lower)
+    left_side_diffs[1:] = self.ks_diff(self.sample)
 
     right_side_diffs = np.empty(self.n + 1)
-    right_side_diffs[:-1] = self.difference_at(self.sample, strict=True)
-    right_side_diffs[-1] = self.difference_at(self.upper, strict=True)
+    right_side_diffs[:-1] = self.ks_diff(self.sample, strict=True)
+    right_side_diffs[-1] = self.ks_diff(self.upper, strict=True)
 
     # Find the interval
     left_idx = np.argmax(left_side_diffs) - 1 # so that self.lower has idx -1
@@ -245,13 +296,14 @@ class Smoother(object):
     else:
       diff = right_side_diff
       interval = self.interval_at(right_idx - 1)
-
+ 
     differences = np.where(left_side_diffs > right_side_diffs,
                            left_side_diffs, right_side_diffs)
 
+    self._recent_ks_info = diff, interval, differences
     return diff, interval, differences
 
-  def ks(self):
+  def ks(self, recent=False):
     """Find the KS statistic :math:`\sup_y |F_n(y) - F(y)|`
 
     Wrapper around _ks_info that returns only the difference. Should also
@@ -261,16 +313,16 @@ class Smoother(object):
     :rtype: float
 
     """
-    return self._ks_info()[0]
+    return self._ks_info(recent=recent)[0]
   
-  def _ks_interval(self):
+  def _ks_interval(self, recent=False):
     """Find the interval in which :math:`\sup_y |F_n(y) - F(y)|` is maximized.
 
     :returns: endpoints of the interval
     :rtype: tuple of floats
 
     """
-    return self._ks_info()[1]
+    return self._ks_info(recent=recent)[1]
   
   def new_point_interval(self):
     """Find the interval in which a new point should be inserted.
@@ -306,10 +358,10 @@ class Smoother(object):
     """
     return self.insert(self.new_point())
   
-  def smooth(self, threshold=0.01, max_iter=None):
+  def smooth(self, threshold=0.05, max_iter=None):
     """Smooth the sample until its ks statistic is below `threshold`
 
-    :param threshold: Default is 0.01
+    :param threshold: Default is 0.05
     :param max_iter: iteration limit. Default (None) adds points forever until
     threshold reached.
     :returns: self
@@ -320,15 +372,17 @@ class Smoother(object):
       steps = itertools.count()
     else:
       steps = range(max_iter)
-      
+
+    logger.info(f"Smoothing to threshold {threshold}...")
     for i in steps:
       self.insert_new_point()
       ks = self.ks(recent=True)
       if i % 10 == 0:
-        logging.info(f"added {i}/{num_iter}, ks = {ks}")
+        logger.info(f"added {i}/{max_iter}, ks = {ks}")
       if ks <= threshold:
         break
-    
+
+    logger.info(f"Finished.")
     return self.ks(recent=True)
 
   def __call__(self, **kwargs):
@@ -360,30 +414,32 @@ class MultiSmoother(object):
     """
     self._elem_shape = sample.shape[1:] # Used to unflatten in the iterator.
     _sample = sample.reshape(sample.shape[0], -1)
-    
+    logger.debug(f"_sample: {_sample.shape}")
+
+    if len(bounds) != _sample.shape[1]:
+      raise RuntimeError(f"Must provide {_sample.shape[1]} bounds.")
     self._bounds = bounds
     self._smoothers = []
-    for i, region in enumerate(bounds):
-      smoother = (Smoother(_sample[:,i]) if bounds is None else
-                  Smoother(_sample[:,i], lower=bounds[0], upper=bounds[1]))
+    for i, bound in enumerate(bounds):
+      logger.info(f"adding Smoother {i} in {bound}")
+      smoother = (KSMinimizer(_sample[:,i]) if bound is None else
+                  KSMinimizer(_sample[:,i], lower=bound[0], upper=bound[1]))
       self._smoothers.append(smoother)
 
-  def smooth(self, threshold=0.01, max_iter=None):
+  def smooth(self, cores=None, **kwargs):
     """Smooth each dimension in the sample.
 
     TODO: allow for threshold and max_iter to be specified for each dimension.
 
-    :param threshold: ks threshold
-    :param max_iter: maximum iterations
+    :param cores: number of cores to use. Default (None), uses every available
+    core.
     :returns: 
     :rtype: 
 
     """
-    
     for smoother, bound in zip(self._smoothers, self._bounds):
-      if bound is None:
-        continue
-      smoother.smooth(threshold, max_iter)
+      if bound is not None:
+        smoother.smooth(**kwargs)
 
   @property
   def inserted(self):
@@ -412,9 +468,9 @@ class MultiSmoother(object):
       points = (
         [self._smoothers[i].original for i in range(d)]
         + [self._smoothers[d].inserted]
-        + [self._smoothers[i].sample for i in range(d+1, len(self._smoothers))])
+        + [self._smoothers[i].points for i in range(d+1, len(self._smoothers))])
       iterator = map(lambda t : np.array(t).reshape(*self._elem_shape),
                      itertools.product(*points))
       iterators.append(iterator)
 
-    return itertools.chain(iterators)
+    return itertools.chain(*iterators)

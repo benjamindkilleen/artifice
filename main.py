@@ -86,8 +86,14 @@ def cmd_augment(args):
   # auger.run(augmented_name)
   
   if args.output[0] == 'show':
-    vis.show_labels(auger.labels)
-    vis.show_labels(np.array(auger.inserted_labels))
+    # vis.show_labels(auger.labels)
+
+    # Unit test: if just one new label allowed for one dimension, then we should
+    # get just 900 new examples?
+    
+    for i, label in enumerate(auger.inserted_labels):
+      logger.debug(f"new label {i}: {label[0][1:3]}, {label[1][1:3]}")
+    # vis.show_labels(inserted_labels)
     # scene = dataset.read_tfrecord(augmented_name)
     # original_scene = next(scene)
     # new_scene = next(scene)

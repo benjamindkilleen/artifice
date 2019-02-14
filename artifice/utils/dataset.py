@@ -277,8 +277,9 @@ class Data(object):
 
     An accumulator function should take a `scene` and an `aggregate` object. On
     the first call, `aggregate` will be None. Afterward, each accumulator will
-    be passed the output from its previous call as `scene`. On the final call,
-    `scene` will be None, allowing for post-processing.
+    be passed the output from its previous call as `aggregate`, as well as the
+    next scene in the data as 'scene'. On the final call, `scene` will be None,
+    allowing for post-processing.
 
     :param accumulator: an accumulator function OR a dictionary mapping names to
       accumulator functions
@@ -484,7 +485,8 @@ class DataAugmenter(Data):
 
     self._accs = {'labels' : DataAugmenter.label_accumulator,
                   'background_image' : DataAugmenter.mean_background_accumulator,
-                  'prime_examples' : DataAugmenter.prime_examples_accumulator}
+                  'prime_examples' : DataAugmenter.prime_examples_accumulator,
+                  'image_shape' : DataAugmenter.image_shape_accumulator}
 
     accumulators = {}
     for k, acc in self._accs.items():
@@ -531,8 +533,10 @@ class DataAugmenter(Data):
     transform = tform.ObjectTransformation(
       background_image=self.background_image)
 
-    # Problem: would like to iterate over the labels, because there are a lot of
-    # those, in order to
+    # Problem: would like to iterate over the labels.
+    # Store prime examples in memory, some random selection of them, after the
+    # prime_examples accumulator. This way we can actually multithread the
+    # creation and writing of examples.
 
     def augment_accumulator(scene, agg):
       if agg is None:
@@ -571,13 +575,21 @@ class DataAugmenter(Data):
 
     """
     # TODO: figure out the better place to instantiate and place this code
-    bounds = [None,
+    bounds = [None,                     # object 1
               (0, self.image_shape[0]), # X position
-              (0, self.image_shape[1]), # Y position
-              None,
-              None]
+              None, # (0, self.image_shape[1]), # Y position
+              None,                     # rotation
+              None,                     # X scaling
+              None,                     # Y scaling
+              None,                     # object 2
+              None, # (0, self.image_shape[0]), # X position
+              None, # (0, self.image_shape[1]), # Y position
+              None,                     # rotation
+              None,                     # X scaling
+              None]                     # Y scaling
+    
     smoother = smoothing.MultiSmoother(self.labels, bounds)
-    smoother.smooth()
+    smoother.smooth(max_iter=1)
     return smoother.inserted
 
   @property
@@ -695,11 +707,11 @@ class DataAugmenter(Data):
     :returns:
     :rtype:
 
-    TODO: fix this function
-
     """
+    
     if agg is None:
+      assert scene is not None
       image, (annotation, label) = scene
-      return image.shape
-    if scene is None:
-      return agg
+      agg = image.shape
+      
+    return agg
