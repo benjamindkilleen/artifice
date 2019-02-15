@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 
 logger = logging.getLogger('artifice')
 
-
 class MP4Writer:
   def __init__(self, fname, shape, fps=30):
     """Opens a process to start writing frames.
@@ -39,7 +38,7 @@ class MP4Writer:
       '-f', 'rawvideo',
       '-vcodec', 'rawvideo',      
       '-s', f'{self.shape[1]}x{self.shape[0]}', # WxH
-      '-pix_fmt', 'rgba',                       # byte format
+      '-pix_fmt', self.fmt,                     # byte format
       '-r', str(self.fps),                      # frames per second
       '-i', '-',                                # input from pipe
       '-an',                                    # no audio

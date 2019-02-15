@@ -581,7 +581,18 @@ class DataAugmenter(Data):
 
     """
 
-    labels = 
+    # TODO: generalize
+    points = np.random.uniform(
+      [0,0,0,0],
+      [self.image_shape[0], self.image_shape[1],
+       self.image_shape[0], self.image_shape[1]],
+      size=(self.N,4)
+    )
+
+    original_points = self.labels[:,:,1:3].reshape()
+
+    for point in points:
+      np.argmin()
     
     # TODO: figure out the better place to instantiate and place this code
     bounds = [None,                     # object 1
