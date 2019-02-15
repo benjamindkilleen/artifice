@@ -471,21 +471,20 @@ class DataAugmenter(Data):
   Aggregate attributes may be set by keyword arguments (below). These also
   accept custom accumulators (see Data.accumulate).
 
+  :param N: number of examples to have in the augmented set, default: 10,000.
   :param labels: label set. Should be used only when the tfrecord is unlabeled.
   :param background_image: used for inpainting transformed examples.
-  :param prime_examples: indices of examples which are prime for transformation. In
-    principle, a prime example can be any example. When a new, transformed example
-    is introduced, it will be created from a random example in `prime_examples`.
+  :param image_shape: shape of the image. 
 
   """
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self._inserted_labels = None
+    self.N = kwargs.get('N', 10000)
 
     self._accs = {'labels' : DataAugmenter.label_accumulator,
                   'background_image' : DataAugmenter.mean_background_accumulator,
-                  'prime_examples' : DataAugmenter.prime_examples_accumulator,
                   'image_shape' : DataAugmenter.image_shape_accumulator}
 
     accumulators = {}
@@ -568,12 +567,22 @@ class DataAugmenter(Data):
     return self.run(*args, **kwargs)
 
   def _compute_inserted_labels(self):
-    """Create an iterator over labels required for a uniform label space.
+    """Create labels required for a label space according to some multivariate
+    distribution.
 
-    :returns: iterator over numpy labels
+    FOR NOW: draw from a uniform distribution in R^4, the location space for two
+    spheres, with a hypercube location space. Always map sphere two in front of
+    sphere one in case of overlap. (shouldn't matter)
+
+    TODO: extend space to include rotation, scaling, etc.
+
+    :returns: new numpy labels
     :rtype:
 
     """
+
+    labels = 
+    
     # TODO: figure out the better place to instantiate and place this code
     bounds = [None,                     # object 1
               (0, self.image_shape[0]), # X position
@@ -599,21 +608,6 @@ class DataAugmenter(Data):
       self._inserted_labels = self._compute_inserted_labels()
     return self._inserted_labels
   
-  @staticmethod
-  def prime_examples_accumulator(scene, prime_examples):
-    """Selects only the first examples as "prime."
-
-    TODO: be more exact with this definition.
-
-    :param scene:
-    :param prime_examples:
-    :returns:
-    :rtype:
-
-    """
-    return [0]
-
-
   @staticmethod
   def label_accumulator(scene, labels):
     """Accumulate labels in the original dataset.

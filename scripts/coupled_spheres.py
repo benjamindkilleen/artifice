@@ -2,7 +2,8 @@
 without gravity. Outputs a tfrecord in data/coupled_spheres. (Should be run from
 $ARTIFICE)
 
-# TODO: add gravitational/EM attraction to center?
+# TODO: add realistic physics simulation as in
+https://gist.github.com/Zulko/f828b38421dfbee59daf, using package 'ode'.
 
 """
 
@@ -35,20 +36,21 @@ r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
 x1 = -150            # initial x position (cm)
 y1 = 0               # initial y position
-vx1 = 60            # initial x velocity (cm/s)
+vx1 = 60             # initial x velocity (cm/s)
 vy1 = -60            # initial y velocity
 
 # ball 2
-r2 = 30
-m2 = 27
+r2 = 20
+m2 = 8
 x2 = 150
 y2 = 0
 vx2 = -30
 vy2 = -20
 
 # Spring parameters
-k = 15                          # (N / m)
-relaxed_length = 200            # (cm)
+k = 15                          # Hooke's constant (N / m)
+relaxed_length = 200            # For Hooke's law (cm)
+minimum_length = r1 + r2 + 5    # Nonlinear boundary of spring (cm)
 
 # Add walls at the boundary of the image plane
 do_walls = True                # TODO: fix this behavior
@@ -56,10 +58,11 @@ do_walls = True                # TODO: fix this behavior
 #################### CONFIGURABLE OPTIONS ABOVE ####################
 
 # spring:
-l0 = relaxed_length / 100
+l_relaxed = relaxed_length / 100.
+l_min = minimum_length / 100.
 def spring(l):
   """
-  :l: distance between masses, in meters
+  :param l: distance between masses, in meters
 
   Return the force in Newtons exerted by the spring as a function of its length
   `l`. Negative force is attractive, positive repulsive. In center-of-mass polar
@@ -70,8 +73,14 @@ def spring(l):
   the forces, in case I want to expand the simulation to do that.
 
   """
-  # TODO: apply non-linearities near boundaries of spring
-  return -k * (l - l0)
+
+  # Prevent occlusion, possibly.
+  if l > l_min:
+    lower_boundary = 1 / np.square(l - l_min) # coefficient may require tuning.
+  else:
+    lower_boundary = 10000      # Shouldn't happen, if above tuned correctly
+  
+  return -k * (l - l_relaxed) + lower_boundary
 
 
 def calculate_acceleration(x1, x2):
@@ -184,6 +193,7 @@ def argsf2(fn):
 def main():
   # helpers
   color = lambda col : vapory.Texture(vapory.Pigment('color', col))
+  texture = lambda text : vapory.Texture(text)
   
   # initial state, in SI units
   global initial, current
@@ -200,8 +210,8 @@ def main():
   current = initial.copy()
 
   # Begin setup
-  s1 = experiment.ExperimentSphere(argsf1, color('Gray'))
-  s2 = experiment.ExperimentSphere(argsf2, color('Gray'))
+  s1 = experiment.ExperimentSphere(argsf1, texture('PinkAlabaster'))
+  s2 = experiment.ExperimentSphere(argsf2, texture('PinkAlabaster'))
 
   # experiment
   exp = experiment.Experiment(image_shape=image_shape,
@@ -209,11 +219,13 @@ def main():
                               N=N, fname=fname,
                               output_format=output_formats,
                               fps=fps, mode='L')
-  exp.add_object(vapory.LightSource([0, 5*image_shape[0], -5*image_shape[1]],
+  exp.add_object(vapory.LightSource([0, 5*image_shape[0], 0],
                                     'color', [1,1,1]))
-  exp.add_object(vapory.LightSource([5*image_shape[0], 0, -5*image_shape[1]],
+  exp.add_object(vapory.LightSource([5*image_shape[0], 0, 0],
                                     'color', [1,1,1]))
-  exp.add_object(vapory.Plane([0,0,1], 2*max(r1, r2), color('White'))) # ground
+
+  # Background
+  exp.add_object(vapory.Plane([0,0,1], max(r1, r2), texture('Blue_Sky')))
 
   if do_walls:
     global walls
