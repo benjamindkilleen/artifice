@@ -277,8 +277,9 @@ class Data(object):
 
     An accumulator function should take a `scene` and an `aggregate` object. On
     the first call, `aggregate` will be None. Afterward, each accumulator will
-    be passed the output from its previous call as `scene`. On the final call,
-    `scene` will be None, allowing for post-processing.
+    be passed the output from its previous call as `aggregate`, as well as the
+    next scene in the data as 'scene'. On the final call, `scene` will be None,
+    allowing for post-processing.
 
     :param accumulator: an accumulator function OR a dictionary mapping names to
       accumulator functions
@@ -470,21 +471,21 @@ class DataAugmenter(Data):
   Aggregate attributes may be set by keyword arguments (below). These also
   accept custom accumulators (see Data.accumulate).
 
+  :param N: number of examples to have in the augmented set, default: 10,000.
   :param labels: label set. Should be used only when the tfrecord is unlabeled.
   :param background_image: used for inpainting transformed examples.
-  :param prime_examples: indices of examples which are prime for transformation. In
-    principle, a prime example can be any example. When a new, transformed example
-    is introduced, it will be created from a random example in `prime_examples`.
+  :param image_shape: shape of the image. 
 
   """
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self._inserted_labels = None
+    self.N = kwargs.get('N', 10000)
 
     self._accs = {'labels' : DataAugmenter.label_accumulator,
                   'background_image' : DataAugmenter.mean_background_accumulator,
-                  'prime_examples' : DataAugmenter.prime_examples_accumulator}
+                  'image_shape' : DataAugmenter.image_shape_accumulator}
 
     accumulators = {}
     for k, acc in self._accs.items():
@@ -531,8 +532,10 @@ class DataAugmenter(Data):
     transform = tform.ObjectTransformation(
       background_image=self.background_image)
 
-    # Problem: would like to iterate over the labels, because there are a lot of
-    # those, in order to
+    # Problem: would like to iterate over the labels.
+    # Store prime examples in memory, some random selection of them, after the
+    # prime_examples accumulator. This way we can actually multithread the
+    # creation and writing of examples.
 
     def augment_accumulator(scene, agg):
       if agg is None:
@@ -564,20 +567,38 @@ class DataAugmenter(Data):
     return self.run(*args, **kwargs)
 
   def _compute_inserted_labels(self):
-    """Create an iterator over labels required for a uniform label space.
+    """Create labels required for a label space according to some multivariate
+    distribution.
 
-    :returns: iterator over numpy labels
+    FOR NOW: draw from a uniform distribution in R^4, the location space for two
+    spheres, with a hypercube location space. Always map sphere two in front of
+    sphere one in case of overlap. (shouldn't matter)
+
+    TODO: extend space to include rotation, scaling, etc.
+
+    :returns: new numpy labels
     :rtype:
 
     """
+
+    labels = 
+    
     # TODO: figure out the better place to instantiate and place this code
-    bounds = [None,
+    bounds = [None,                     # object 1
               (0, self.image_shape[0]), # X position
-              (0, self.image_shape[1]), # Y position
-              None,
-              None]
+              None, # (0, self.image_shape[1]), # Y position
+              None,                     # rotation
+              None,                     # X scaling
+              None,                     # Y scaling
+              None,                     # object 2
+              None, # (0, self.image_shape[0]), # X position
+              None, # (0, self.image_shape[1]), # Y position
+              None,                     # rotation
+              None,                     # X scaling
+              None]                     # Y scaling
+    
     smoother = smoothing.MultiSmoother(self.labels, bounds)
-    smoother.smooth()
+    smoother.smooth(max_iter=1)
     return smoother.inserted
 
   @property
@@ -587,21 +608,6 @@ class DataAugmenter(Data):
       self._inserted_labels = self._compute_inserted_labels()
     return self._inserted_labels
   
-  @staticmethod
-  def prime_examples_accumulator(scene, prime_examples):
-    """Selects only the first examples as "prime."
-
-    TODO: be more exact with this definition.
-
-    :param scene:
-    :param prime_examples:
-    :returns:
-    :rtype:
-
-    """
-    return [0]
-
-
   @staticmethod
   def label_accumulator(scene, labels):
     """Accumulate labels in the original dataset.
@@ -695,11 +701,11 @@ class DataAugmenter(Data):
     :returns:
     :rtype:
 
-    TODO: fix this function
-
     """
+    
     if agg is None:
+      assert scene is not None
       image, (annotation, label) = scene
-      return image.shape
-    if scene is None:
-      return agg
+      agg = image.shape
+      
+    return agg

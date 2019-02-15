@@ -38,14 +38,15 @@ def show_predict(image, annotation, prediction):
   plt.show()
 
 
-def show_labels(labels, bins=194):
+def show_labels(labels, bins=97):
   _range = [[0, 387], [0, 387]]
   fig, axes = plt.subplots(1, 2, sharex=True, sharey=True)
-  axes[0].hist2d(labels[:,0,1:3], bins, range=_range, cmap='magma')
+  axes[0].hist2d(labels[:,0,1], labels[:,0,2], bins, range=_range, cmap='magma')
   axes[0].set_title("Sphere 1 Positions")
 
-  axes[1].hist2d(labels[:,1,1:3], bins, range=_range, cmap='magma')
+  axes[1].hist2d(labels[:,1,1], labels[:,1,2], bins, range=_range, cmap='magma')
   axes[1].set_title("Sphere 2 Positions")
+  plt.axis('off')
   plt.show()
 
 def show_scene(*scenes):

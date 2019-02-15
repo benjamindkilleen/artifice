@@ -25,7 +25,7 @@ from skimage import draw
 from inspect import signature
 import subprocess as sp
 import tensorflow as tf
-from artifice.utils import dataset, img
+from artifice.utils import dataset, img, video
 import logging
 
 logging.basicConfig(format='%(levelname)s:experiment:%(message)s', level=logging.INFO)
@@ -84,7 +84,7 @@ class DynamicObject:
     same on every call.
 
   self.args stores the most recent args as a list. This is instantiated as [],
-  and is used by Experiment.compute_annotation() to generate the mask of the object.
+  and is used by Experiment.annotate_and_label() to generate the mask of the object.
 
   """
   def __init__(self, vapory_object, object_args, *args, **kwargs):
@@ -269,17 +269,18 @@ class Experiment:
   """An Experiment contains information for generating a dataset, which is done
   using self.run(). It has variations that affect the output labels.
   
-  args:
-    image_shape: (rows, cols) shape of the output images, determines the aspect ratio
-      of the camera, default=(512,512). Number of channels determined by `mode`
-    mode: image mode to generate, default='L' (8-bit grayscale)
-    num_classes: number of classes to be detected, INCLUDING the background class.
-    N: number of images to generate, default=1000
-    output_format: filetype to write, default='tfrecord'. Can be a list of
-      filetypes, in which case the same data will be written to each.
-    fname: name of output file, without extension. Ignored if included.
-    camera_multiplier: controls how far out the camera is positioned, as a
-      multiple of image_shape[1] (vertical pixels), default=4 (far away)
+  :param image_shape: (rows, cols) shape of the output images, determines the
+  aspect ratio of the camera, default=(512,512). Number of channels determined
+  by `mode`
+  :param mode: image mode to generate, default='L' (8-bit grayscale)
+  :param num_classes: number of classes to be detected, INCLUDING the background class.
+  :param N: number of images to generate, default=1000
+  :param output_format: filetype to write, default='tfrecord'. Can be a list of
+  filetypes, in which case the same data will be written to each.
+  :param fname: name of output file, without extension. Ignored if included.
+  :param camera_multiplier: controls how far out the camera is positioned, as a
+  multiple of image_shape[1] (vertical pixels), default=4 (far away)
+  :param noisify: add Poisson noise to each frame depending on the frame rate.
 
   Image `mode` is according to PIL.Image. Valid inputs are:
   * L (8-bit pixels, black and white)
@@ -293,6 +294,7 @@ class Experiment:
   self.objects is a list of ExperimentObjects that are subject to change,
   whereas self.static_objects is a list of vapory Objects ready to be inserted
   in the scene, as is.
+
   """
 
   supported_modes = {'L', 'RGB'}
@@ -303,11 +305,12 @@ class Experiment:
 
   def __init__(self, image_shape=(512,512), mode='L', num_classes=2, N=1000,
                output_format='tfrecord', fname="data", camera_multiplier=4,
-               fps=1):
+               fps=1, noisify=True):
     self.N = int(N)
+    self.noisify = noisify
 
-    assert(type(image_shape) == tuple and len(image_shape) == 2)
-    self.image_shape = image_shape
+    self.image_shape = tuple(image_shape)
+    assert(len(self.image_shape) == 2)
 
     assert(mode in self.supported_modes)
     self.mode = mode
@@ -445,23 +448,28 @@ class Experiment:
     u = (mag_v / cos_th) * u_hat
     return v + u
   
-  def compute_annotation_label(self):
-    """Computes the annotation and label for the scene, based on most recent vapory
-    objects created.
+  def annotate_and_label(self):
+    """Computes the annotation and label for the scene.
+
+    Based on the most recent vapory objects created.
 
     The first channel of the annotation always marks class labels.
     Further channels are more flexible, but in general the second channel should
     enocde distance. Here, we use an object's compute_location method to get
     the distance at every point inside an object's annotation.
-
+    
     The label has a row for every object in the image (which can get flattened
     for a network). The first element of each row contains the semantic label of
-    the object, if it is in the example, or -1 otherwise.
-
+    the object, if it is in the example, or 0 otherwise. TODO: implement this.
+    
+    The determination of whether an object is "in the example" is subjective. We
+    consider "in the example" to mean that the object's "center" location is not
+    occluded.
+    
     TODO: currently, only modifies masks due to occlusion by other objects in
     experiment_objects. This is usually sufficient, but in some cases, occlusion
     may occur from static or untracked objects.
-
+    
     """
     label = np.zeros((len(self.experiment_objects), self.label_dimension),
                      dtype=np.float32)
@@ -480,8 +488,6 @@ class Experiment:
           annotation[r, c, 0] = obj.semantic_label
           annotation[r, c, 1] = np.linalg.norm(
             np.array([r,c]) - label[i, 1:3])
-          # if np.linalg.norm(np.array([r,c]) - label[i, 1:3]) < 2:
-          #   label[i, 0] = 0
 
     return annotation, label
     
@@ -506,10 +512,16 @@ class Experiment:
     image = vap_scene.render(height=self.image_shape[0], width=self.image_shape[1])
     if self.mode == 'L':
       image = img.grayscale(image)
-    
+
+    # Add noise
+    if self.noisify:
+      peak = 100000             # TODO: make fps dependent.
+      image = np.random.poisson(image.astype(np.float64) / 255. * peak)
+      image = (image / peak * 255.).astype(np.uint8)
+      
     # compute annotation, label using most recently used args, produced by the
     # render call
-    annotation, label = self.compute_annotation_label()
+    annotation, label = self.annotate_and_label()
 
     return image, (annotation, label)
     
@@ -535,39 +547,14 @@ class Experiment:
       mp4_image_fname = self.fname + '.mp4'
       mp4_annotation_fname = self.fname + '_annotation.mp4'
 
+      mp4_image_writer = video.MP4Writer(
+        mp4_image_fname, self.image_shape[:2], fps=self.fps)
+
+      mp4_annotation_writer = video.MP4Writer(
+        mp4_annotation_fname, self.image_shape[:2] + (3,), fps=self.fps)
       
       logging.info("Writing video to {}".format(mp4_image_fname))
-      image_cmd = [
-        'ffmpeg',
-        '-y',              # overwrite existing files
-        '-f', 'rawvideo',
-        '-vcodec', 'rawvideo',
-        '-s', '{}x{}'.format(self.image_shape[1], self.image_shape[0]), # frame size
-        '-pix_fmt', self.pix_fmts[self.mode],
-        '-r', str(self.fps), # frames per second
-        '-i', '-',           # input comes from a pipe
-        '-an',               # no audio
-        '-vcodec', 'mpeg4',
-        mp4_image_fname]
-      annotation_cmd = [
-        'ffmpeg',
-        '-y',              # overwrite existing files
-        '-f', 'rawvideo',
-        '-vcodec', 'rawvideo',
-        '-s', f'{}x{}'.format(self.image_shape[1], self.image_shape[0]),
-        '-pix_fmt', 'rgba',
-        '-r', str(self.fps), # frames per second
-        '-i', '-',           # input comes from a pipe
-        '-an',               # no audio
-        '-vcodec', 'mpeg4',
-        mp4_annotation_fname]      
       mp4_annotation_cmap = plt.get_cmap('tab20c', lut=self.num_classes)
-
-      mp4_image_log = open(self.fname + '_log.txt', 'w+')
-      mp4_annotation_log = open(self.fname + '_annotation_log.txt', 'w+')
-      mp4_image_proc = sp.Popen(image_cmd, stdin=sp.PIPE, stderr=mp4_image_log)
-      mp4_annotation_proc = sp.Popen(annotation_cmd, stdin=sp.PIPE,
-                                     stderr=mp4_annotation_log)
 
     # step through all the frames, rendering each scene with time-dependence if
     # necessary.
@@ -582,23 +569,17 @@ class Experiment:
         tfrecord_writer.write(e)
         
       if 'mp4' in self.output_formats:
-        mp4_image_proc.stdin.write(image.tostring())
+        mp4_image_writer.write(image)
         annotation_map = mp4_annotation_cmap(annotation[:,:,0]) * 255
-        annotation_map = annotation_map.astype(np.uint8)
-        mp4_annotation_proc.stdin.write(annotation_map.tostring())
+        mp4_annotation_writer.write(annotation_map)
 
     if 'tfrecord' in self.output_formats:
       tfrecord_writer.close()
       logging.info("Finished writing tfrecord.")
 
     if 'mp4' in self.output_formats:
-      mp4_image_proc.stdin.close()
-      mp4_image_proc.wait()
-      mp4_image_log.close()
-      
-      mp4_annotation_proc.stdin.close()
-      mp4_annotation_proc.wait()
-      mp4_annotation_log.close()
+      mp4_image_writer.close()
+      mp4_annotation_writer.close()
       logging.info("Finished writing video.")
 
       

@@ -173,10 +173,19 @@ class ObjectTransformation():
     return self.transform(*args, **kwargs)
 
   def transform(self, scene, new_label, **kwargs):
-    """Transforms `scene` to match `new_label`.
+    """Transforms `scene` to match `new_label`, as much as possible.
+
+    In the case where `scene` contains connected components (overlapping
+    objects) that cannot be separated, the transformation is carried out in
+    'object_order', so the qualities of the first object listed will be
+    accurate, with the second depending on that transformation.
+
+    TODO: allow/test connected component transformation.
 
     :param scene: (image, (annotation, label)) tensor tuple
     :param new_label: use instead of `self.new_label`
+    :param object_order: indices of objects in order of back- to foreground, in
+    case of overlap.
     :returns: transformed scene
     :rtype: tuple of tensors
 
@@ -186,7 +195,6 @@ class ObjectTransformation():
     new_annotation = annotation.copy()
     
     components = img.connected_components(annotation, num_classes=self.num_classes)
-    
     component_ids = [set() for _ in range(self.num_classes)]
     
     for i in kwargs.get('object_order', range(new_label.shape[0])):
@@ -194,12 +202,15 @@ class ObjectTransformation():
       new_obj_label = new_label[i]
       assert(obj_label[0] > 0)  # TODO: deal with properly
       assert(new_obj_label[0] > 0)  # TODO: deal with properly
+
       indices = img.connected_component_indices(
         annotation, obj_label[0], obj_label[1:3],
         num_classes=self.num_classes,
         components=components,
         component_ids=component_ids)
       if indices is None:
+        # TODO: this object has already been transformed, but its label has
+        # not. Need to transform the label according to the other transformation.
         continue;
 
       # Center the object in the image

@@ -24,6 +24,8 @@ class MP4Writer:
     self.fps = fps
     if len(self.shape) == 2:
       self.fmt = 'gray'
+    elif len(self.shape) == 3 and self.shape[2] == 1:
+      self.fmt = 'gray'
     elif len(self.shape) == 3 and self.shape[2] == 3:
       self.fmt = 'rgba'
     elif len(self.shape) == 3 and self.shape[2] == 4:
