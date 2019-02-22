@@ -34,18 +34,18 @@ num_classes = 2                          # including background
 # ball 1 in povray unites
 r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
-x1 = -150            # initial x position (cm)
+x1 = 150             # initial x position (cm)
 y1 = 0               # initial y position
-vx1 = 60             # initial x velocity (cm/s)
-vy1 = -60            # initial y velocity
+vx1 = 150            # initial x velocity (cm/s)
+vy1 = -30            # initial y velocity
 
 # ball 2
-r2 = 20
-m2 = 8
-x2 = 150
+r2 = 30
+m2 = 27
+x2 = 0
 y2 = 0
-vx2 = -30
-vy2 = -20
+vx2 = 0
+vy2 = 0
 
 # Spring parameters
 k = 15                          # Hooke's constant (N / m)
