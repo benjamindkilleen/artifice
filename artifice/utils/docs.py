@@ -32,7 +32,7 @@ overwrite existing model; restart training from scratch.
 """
 
 image_shape_help = """Shape of the image. Must be 3D. Grayscale uses 1 for last
-dimension. Default is 388 388"""
+dimension. Default is '388 388 1'"""
 
 epochs_help = """Number of training EPOCHS. Default is -1, repeats indefinitely."""
 

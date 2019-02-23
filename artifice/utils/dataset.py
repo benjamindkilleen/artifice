@@ -253,7 +253,7 @@ class Data(object):
       self._dataset = data._dataset
       self._original_dataset = getattr(data, '_original_dataset', data._dataset)
     elif issubclass(type(data), tf.data.Dataset):
-      self._dataset = self._original_dataset = dataset
+      self._dataset = self._original_dataset = data
     elif type(data) == str or hasattr(data, '__iter__'):
       self._dataset = self._original_dataset = load_dataset(
         data, parse_entry=self.parse_entry,

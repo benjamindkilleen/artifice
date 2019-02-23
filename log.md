@@ -419,8 +419,3 @@ Feedback on Report:
 * For illustrative purposes, the shadows in the example.
 * Annotation space is not in that figure.
 
-## January 17, 2019
-
-Brainstorm dealing with one-time augmentations. Copied from
-artifice/utils/augment.py and artifice/utils/dataset.py:
-
