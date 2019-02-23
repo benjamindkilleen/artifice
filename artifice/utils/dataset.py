@@ -162,17 +162,16 @@ def read_tfrecord(fname, parse_entry=scene_from_proto):
 
 
 def save_first_scene(fname):
-  """Saves the first scene from fname, a tfrecord, in the same directory, as npy
+  """Saves the first scene from fname, a tfrecord, in the same directory, as npzn
   files. Meant for testing.
 
   """
-  root = os.path.join(*fname.split(os.sep)[:-1])
+  root, ext = os.path.splitext(fname)
 
   gen = read_tfrecord(fname)
-  image, (annotation, _) = next(gen)
+  image, (annotation, label) = next(gen)
 
-  np.save(os.path.join(root, "example_image.npy"), image)
-  np.save(os.path.join(root, "example_annotation.npy"), annotation)
+  np.savez(root + ".npz", image=image, annotation=annotation, label=label)
 
 
 def load_dataset(record_name,
