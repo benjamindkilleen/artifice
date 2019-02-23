@@ -17,5 +17,5 @@ module load povray/3.7
 cd /project2/glk/artifice
 
 echo "Starting experiment generation..."
-python scripts/two_spheres.py
+python scripts/coupled_spheres.py
 echo "Finished."

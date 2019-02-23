@@ -16,7 +16,7 @@ import logging
 
 # Main parameters
 debug = False
-seconds = 30
+seconds = 300
 
 # dataset parameters
 root = "data/coupled_spheres/"  # root dir for fname
@@ -36,8 +36,8 @@ r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
 x1 = 150             # initial x position (cm)
 y1 = 0               # initial y position
-vx1 = 150            # initial x velocity (cm/s)
-vy1 = -30            # initial y velocity
+vx1 = -30            # initial x velocity (cm/s)
+vy1 = 150            # initial y velocity
 
 # ball 2
 r2 = 30
