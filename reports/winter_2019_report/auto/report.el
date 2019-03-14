@@ -5,12 +5,12 @@
                      '(("IEEEtran" "10pt" "draftcls")))
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("subfig" "caption=false" "font=footnotesize")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -24,7 +24,9 @@
     "subfig"
     "siunitx")
    (TeX-add-symbols
-    "endthebibliography")
+    "endthebibliography"
+    "vol"
+    "argmax")
    (LaTeX-add-labels
     "sec:introduction"
     "fig:free-fall"
