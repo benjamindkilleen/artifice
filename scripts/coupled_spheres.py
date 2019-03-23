@@ -11,8 +11,9 @@ import vapory
 import numpy as np
 import matplotlib.pyplot as plt
 from test_utils import experiment
-from artifice.utils import dataset
 import logging
+
+logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
@@ -25,10 +26,9 @@ frame_step = 1/float(fps)       # time per frame (DERIVED)
 steps_per_frame = 1             # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
-output_formats = {'tfrecord', 'mp4'}     # output formats
-fname = root + 'coupled_spheres'         # extensions from output_formats
+output_formats = {'png', 'mp4'}          # output formats
 image_shape = (388, 388)                 # image shape
-num_classes = 2                          # including background
+num_classes = 3                          # including background
 
 # Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
@@ -37,7 +37,7 @@ m1 = 1               # mass (kg)
 x1 = 150             # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = -30            # initial x velocity (cm/s)
-vy1 = 150            # initial y velocity
+vy1 = 100            # initial y velocity
 
 # ball 2
 r2 = 30
@@ -50,7 +50,7 @@ vy2 = 0
 # Spring parameters
 k = 15                          # Hooke's constant (N / m)
 relaxed_length = 200            # For Hooke's law (cm)
-minimum_length = r1 + r2 + 5    # Nonlinear boundary of spring (cm)
+minimum_length = r1 + r2        # Nonlinear boundary of spring (cm)
 
 # Add walls at the boundary of the image plane
 do_walls = True                # TODO: fix this behavior
@@ -76,7 +76,7 @@ def spring(l):
 
   # Prevent occlusion, possibly.
   if l > l_min:
-    lower_boundary = 1 / np.square(l - l_min) # coefficient may require tuning.
+    lower_boundary = 0.1 / np.square(l - l_min) # coefficient may require tuning.
   else:
     lower_boundary = 10000      # Shouldn't happen, if above tuned correctly
   
@@ -109,19 +109,19 @@ def impose_walls():
     xk = 'x' + objNum
     vk = 'v' + objNum
     if current[xk][0] < walls[1]:
-      logging.debug(f"bouncing off left wall at {walls[1]}")
+      logger.debug(f"bouncing off left wall at {walls[1]}")
       current[xk][0] = 2*walls[1] - current[xk][0]
       current[vk][0] *= -1
     if current[xk][0] > walls[3]:
-      logging.debug(f"bouncing off right wall at {walls[3]}")
+      logger.debug(f"bouncing off right wall at {walls[3]}")
       current[xk][0] = 2*walls[3] - current[xk][0]
       current[vk][0] *= -1
     if current[xk][1] > walls[0]:
-      logging.debug(f"bouncing off top wall at {walls[0]}")
+      logger.debug(f"bouncing off top wall at {walls[0]}")
       current[xk][1] = 2*walls[0] - current[xk][1]
       current[vk][1] *= -1
     if current[xk][1] < walls[2]:
-      logging.debug(f"bouncing off bottom wall at {walls[2]}")
+      logger.debug(f"bouncing off bottom wall at {walls[2]}")
       current[xk][1] = 2*walls[2] - current[xk][1]
       current[vk][1] *= -1
 
@@ -160,7 +160,7 @@ def step(n=1):
     # Correct for bouncing off of walls
     impose_walls()
 
-    logging.debug("position:{},{}".format(current['x1'], current['x2']))
+    logger.debug("position:{},{}".format(current['x1'], current['x2']))
     n -= 1
 
     
@@ -210,13 +210,15 @@ def main():
   current = initial.copy()
 
   # Begin setup
-  s1 = experiment.ExperimentSphere(argsf1, texture('PinkAlabaster'))
-  s2 = experiment.ExperimentSphere(argsf2, texture('PinkAlabaster'))
+  s1 = experiment.ExperimentSphere(argsf1, texture('PinkAlabaster'),
+                                   semantic_label=1)
+  s2 = experiment.ExperimentSphere(argsf2, texture('PinkAlabaster'),
+                                   semantic_label=2)
 
   # experiment
   exp = experiment.Experiment(image_shape=image_shape,
                               num_classes=num_classes,
-                              N=N, fname=fname,
+                              N=N, data_root=root,
                               output_format=output_formats,
                               fps=fps, mode='L')
   exp.add_object(vapory.LightSource([0, 5*image_shape[0], 0],
@@ -232,7 +234,7 @@ def main():
     walls = np.zeros(4)         # top, left, bottom, right
     walls[:2] = exp.unproject_to_image_plane((0, 0))[:2]
     walls[2:] = exp.unproject_to_image_plane(image_shape)[:2]
-    logging.info("walls: {}".format(walls))
+    logger.info("walls: {}".format(walls))
     walls /= 100.               # convert to meters
 
   exp.add_object(s1)

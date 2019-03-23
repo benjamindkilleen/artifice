@@ -1,35 +1,26 @@
 """Implements artifice's detection scheme from end to end.
-
-Training scheme:
-* load a dataset, which may or may not be labeled with full annotations.
-* For each batch, obtain the semantic annotations from labeller.py. (This may
-  involve just taking the first num_classes channels of full_annotation.)
-* Perform any augumentations using that newly-labelled data. Add all of this to
-  the dataset, which should be rewritten? Unclear how to keep track of a
-  constantly changing dataset.
-* Train the semantic segmentation on this batch, using semantic_model.py.
-* 
-
 """
+
 
 import tensorflow as tf
+from tensorflow import keras
+from shutil import rmtree
+import os
+import numpy as np
+from glob import glob
+import logging
 
-from artifice.semantic_segmentation import UNet
+logger = logging.getLogger('artifice')
 
-"""Artifice's full detection scheme.
-"""
-class Model:
-  def __init__(self, image_shape, num_classes, sem_model=UNet):
-    self._semantic_model = sem_model(image_shape, num_classes)
-    
-  def train(self, data):
-    """Implement the full training scheme for artifice. Unlike most "train"
-    functions for tensorflow, this does not perform a test-train split.
 
-    """
+def log_model(model):
+  logger.info(f'model: {model.name}')
+  log_layers(model.layers)
 
-    # load the dataset, with or without full annotations?
+def log_layers(layers):
+  for layer in layers:
+    logger.info(
+      f"layer:{layer.input_shape} -> {layer.output_shape}:{layer.name}")
 
-    # obtain semantic annotations
-    
-  
+class Model():
+  pass

@@ -7,13 +7,24 @@ although it could also be (image, (annotation, label)).
 
 import numpy as np
 import tensorflow as tf
-from artifice.utils import augment, tform, inpaint, smoothing
+from artifice import tform
 import os
 import logging
 
 
 logger = logging.getLogger('artifice')
 
+
+def as_float(image):
+  """Return image as a grayscale float32 array at least 3d."""
+  if image.dtype in [np.float32, np.float64]:
+    image = image.astype(np.float32)
+  elif image.dtype in [np.uint8, np.int32, np.int64]:
+    image = image.astype(np.float32) / 255.
+  else:
+    raise ValueError(f"image dtype '{image.dtype}' not allowed")
+  return np.atleast_3d(image)
+  
 
 def _bytes_feature(value):
   # Helper function for writing a string to a tfrecord
@@ -24,28 +35,69 @@ def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
 
-def proto_from_scene(scene):
-  """Creates a tf example from the scene, which contains an image and an
-  annotation.
+def proto_from_example(example):
+  """Creates a tf example proto from an (image, label) pair.
 
-  output:
-    example_string: a tf.train.Example, serialized to a string with four
-      elements: the original images, as strings, and their shapes.
-
-  TODO: allow for creating an unlabeled example. Include flag in the data?
+  :param example: (image, label) pair
+  :returns: proto string
+  :rtype: str
 
   """
-  image, (annotation, label) = scene
-  image = np.atleast_3d(image)
-  annotation = np.atleast_3d(annotation)
+  image, label = example
+  image = as_float(image)
+  image_string = image.tostring()
+  image_shape = np.array(image.shape, dtype=np.int64)
 
-  if image.dtype in [np.float32, np.float64]:
-    image = (255 * image).astype(np.uint8)
-  elif image.dtype in [np.uint8, np.int32, np.int64]:
-    image = image.astype(np.uint8)
-  else:
-    raise ValueError(f"image dtype '{image.dtype}' not allowed")
-  annotation = annotation.astype(np.float32)
+  label_string = label.tostring()
+  label_shape = np.array(label.shape, dtype=np.int64)
+
+  feature = {"image" : _bytes_feature(image_string),
+             "image_shape" : _int64_feature(image_shape),
+             "label" : _bytes_feature(label_string),
+             "label_shape" : _int64_feature(label_shape)}
+
+  features = tf.train.Features(feature=feature)
+  example = tf.train.Example(features=features)
+  return example.SerializeToString()
+
+def example_from_proto(proto):
+  """Parse `proto` into tensors `(image, label)`.
+
+  """
+  features = tf.parse_single_example(
+    proto,
+    features={
+      'image': tf.FixedLenFeature([], tf.string),
+      'image_shape': tf.FixedLenFeature([3], tf.int64),
+      'label' : tf.FixedLenFeature([], tf.string),
+      'label_shape' : tf.FixedLenFeature([2], tf.int64)
+    })
+
+  # decode strings
+  image = tf.decode_raw(features['image'], tf.uint8)
+  image = tf.reshape(image, features['image_shape'])
+  image = tf.to_float(image) / 255.
+
+  label = tf.decode_raw(features['label'], tf.float32)
+  label = tf.reshape(label, features['label_shape'],
+                     name='reshape_label_proto')
+
+  return (image, label)
+
+
+def proto_from_scene(scene):
+  """Creates a tf example from the scene, which contains an (image,label) example
+  and an annotation.
+
+  example_string: a tf.train.Example, serialized to a string with four
+  elements, the original images, as strings, and their shapes.
+
+  """
+  example, annotation = scene
+  image, label = example
+  image = np.as_float(image)
+  annotation = np.as_float(annotation)
+
   image_string = image.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
 
@@ -67,16 +119,8 @@ def proto_from_scene(scene):
   return example.SerializeToString()
 
 
-def proto_from_tensor_scene(scene):
-  """Create a proto string holding the given scene properly. Useful for writing
-  tfrecord from tf.data.Dataset objects.
-  """
-  image, (annotation, label) = scene
-  raise NotImplementedError("implement proto_from_tensor_scene")
-
-
-def tensor_scene_from_proto(proto):
-  """Parse the serialized string PROTO into tensors (IMAGE, ANNOTATION).
+def scene_from_proto(proto):
+  """Parse `proto` into tensors `(image, label), annotation`.
 
   TODO: allow for loading an unlabelled example. Can do this by including a
   boolean in the data? That's one possibility.
@@ -107,172 +151,124 @@ def tensor_scene_from_proto(proto):
   label = tf.reshape(label, features['label_shape'],
                      name='reshape_label_proto')
 
-  return image, (annotation, label)
-
-
-def scene_from_proto(proto):
-  """Take a serialized tf.train.Example, as created by proto_from_scene(),
-  and convert it back to a scene.
-
-  TODO: allow for loading an unlabelled example.
-
-  """
-
-  example = tf.train.Example()
-  example.ParseFromString(proto)
-
-  feature = example.features.feature
-
-  image_string = feature['image'].bytes_list.value[0]
-  image_shape = np.array(feature['image_shape'].int64_list.value,
-                         dtype=np.int64)
-  image = np.fromstring(image_string, dtype=np.uint8).reshape(image_shape)
-
-  annotation_string = feature['annotation'].bytes_list.value[0]
-  annotation_shape = np.array(feature['annotation_shape'].int64_list.value,
-                              dtype=np.int64)
-  annotation = np.fromstring(annotation_string, dtype=np.float32) \
-                 .reshape(annotation_shape)
-
-  label_string = feature['label'].bytes_list.value[0]
-  label_shape = np.array(feature['label_shape'].int64_list.value,
-                         dtype=np.int64)
-  label = np.fromstring(label_string, dtype=np.float32).reshape(label_shape)
-
-  return image, (annotation, label)
-
-
-def read_tfrecord(fname, parse_entry=scene_from_proto):
-  """Reads a tfrecord into a generator over each parsed example, using
-  parse_entry to turn each serialized tf string into a value returned from the
-  generator. parse_entry=None, then just return the unparsed string on each
-  call to the generator.
-
-  Note that this is not intended for any training/testing pipeline but rather
-  for accessing the actual data.
-
-  """
-
-  if parse_entry == None:
-    parse_entry = lambda x : x
-  record_iter = tf.python_io.tf_record_iterator(path=fname)
-
-  for string_record in record_iter:
-    yield parse_entry(string_record)
-
-
-def save_first_scene(fname):
-  """Saves the first scene from fname, a tfrecord, in the same directory, as npzn
-  files. Meant for testing.
-
-  """
-  root, ext = os.path.splitext(fname)
-
-  gen = read_tfrecord(fname)
-  image, (annotation, label) = next(gen)
-
-  np.savez(root + ".npz", image=image, annotation=annotation, label=label)
+  return (image, label), annotation
 
 
 def load_dataset(record_name,
-                 parse_entry=None,
+                 parse_entry=example_from_proto,
                  num_parallel_calls=None):
   """Load the record_name as a tf.data.Dataset"""
-  if parse_entry is None:
-    parse_entry = tensor_scene_from_proto
   dataset = tf.data.TFRecordDataset(record_name)
   return dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
 
+
 def save_dataset(record_name, dataset,
-                 encode_entry=proto_from_tensor_scene):
-  """FIXME! briefly describe function
+                 proto_from_example=proto_from_example,
+                 num_parallel_calls=None):
+  """Save the dataset in tfrecord format
 
-  :param record_name:
-  :param dataset:
-  :param encode_entry:
-  :returns:
-  :rtype:
+  :param record_name: filename to save to
+  :param dataset: tf.data.Dataset to save
+  :param proto_from_example: 
+  :param num_parallel_calls: 
+  :returns: 
+  :rtype: 
 
   """
-  logger.info(f"Writing dataset to {record_name}")
-  encoded_dataset = dataset.map(encode_entry,
-                                num_parallel_calls=self.num_parallel_calls)
-  writer = tf.data.experimental.TFRecordWriter(record_name)
-  write_op = writer.write(encoded_dataset)
+  next_example = dataset.make_one_shot_iterator().get_next()
+
+  logger.info(f"writing dataset to {record_name}...")
+  writer = tf.python_io.TFRecordWriter(record_name)
   with tf.Session() as sess:
-    sess.run(write_op)
+    i = 0
+    while True:
+      try:
+        example = sess.run(next_example)
+        writer.write(proto_from_example(example))
+      except tf.errors.OutOfRangeError:
+        break
+      i += 1
 
 
+  writer.close()
+  logger.info(f"wrote {i} examples")
+
+  
 class Data(object):
-  """A Data object contains scenes, as defined above. It's mainly useful as a
-  way to save and then distribute data.
+  """Wrapper around tf.data.Dataset of examples.
 
-  Attributes:
-  :_dataset: the dataset associated with the object, including any
-    augmentations with ObjectTransformations.
-  :_original_dataset: the dataset without any augmentations. This is used mainly
-    for DataAugmenter, which will discard the _dataset object.
-
-  Data subclasses should be instantiated from one another in chains, rarely if
-  ever invoking the Data class directly. Instead, create a DataAugmenter by
-  passing it a DataInput or TrainDataInput object. After running the
-  DataAugmenter instance (either by run() or __call__()).
-
-  Subclasses which do not want to accept keyword arguments from a parent should
-  overwrite them with the **kwargs passed to them directly rather than using
-  `self._kwargs`, as this is left alone.
-
-  Data objects that support augmentation (mainly TrainDataInput and
-  DataAugmenter) use the self.augmentation object. Data objects pass '+' and
-  '*' operations onto their augmentations. The augmentation is not preserved
-  when transforming between Data subclasses (unless explicitly passed as a
-  keyword arg).
-
-  """
-
+  Chiefly useful for feeding into models in various forms."""
   def __init__(self, data, **kwargs):
     """args:
     :param data: a tf.data.Dataset OR tfrecord file name(s) OR another Data
       subclass. In this case, the other object's _dataset is adopted, allows
       kwargs to be overwritten.
     """
-    if issubclass(type(data), Data):
-      self._kwargs = data._kwargs.copy()
-      self._kwargs.update(kwargs)
-    else:
-      self._kwargs = kwargs.copy()
-
-    self.batch_size = self._kwargs.get('batch_size', 1)
-    self.num_parallel_calls = self._kwargs.get('num_parallel_calls', None)
-    self.parse_entry = self._kwargs.get('parse_entry', None)
-    self.image_shape = self._kwargs.get('image_shape', None)
-    self.augmentation = kwargs.get('augmentation', augment.identity)
 
     if issubclass(type(data), Data):
       self._dataset = data._dataset
-      self._original_dataset = getattr(data, '_original_dataset', data._dataset)
     elif issubclass(type(data), tf.data.Dataset):
-      self._dataset = self._original_dataset = data
-    elif type(data) == str or hasattr(data, '__iter__'):
-      self._dataset = self._original_dataset = load_dataset(
-        data, parse_entry=self.parse_entry,
-        num_parallel_calls=self.num_parallel_calls)
+      self._dataset = data
+    elif type(data) in [str, list, tuple]:
+      # Loading tfrecord files
+      self._dataset = load_dataset(data, **kwargs)
     else:
-      raise ValueError(f"unrecognized type '{type(data)}'")
+      raise ValueError(f"unrecognized data '{data}'")
 
-
+    self.image_shape = self._kwargs.get('image_shape', None)
+    self.batch_size = self._kwargs.get('batch_size', 1)
+    self.num_parallel_calls = kwargs.get('num_parallel_calls')
+    self._kwargs = kwargs
+    
   def save(self, record_name, **kwargs):
     """Save the dataset to record_name."""
     save_dataset(record_name, self._dataset, **kwargs)
 
+  def __iter__(self):
+    return self._dataset.__iter__()
+  
+  def split(self, *splits, types=None):
+    """Split the dataset into different sets.
 
-  def save_original(self, record_name, **kwargs):
-    """Save the original dataset to record_name."""
-    save_dataset(record_name, self._original_dataset, **kwargs)
+    Pass in the number of examples for each split. Returns a new Data object
+    with datasets of the corresponding number of examples.
 
+    :param types: optional list of Data subclasses to instantiate the splits
+    :returns: list of Data objects with datasets of the corresponding sizes.
+    :rtype: [Data]
 
+    """
+    
+    datas = []
+    for i, n in enumerate(splits):
+      dataset = self._dataset.skip(sum(splits[:i])).take(n)
+      if types is None or i >= len(types):
+        datas.append(type(self)(dataset, **self._kwargs))
+      elif types[i] is None:
+        datas.append(None)
+      else:
+        datas.append(types[i](dataset, **self._kwargs))
+      
+    return datas
+
+  def sample(self, sampling):
+    """Draw a sampling from the dataset, returning a new dataset of the same type.
+
+    :param sampling: 1-D array indexing the dataset, e.g. a boolean array, with
+    possible repetitions.
+    :returns: new data object with examples selected by sampling.
+    :rtype: a Data subclass, same as self
+
+    """
+    sampling = tf.constant(sampling, dtype=tf.int64)
+    dataset = self._dataset.apply(tf.data.experimental.enumerate_dataset())
+    def map_func(idx, example):
+      return tf.data.Dataset.from_tensors(example).repeat(sampling[idx])
+    dataset = dataset.flat_map(map_func)
+    return type(self)(dataset, **self._kwargs)
+  
   def accumulate(self, accumulator):
-    """Eagerly runs the accumulators across the original_dataset.
+    """Eagerly runs the accumulators across the dataset.
 
     An accumulator function should take a `scene` and an `aggregate` object. On
     the first call, `aggregate` will be None. Afterward, each accumulator will
@@ -288,8 +284,8 @@ class Data(object):
 
     """
 
-    iterator = self._original_dataset.make_initializable_iterator()
-    next_scene = iterator.get_next()
+    iterator = self._dataset.make_initializable_iterator()
+    next_item = iterator.get_next()
 
     if type(accumulator) == dict:
       accumulators = accumulator
@@ -302,7 +298,7 @@ class Data(object):
       logger.info("initialized iterator, starting accumulation...")
       while True:
         try:
-          scene = sess.run(next_scene)
+          scene = sess.run(next_item)
           for k, acc in accumulators.items():
             aggregates[k] = acc(scene, aggregates[k])
         except tf.errors.OutOfRangeError:
@@ -311,45 +307,20 @@ class Data(object):
     logger.info("finished accumulation")
     for k, acc in accumulators.items():
       aggregates[k] = acc(None, aggregates[k])
-
     
     if type(accumulator) == dict:
       return aggregates
     else:
       return aggregates[0]
 
+  @property
+  def (self):
+    raise NotImplementedError
+
+
+class AnnotatedData(Data):
+  pass
     
-  def add_augmentation(self, aug):
-    self.augmentation += aug
-    return self
-
-  def __add__(self, other):
-    if issubclass(type(other), augment.Augmentation):
-      return self.add_augmentation(aug)
-    elif issubclass(type(other), Data):
-      return self.add_augmentation(other.augmentation)
-    else:
-      raise ValueError(f"unrecognized type '{type(other)}'")
-
-  def __radd__(self, other):
-    if other == 0:
-      return self
-    else:
-      return self.__add__(other)
-
-  def mul_augmentation(self, aug):
-    self.augmentation *= aug
-    return self
-
-  def __mul__(self, other):
-    if issubclass(type(other), augment.Augmentation):
-      return self.mul_augmentation(aug)
-    elif issubclass(type(other), Data):
-      return self.mul_augmentation(other.augmentation)
-    else:
-      raise ValueError(f"unrecognized type '{type(aug)}'")
-
-
 class DataInput(Data):
   """A DataInput object encompasses all of them. The
   __call__ method for a Data returns an iterator function over the associated

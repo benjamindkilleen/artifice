@@ -419,3 +419,10 @@ Feedback on Report:
 * For illustrative purposes, the shadows in the example.
 * Annotation space is not in that figure.
 
+## March 23, 2019: Design Notes
+
+* There are two types of data, fundamentally. Those with semantic annotations,
+  useful for transforming, augmentation, and those without. We create a training
+  set from the semantically annotated data.
+* From experiments, we generate the images as PNGs, the labels as a single .npy
+  file, and the semantic annotations as PNGs as well. 

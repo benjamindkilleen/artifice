@@ -17,6 +17,13 @@ to its center.
 
 """
 
+import logging
+logger = logging.getLogger('experiment')
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(levelname)s:experiment:%(message)s'))
+logger.addHandler(handler)
+
 import numpy as np
 import vapory
 import os
@@ -25,10 +32,8 @@ from skimage import draw
 from inspect import signature
 import subprocess as sp
 import tensorflow as tf
-from artifice.utils import dataset, img, video
-import logging
+from artifice.utils import dat, img, vid
 
-logging.basicConfig(format='%(levelname)s:experiment:%(message)s', level=logging.INFO)
 
 INFINITY = 10e9
 
@@ -299,12 +304,12 @@ class Experiment:
 
   supported_modes = {'L', 'RGB'}
   pix_fmts = {'L' : 'gray', 'RGB' : 'rgb8'}
-  supported_formats = {'tfrecord', 'mp4'}
+  supported_formats = {'tfrecord', 'mp4', 'png'}
   included = ["colors.inc", "textures.inc"]
   label_dimension = 6
 
   def __init__(self, image_shape=(512,512), mode='L', num_classes=2, N=1000,
-               output_format='tfrecord', fname="data", camera_multiplier=4,
+               output_format='tfrecord', data_root="data/tmp", camera_multiplier=4,
                fps=1, noisify=True):
     self.N = int(N)
     self.noisify = noisify
@@ -324,8 +329,9 @@ class Experiment:
     assert(all([f in self.supported_formats for f in self.output_formats]))
 
     # set fname, without extension
-    assert(type(fname) == str)
-    self.fname = fname
+    self.data_root = data_root
+    if not os.path.exists(self.data_root):
+      os.makedirs(self.data_root)
 
     assert(camera_multiplier > 0)
     self.camera_multiplier = camera_multiplier
@@ -473,11 +479,9 @@ class Experiment:
     """
     label = np.zeros((len(self.experiment_objects), self.label_dimension),
                      dtype=np.float32)
-    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 2),
-                          dtype=np.float32)
-    annotation[:,:,1] = INFINITY
-    object_distance = INFINITY * np.ones(annotation.shape[:2], dtype=np.float64)
-    
+    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1)),
+                          dtype=np.int64)
+
     for i, obj in enumerate(self.experiment_objects):
       label[i] = obj.compute_label(self)
       rr, cc, dd = obj.compute_mask(self)
@@ -486,16 +490,14 @@ class Experiment:
         if d < object_distance[r, c]:
           object_distance[r, c] = d
           annotation[r, c, 0] = obj.semantic_label
-          annotation[r, c, 1] = np.linalg.norm(
-            np.array([r,c]) - label[i, 1:3])
 
     return annotation, label
-    
+  
   def render_scene(self, t=None):
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns a "scene": (image, (annotation, label))
+    Returns: an (example, annotation) pair.
 
     TODO:
     Call the make_targets() function, implemented by subclasses, that uses
@@ -523,11 +525,10 @@ class Experiment:
     # render call
     annotation, label = self.annotate_and_label()
 
-    return image, (annotation, label)
+    return (image, label), annotation
     
   def run(self, verbose=None):
     """Generate the dataset in each format.
-    
     """
 
     if verbose is not None:
@@ -536,36 +537,44 @@ class Experiment:
     if len(self.output_formats) == 0:
       # TODO: raise error?
       return
-    
+
     # Instantiate writers and fnames for each format
+    if 'png' in self.output_formats:
+      image_dir = os.path.join(self.data_root, 'images/')
+      annotation_dir = os.path.join(self.data_root, 'annotations/')
+      label_path = os.path.join(self.data_root, 'labels.npy')
+      labels = None
+      logging.info("writing images to {}".format(image_dir))
+    
     if 'tfrecord' in self.output_formats:
-      tfrecord_fname = self.fname + '.tfrecord'
-      tfrecord_writer = tf.python_io.TFRecordWriter(tfrecord_fname)
-      logging.info("Writing tfrecord to {}".format(tfrecord_fname))
+      tfrecord_name = os.path.join(self.data_root, 'data.tfrecord')
+      tfrecord_writer = tf.python_io.TFRecordWriter(tfrecord_name)
+      logging.info("writing tfrecord to {}".format(tfrecord_name))
 
     if 'mp4' in self.output_formats:
-      mp4_image_fname = self.fname + '.mp4'
-      mp4_annotation_fname = self.fname + '_annotation.mp4'
-
-      mp4_image_writer = video.MP4Writer(
-        mp4_image_fname, self.image_shape[:2], fps=self.fps)
-
-      mp4_annotation_writer = video.MP4Writer(
-        mp4_annotation_fname, self.image_shape[:2] + (3,), fps=self.fps)
+      mp4_image_name = os.path.join(self.data_root, 'data.mp4')
+      mp4_image_writer = vid.MP4Writer(
+        mp4_image_name, self.image_shape[:2], fps=self.fps)
+      logging.info("writing video to {}".format(mp4_image_name))
       
-      logging.info("Writing video to {}".format(mp4_image_fname))
-      mp4_annotation_cmap = plt.get_cmap('tab20c', lut=self.num_classes)
-
     # step through all the frames, rendering each scene with time-dependence if
     # necessary.
     for t in range(self.N):
       logging.info("Rendering scene {} of {}...".format(t, self.N))
-      scene = self.render_scene(t)
-      image, (annotation, label) = scene
+      example, annotation = self.render_scene(t)
+      image, label = example
       logging.debug(f"label: {label}")
+
+      if 'png' in self.output_formats:
+        fname = f"{str(t).zfill(5)}.png"
+        img.save(os.path.join(image_dir, fname), image)
+        img.save(os.path.join(annotation_dir, fname), annotation)
+        if labels is None:
+          labels = np.empty((self.N,) + label.shape)
+        labels[t] = label
       
       if 'tfrecord' in self.output_formats:
-        e = dataset.proto_from_scene(scene)
+        e = dat.proto_from_scene(scene)
         tfrecord_writer.write(e)
         
       if 'mp4' in self.output_formats:
@@ -573,6 +582,10 @@ class Experiment:
         annotation_map = mp4_annotation_cmap(annotation[:,:,0]) * 255
         mp4_annotation_writer.write(annotation_map)
 
+        
+    if 'png' in self.output_formats:
+      np.save(os.path.join(self.data_root, "labels.npy"), labels)
+      
     if 'tfrecord' in self.output_formats:
       tfrecord_writer.close()
       logging.info("Finished writing tfrecord.")
@@ -582,87 +595,10 @@ class Experiment:
       mp4_annotation_writer.close()
       logging.info("Finished writing video.")
 
-      
-class BallExperiment(Experiment):
-  """Generate an experiment with one or more balls. Mostly for test cases.
-
-  """
-  
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-
-  def add_static_ball(self, center, radius, *args):
-    """Adds a static ball to the scene.
-    args:
-      center: a list (or tuple) of length two or three, specifying the center of
-        the ball. If len(center) == 2, ball is assumed to lie in image plane
-        (z=0).
-      radius: radius of the ball.
-
-    TODO: add options to change color of ball.
-    """
-    center = list(center)
-    if len(center) == 2:
-      center.append(0)
-    assert(len(center) == 3)
-    ball = vapory.Sphere(center, radius, *args)
-    self.add_object(ball)
-
-#################### TESTS ####################
-
-def annotation_diff(image, annotation):
-  """Assuming annotation has a black background, return a numpy array of binary
-  values that shows which pixels are off."""
-  bin_image = np.not_equal(image, 0).any(axis=2)
-  bin_annotation = np.not_equal(annotation,0).reshape(annotation.shape[:2])
-  return np.not_equal(bin_image, bin_annotation)
-
-def test():
-  """FIXME! briefly describe function
-
-  :returns: 
-  :rtype: 
-
-  """
-  color = lambda col: vapory.Texture(vapory.Pigment('color', col))
-  width = 500
-  
-  exp = BallExperiment(image_shape=(width, width))
-  exp.add_object(vapory.Background('Black'))
-  exp.add_object(vapory.LightSource([0, 5*width, -5*width], 'color', [1,1,1]))
-  # TODO: oboe with radius?
-  min_radius = 20
-  max_radius = 100
-  argsf = lambda : (
-    [np.random.randint(max_radius/2,width/2 - max_radius/2),
-     np.random.randint(max_radius/2,width/2 - max_radius/2),
-     np.random.randint(-width, width)
-    ],
-    np.random.randint(min_radius, max_radius))
-  
-  red_ball = ExperimentSphere(argsf, color('Red'))
-  blue_ball = ExperimentSphere(argsf, color('Blue'), semantic_label=2)
-  exp.add_object(red_ball)
-  exp.add_object(blue_ball)
-  
-  image, annotation = exp.render_scene()
-
-  # world_point = red_ball.center
-  # image_point = exp.project(*world_point)
-  
-  plt.imshow(image)
-  # plt.plot(image_point[0], image_point[1], 'b.')
-  plt.savefig('image.png')
-
-  plt.imshow(annotation.reshape(annotation.shape[:2]))
-  plt.savefig('annotation.png')
-
-  plt.imshow(annotation_diff(image, annotation))
-  plt.savefig('annotation_diff.png')
     
 def main():
   """For testing purposes"""
-  test()
+  pass
   
 
 if __name__ == '__main__': main()
