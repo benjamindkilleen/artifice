@@ -75,7 +75,7 @@ class Artifice:
   def load_data(self):
     return None
 
-def cmd_convert(art)
+def cmd_convert(art):
   pass
 
 def cmd_train(art):

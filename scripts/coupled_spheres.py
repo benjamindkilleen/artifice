@@ -234,7 +234,6 @@ def main():
     walls = np.zeros(4)         # top, left, bottom, right
     walls[:2] = exp.unproject_to_image_plane((0, 0))[:2]
     walls[2:] = exp.unproject_to_image_plane(image_shape)[:2]
-    logger.info("walls: {}".format(walls))
     walls /= 100.               # convert to meters
 
   exp.add_object(s1)

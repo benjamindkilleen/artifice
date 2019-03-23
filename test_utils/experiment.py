@@ -32,7 +32,8 @@ from skimage import draw
 from inspect import signature
 import subprocess as sp
 import tensorflow as tf
-from artifice.utils import dat, img, vid
+from artifice.utils import img, vid
+from artifice import dat
 
 
 INFINITY = 10e9
@@ -481,6 +482,7 @@ class Experiment:
                      dtype=np.float32)
     annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1),
                           dtype=np.int64)
+    object_distance = INFINITY * np.ones(annotation.shape[:2], dtype=np.float64)
 
     for i, obj in enumerate(self.experiment_objects):
       label[i] = obj.compute_label(self)
@@ -532,7 +534,7 @@ class Experiment:
     """
 
     if verbose is not None:
-      logging.warning("verbose is depricated")
+      logger.warning("verbose is depricated")
 
     if len(self.output_formats) == 0:
       # TODO: raise error?
@@ -542,33 +544,37 @@ class Experiment:
     if 'png' in self.output_formats:
       image_dir = os.path.join(self.data_root, 'images/')
       annotation_dir = os.path.join(self.data_root, 'annotations/')
+      if not os.path.exists(image_dir):
+        os.makedirs(image_dir)
+      if not os.path.exists(annotation_dir):
+        os.makedirs(annotation_dir)
       label_path = os.path.join(self.data_root, 'labels.npy')
       labels = None
-      logging.info("writing images to {}".format(image_dir))
+      logger.info("writing images to {}".format(image_dir))
     
     if 'tfrecord' in self.output_formats:
       tfrecord_name = os.path.join(self.data_root, 'data.tfrecord')
       tfrecord_writer = tf.python_io.TFRecordWriter(tfrecord_name)
-      logging.info("writing tfrecord to {}".format(tfrecord_name))
+      logger.info("writing tfrecord to {}".format(tfrecord_name))
 
     if 'mp4' in self.output_formats:
       mp4_image_name = os.path.join(self.data_root, 'data.mp4')
       mp4_image_writer = vid.MP4Writer(
         mp4_image_name, self.image_shape[:2], fps=self.fps)
-      logging.info("writing video to {}".format(mp4_image_name))
+      logger.info("writing video to {}".format(mp4_image_name))
       
     # step through all the frames, rendering each scene with time-dependence if
     # necessary.
     for t in range(self.N):
-      logging.info("Rendering scene {} of {}...".format(t, self.N))
+      logger.info("Rendering scene {} of {}...".format(t, self.N))
       example, annotation = self.render_scene(t)
       image, label = example
-      logging.debug(f"label: {label}")
+      logger.debug(f"label: {label}")
 
       if 'png' in self.output_formats:
         fname = f"{str(t).zfill(5)}.png"
-        img.save(os.path.join(image_dir, fname), image)
-        img.save(os.path.join(annotation_dir, fname), annotation)
+        img.save(os.path.join(image_dir, fname), np.squeeze(image))
+        np.save(os.path.join(annotation_dir, fname), annotation)
         if labels is None:
           labels = np.empty((self.N,) + label.shape)
         labels[t] = label
@@ -579,8 +585,6 @@ class Experiment:
         
       if 'mp4' in self.output_formats:
         mp4_image_writer.write(image)
-        annotation_map = mp4_annotation_cmap(annotation[:,:,0]) * 255
-        mp4_annotation_writer.write(annotation_map)
 
         
     if 'png' in self.output_formats:
@@ -588,12 +592,11 @@ class Experiment:
       
     if 'tfrecord' in self.output_formats:
       tfrecord_writer.close()
-      logging.info("Finished writing tfrecord.")
+      logger.info("Finished writing tfrecord.")
 
     if 'mp4' in self.output_formats:
       mp4_image_writer.close()
-      mp4_annotation_writer.close()
-      logging.info("Finished writing video.")
+      logger.info("Finished writing video.")
 
     
 def main():

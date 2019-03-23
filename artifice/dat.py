@@ -313,10 +313,6 @@ class Data(object):
     else:
       return aggregates[0]
 
-  @property
-  def (self):
-    raise NotImplementedError
-
 
 class AnnotatedData(Data):
   pass
@@ -378,7 +374,7 @@ class TrainDataInput(DataInput):
 def load_data_input(record_name,
                     input_classes=[DataInput],
                     input_sizes=[-1],
-                    parse_entry=tensor_scene_from_proto,
+                    parse_entry=scene_from_proto,
                     num_parallel_calls=None,
                     **kwargs):
   """Load the tfrecord as a DataInput object. By default, parses
