@@ -479,7 +479,7 @@ class Experiment:
     """
     label = np.zeros((len(self.experiment_objects), self.label_dimension),
                      dtype=np.float32)
-    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1)),
+    annotation = np.zeros((self.image_shape[0], self.image_shape[1], 1),
                           dtype=np.int64)
 
     for i, obj in enumerate(self.experiment_objects):
