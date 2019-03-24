@@ -1,0 +1,15 @@
+INFO:experiment:writing images to data/coupled_spheres/images/
+Traceback (most recent call last):
+  File "scripts/coupled_spheres.py", line 251, in <module>
+    main()
+  File "scripts/coupled_spheres.py", line 247, in main
+    exp.run()
+  File "/project2/glk/artifice/test_utils/experiment.py", line 563, in run
+    mp4_image_name, self.image_shape[:2], fps=self.fps)
+  File "/project2/glk/artifice/artifice/utils/vid.py", line 50, in __init__
+    self.proc = sp.Popen(cmd, stdin=sp.PIPE, stderr=self.log)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/subprocess.py", line 709, in __init__
+    restore_signals, start_new_session)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/subprocess.py", line 1344, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: 'ffmpeg': 'ffmpeg'
