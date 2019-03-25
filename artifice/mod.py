@@ -1,7 +1,6 @@
 """Implements artifice's detection scheme from end to end.
 """
 
-
 import tensorflow as tf
 from tensorflow import keras
 from os.path import join
@@ -238,10 +237,10 @@ class HourglassModel(FunctionalModel):
   
   def detect(self, data, max_iter=None):
     """Detect objects in the reassembled fields.
-
+    
     :param data: dat.Data set
     :returns: generator over these elements
-
+    
     """
     labels = np.zeros((data.size, data.num_objects, 3), np.float32)
     for i, field in enumerate(self.full_predict(data)):

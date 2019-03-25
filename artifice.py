@@ -25,6 +25,9 @@ from artifice.utils import docs, img, vis
 from multiprocessing import cpu_count
 import itertools
 
+plt.rcParams["figure.figsize"] = (10,5)
+
+
 logger.debug(f"Use Python{3.6} or higher.")
 
 
@@ -74,8 +77,6 @@ class Artifice:
     if not self.show:
       mpl.use('Agg')
       plt.ioff()
-    else:
-      plt.rcParams["figure.figsize"] = (10,5)
     
     # ensure directories exist
     for path in [self.data_root, self.model_root]:
@@ -278,6 +279,8 @@ def cmd_detect(art):
         plt.show()
       else:
         plt.savefig(join(art.model_root, f"detection_{str(i).zfill(4)}.pdf"))
+      if i > 4:
+        break
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
