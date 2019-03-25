@@ -23,17 +23,25 @@ dimension."""
 
 epochs_help = """Number of training epochs. Default is 1."""
 
-num_examples_help = """Not used."""
+batch_size_help = """Batch size."""
 
-num_classes_help = """Not used."""
+num_objects_help = """Maximum number of objects."""
 
-splits_help = """Splits to use for training, validation, and testing."""
+splits_help = """Splits to use for unlabeled, validation, and testing."""
+
+num_examples_help = """Number of examples to generate for training."""
+
+num_annotated_help = """Number of examples from the unlabeled set which are
+annotated."""
 
 l2_reg_help = """Not used."""
 
 cores_help = """Number of CPU cores to parallelize over. Default (-1) uses
 available cores."""
 
+verbose_help = """Artifice verbosity. Default is 2 (debug level)."""
+
 eager_help = """Enable eager execution."""
 
 show_help = """Show plots rather than save them."""
+

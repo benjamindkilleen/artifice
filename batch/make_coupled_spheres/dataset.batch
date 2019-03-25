@@ -10,6 +10,7 @@
 #SBATCH --mem-per-cpu=32000
 
 module unload python
+module load ffmpeg
 module load cuda/9.0
 module load Anaconda3/2018.12
 source activate tf-gpu-1.12.0

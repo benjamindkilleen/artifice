@@ -572,9 +572,9 @@ class Experiment:
       logger.debug(f"label: {label}")
 
       if 'png' in self.output_formats:
-        fname = f"{str(t).zfill(5)}.png"
-        img.save(os.path.join(image_dir, fname), np.squeeze(image))
-        np.save(os.path.join(annotation_dir, fname), annotation)
+        fname = f"{str(t).zfill(5)}"
+        img.save(os.path.join(image_dir, fname + '.png'), np.squeeze(image))
+        np.save(os.path.join(annotation_dir, fname + '.npy'), annotation)
         if labels is None:
           labels = np.empty((self.N,) + label.shape)
         labels[t] = label
@@ -588,6 +588,7 @@ class Experiment:
 
         
     if 'png' in self.output_formats:
+      logger.info("Finished writing images.")
       np.save(os.path.join(self.data_root, "labels.npy"), labels)
       
     if 'tfrecord' in self.output_formats:

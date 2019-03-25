@@ -9,6 +9,22 @@ import logging
 
 logger = logging.getLogger('artifice')
 
+def fill_negatives(image):
+  """Fill the negative values in background with gaussian noise.
+  
+  :param image: a numpy array with negative values to fill
+  
+  """
+  image = image.copy()
+  indices = image >= 0
+  mean = image[indices].mean()
+  std = image[indices].std()
+  
+  indices = image < 0
+  image[indices] = np.random.normal(mean, std, size=image[indices].shape)
+  return image
+
+
 def connected_components(annotation, num_classes=2):
   """Get connected components from an annotation.
 
@@ -121,31 +137,31 @@ def inpaint_annotation_background(annotation, indices, distance_cval=None,
                             semantic_label=0, distance_cval=distance_cval)
 
 
-def inside(indices, image):
-  """Returns a boolean array for which indices are inside image.shape.
+def inside(indices, shape):
+  """Returns a boolean array for which indices are inside shape.
   
   :param indices: 2D array of indices. Fast axis must have same dimension as shape.
-  :param image: image to compare against
+  :param shape: image shape to compare against, using first two dimensions
   :returns: 1-D boolean array
   
   """
   
   over = np.logical_and(indices[0] >= 0, indices[1] >= 0)
-  under = np.logical_and(indices[0] < image.shape[0],
-                         indices[1] < image.shape[1])
+  under = np.logical_and(indices[0] < shape[0],
+                         indices[1] < shape[1])
 
   return np.logical_and(over, under)
 
 
-def get_inside(indices, image):
+def get_inside(indices, shape):
   """Get the indices that are inside image's shape.
 
   :param indices: 2D array of indices. Fast axis must have same dimension as shape.
-  :param image: image to compare against 
+  :param shape: image shape to compare with
   :returns: a subset of indices.
-  
+
   """
-  which = inside(indices, image)
+  which = inside(indices, shape)
   return indices[0][which], indices[1][which]
 
 
@@ -172,13 +188,13 @@ def grayscale(image):
     return (image * W).mean(axis=2).reshape(*out_shape).astype(np.uint8)
   else:
     return image.mean(axis=2).reshape(*out_shape).astype(np.uint8)
-  
 
 def resize(image, shape, label=None):
   resized = (255*transform.resize(image, shape, mode='reflect')).astype(np.uint8)
   if label is not None: 
     resized[resized != 0] = label
   return resized
+
 
 def open_as_array(fname):
   im = Image.open(fname)
