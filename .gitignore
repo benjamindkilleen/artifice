@@ -14,5 +14,8 @@ data/**/*.png
 data/**/*.npy
 reports/grant
 models/coupled_spheres/detection_*.*
-!models/coupled_spheres/detection_*00.*
-
+!models/coupled_spheres/detection_0.*
+!models/coupled_spheres/detection_1.*
+!models/coupled_spheres/detection_2.*
+!models/coupled_spheres/detection_3.*
+!models/coupled_spheres/detection_4.*
