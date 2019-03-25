@@ -6,6 +6,7 @@ import tensorflow as tf
 from tensorflow import keras
 from os.path import join
 from artifice import lay
+import numpy as np
 import logging
 
 logger = logging.getLogger('artifice')
@@ -216,9 +217,35 @@ class HourglassModel(FunctionalModel):
         inputs = conv(inputs, filters, padding=self.padding)
 
     inputs = conv(inputs, 1, activation=None, padding='same')
-    
     return inputs
+
+  def full_predict(self, data, steps=20):
+    """Yield reassembled fields from the data.
+
+    Requires batch_size to be a multiple of num_tiles
+
+    :param data: dat.Data set
+    :param size: number of examples in the dataset
+    :returns: 
+    :rtype: 
+
+    """
+    assert data.batch_size % data.num_tiles == 0
+    for _ in range(data.size // data.batch_size):
+      tiles = self.predict(data.eval_input, steps=steps, verbose=2)
+      for i in range(0, steps*data.batch_size // data.num_tiles, data.num_tiles):
+        yield data.untile(tiles[i:i+data.num_tiles])
   
-  def detect(self, data):
-    """Detect objects in the reassembled fields."""
-    pass
+  def detect(self, data, max_iter=None):
+    """Detect objects in the reassembled fields.
+
+    :param data: dat.Data set
+    :returns: generator over these elements
+
+    """
+    labels = np.zeros((data.size, data.num_objects, 3), np.float32)
+    for i, field in enumerate(self.full_predict(data)):
+      if max_iter is not None and i >= max_iter:
+        break
+      labels[i] = data.from_field(field)
+    return labels

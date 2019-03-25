@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 from artifice import tform
 from artifice.utils import img
+from skimage.feature import peak_local_max
 import os
 import logging
 
@@ -212,6 +213,8 @@ class Data(object):
     """
 
     self.image_shape = kwargs.get('image_shape', None)
+    self.num_objects = kwargs.get('num_objects', 2)
+    self.size = kwargs.get('size', 1)
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
     self.pad = kwargs.get('pad', 0)
     self.distance_threshold = kwargs.get('distance_threshold', 20.)
@@ -408,7 +411,25 @@ class Data(object):
     zeros = tf.zeros_like(flat_field)
     flat_field = tf.where(flat_field > inv_thresh, flat_field, zeros)
     return tf.reshape(flat_field, self.image_shape)
-  
+
+  def from_field(self, field):
+    """Recreate the position label associated with field.
+
+    Assigns instance labels in order of detection strength.
+
+    :param field: field array
+    :returns: estimated position label `(num_objects, 3)`
+
+    """
+    label = np.zeros((self.num_objects, 3), np.float32)
+    coords = peak_local_max(
+      np.squeeze(field), min_distance=self.distance_threshold,
+      num_peaks=self.num_objects,
+      exclude_border=False)
+    label[:coords.shape[0],1:3] = coords
+    label[:coords.shape[0],0] = np.arange(coords.shape[0])
+    return label
+
   @property
   def fielded(self):
     def map_func(image, label):
@@ -439,12 +460,35 @@ class Data(object):
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
       out = tf.data.Dataset.zip((images, fields))
-      logger.debug(f"tiled: {out}")
       return out
     return self.fielded.flat_map(map_func)
 
-  def untile(self):
-    pass
+  def untile(self, tiles):
+    """Return a single image reconstructed from `tiles`
+
+    :param tiles: iterable of tiles with `tile_shape`
+    :returns: 
+    :rtype: 
+
+    """
+    image = np.empty(self.image_shape, dtype=np.float32)
+    next_tile = iter(tiles)
+    for i in range(0, self.image_shape[0], self.tile_shape[0]):
+      if i + self.tile_shape[0] < self.image_shape[0]:
+        si = self.tile_shape[0]
+      else:
+        si = self.image_shape[0] % self.tile_shape[0]
+      for j in range(0, self.image_shape[1], self.tile_shape[1]):
+        if j + self.tile_shape[1] < self.image_shape[1]:
+          sj = self.tile_shape[1]
+        else:
+          sj = self.image_shape[1] % self.tile_shape[1]
+        try:
+          tile = next(next_tile)
+        except StopIteration:
+          break
+        image[i:i + si, j:j + sj] = tile[:si,:sj]
+    return image
 
   @property
   def training_input(self):
@@ -464,7 +508,6 @@ class AugmentationData(Data):
                      **kwargs)
     self.labels = None          # accumulate labels
     self.num_examples = kwargs.get('num_examples', 10000)
-    self.num_objects = kwargs.get('num_objects', 2)
     self.background = kwargs.get('background')
 
     accumulators = {}

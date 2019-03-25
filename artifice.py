@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 from artifice import dat, mod
 from artifice.utils import docs, img, vis
 from multiprocessing import cpu_count
+import itertools
 
 logger.debug(f"Use Python{3.6} or higher.")
 
@@ -149,14 +150,21 @@ class Artifice:
               'tile_shape' : self.tile_shape,
               'batch_size' : self.batch_size,
               'num_parallel_calls' : self.cores,
-              'pad' : self.pad}
+              'pad' : self.pad,
+              'num_objects' : self.num_objects}
     train_set = dat.AugmentationData(
       self.annotated_set_path,
       num_examples=self.epochs*self.num_examples,
-      num_objects=self.num_objects,
+      size=self.train_size,
       **kwargs)
-    validation_set = dat.Data(self.validation_set_path, **kwargs)
-    test_set = dat.Data(self.test_set_path, **kwargs)
+    validation_set = dat.Data(
+      self.validation_set_path,
+      size=self.validation_size,
+      **kwargs)
+    test_set = dat.Data(
+      self.test_set_path,
+      size=self.test_size,
+      **kwargs)
     return train_set, validation_set, test_set
 
   def make_model(self):
@@ -250,13 +258,27 @@ def cmd_predict(art):
       else:
         break
 
-  
+
 def cmd_evaluate(art):
   pass
 
-def cmd_augment(art):
-  pass
-    
+def cmd_detect(art):
+  """Run detection and show some images with true/predicted positions."""
+  model = art.load_model()
+  train_set, validation_set, test_set = art.load_data()
+  detections = model.detect(test_set)
+  logger.debug(detections)
+  # fields = list(itertools.islice(model.full_predict(test_set), 10))
+  get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  with tf.Session() as sess:
+    for i, detection in enumerate(detections):
+      image, label = sess.run(get_next)
+      vis.plot_detection(image, label, detection)
+      if art.show:
+        plt.show()
+      else:
+        plt.savefig(join(art.model_root, f"detection_{str(i).zfill(4)}.pdf"))
+
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('command', help=docs.command_help)
@@ -328,8 +350,8 @@ def main():
     cmd_predict(art)
   elif art.command == 'evaluate':
     cmd_evaluate(art)
-  elif art.command == 'augment':
-    cmd_augment(art)
+  elif art.command == 'detect':
+    cmd_detect(art)
   else:
     logger.error(f"No command '{args.command}'.")
 
