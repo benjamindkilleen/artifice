@@ -25,8 +25,6 @@ from artifice.utils import docs, img, vis
 from multiprocessing import cpu_count
 import itertools
 
-plt.rcParams["figure.figsize"] = (10,5)
-
 
 logger.debug(f"Use Python{3.6} or higher.")
 
