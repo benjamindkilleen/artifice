@@ -24,119 +24,6 @@ def fill_negatives(image):
   image[indices] = np.random.normal(mean, std, size=image[indices].shape)
   return image
 
-
-def connected_components(annotation, num_classes=2):
-  """Get connected components from an annotation.
-
-  :param annotation: 3D annotation (as a numpy array). First channel contains
-    semantic labels.
-  :param num_classes: Number of classes in the annotation. Default=2.
-  :returns: 
-  :rtype: 
-
-  """
-
-  components = np.empty((annotation.shape[0], annotation.shape[1], num_classes),
-                        dtype=np.int64)
-
-  # TODO use the number of features returned by scipy.ndimage.label instead of
-  # component_ids
-  
-  for obj_id in range(num_classes):
-    components[:,:,obj_id], _ = scipy.ndimage.label(
-      np.atleast_3d(annotation)[:,:,0] == obj_id)
-
-  return components
-
-def connected_component_indices(annotation, semantic_class, location,
-                                components=None, num_classes=2, 
-                                component_ids=None):
-  if components is None:
-    components = connected_components(annotation, num_classes=num_classes)
-  semantic_class = int(semantic_class)
-  x, y = location.astype(np.int64)
-  component_id = components[x,y,semantic_class]
-  if component_ids is not None:
-    if component_id in component_ids[semantic_class]:
-      return None;             # component already encountered
-    else:
-      component_ids[semantic_class].add(component_id)
-
-  return np.where(components[:,:,semantic_class] == component_id)
-
-
-def inpaint_image_background(image, indices, background_image=None, **kwargs):
-  """Inpaint image using `background_image`.
-
-  :param image: 3D numpy `image` to inpaint
-  :param indices: array of indices into `image`
-  :param background_image: image to inpaint with. If None, use mean value of `image`
-  :returns: updated `image`
-  :rtype: np.ndarray
-
-  """
-  if background_image is None:
-    background_image = np.zeros_like(image)
-  
-  image[indices] = background_image[indices]
-  return image
-
-
-def inpaint_annotation(annotation, indices, location, semantic_label=0,
-                       distance_cval=None, **kwargs):
-  """Inpaint an annotation.
-
-  If semantic_label == 0, then assume `indices` points to a background region
-  and inpaint accordingly.
-
-  If semantic_label > 0, assume `indices` points to an object region and inpaint
-  with appropriate distance measure.
-
-  :param annotation: 3D numpy `annotation` to inpaint
-  :param indices: array indices into `annotation`
-  :param location: object's location in index space.
-    Ignored if `semantic_label = 0`.
-  :param semantic_label: semantic label for `annotation[:,:,0]`. Default is 0
-    (background).
-  :param distance_cval: Constant value to use for background distance. Default
-    is `max(annotation[:,:,1])`. Ignored if `semantic_label > 0`.
-  :returns: updated `annotation`
-
-  """
-  
-  if semantic_label == 0:
-    if distance_cval is None:
-      distance_cval = np.max(annotation[:,:,1])
-    values = np.array([[semantic_label, distance_cval]])
-  else:
-    assert location is not None
-    differences = ((indices[0] - location[0])[:,np.newaxis],
-                   (indices[1] - location[1])[:,np.newaxis])
-    differences = np.concatenate(differences, axis=1)
-    distances = np.linalg.norm(differences, axis=1)[:, np.newaxis]
-    values = np.concatenate(
-      (semantic_label * np.ones_like(distances), distances), axis=1)
-
-  annotation[indices] = values
-  return annotation
-
-
-def inpaint_annotation_background(annotation, indices, distance_cval=None,
-                                  **kwargs):
-  """Inpaint a background region pointed to by indices.
-
-  :param annotation: 
-  :param indices: 
-  :param semantic_label: 
-  :param distance_cval: 
-  :returns: updated `annotation`
-  :rtype: 
-
-  """
-  return inpaint_annotation(annotation, indices, None,
-                            semantic_label=0, distance_cval=distance_cval)
-
-
 def inside(indices, shape):
   """Returns a boolean array for which indices are inside shape.
   
@@ -188,13 +75,6 @@ def grayscale(image):
     return (image * W).mean(axis=2).reshape(*out_shape).astype(np.uint8)
   else:
     return image.mean(axis=2).reshape(*out_shape).astype(np.uint8)
-
-def resize(image, shape, label=None):
-  resized = (255*transform.resize(image, shape, mode='reflect')).astype(np.uint8)
-  if label is not None: 
-    resized[resized != 0] = label
-  return resized
-
 
 def open_as_array(fname):
   im = Image.open(fname)

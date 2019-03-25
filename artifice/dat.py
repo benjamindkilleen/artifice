@@ -213,13 +213,14 @@ class Data(object):
 
     self.image_shape = kwargs.get('image_shape', None)
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
+    self.pad = kwargs.get('pad', 0)
     self.distance_threshold = kwargs.get('distance_threshold', 20.)
     self.batch_size = kwargs.get('batch_size', 1)
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
     self.parse_entry = kwargs.get('parse_entry', example_from_proto)
     self.encode_entry = kwargs.get('encode_entry', proto_from_example)
     self.prefetch_buffer_size = kwargs.get('prefetch_buffer_size', self.batch_size)
-    self.num_shuffle = kwargs.get('num_shuffle', 100000)
+    self.num_shuffle = kwargs.get('num_shuffle', 10000)
     self._kwargs = kwargs
     
     if issubclass(type(data), Data):
@@ -233,6 +234,9 @@ class Data(object):
         num_parallel_calls=self.num_parallel_calls)
     else:
       raise ValueError(f"unrecognized data '{data}'")
+
+    self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
+                         np.ceil(self.image_shape[1] / self.tile_shape[1]))
     
   def save(self, record_name):
     """Save the dataset to record_name."""
@@ -415,26 +419,37 @@ class Data(object):
   def tiled(self):
     """Tile the fielded dataset."""
     def map_func(image, field):
+      even_pad = [
+        [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
+        [0,self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
+        [0,0]]
+      image = tf.pad(image, even_pad)
+      field = tf.pad(field, even_pad)
+      model_pad = [[self.pad,self.pad], [self.pad,self.pad], [0,0]]
+      image = tf.pad(image, model_pad)
       image_tiles = []
       field_tiles = []
       for i in range(0, self.image_shape[0], self.tile_shape[0]):
-        if i + self.tile_shape[0] > self.image_shape[0]:
-          i = self.image_shape[0] - self.tile_shape[0]
         for j in range(0, self.image_shape[1], self.tile_shape[1]):
-          if j + self.tile_shape[1] > self.image_shape[1]:
-            j = self.image_shape[1] - self.tile_shape[1]
-          image_tiles.append(image[i:i + self.tile_shape[0],
-                                   j:j + self.tile_shape[1]])
+          image_tiles.append(image[
+            i:i + self.tile_shape[0] + 2*self.pad,
+            j:j + self.tile_shape[1] + 2*self.pad])
           field_tiles.append(field[i:i + self.tile_shape[0],
                                    j:j + self.tile_shape[1]])
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
-      return tf.data.Dataset.zip((images, fields))
+      out = tf.data.Dataset.zip((images, fields))
+      logger.debug(f"tiled: {out}")
+      return out
     return self.fielded.flat_map(map_func)
+
+  def untile(self):
+    pass
 
   @property
   def training_input(self):
-    return self.postprocess_for_training(self.tiled)
+    out = self.postprocess_for_training(self.tiled)
+    return out
 
   @property
   def eval_input(self):

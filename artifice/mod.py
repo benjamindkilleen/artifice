@@ -4,10 +4,8 @@
 
 import tensorflow as tf
 from tensorflow import keras
-from shutil import rmtree
-import os
-import numpy as np
-from glob import glob
+from os.path import join
+from artifice import lay
 import logging
 
 logger = logging.getLogger('artifice')
@@ -22,6 +20,45 @@ def log_layers(layers):
     logger.info(
       f"layer:{layer.input_shape} -> {layer.output_shape}:{layer.name}")
 
+def crop(inputs, shape):
+  return lay.Crop(shape)(inputs)
+    
+def maxpool(inputs, dropout=None):
+  inputs = keras.layers.MaxPool2D()(inputs)
+  if dropout is not None:
+    inputs = keras.layers.Dropout(dropout)(inputs)
+  return inputs
+
+def conv(inputs, filters, activation='relu', padding='valid'):
+  inputs = keras.layers.Conv2D(
+    filters, (3,3),
+    activation=activation,
+    padding=padding,
+    kernel_initializer='glorot_normal')(inputs)
+  return inputs
+
+def dense(inputs, nodes, activation='relu'):
+  inputs = keras.layers.Dense(nodes, activation=activation)(inputs)
+  return inputs
+
+def conv_transpose(inputs, filters, activation='relu', dropout=None):
+  inputs = keras.layers.Conv2DTranspose(
+    filters, (2,2),
+    strides=(2,2),
+    padding='same',
+    activation=activation)(inputs)
+  if dropout is not None:
+    inputs = keras.layers.Dropout(dropout)(inputs)
+  return inputs
+
+def concat(inputs, *other_inputs, axis=-1, dropout=None):
+  """Apply dropout to inputs and concat with other_inputs."""
+  if dropout is not None:
+    inputs = keras.layers.Dropout(dropout)(inputs)
+  inputs = keras.layers.concatenate([inputs] + list(other_inputs))
+  return inputs
+
+    
 class Model():
   def __init__(self, model, model_dir=None, tensorboard=None):
     """Wrapper around a keras.Model for saving, loading, and running.
@@ -40,7 +77,7 @@ class Model():
     """
     self.model_dir = model_dir
     self.checkpoint_path = (None if model_dir is None else
-                            os.path.join(model_dir, "cp-{epoch:04d}.hdf5"))
+                            join(model_dir, "cp-{epoch:04d}.hdf5"))
     self.tensorboard = tensorboard
     
     self.model = model
@@ -88,37 +125,100 @@ class Model():
       self.model.load_weights(latest)
       logger.info(f"restored model from {latest}")
 
-      
-      
-class HourglassModel(SequentialModel):
-  def __init__(self, input_shape,
-               level_filters=[32,64,128],
-               level_depth=3,
-               **kwargs):
-    """Create an hourglass-shaped model for object detection.
 
-    :param input_shape: 
-    :param level_filters: 
-    :param level_depth: 
+class FunctionalModel(Model):
+  def __init__(self, input_shape,
+               **kwargs):
+    self.input_shape = input_shape
+    inputs = keras.layers.Input(self.input_shape)
+    outputs = self.forward(inputs)
+    model = keras.Model(inputs=inputs, outputs=outputs)
+    super().__init__(model, **kwargs)
+
+  def forward(self, inputs):
+    """Forward inference function for the model.
+
+    Subclasses override this.
+
+    :param inputs: 
     :returns: 
     :rtype: 
 
     """
-    self.input_shape = input_shape
-    self.level_filters = level_filters
-    self.level_depth = level_depth
-    model = self.create_model()
-    super().__init__(model, **kwargs)
+    return inputs
 
+  
+class HourglassModel(FunctionalModel):
+  def __init__(self, tile_shape,
+               level_filters=[64,64,128],
+               level_depth=2,
+               valid=True,
+               pool_dropout=0.25,
+               concat_dropout=0.5,
+               **kwargs):
+    """Create an hourglass-shaped model for object detection.
+
+    :param tile_shape: shape of the output tiles
+    :param level_filters: 
+    :param level_depth: 
+    :param valid: whether to use valid padding
+    :param pool_dropout: 
+    :param concat_dropout: 
+    :returns: 
+    :rtype: 
+
+    """
+    self.tile_shape = tile_shape
+    self.level_filters = level_filters
+    self.levels = len(level_filters)
+    self.level_depth = level_depth
+    self.valid = valid
+    self.padding = 'valid' if self.valid else 'same'
+    self.pool_dropout = pool_dropout
+    self.concat_dropout = concat_dropout
+    self.pad = self.calc_pad()
+    input_shape = (tile_shape[0] + 2*self.pad, tile_shape[1] + 2*self.pad, 1)
+    super().__init__(input_shape, **kwargs)
+
+  def calc_pad(self):
+    if not self.valid:
+      return 0
+    pad = self.level_depth
+    for _ in range(self.levels - 1):
+      pad = 2*pad + 2*self.level_depth
+    return pad
+    
   def compile(self, learning_rate=0.1, **kwargs):
     kwargs['optimizer'] = kwargs.get(
       'optimizer', tf.train.AdadeltaOptimizer(learning_rate))
     kwargs['loss'] = kwargs.get('loss', 'mse')
-    kwargs['metrics'] = kwargs.get('metrics', 'mae')
+    kwargs['metrics'] = kwargs.get('metrics', ['mae'])
     self.model.compile(**kwargs)
 
-  def create_model(self):
-    inputs = keras.layers.Input(self.input_shape)
+  def forward(self, inputs):
+    level_outputs = []
+
+    for i, filters in enumerate(self.level_filters):
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters, padding=self.padding)
+      if i < len(self.level_filters) - 1:
+        level_outputs.append(inputs)
+        inputs = maxpool(inputs, dropout=self.pool_dropout)
+
+    level_outputs = reversed(level_outputs)
+    for i, filters in enumerate(reversed(self.level_filters[:-1])):
+      inputs = conv_transpose(inputs, filters)
+      outputs = next(level_outputs)
+      if self.valid:
+        outputs = crop(outputs, inputs.shape)
+      inputs = concat(outputs, inputs, dropout=self.concat_dropout)
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters, padding=self.padding)
+
+    inputs = conv(inputs, 1, activation=None, padding='same')
     
     return inputs
-    
+  
+  def detect(self, data):
+    """Detect objects in the reassembled fields."""
+    pass

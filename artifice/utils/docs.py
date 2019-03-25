@@ -21,9 +21,13 @@ overwrite_help = """overwrite existing model; restart training from scratch."""
 image_shape_help = """Shape of the image. Must be 3D. Grayscale uses 1 for last
 dimension."""
 
+tile_shape_help = """Shape of the tiles for training. Must be 3D."""
+
 epochs_help = """Number of training epochs. Default is 1."""
 
-batch_size_help = """Batch size."""
+batch_size_help = """Batch size. Default (-1) uses number of tiles per image."""
+
+learning_rate_help = """Learning rate."""
 
 num_objects_help = """Maximum number of objects."""
 
@@ -40,6 +44,8 @@ cores_help = """Number of CPU cores to parallelize over. Default (-1) uses
 available cores."""
 
 verbose_help = """Artifice verbosity. Default is 2 (debug level)."""
+
+keras_verbose_help = """Keras verbosity. Default is 1 (progress bars)."""
 
 eager_help = """Enable eager execution."""
 
