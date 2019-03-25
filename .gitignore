@@ -7,9 +7,12 @@ reports/spring_2018_report/**/*.png
 **.log
 **.aux
 **.toc
+**checkpoint
+**.hdf5*
+**.pyc
 data/**/*.png
 data/**/*.npy
 reports/grant
-models/coupled_sphers/detection_*.png
-!models/coupled_sphers/detection_*0.png
+models/coupled_spheres/detection_*.*
+!models/coupled_spheres/detection_*00.*
 
