@@ -57,7 +57,7 @@ class MP4Writer:
       '-i', '-',                                # input from pipe
       '-an',                                    # no audio
       '-b', '10000k',                           # bitrate, controls compression
-      '-vcodec', 'libx264',                     # compressor, could also use 'mpeg4'
+      '-vcodec', 'mpeg4',
       self.fname]
 
     logger.info(' '.join(cmd))

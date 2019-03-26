@@ -300,12 +300,12 @@ def cmd_visualize(art):
       if i == 0:
         writer.write_fig(fig, close=False)
         plt.savefig(art.example_detection_path)
-        logger.info("saved example detection {art.example_detection_path}")
+        logger.info(f"saved example detection to {art.example_detection_path}")
       else:
         writer.write_fig(fig)
   writer.close()
-  logger.info("finished")
-  logger.info("wrote mp4 to {art.detections_video_path}")
+  logger.info(f"finished")
+  logger.info(f"wrote mp4 to {art.detections_video_path}")
 
   
 def main():
