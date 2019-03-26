@@ -33,7 +33,7 @@ def plot_detection(image, label, detection):
   plt.plot(detection[:,2], detection[:,1], 'rx', markersize=8.,
            label='model prediction')
   plt.title("Object Detection")
-  plt.legend()
+  plt.legend(loc='upper right')
   return fig, axes
 
 
