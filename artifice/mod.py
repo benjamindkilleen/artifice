@@ -4,7 +4,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from os.path import join
-from artifice import lay
+from artifice import lay, dat
 import numpy as np
 import logging
 
@@ -17,7 +17,7 @@ def log_model(model):
 
 def log_layers(layers):
   for layer in layers:
-    logger.info(
+    logger.debug(
       f"layer:{layer.input_shape} -> {layer.output_shape}:{layer.name}")
 
 def crop(inputs, shape):
@@ -220,7 +220,7 @@ class HourglassModel(FunctionalModel):
     inputs = conv(inputs, 1, activation=None, padding='same')
     return inputs
 
-  def full_predict(self, data, steps=20):
+  def full_predict(self, data, steps=250):
     """Yield reassembled fields from the data.
 
     Requires batch_size to be a multiple of num_tiles
@@ -232,9 +232,15 @@ class HourglassModel(FunctionalModel):
 
     """
     assert data.batch_size % data.num_tiles == 0
-    for _ in range(data.size // data.batch_size):
-      tiles = self.predict(data.eval_input, steps=steps, verbose=2)
+    n = 0
+    round_size = int(np.ceil(data.num_tiles*data.size / (steps*data.batch_size)))
+    for r in range(round_size):
+      logger.info(f"predicting round {r}...")
+      tiles = self.predict(data.eval_input.skip(n), steps=steps, verbose=2)
       for i in range(0, steps*data.batch_size, data.num_tiles):
+        logger.debug(f"  | yielding example {round_size*r + i // data.num_tiles},"
+                     f"total : {n}")
+        n += 1
         yield data.untile(tiles[i:i+data.num_tiles])
   
   def detect(self, data, max_iter=None):
@@ -244,9 +250,9 @@ class HourglassModel(FunctionalModel):
     :returns: generator over these elements
     
     """
-    labels = np.zeros((data.size, data.num_objects, 3), np.float32)
+    detections = np.zeros((data.size, data.num_objects, 3), np.float32)
     for i, field in enumerate(self.full_predict(data)):
       if max_iter is not None and i >= max_iter:
         break
-      labels[i] = data.from_field(field)
-    return labels
+      detections[i] = data.from_field(field)
+    return dat.match_detections(detections, data.labels)

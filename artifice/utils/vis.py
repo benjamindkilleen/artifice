@@ -25,13 +25,15 @@ def plot_image(*images, columns=10, ticks=False):
       ax.axis('off')
       ax.set_aspect('equal')
   fig.subplots_adjust(wspace=0, hspace=0)
+  return fig, axes
 
 def plot_detection(image, label, detection):
-  plot_image(image)
-  plt.plot(label[:,2], label[:,1], 'g+', markersize=20., label='Truth')
-  plt.plot(detection[:,2], detection[:,1], 'rx', markersize=10.,
-           label='Prediction')
+  fig, axes = plot_image(image)
+  plt.plot(label[:,2], label[:,1], 'g+', markersize=8., label='known position')
+  plt.plot(detection[:,2], detection[:,1], 'rx', markersize=8.,
+           label='model prediction')
   plt.title("Object Detection")
-  
+  plt.legend()
+  return fig, axes
 
 

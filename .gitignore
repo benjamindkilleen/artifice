@@ -12,6 +12,7 @@ reports/spring_2018_report/**/*.png
 **.pyc
 data/**/*.png
 data/**/*.npy
+models/**/*.npy
 reports/grant
 models/coupled_spheres/detection_*.*
 !models/coupled_spheres/detection_0000.*

@@ -21,7 +21,7 @@ import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from artifice import dat, mod
-from artifice.utils import docs, img, vis
+from artifice.utils import docs, img, vis, vid
 from multiprocessing import cpu_count
 import itertools
 
@@ -119,8 +119,8 @@ class Artifice:
     self.hourglass_dir = join(self.model_root, 'hourglass/')
 
     # model-dependent paths
-    self.model_detections_path = join(
-      self.model_root, 'detections.npy')
+    self.model_detections_path = join(self.model_root, 'detections.npy')
+    self.detections_video_path = join(self.model_root, 'detections.mp4')
 
   def __str__(self):
     return f"<run '{self.command}'>"
@@ -262,7 +262,6 @@ def cmd_predict(art):
       else:
         break
 
-
 def cmd_evaluate(art):
   pass
 
@@ -272,30 +271,37 @@ def cmd_detect(art):
   train_set, validation_set, test_set = art.load_data()
   detections = model.detect(test_set)
   np.save(art.model_detections_path, detections)
+  logger.info(f"saved detections to {art.model_detections_path}")
   labels = test_set.labels
-  # TODO: get pairwise differences among objects, take minimum
-  differences = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
-  errors = differences          # not correct
-  logger.info(f"average error: {errors.mean()}")
-  logger.info(f"maximum error: {errors.std()}")
-  logger.info(f"maximum error: {errors.max()}")
+  errors = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
+  logger.info(f"average error: {errors.mean():.02f}")
+  logger.info(f"error std: {errors.std():.02f}")
+  logger.info(f"minimum error: {errors.min():.02f}")
+  logger.info(f"maximum error: {errors.max():.02f}")
   
 def cmd_visualize(art):
-  logger.debug(detections)
-  # fields = list(itertools.islice(model.full_predict(test_set), 10))
+  train_set, validation_set, test_set = art.load_data()
+  labels = test_set.labels
+  detections = np.load(art.model_detections_path)
+  errors = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
+  logger.info(f"average error: {errors.mean():.02f}")
+  logger.info(f"error std: {errors.std():.02f}")
+  logger.info(f"minimum error: {errors.min():.02f}")
+  logger.info(f"maximum error: {errors.max():.02f}")
+
   get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  writer = vid.MP4Writer(art.detections_video_path)
+  logger.info(f"writing detections to video...")
   with tf.Session() as sess:
     for i, detection in enumerate(detections):
       image, label = sess.run(get_next)
-      vis.plot_detection(image, label, detection)
-      if art.show:
-        plt.show()
-      else:
-        plt.savefig(join(art.model_root, f"detection_{str(i).zfill(4)}.pdf"))
-      if i > 4:
-        break
+      fig, _ = vis.plot_detection(image, label, detection)
+      writer.write_fig(fig)
+  writer.close()
+  logger.info("finished")
+  logger.info("wrote mp4 to {art.detections_video_path}")
 
-
+  
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('command', help=docs.command_help)

@@ -10,6 +10,8 @@ import tensorflow as tf
 from artifice import tform
 from artifice.utils import img
 from skimage.feature import peak_local_max
+from scipy.spatial.distance import cdist
+from scipy.optimize import linear_sum_assignment
 import os
 import logging
 
@@ -526,7 +528,6 @@ class AugmentationData(Data):
                      parse_entry=scene_from_proto,
                      encode_entry=proto_from_scene,
                      **kwargs)
-    self.labels = None          # accumulate labels
     self.num_examples = kwargs.get('num_examples', 10000)
     self.background = kwargs.get('background')
 
@@ -650,7 +651,6 @@ class AugmentationData(Data):
     indices = np.logical_and(background < 0, bg_indices)
     background[indices] = image[indices]
     n[indices] += 1
-
     return background, n
 
   @staticmethod
@@ -662,3 +662,22 @@ class AugmentationData(Data):
     image, label = entry
     labels.append(label)
     return labels
+
+
+def match_detections(detections, labels):
+  """Resolve the `detections` with `labels`, matching object ids/order.
+  
+  :param detections: `(N, num_objects, >3)` array of detections
+  :param labels: `(N, num_objects, >3)` array of labels
+  :returns: re-ordered detections, same shape
+  :rtype: 
+  
+  """
+  matched_detections = np.empty_like(detections)
+  for i in range(detections.shape[0]):
+    distances = cdist(detections[i,:,1:3], labels[i,:,1:3])
+    row_ind, col_ind = linear_sum_assignment(distances)
+    for j in range(detections.shape[1]):
+      matched_detections[i,j,0] = labels[i,j,0]
+      matched_detections[i,j,1:3] = detections[i,col_ind[j],1:3]
+  return matched_detections
