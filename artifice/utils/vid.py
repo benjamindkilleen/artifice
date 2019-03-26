@@ -50,13 +50,14 @@ class MP4Writer:
       'ffmpeg',
       '-y',                     # overwrite existing file
       '-f', 'rawvideo',
-      '-vcodec', 'rawvideo',      
+      '-vcodec', 'rawvideo',
       '-s', f'{self.shape[1]}x{self.shape[0]}', # WxH
-      '-pix_fmt', fmt,                     # byte format
+      '-pix_fmt', fmt,                          # byte format
       '-r', str(self.fps),                      # frames per second
       '-i', '-',                                # input from pipe
       '-an',                                    # no audio
-      '-vcodec', 'mpeg4',
+      '-b', '10000k',                           # bitrate, controls compression
+      '-vcodec', 'libx264',                     # compressor, could also use 'mpeg4'
       self.fname]
 
     logger.info(' '.join(cmd))

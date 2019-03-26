@@ -121,6 +121,7 @@ class Artifice:
     # model-dependent paths
     self.model_detections_path = join(self.model_root, 'detections.npy')
     self.detections_video_path = join(self.model_root, 'detections.mp4')
+    self.example_detection_path = join(self.model_root, 'example_detection.pdf')
 
   def __str__(self):
     return f"<run '{self.command}'>"
@@ -296,7 +297,12 @@ def cmd_visualize(art):
     for i, detection in enumerate(detections):
       image, label = sess.run(get_next)
       fig, _ = vis.plot_detection(image, label, detection)
-      writer.write_fig(fig)
+      if i == 0:
+        writer.write_fig(fig, close=False)
+        plt.savefig(art.example_detection_path)
+        logger.info("saved example detection {art.example_detection_path}")
+      else:
+        writer.write_fig(fig)
   writer.close()
   logger.info("finished")
   logger.info("wrote mp4 to {art.detections_video_path}")
@@ -351,7 +357,7 @@ def main():
                       default=[-1], type=int,
                       help=docs.cores_help)
   parser.add_argument('--verbose', '-v', nargs=1,
-                      default=[2], type=int,
+                      default=[1], type=int,
                       help=docs.verbose_help)
   parser.add_argument('--keras-verbose', nargs=1,
                       default=[1], type=int,
