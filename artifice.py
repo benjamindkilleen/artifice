@@ -107,9 +107,6 @@ class Artifice:
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
 
-    # model dirs
-    self.hourglass_dir = join(self.model_root, 'hourglass/')
-
     # number of steps per epochs
     self.train_steps = int(np.ceil(
       self.num_tiles * self.train_size / self.batch_size))
@@ -117,6 +114,13 @@ class Artifice:
       self.num_tiles * self.validation_size / self.batch_size))
     self.test_steps = int(np.ceil(
       self.num_tiles * self.test_size / self.batch_size))
+
+    # model dirs
+    self.hourglass_dir = join(self.model_root, 'hourglass/')
+
+    # model-dependent paths
+    self.model_detections_path = join(
+      self.model_root, 'detections.npy')
 
   def __str__(self):
     return f"<run '{self.command}'>"
@@ -170,6 +174,7 @@ class Artifice:
     """Create and compile the model."""
     model = mod.HourglassModel(
       self.tile_shape,
+      num_objects=self.num_objects,
       model_dir=self.hourglass_dir)
 
     self._pad = model.pad
@@ -266,6 +271,16 @@ def cmd_detect(art):
   model = art.load_model()
   train_set, validation_set, test_set = art.load_data()
   detections = model.detect(test_set)
+  np.save(art.model_detections_path, detections)
+  labels = test_set.labels
+  # TODO: get pairwise differences among objects, take minimum
+  differences = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
+  errors = differences          # not correct
+  logger.info(f"average error: {errors.mean()}")
+  logger.info(f"maximum error: {errors.std()}")
+  logger.info(f"maximum error: {errors.max()}")
+  
+def cmd_visualize(art):
   logger.debug(detections)
   # fields = list(itertools.islice(model.full_predict(test_set), 10))
   get_next = test_set.dataset.make_one_shot_iterator().get_next()
@@ -279,6 +294,7 @@ def cmd_detect(art):
         plt.savefig(join(art.model_root, f"detection_{str(i).zfill(4)}.pdf"))
       if i > 4:
         break
+
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -353,6 +369,8 @@ def main():
     cmd_evaluate(art)
   elif art.command == 'detect':
     cmd_detect(art)
+  elif art.command == 'visualize':
+    cmd_visualize(art)
   else:
     logger.error(f"No command '{args.command}'.")
 

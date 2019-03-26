@@ -240,6 +240,7 @@ class Data(object):
 
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
+    self._labels = None
     
   def save(self, record_name):
     """Save the dataset to record_name."""
@@ -356,6 +357,25 @@ class Data(object):
       return aggregates
     else:
       return aggregates[0]
+
+  @staticmethod
+  def label_accumulator(entry, labels):
+    if labels is None:
+      labels = []
+    if entry is None:
+      return np.array(labels)
+    image, label = entry
+    labels.append(label)
+    return labels
+    
+  def accumulate_labels(self):
+    return self.accumulate(self.label_accumulator)
+
+  @property
+  def labels(self):
+    if self._labels is None:
+      self._labels = self.accumulate_labels()
+    return self._labels
 
   def preprocess(self, dataset):
     """Responsible for converting dataset to (image, label) form.
@@ -517,7 +537,7 @@ class AugmentationData(Data):
     aggregates = self.accumulate(accumulators)
     for k,v in aggregates.items():
       setattr(self, k, v)
-    
+
   def as_numpy(self, entry):
     """Convert `entry` to corresponding tuple of numpy arrys.
 
@@ -632,3 +652,13 @@ class AugmentationData(Data):
     n[indices] += 1
 
     return background, n
+
+  @staticmethod
+  def label_accumulator(entry, labels):
+    if labels is None:
+      labels = []
+    if entry is None:
+      return np.array(labels)
+    image, label = entry
+    labels.append(label)
+    return labels

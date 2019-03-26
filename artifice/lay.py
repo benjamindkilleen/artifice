@@ -23,3 +23,30 @@ class Crop(keras.layers.Layer):
   
   def compute_output_shape(self, input_shape):
     return self.shape
+
+class LocalMaxima(keras.layers.Layer):
+  def __init__(self, num_objects, **kwargs):
+    """Detect at most `num_objects` local maxima.
+
+    Useful for prediction, not for analysis.
+
+    :param num_objects: 
+    :returns:
+    :rtype: 
+
+    """
+    self.num_objects = num_objects
+
+  def call(self, inputs):
+    """Expects a `field` output from the HourglassModel network.
+
+    :param inputs: batched tensor
+    :returns: a (num_objects, 3) tensor with [obj_id,x,y]. obj_id is 0 is object
+    not present
+    :rtype: 
+
+    """
+    raise NotImplemented
+    
+  def compute_output_shape(self, input_shape):
+    return (self.num_objects, 3)

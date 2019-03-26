@@ -155,6 +155,7 @@ class HourglassModel(FunctionalModel):
                valid=True,
                pool_dropout=0.25,
                concat_dropout=0.5,
+               num_objects=2,
                **kwargs):
     """Create an hourglass-shaped model for object detection.
 
@@ -164,6 +165,7 @@ class HourglassModel(FunctionalModel):
     :param valid: whether to use valid padding
     :param pool_dropout: 
     :param concat_dropout: 
+    :param num_objects: maximum number of objects
     :returns: 
     :rtype: 
 
@@ -232,7 +234,7 @@ class HourglassModel(FunctionalModel):
     assert data.batch_size % data.num_tiles == 0
     for _ in range(data.size // data.batch_size):
       tiles = self.predict(data.eval_input, steps=steps, verbose=2)
-      for i in range(0, steps*data.batch_size // data.num_tiles, data.num_tiles):
+      for i in range(0, steps*data.batch_size, data.num_tiles):
         yield data.untile(tiles[i:i+data.num_tiles])
   
   def detect(self, data, max_iter=None):
