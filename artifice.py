@@ -264,18 +264,15 @@ def cmd_train(art):
 def cmd_predict(art):
   model = art.load_model()
   train_set, validation_set, test_set = art.load_data()
-  predictions = model.predict(test_set.eval_input, steps=1,
-                              verbose=art.keras_verbose)
-  get_next = test_set.tiled.make_one_shot_iterator().get_next()
-  with tf.Session() as sess:
-    for i, prediction in enumerate(predictions):
-      image, field = sess.run(get_next)
-      vis.plot_image(image, field, prediction)
-      if art.show:
-        plt.show()
-      else:
-        break
+  predictions = model.full_predict(test_set.eval_input, steps=1,
+                                   verbose=art.keras_verbose)
+  if art.show and tf.executing_eagerly():
+    for i, (example, prediction) in enumerate(zip(predictions, test_set.fielded)):
+    image, field = example
+    vis.plot_image(image, field, prediction)
+    plt.show()
 
+    
 def cmd_evaluate(art):
   pass
 
