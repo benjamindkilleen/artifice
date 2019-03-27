@@ -596,7 +596,7 @@ class AugmentationData(Data):
         label = self.draw()
         if self.valid(label):
           invalid_count = 0
-          yield tf.constant(label, tf.float32)
+          yield label
         else:
           invalid_count += 1
           if invalid_count % 10 == 0:
@@ -606,7 +606,7 @@ class AugmentationData(Data):
   def augment(self, dataset):
     """Generate the desired labels and then map them over the original set."""
     labels = tf.data.Dataset.from_generator(
-      self.label_generator, tf.float32, output_shapes=self.label_shape)
+      self.label_generator, tf.float32, tf.TensorShape(self.label_shape))
     dataset = dataset.repeat(-1)
     zip_set = tf.data.Dataset.zip((labels, dataset))
 

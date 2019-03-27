@@ -21,7 +21,9 @@ def transform(image, label, annotation, new_label,
 
   Currently only performs translations.
 
-  :param image: tensor image
+  TODO: allow batched input
+
+  :param image: tensor image (not batched)
   :param label: tensor label of shape (num_objects, >3)
   :param annotation: instance annotation, with 0 as background class
   :param new_label: desired label
@@ -43,8 +45,8 @@ def transform(image, label, annotation, new_label,
   new_label = tf.where(tf.cast(id_indices, tf.bool), label, new_label,
                        name='fix_new_label')
 
-  shape = tf.shape(image)
-  center = shape[1:3] / tf.constant(2,tf.float32)
+  shape = tf.cast(tf.shape(image), tf.float32)
+  center = shape[0:2] / tf.constant(2,tf.float32)
   new_image = tf.identity(image)
   
   for i in range(num_objects):

@@ -1,0 +1,31 @@
+INFO:artifice:tiled batch size: 64
+INFO:artifice:<run 'train'>
+INFO:artifice:model: model
+2019-03-27 00:02:35.689871: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-03-27 00:02:35.919517: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:89:00.0
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2019-03-27 00:02:35.922545: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-03-27 00:02:45.020066: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-03-27 00:02:45.023027: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-03-27 00:02:45.023046: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-03-27 00:02:45.023478: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+2019-03-27 00:02:58.405937: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-03-27 00:02:58.408972: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-03-27 00:02:58.408996: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-03-27 00:02:58.409006: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-03-27 00:02:58.409343: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
+2019-03-27 00:03:11.273122: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 913 of 10000
+2019-03-27 00:03:21.210305: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 1841 of 10000
+2019-03-27 00:03:31.293917: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 2785 of 10000
+2019-03-27 00:03:41.194779: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 3713 of 10000
+2019-03-27 00:03:51.244964: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 4657 of 10000
+2019-03-27 00:04:01.310053: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 5601 of 10000
+2019-03-27 00:04:11.184895: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 6529 of 10000
+2019-03-27 00:04:21.260661: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 7473 of 10000
+2019-03-27 00:04:31.174343: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 8401 of 10000
+2019-03-27 00:04:41.236913: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 9345 of 10000
+2019-03-27 00:04:48.061793: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:136] Shuffle buffer filled.
