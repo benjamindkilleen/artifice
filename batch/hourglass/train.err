@@ -29,3 +29,4 @@ INFO:artifice:finished accumulation
 2019-03-27 00:04:31.174343: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 8401 of 10000
 2019-03-27 00:04:41.236913: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:98] Filling up shuffle buffer (this may take a while): 9345 of 10000
 2019-03-27 00:04:48.061793: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:136] Shuffle buffer filled.
+slurmstepd-midway2-gpu05: error: *** JOB 58928960 ON midway2-gpu05 CANCELLED AT 2019-03-27T08:02:17 DUE TO TIME LIMIT ***
