@@ -234,7 +234,20 @@ def cmd_convert(art):
   writer.close()
   logger.info("finished")
   logger.info(f"wrote {art.validation_size} test examples")
-  
+
+
+def cmd_augment(art):
+  """Run augmentation of the train_set. 
+
+  If `art.show`, then show the new examples, otherwise, save the augmented
+  train_set.
+
+  """
+  train_set, validation_set, test_set = art.load_data()
+  if art.show and tf.executing_eagerly():
+    for image, field in train_set.fielded:
+      vis.plot_image(image, field)
+      plt.show()
   
 def cmd_train(art):
   model = art.load_model()
@@ -373,6 +386,8 @@ def main():
 
   if art.command == 'convert':
     cmd_convert(art)
+  elif art.command == 'augment':
+    cmd_augment(art)
   elif art.command == 'train':
     cmd_train(art)
   elif art.command == 'predict':

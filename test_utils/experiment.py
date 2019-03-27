@@ -260,7 +260,7 @@ class ExperimentSphere(ExperimentObject):
     """Computes the label for the object
     :experiment: the Experiment containing this object
 
-    Returns: array([semantic_label, x pos, y pos, theta, x_scale, y_scale])
+    :returns: `[obj_id, x pos, y pos, theta, x_scale, y_scale]`
 
     """
     label = np.empty((experiment.label_dimension,), dtype=np.float32)

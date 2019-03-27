@@ -243,6 +243,7 @@ class Data(object):
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
     self._labels = None
+    self.label_shape = (self.num_objects, 4)
     
   def save(self, record_name):
     """Save the dataset to record_name."""
@@ -556,60 +557,59 @@ class AugmentationData(Data):
 
     For now, just checks if each object position is inside the shape.
 
-    :param label: the prospective label, numpy (num_objects, >3)
+    :param label: the prospective label, numpy (num_objects, >=3)
     :returns: boolean
 
     """
     positions = label[:,1:3]
     present = label[:,0].astype(bool)
     indices = np.where(present, positions, np.zeros_like(positions))
-    return np.all(img.inside(indices, self.image_shape))
+    positions_good = np.all(img.inside(indices, self.image_shape))
+    theta_good = True
+    return positions_good and theta_good
 
-  def draw(self, n):
-    """Draw `n` new points.
+  def draw(self):
+    """Draw a new point.
 
-    :param n: number of labels to draw
-    :returns: array of labels
+    :returns: `(n, num_objects, 4)` array of object labels, each containing
+    `[obj_id, x, y, theta]`
     :rtype: 
 
     """
-    labels = np.ones((n, self.num_objects, 3), dtype=np.float32)
-    labels[:,:,1:3] = np.random.uniform([0,0], self.image_shape[:2],
-                                        size=(n,self.num_objects,2))
+    labels = np.ones(self.label_shape, dtype=np.float32)
+    labels[:,1:3] = np.random.uniform([0,0], self.image_shape[:2],
+                                      size=(labels.shape[0],2))
+    labels[:,3] = np.random.uniform(0., 2*np.pi, size=labels.shape[0])
     return labels
 
-  def sample(self):
-    """Sample `num_examples` new valid labels.
+  @property
+  def label_generator(self):
+    """Draw a new, valid point. Wrapper around draw()
 
-    :returns: valid labels.
+    :returns: `(n, num_objects, 4)` array of object labels, each containing
+    `[obj_id, x, y, theta]`
     :rtype: 
 
     """
-    n = self.num_examples
-    labels = np.ones((n, self.num_objects, 3), dtype=np.float32)
-    indices = np.ones(n, dtype=bool)
-    while n > 0:
-      logger.debug(f"sample: drawing {n} points")
-      draws = self.draw(n)
-      valid = np.array([self.valid(draw) for draw in draws])
-      valid_draws = draws[valid]
-      i = self.num_examples - n
-      labels[i:i + valid_draws.shape[0]] = valid_draws
-      n -= valid_draws.shape[0]
-    logger.debug("done")
-    return labels
-      
-  def preprocess(self, dataset):
-    """Call the augment function."""
-    return self.augment(dataset)
-
+    def gen():
+      while True:
+        label = self.draw()
+        if self.valid(label):
+          invalid_count = 0
+          yield tf.constant(label, tf.float32)
+        else:
+          invalid_count += 1
+          if invalid_count % 10 == 0:
+            logger.warning(f"drew {invalid_count} invalid examples")
+    return gen
+  
   def augment(self, dataset):
     """Generate the desired labels and then map them over the original set."""
-    labels = self.sample()
-    new_label_set = tf.data.Dataset.from_tensor_slices(labels)
+    labels = tf.data.Dataset.from_generator(
+      self.label_generator, tf.float32, output_shapes=self.label_shape)
     dataset = dataset.repeat(-1)
-    zip_set = tf.data.Dataset.zip((new_label_set, dataset))
-    
+    zip_set = tf.data.Dataset.zip((labels, dataset))
+
     def map_func(new_label, scene):
       example, annotation = scene
       image, label = example
@@ -618,6 +618,10 @@ class AugmentationData(Data):
                              background=self.background)
     
     return zip_set.map(map_func, self.num_parallel_calls)
+      
+  def preprocess(self, dataset):
+    """Call the augment function."""
+    return self.augment(dataset)
   
   @staticmethod
   def mean_background_accumulator(scene, agg):

@@ -8,6 +8,10 @@ import numpy as np
 
 logger = logging.getLogger('artifice')
 
+def swap(t):
+  return tf.gather(t, [1,0])
+
+
 def transform(image, label, annotation, new_label,
               background=None, num_objects=2):
   """Transform an example to match 'new_label`.
@@ -39,6 +43,8 @@ def transform(image, label, annotation, new_label,
   new_label = tf.where(tf.cast(id_indices, tf.bool), label, new_label,
                        name='fix_new_label')
 
+  shape = tf.shape(image)
+  center = shape[1:3] / tf.constant(2,tf.float32)
   new_image = tf.identity(image)
   
   for i in range(num_objects):
@@ -50,9 +56,22 @@ def transform(image, label, annotation, new_label,
     new_obj_label = new_label[obj_idx]
     obj_id = obj_label[0]
 
-    # translate the object
-    translation = new_obj_label[1:3] - obj_label[1:3]
-    translation = tf.gather(translation, [1,0]) # translate flips x and y
+    # translate the object to center
+    translation = swap(center - obj_label[1:3])
+    obj_image = tf.contrib.image.translate(
+      obj_image, translation, interpolation='BILINEAR')
+    obj_annotation = tf.contrib.image.translate(
+      obj_annotation, translation, interpolation='NEAREST')
+
+    # Rotate the image
+    angle = new_obj_label[3] - obj_label[3]
+    obj_image = tf.contrib.image.rotate(
+      obj_image, angle, interpolation='BILINEAR')
+    obj_annotation = tf.contrib.image.rotate(
+      obj_annotation, angle, interpolation='NEAREST')
+
+    # translate the object to desired position
+    translation = swap(new_obj_label[1:3] - center)
     obj_image = tf.contrib.image.translate(
       obj_image, translation, interpolation='BILINEAR')
     obj_annotation = tf.contrib.image.translate(
