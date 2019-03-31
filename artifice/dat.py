@@ -613,9 +613,9 @@ class AugmentationData(Data):
     def map_func(new_label, scene):
       example, annotation = scene
       image, label = example
-      return tform.transform(image, label, annotation, new_label,
-                             num_objects=self.num_objects,
-                             background=self.background)
+      return tform.transform_objects(image, label, annotation, new_label,
+                                     num_objects=self.num_objects,
+                                     background=self.background)
     
     return zip_set.map(map_func, self.num_parallel_calls)
       

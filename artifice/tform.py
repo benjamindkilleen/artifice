@@ -11,9 +11,9 @@ logger = logging.getLogger('artifice')
 def swap(t):
   return tf.gather(t, [1,0])
 
-
-def transform(image, label, annotation, new_label,
-              background=None, num_objects=2):
+# TODO: standardize this like code from https://github.com/tensorflow/tensorflow/blob/r1.13/tensorflow/contrib/image/python/ops/image_ops.py
+def transform_objects(image, label, annotation, new_label,
+                      background=None, num_objects=2):
   """Transform an example to match 'new_label`.
 
   Transforms each object in a random order, so objects overlap in random
@@ -39,11 +39,11 @@ def transform(image, label, annotation, new_label,
   object_order = tf.range(num_objects, dtype=tf.int64)
   object_order = tf.random.shuffle(object_order)
 
-  # fix the instance labels for new_label
+  # fix the obj_id's for new_label
   label = label[:,:tf.shape(new_label)[1]]
-  id_indices = tf.one_hot(tf.constant(0, tf.int64, (num_objects,)), tf.shape(label)[1])
-  new_label = tf.where(tf.cast(id_indices, tf.bool), label, new_label,
-                       name='fix_new_label')
+  id_indices = tf.one_hot(tf.constant(0, tf.int64, (num_objects,)),
+                          tf.shape(label)[1])
+  new_label = tf.where(tf.cast(id_indices, tf.bool), label, new_label)
 
   shape = tf.cast(tf.shape(image), tf.float32)
   center = shape[0:2] / tf.constant(2,tf.float32)
