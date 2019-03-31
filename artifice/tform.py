@@ -98,7 +98,7 @@ def transform_objects(image, label, annotation, new_label,
   labels = labels[:,:,:tf.shape(new_labels)[2]]
   id_indices = tf.tile(tf.reshape(
     tf.one_hot(tf.constant(0, tf.int64, (num_objects,)), obj_label_size),
-    [1, num_objects, obj_label_size]), [batch_size, 1])
+    [1, num_objects, obj_label_size]), [batch_size, 1, 1])
   new_labels = tf.where(tf.cast(id_indices, tf.bool), labels, new_labels)
 
   shape = tf.cast(tf.shape(images), tf.float32)
