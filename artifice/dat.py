@@ -440,7 +440,7 @@ class Data(object):
 
     Assigns instance labels in order of detection strength.
 
-    :param field: field array
+    :param field: field array, numpy
     :returns: estimated position label `(num_objects, 3)`
 
     """
