@@ -47,6 +47,7 @@ def ensure_image_rank(inputs, rank):
     exclusive=True)
 
 def ensure_batched_labels(inputs):
+  rank = tf.rank(inputs)
   return tf.case(
     [(tf.equal(rank, tf.constant(2, rank.dtype)), lambda: tf.expand_dims(inputs, 0)),
      (tf.equal(rank, tf.constant(3, rank.dtype)), lambda: inputs)],
