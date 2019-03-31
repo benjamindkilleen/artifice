@@ -108,7 +108,9 @@ def transform_objects(image, label, annotation, new_label,
   for i in range(num_objects):
     obj_images = tf.identity(images)
     obj_annotations = tf.identity(annotations)
-    
+
+    logger.debug(f"object_order: {object_order.shape}")
+    logger.debug(f"i: {i}")
     obj_idx = object_order[i]
     obj_labels = labels[:,obj_idx]
     new_obj_labels = new_label[:,obj_idx]
