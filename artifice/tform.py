@@ -116,7 +116,10 @@ def transform_objects(image, label, annotation, new_label,
     obj_ids = obj_labels[:,0]
 
     # translate the object to center
+    logger.debug(f"center: {center.shape}")
+    logger.debug(f"positions: {obj_labels[:,1:3].shape}")
     translations = swap(center - obj_labels[:,1:3])
+    logger.debug(f"translations: {translations.shape}")
     obj_images = tf.contrib.image.translate(
       obj_images, translations, interpolation='BILINEAR')
     obj_annotation = tf.contrib.image.translate(
