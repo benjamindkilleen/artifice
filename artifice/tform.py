@@ -32,7 +32,7 @@ def ensure_batched_images(inputs):
      (lambda: tf.equal(rank, tf.constant(4.)), inputs)],
    exclusive=True, name='ensure_batched_images')
 
-def maybe_unbatch_images(inputs, rank):
+def ensure_image_rank(inputs, rank):
   """Undo the ensure_batched operation on `inputs`.
 
   :param inputs: tensor of rank 4
@@ -41,22 +41,22 @@ def maybe_unbatch_images(inputs, rank):
 
   """
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2.)), inputs[0,:,:,0]),
-     (lambda: tf.equal(rank, tf.constant(3.)), inputs[0,:,:,:]),
-     (lambda: tf.equal(rank, tf.constant(4.)), inputs)],
-    exclusive=True, name='maybe_unbatch_images')
+    [(lambda: tf.equal(rank, tf.constant(2)), inputs[0,:,:,0]),
+     (lambda: tf.equal(rank, tf.constant(3)), inputs[0,:,:,:]),
+     (lambda: tf.equal(rank, tf.constant(4)), inputs)],
+    exclusive=True)
 
 def ensure_batched_labels(inputs):
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2.)), tf.expand_dims(inputs, 0)),
-     (lambda: tf.equal(rank, tf.constant(3.)), inputs)],
+    [(lambda: tf.equal(rank, tf.constant(2)), tf.expand_dims(inputs, 0)),
+     (lambda: tf.equal(rank, tf.constant(3)), inputs)],
     exclusive=True, name='ensure_batched_labels')
      
-def maybe_unbatch_labels(inputs, rank):
+def ensure_label_rank(inputs, rank):
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2.)), inputs[0,:,:]),
-     (lambda: tf.equal(rank, tf.constant(3.)), inputs)],
-    exclusive=True, name='maybe_unbatch_labels')
+    [(lambda: tf.equal(rank, tf.constant(2)), inputs[0,:,:]),
+     (lambda: tf.equal(rank, tf.constant(3)), inputs)],
+    exclusive=True)
 
 
 def transform_objects(image, label, annotation, new_label,
@@ -77,8 +77,6 @@ def transform_objects(image, label, annotation, new_label,
 
   """
 
-  image_rank = tf.rank(image)
-  label_rank = tf.rank(label)
   images = ensure_batched_images(image)
   labels = ensure_batched_labels(label)
   annotations = ensure_batched_images(annotation)
@@ -88,7 +86,7 @@ def transform_objects(image, label, annotation, new_label,
   obj_label_size = tf.shape(labels)[2]
   
   if background is None:
-    background = tf.zeros_like(image)
+    background = tf.zeros_like(images)
 
   # (num_objects,) array
   object_order = tf.constant(num_objects, dtype=tf.int64)
@@ -117,7 +115,7 @@ def transform_objects(image, label, annotation, new_label,
 
     # translate the object to center
     translations = swap(center - obj_labels[:,1:3])
-    obj_image = tf.contrib.image.translate(
+    obj_images = tf.contrib.image.translate(
       obj_images, translations, interpolation='BILINEAR')
     obj_annotation = tf.contrib.image.translate(
       obj_annotations, translations, interpolation='NEAREST')
@@ -139,8 +137,8 @@ def transform_objects(image, label, annotation, new_label,
     new_images = tf.where(tf.equal(annotations, obj_ids), background, new_images)
     new_images = tf.where(tf.equal(obj_annotations, obj_ids), obj_images, new_images)
 
-  new_image = maybe_unbatch_images(new_images, image_rank)
-  new_label = maybe_unbatch_labels(new_labels, label_rank)
+  new_image = ensure_image_rank(new_images, tf.rank(image))
+  new_label = ensure_label_rank(new_labels, tf.rank(label))
   return new_image, new_label
 
 

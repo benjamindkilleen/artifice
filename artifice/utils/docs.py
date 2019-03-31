@@ -25,7 +25,8 @@ tile_shape_help = """Shape of the tiles for training. Must be 3D."""
 
 epochs_help = """Number of training epochs. Default is 1."""
 
-batch_size_help = """Batch size. Default (-1) uses number of tiles per image."""
+batch_size_help = """Batch size in untiled images. (Actual batch size is batch_size *
+num_tiles)."""
 
 learning_rate_help = """Learning rate."""
 

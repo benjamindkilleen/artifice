@@ -85,9 +85,6 @@ class Artifice:
     self._pad = None
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
-    if self.batch_size < 0:
-      self.batch_size = self.num_tiles * abs(self.batch_size)
-      logger.info(f"tiled batch size: {self.batch_size}")
         
     # png input format paths
     self.labels_path = join(self.data_root, 'labels.npy')
@@ -108,12 +105,9 @@ class Artifice:
     self.test_size = self.splits[2]
 
     # number of steps per epochs
-    self.train_steps = int(np.ceil(
-      self.num_tiles * self.train_size / self.batch_size))
-    self.validation_steps = int(np.ceil(
-      self.num_tiles * self.validation_size / self.batch_size))
-    self.test_steps = int(np.ceil(
-      self.num_tiles * self.test_size / self.batch_size))
+    self.train_steps = int(np.ceil(self.train_size / self.batch_size))
+    self.validation_steps = int(np.ceil(self.validation_size / self.batch_size))
+    self.test_steps = int(np.ceil(self.test_size / self.batch_size))
 
     # model dirs
     self.hourglass_dir = join(self.model_root, 'hourglass/')
@@ -299,13 +293,13 @@ def cmd_visualize(art):
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
 
-  get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  get_next = test_set.visualized.make_one_shot_iterator().get_next()
   writer = vid.MP4Writer(art.detections_video_path)
   logger.info(f"writing detections to video...")
   with tf.Session() as sess:
     for i, detection in enumerate(detections):
-      image, label = sess.run(get_next)
-      fig, _ = vis.plot_detection(image, label, detection)
+      image, field, label = sess.run(get_next)
+      fig, _ = vis.plot_detection(image, field, label, detection)
       if i == 0:
         writer.write_fig(fig, close=False)
         plt.savefig(art.example_detection_path)
@@ -345,7 +339,7 @@ def main():
                       type=int,
                       help=docs.splits_help)
   parser.add_argument('--batch-size', '-b', nargs=1,
-                      default=[-4], type=int,
+                      default=[4], type=int,
                       help=docs.batch_size_help)
   parser.add_argument('--learning-rate', '-l', nargs=1,
                       default=[0.1], type=float,

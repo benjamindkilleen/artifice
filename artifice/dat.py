@@ -28,7 +28,6 @@ def as_float(image):
   else:
     raise ValueError(f"image dtype '{image.dtype}' not allowed")
   return np.atleast_3d(image)
-  
 
 def _bytes_feature(value):
   # Helper function for writing a string to a tfrecord
@@ -220,11 +219,10 @@ class Data(object):
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
     self.pad = kwargs.get('pad', 0)
     self.distance_threshold = kwargs.get('distance_threshold', 20.)
-    self.batch_size = kwargs.get('batch_size', 1)
+    self.batch_size = kwargs.get('batch_size', 1) # in multiples of num_tiles
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
     self.parse_entry = kwargs.get('parse_entry', example_from_proto)
     self.encode_entry = kwargs.get('encode_entry', proto_from_example)
-    self.prefetch_buffer_size = kwargs.get('prefetch_buffer_size', self.batch_size)
     self.num_shuffle = kwargs.get('num_shuffle', 10000)
     self._kwargs = kwargs
     
@@ -242,8 +240,10 @@ class Data(object):
 
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
+    self.prefetch_buffer_size = self.num_tiles * self.batch_size
     self._labels = None
     self.label_shape = (self.num_objects, 4)
+    self.labels_shape = (self.batch_size,) + self.label_shape
     
   def save(self, record_name):
     """Save the dataset to record_name."""
@@ -265,8 +265,7 @@ class Data(object):
     assert tf.executing_eagerly()
     image, label = entry
     return np.array(image), np.array(label)
-  
-  
+
   def split(self, *splits, types=None):
     """Split the dataset into different sets.
 
@@ -384,56 +383,64 @@ class Data(object):
     """Responsible for converting dataset to (image, label) form.
 
     Can be overwritten by subclasses to perform augmentation."""
-    return dataset
+    return dataset.batch(self.batch_size, drop_remainder=True)
   
   def postprocess_for_training(self, dataset):
     return (dataset.shuffle(self.num_shuffle)
             .repeat(-1)
-            .batch(self.batch_size)
             .prefetch(self.prefetch_buffer_size))
 
   def postprocess_for_evaluation(self, dataset):
     return (dataset.repeat(-1)
-            .batch(self.batch_size)
             .prefetch(self.prefetch_buffer_size))
     
   @property
   def dataset(self):
-    return self.preprocess(self._dataset)
+    return self._dataset
 
+  @property
+  def preprocessed(self):
+    return self.preprocess(self.dataset)
+  
   def to_field(self, label):
     """Create a distance annotation with from `label`.
 
-    :param label: label for the example with shape (num_objects, label_dim)
+    :param label: label for the example with shape (num_objects, label_dim) OR
+    (batch_size, num_objects, label_dim)
 
     """
-    # Create the distance for each object, then conditionally take
-    positions = tf.cast(label[:,1:3], tf.float32) # (num_objects, 2)
+    labels = tform.ensure_batched_labels(label)
+    
+    # (batch_size, num_objects, 2)
+    positions = tf.cast(labels[:,:,1:3], tf.float32) 
     # TODO: fix position to INF for objects not present
     
     # indices: (M*N, 2)
     indices = np.array([np.array([i,j])
                         for i in range(self.image_shape[0])
-                        for j in range(self.image_shape[1])])
+                        for j in range(self.image_shape[1])],
+                       dtype=np.float32)
     indices = tf.constant(indices, dtype=tf.float32)
 
-    # indices: (M*N, 1, 2), positions: (1, num_objects, 2)
-    indices = tf.expand_dims(indices, axis=1)
-    positions = tf.expand_dims(positions, axis=0)
+    # indices: (1, M*N, 1, 2), positions: (batch_size, 1, num_objects, 2)
+    indices = tf.expand_dims(indices, axis=0)
+    indices = tf.expand_dims(indices, axis=2)
+    positions = tf.expand_dims(positions, axis=1)
 
-    # distances: (M*N, num_objects)
+    # distances: (batch_size, M*N, num_objects)
     distances = tf.norm(indices - positions, axis=2)
     
     # take inverse distance
     eps = tf.constant(0.001)
-    flat_field = tf.reciprocal(tf.reduce_min(distances, axis=1) + eps)
+    flat_field = tf.reciprocal(tf.reduce_min(distances, axis=2) + eps)
 
     # zero the inverse distances outside of threshold
     inv_thresh = tf.constant(1. / self.distance_threshold, tf.float32,
                              flat_field.shape)
     zeros = tf.zeros_like(flat_field)
     flat_field = tf.where(flat_field > inv_thresh, flat_field, zeros)
-    return tf.reshape(flat_field, self.image_shape)
+    field = tf.reshape(flat_field, (-1,) + self.image_shape)
+    return tform.ensure_image_rank(field, tf.rank(label) + tf.constant(1, tf.int32))
 
   def from_field(self, field):
     """Recreate the position label associated with field.
@@ -452,34 +459,47 @@ class Data(object):
     label[:coords.shape[0],1:3] = coords
     label[:coords.shape[0],0] = np.arange(coords.shape[0])
     return label
-
+  
   @property
   def fielded(self):
     def map_func(image, label):
       return image, self.to_field(label)
+    return self.preprocessed.map(map_func, self.num_parallel_calls)
+
+  @property
+  def visualized(self):
+    def map_func(image, label):
+      return image, self.to_field(label), label
     return self.dataset.map(map_func, self.num_parallel_calls)
 
   @property
   def tiled(self):
     """Tile the fielded dataset."""
     def map_func(image, field):
+      images = ensure_batched_images(image)
+      fields = ensure_batched_images(field)
+      
       even_pad = [
+        [0,0],
         [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
         [0,self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
         [0,0]]
-      image = tf.pad(image, even_pad)
-      field = tf.pad(field, even_pad)
-      model_pad = [[self.pad,self.pad], [self.pad,self.pad], [0,0]]
-      image = tf.pad(image, model_pad)
+      images = tf.pad(images, even_pad)
+      fields = tf.pad(fields, even_pad)
+      model_pad = [[0,0], [self.pad,self.pad], [self.pad,self.pad], [0,0]]
+      images = tf.pad(images, model_pad)
       image_tiles = []
       field_tiles = []
-      for i in range(0, self.image_shape[0], self.tile_shape[0]):
-        for j in range(0, self.image_shape[1], self.tile_shape[1]):
-          image_tiles.append(image[
-            i:i + self.tile_shape[0] + 2*self.pad,
-            j:j + self.tile_shape[1] + 2*self.pad])
-          field_tiles.append(field[i:i + self.tile_shape[0],
-                                   j:j + self.tile_shape[1]])
+      for b in range(self.batch_size):
+        for i in range(0, self.image_shape[0], self.tile_shape[0]):
+          for j in range(0, self.image_shape[1], self.tile_shape[1]):
+            image_tiles.append(images[
+              b, i:i + self.tile_shape[0] + 2*self.pad,
+              j:j + self.tile_shape[1] + 2*self.pad])
+            field_tiles.append(fields[
+              b, i:i + self.tile_shape[0],
+              j:j + self.tile_shape[1]])
+
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
       out = tf.data.Dataset.zip((images, fields))
@@ -487,10 +507,10 @@ class Data(object):
     return self.fielded.flat_map(map_func)
 
   def untile(self, tiles):
-    """Return a single image reconstructed from `tiles`
+    """Untile from `self.num_tiles` numpy tiles.
 
-    :param tiles: iterable of tiles with `tile_shape`
-    :returns: 
+    :param tiles: iterable of `self.num_tiles` numpy tiles with `tile_shape`
+    :returns: a single image reconstructed from `tiles`.
     :rtype: 
 
     """
@@ -576,17 +596,17 @@ class AugmentationData(Data):
     :rtype: 
 
     """
-    labels = np.ones(self.label_shape, dtype=np.float32)
-    labels[:,1:3] = np.random.uniform([0,0], self.image_shape[:2],
+    label = np.ones(self.label_shape, dtype=np.float32)
+    label[:,1:3] = np.random.uniform([0,0], self.image_shape[:2],
                                       size=(labels.shape[0],2))
-    labels[:,3] = np.random.uniform(0., 2*np.pi, size=labels.shape[0])
-    return labels
+    label[:,3] = np.random.uniform(0., 2*np.pi, size=label.shape[0])
+    return label
 
   @property
   def label_generator(self):
     """Draw a new, valid point. Wrapper around draw()
 
-    :returns: `(n, num_objects, 4)` array of object labels, each containing
+    :returns: `(batch_size, num_objects, 4)` array of object labels, each containing
     `[obj_id, x, y, theta]`
     :rtype: 
 
@@ -604,9 +624,9 @@ class AugmentationData(Data):
     return gen
   
   def augment(self, dataset):
-    """Generate the desired labels and then map them over the original set."""
-    labels = tf.data.Dataset.from_generator(
-      self.label_generator, tf.float32, tf.TensorShape(self.label_shape))
+    """Generate the desired labels and then map them over the batched set."""
+    labels = tf.data.Dataset.from_generator(self.label_generator, tf.float32)
+    labels = labels.batch(self.batch_size, drop_remainder=True)
     dataset = dataset.repeat(-1)
     zip_set = tf.data.Dataset.zip((labels, dataset))
 
@@ -621,6 +641,7 @@ class AugmentationData(Data):
       
   def preprocess(self, dataset):
     """Call the augment function."""
+    dataset = dataset.batch(self.batch_size, drop_remainder=True)
     return self.augment(dataset)
   
   @staticmethod
