@@ -11,9 +11,10 @@ logger = logging.getLogger('artifice')
 def swap(t):
   rank = tf.rank(t)
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(1, rank.dtype)), tf.gather(t, [1,0])),
-     (lambda: tf.equal(rank, tf.constant(2, rank.dtype)),
-      tf.concat((t[:,1], t[:,0]), axis=1))],
+    [(tf.equal(rank, tf.constant(1, rank.dtype)),
+      lambda: tf.gather(t, [1,0])),
+     (tf.equal(rank, tf.constant(2, rank.dtype)),
+      lambda : tf.concat((t[:,1], t[:,0]), axis=1))],
    exclusive=True, name='swap')
 
 def ensure_batched_images(inputs):
