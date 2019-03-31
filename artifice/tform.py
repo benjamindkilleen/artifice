@@ -26,10 +26,10 @@ def ensure_batched_images(inputs):
   """
   rank = tf.rank(inputs)
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2.)),
-      tf.expand_dims(tf.expand_dims(inputs,0), 3)),
-     (lambda: tf.equal(rank, tf.constant(3.)), tf.expand_dims(inputs, 0)),
-     (lambda: tf.equal(rank, tf.constant(4.)), inputs)],
+    [(tf.equal(rank, tf.constant(2.)),
+      lambda: tf.expand_dims(tf.expand_dims(inputs,0), 3)),
+     (tf.equal(rank, tf.constant(3.)), lambda: tf.expand_dims(inputs, 0)),
+     (tf.equal(rank, tf.constant(4.)), lambda: inputs)],
    exclusive=True, name='ensure_batched_images')
 
 def ensure_image_rank(inputs, rank):
@@ -41,21 +41,21 @@ def ensure_image_rank(inputs, rank):
 
   """
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2)), inputs[0,:,:,0]),
-     (lambda: tf.equal(rank, tf.constant(3)), inputs[0,:,:,:]),
-     (lambda: tf.equal(rank, tf.constant(4)), inputs)],
+    [(tf.equal(rank, tf.constant(2)), lambda: inputs[0,:,:,0]),
+     (tf.equal(rank, tf.constant(3)), lambda: inputs[0,:,:,:]),
+     (tf.equal(rank, tf.constant(4)), lambda: inputs)],
     exclusive=True)
 
 def ensure_batched_labels(inputs):
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2)), tf.expand_dims(inputs, 0)),
-     (lambda: tf.equal(rank, tf.constant(3)), inputs)],
+    [(tf.equal(rank, tf.constant(2)), lambda: tf.expand_dims(inputs, 0)),
+     (tf.equal(rank, tf.constant(3)), lambda: inputs)],
     exclusive=True, name='ensure_batched_labels')
      
 def ensure_label_rank(inputs, rank):
   return tf.case(
-    [(lambda: tf.equal(rank, tf.constant(2)), inputs[0,:,:]),
-     (lambda: tf.equal(rank, tf.constant(3)), inputs)],
+    [(tf.equal(rank, tf.constant(2)), lambda: inputs[0,:,:]),
+     (tf.equal(rank, tf.constant(3)), lambda: inputs)],
     exclusive=True)
 
 
