@@ -440,7 +440,7 @@ class Data(object):
     zeros = tf.zeros_like(flat_field)
     flat_field = tf.where(flat_field > inv_thresh, flat_field, zeros)
     field = tf.reshape(flat_field, (-1,) + self.image_shape)
-    return tform.ensure_image_rank(field, tf.rank(label) + tf.constant(1, tf.int32))
+    return tform.restore_image_rank(field, rank=len(label.get_shape()) + 1)
 
   def from_field(self, field):
     """Recreate the position label associated with field.

@@ -18,47 +18,55 @@ def swap(t):
    exclusive=True, name='swap')
 
 def ensure_batched_images(inputs):
-  """Ensure that `inputs` is a batched tensor.
+  """Adds dims to `inputs` until 4D."""
+  if inputs.get_shape().ndims is None:
+    raise TypeError("rank must be statically known")
+  rank = len(inputs.get_shape())
+  if rank == 2:
+    images = tf.expand_dims(inputs, 0)
+    images = tf.expand_dims(images, 3)
+  elif rank == 3:
+    images = tf.expand_dims(inputs, 0)
+  elif rank == 4:
+    images = inputs
+  else:
+    raise TypeError("Images should have rank between 2 and 4.")
+  return images
 
-  :param inputs: the tensor input
-  :param rank: optional rank of tensor
-  :returns: tensor with expanded dimensions
-
-  """
-  rank = tf.rank(inputs)
-  return tf.case(
-    [(tf.equal(rank, tf.constant(2, rank.dtype)),
-      lambda: tf.expand_dims(tf.expand_dims(inputs,0), 3)),
-     (tf.equal(rank, tf.constant(3, rank.dtype)), lambda: tf.expand_dims(inputs, 0)),
-     (tf.equal(rank, tf.constant(4, rank.dtype)), lambda: inputs)],
-   exclusive=True, name='ensure_batched_images')
-
-def ensure_image_rank(inputs, rank):
-  """Undo the ensure_batched operation on `inputs`.
-
-  :param inputs: tensor of rank 4
-  :param rank: desired or "original" rank of `inputs`
-  :returns: sliced tensor with `rank`
-
-  """
-  return tf.case(
-    [(tf.equal(rank, tf.constant(2, rank.dtype)), lambda: inputs[0,:,:,0]),
-     (tf.equal(rank, tf.constant(3, rank.dtype)), lambda: inputs[0,:,:,:]),
-     (tf.equal(rank, tf.constant(4, rank.dtype)), lambda: inputs)],
-    exclusive=True)
+def restore_image_rank(images, inputs=None, rank=None):
+  """Restore original rank of `inputs` to `images`."""
+  if inputs is not None:
+    rank = len(inputs.get_shape())
+  assert rank is not None
+  if rank == 2:
+    return images[0, :, :, 0]
+  elif rank == 3:
+    return images[0, :, :, :]
+  else:
+    return images
 
 def ensure_batched_labels(inputs):
-  rank = tf.rank(inputs)
-  return tf.case(
-    [(tf.equal(rank, tf.constant(2, rank.dtype)), lambda: tf.expand_dims(inputs, 0)),
-     (tf.equal(rank, tf.constant(3, rank.dtype)), lambda: inputs)],
-    exclusive=True, name='ensure_batched_labels')
+  """Adds dims to inputs until 3D (batched)."""
+  if inputs.get_shape().ndims is None:
+    raise TypeError("rank must be statically known")
+  rank = len(inputs.get_shape())
+  if rank == 2:
+    labels = tf.expand_dims(inputs, 0)
+  elif rank == 3:
+    labels = inputs
+  else:
+    raise TypeError("Labels should have rank 2 or 3.")
+  return labels
      
-def ensure_label_rank(inputs, rank):
-  return tf.case(
-    [(tf.equal(rank, tf.constant(2, rank.dtype)), lambda: inputs[0,:,:]),
-     (tf.equal(rank, tf.constant(3, rank.dtype)), lambda: inputs)],
-    exclusive=True)
+def restore_label_rank(labels, inputs=None, rank=None):
+  """Restore original rank of `labels`."""
+  if inputs is not None:
+    rank = len(inputs.get_shape())
+  assert rank is not None
+  if rank == 2:
+    return labels[0, :, :]
+  else:
+    return labels
 
 
 def transform_objects(image, label, annotation, new_label,
@@ -142,8 +150,8 @@ def transform_objects(image, label, annotation, new_label,
     new_images = tf.where(tf.equal(annotations, obj_ids), background, new_images)
     new_images = tf.where(tf.equal(obj_annotations, obj_ids), obj_images, new_images)
 
-  new_image = ensure_image_rank(new_images, tf.rank(image))
-  new_label = ensure_label_rank(new_labels, tf.rank(label))
+  new_image = restore_image_rank(new_images, image)
+  new_label = restore_label_rank(new_labels, label)
   return new_image, new_label
 
 
