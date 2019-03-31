@@ -27,7 +27,7 @@ def ensure_batched_images(inputs):
   rank = tf.rank(inputs)
   return tf.case(
     [(lambda: tf.equal(rank, tf.constant(2.)),
-      tf.reshape(inputs, (1,) + inputs.shape + (1,))),
+      tf.reshape(inputs, [1, inputs.shape[0], inputs.shape[1], 1])),
      (lambda: tf.equal(rank, tf.constant(3.)), tf.expand_dims(inputs, 0)),
      (lambda: tf.equal(rank, tf.constant(4.)), inputs)],
    exclusive=True, name='ensure_batched_images')
