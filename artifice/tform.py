@@ -90,7 +90,7 @@ def transform_objects(image, label, annotation, new_label,
     background = tf.zeros_like(images)
 
   # (num_objects,) array
-  object_order = tf.constant(num_objects, dtype=tf.int64)
+  object_order = tf.range(num_objects, dtype=tf.int64)
   object_order = tf.random.shuffle(object_order)
   # TODO: for batched inputs, vary object_order within each batch
 
@@ -109,8 +109,6 @@ def transform_objects(image, label, annotation, new_label,
     obj_images = tf.identity(images)
     obj_annotations = tf.identity(annotations)
 
-    logger.debug(f"object_order: {object_order.shape}")
-    logger.debug(f"i: {i}")
     obj_idx = object_order[i]
     obj_labels = labels[:,obj_idx]
     new_obj_labels = new_label[:,obj_idx]
