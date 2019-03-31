@@ -549,7 +549,6 @@ class AugmentationData(Data):
                      parse_entry=scene_from_proto,
                      encode_entry=proto_from_scene,
                      **kwargs)
-    self.num_examples = kwargs.get('num_examples', 10000)
     self.background = kwargs.get('background')
 
     accumulators = {}

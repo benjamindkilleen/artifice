@@ -34,7 +34,7 @@ num_objects_help = """Maximum number of objects."""
 
 splits_help = """Splits to use for unlabeled, validation, and testing."""
 
-num_examples_help = """Number of examples to generate for training."""
+epoch_size_help = """Number of artificial examples per training epoch."""
 
 num_annotated_help = """Number of examples from the unlabeled set which are
 annotated."""

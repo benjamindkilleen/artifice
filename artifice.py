@@ -54,7 +54,7 @@ class Artifice:
     self.batch_size = args.batch_size[0]
     self.learning_rate = args.learning_rate[0]
     self.num_annotated = args.num_annotated[0]
-    self.num_examples = args.num_examples[0]
+    self.epoch_size = args.epoch_size[0]
     self.num_objects = args.num_objects[0]
     self.splits = args.splits
     self.cores = args.cores[0] if args.cores[0] > 0 else os.cpu_count()
@@ -99,13 +99,13 @@ class Artifice:
 
     # training set sizes
     self.annotated_size = self.num_annotated
-    self.train_size = self.num_examples
+    self.train_size = self.epoch_size
     self.unlabeled_size = self.splits[0]
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
 
     # number of steps per epochs
-    self.train_steps = int(np.ceil(self.train_size / self.batch_size))
+    self.train_steps = int(np.ceil(self.epoch_size / self.batch_size))
     self.validation_steps = int(np.ceil(self.validation_size / self.batch_size))
     self.test_steps = int(np.ceil(self.test_size / self.batch_size))
 
@@ -152,8 +152,7 @@ class Artifice:
               'num_objects' : self.num_objects}
     train_set = dat.AugmentationData(
       self.annotated_set_path,
-      num_examples=self.epochs*self.num_examples,
-      size=self.train_size,
+      size=self.epoch_size,
       **kwargs)
     validation_set = dat.Data(
       self.validation_set_path,
@@ -347,9 +346,9 @@ def main():
   parser.add_argument('--num-annotated', nargs=1,
                       default=[10], type=int,
                       help=docs.num_annotated_help)
-  parser.add_argument('--num-examples', '-n', nargs=1,
+  parser.add_argument('--epoch-size', '--num-examples', '-n', nargs=1,
                       default=[5000], type=int,
-                      help=docs.num_examples_help)
+                      help=docs.epoch_size_help)
   parser.add_argument('--num-objects', nargs=1,
                       default=[2], type=int,
                       help=docs.num_objects_help)
