@@ -111,8 +111,8 @@ def transform_objects(image, label, annotation, new_label,
 
     obj_idx = object_order[i]
     obj_labels = labels[:,obj_idx]
-    new_obj_labels = new_label[:,obj_idx]
-    obj_ids = obj_label[:,0]
+    new_obj_labels = new_labels[:,obj_idx]
+    obj_ids = obj_labels[:,0]
 
     # translate the object to center
     translations = swap(center - obj_labels[:,1:3])
