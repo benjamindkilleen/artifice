@@ -231,13 +231,13 @@ class HourglassModel(FunctionalModel):
     :rtype: 
 
     """
-    assert data.batch_size % data.num_tiles == 0
     n = 0
-    round_size = int(np.ceil(data.num_tiles*data.size / (steps*data.batch_size)))
+    # TODO: fix
+    round_size = int(np.ceil(data.size / (steps*data.batch_size)))
     for r in range(round_size):
       logger.info(f"predicting round {r}...")
       tiles = self.predict(data.eval_input.skip(n), steps=steps, verbose=verbose)
-      for i in range(0, steps*data.batch_size, data.num_tiles):
+      for i in range(0, steps*data.batch_size*data.num_tiles, data.num_tiles):
         logger.debug(f"  | yielding example {round_size*r + i // data.num_tiles},"
                      f"total : {n}")
         n += 1

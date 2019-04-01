@@ -426,3 +426,19 @@ Feedback on Report:
   set from the semantically annotated data.
 * From experiments, we generate the images as PNGs, the labels as a single .npy
   file, and the semantic annotations as PNGs as well. 
+
+## April 1, 2019: Batch results
+
+Batching the transformation operations resulted in much faster epochs. Now, a
+single epoch takes about 4-5 minutes, whereas without batched transformations, a
+single epoch could take about 24 minutes. This approximately 4x speedup
+correlates with the (untiled) batch size of 4, showing that the majority of time
+is spent generating the actual examples.
+
+The training exhibits this really strange behavior where the first few examples
+take quite a long time, possibly to build the computation graph, after which
+batches of 16 examples (weirdly enough) are processed very quickly before a
+slight pause. Unknown if changing the batch size affects this behavior, but it
+shows that the GPU is being underutilized during data generation on the CPU.
+
+Still much quicker than unbatched data generation.
