@@ -14,7 +14,7 @@ def swap(t):
     [(tf.equal(rank, tf.constant(1, rank.dtype)),
       lambda: tf.gather(t, [1,0])),
      (tf.equal(rank, tf.constant(2, rank.dtype)),
-      lambda : tf.concat((t[:,1], t[:,0]), axis=1))],
+      lambda : tf.stack((t[:,1], t[:,0]), axis=1))],
    exclusive=True, name='swap')
 
 def ensure_batched_images(inputs):
@@ -97,18 +97,17 @@ def transform_objects(image, label, annotation, new_label,
   
   if background is None:
     background = tf.zeros_like(images)
+  else:
+    background = tf.constant(background, tf.float32)
 
   # (num_objects,) array
   object_order = tf.range(num_objects, dtype=tf.int64)
   object_order = tf.random.shuffle(object_order)
   # TODO: for batched inputs, vary object_order within each batch
 
-  # fix the obj_id's for new_label
+  # fix obj_ids
   labels = labels[:,:,:tf.shape(new_labels)[2]]
-  id_indices = tf.tile(tf.reshape(
-    tf.one_hot(tf.constant(0, tf.int64, (num_objects,)), obj_label_size),
-    [1, num_objects, obj_label_size]), [batch_size, 1, 1])
-  new_labels = tf.where(tf.cast(id_indices, tf.bool), labels, new_labels)
+  new_labels = tf.concat((labels[:,:,0:1], new_labels[:,:,1:]), axis=2)
 
   shape = tf.cast(tf.shape(images), tf.float32)
   center = tf.expand_dims(shape[1:3] / tf.constant(2,tf.float32), 0)
@@ -121,13 +120,11 @@ def transform_objects(image, label, annotation, new_label,
     obj_idx = object_order[i]
     obj_labels = labels[:,obj_idx]
     new_obj_labels = new_labels[:,obj_idx]
-    obj_ids = obj_labels[:,0]
+    obj_ids = tf.reshape(obj_labels[:,0], [-1,1,1,1])
 
     # translate the object to center
-    logger.debug(f"center: {center.shape}")
-    logger.debug(f"positions: {obj_labels[:,1:3].shape}")
+    positions = obj_labels[:,1:3]
     translations = swap(center - obj_labels[:,1:3])
-    logger.debug(f"translations: {translations.shape}")
     obj_images = tf.contrib.image.translate(
       obj_images, translations, interpolation='BILINEAR')
     obj_annotation = tf.contrib.image.translate(
@@ -146,7 +143,7 @@ def transform_objects(image, label, annotation, new_label,
       obj_images, translations, interpolation='BILINEAR')
     obj_annotations = tf.contrib.image.translate(
       obj_annotations, translations, interpolation='NEAREST')
-    
+
     new_images = tf.where(tf.equal(annotations, obj_ids), background, new_images)
     new_images = tf.where(tf.equal(obj_annotations, obj_ids), obj_images, new_images)
 

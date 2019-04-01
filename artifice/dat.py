@@ -223,7 +223,7 @@ class Data(object):
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
     self.parse_entry = kwargs.get('parse_entry', example_from_proto)
     self.encode_entry = kwargs.get('encode_entry', proto_from_example)
-    self.num_shuffle = kwargs.get('num_shuffle', 10000)
+    self.num_shuffle = kwargs.get('num_shuffle', 1250)
     self._kwargs = kwargs
     
     if issubclass(type(data), Data):
@@ -247,7 +247,7 @@ class Data(object):
     
   def save(self, record_name):
     """Save the dataset to record_name."""
-    save_dataset(record_name, self._dataset,
+    save_dataset(record_name, self.dataset,
                  encode_entry=self.encode_entry,
                  num_parallel_calls=self.num_parallel_calls)
 
@@ -280,7 +280,7 @@ class Data(object):
     
     datas = []
     for i, n in enumerate(splits):
-      dataset = self._dataset.skip(sum(splits[:i])).take(n)
+      dataset = self.dataset.skip(sum(splits[:i])).take(n)
       if types is None or i >= len(types):
         datas.append(type(self)(dataset, **self._kwargs))
       elif types[i] is None:
@@ -300,7 +300,7 @@ class Data(object):
 
     """
     sampling = tf.constant(sampling, dtype=tf.int64)
-    dataset = self._dataset.apply(tf.data.experimental.enumerate_dataset())
+    dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
     def map_func(idx, example):
       return tf.data.Dataset.from_tensors(example).repeat(sampling[idx])
     dataset = dataset.flat_map(map_func)
@@ -333,11 +333,11 @@ class Data(object):
     aggregates = dict.fromkeys(accumulators.keys())
 
     if tf.executing_eagerly():
-      for entry in self._dataset:
+      for entry in self.dataset:
         for k, acc in accumulators.items():
           aggregates[k] = acc(self.as_numpy(entry), aggregates[k])
     else:
-      iterator = self._dataset.make_initializable_iterator()
+      iterator = self.dataset.make_initializable_iterator()
       next_item = iterator.get_next()
     
       with tf.Session() as sess:
@@ -439,8 +439,9 @@ class Data(object):
                              flat_field.shape)
     zeros = tf.zeros_like(flat_field)
     flat_field = tf.where(flat_field > inv_thresh, flat_field, zeros)
-    field = tf.reshape(flat_field, (-1,) + self.image_shape)
-    return tform.restore_image_rank(field, rank=len(label.get_shape()) + 1)
+    field = tf.reshape(flat_field, [-1,] + self.image_shape)
+    field = tform.restore_image_rank(field, rank=len(label.get_shape()) + 1)
+    return field
 
   def from_field(self, field):
     """Recreate the position label associated with field.
@@ -476,8 +477,8 @@ class Data(object):
   def tiled(self):
     """Tile the fielded dataset."""
     def map_func(image, field):
-      images = ensure_batched_images(image)
-      fields = ensure_batched_images(field)
+      images = tform.ensure_batched_images(image)
+      fields = tform.ensure_batched_images(field)
       
       even_pad = [
         [0,0],
@@ -490,15 +491,14 @@ class Data(object):
       images = tf.pad(images, model_pad)
       image_tiles = []
       field_tiles = []
-      for b in range(self.batch_size):
-        for i in range(0, self.image_shape[0], self.tile_shape[0]):
-          for j in range(0, self.image_shape[1], self.tile_shape[1]):
-            image_tiles.append(images[
-              b, i:i + self.tile_shape[0] + 2*self.pad,
-              j:j + self.tile_shape[1] + 2*self.pad])
-            field_tiles.append(fields[
-              b, i:i + self.tile_shape[0],
-              j:j + self.tile_shape[1]])
+      for i in range(0, self.image_shape[0], self.tile_shape[0]):
+        for j in range(0, self.image_shape[1], self.tile_shape[1]):
+          image_tiles.append(images[
+            :, i:i + self.tile_shape[0] + 2*self.pad,
+            j:j + self.tile_shape[1] + 2*self.pad])
+          field_tiles.append(fields[
+            :, i:i + self.tile_shape[0],
+            j:j + self.tile_shape[1]])
 
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
@@ -597,7 +597,7 @@ class AugmentationData(Data):
     """
     label = np.ones(self.label_shape, dtype=np.float32)
     label[:,1:3] = np.random.uniform([0,0], self.image_shape[:2],
-                                      size=(labels.shape[0],2))
+                                      size=(label.shape[0],2))
     label[:,3] = np.random.uniform(0., 2*np.pi, size=label.shape[0])
     return label
 
@@ -630,12 +630,14 @@ class AugmentationData(Data):
     dataset = dataset.repeat(-1)
     zip_set = tf.data.Dataset.zip((new_labels, dataset))
 
+    background = np.stack([self.background.copy() for _ in range(self.batch_size)])
+
     def map_func(new_label, scene):
       example, annotation = scene
       image, label = example
       return tform.transform_objects(image, label, annotation, new_label,
                                      num_objects=self.num_objects,
-                                     background=self.background)
+                                     background=background)
     
     return zip_set.map(map_func, self.num_parallel_calls)
       
