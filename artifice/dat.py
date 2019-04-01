@@ -491,18 +491,20 @@ class Data(object):
       images = tf.pad(images, model_pad)
       image_tiles = []
       field_tiles = []
-      for i in range(0, self.image_shape[0], self.tile_shape[0]):
-        for j in range(0, self.image_shape[1], self.tile_shape[1]):
-          image_tiles.append(images[
-            :, i:i + self.tile_shape[0] + 2*self.pad,
-            j:j + self.tile_shape[1] + 2*self.pad])
-          field_tiles.append(fields[
-            :, i:i + self.tile_shape[0],
-            j:j + self.tile_shape[1]])
+      for b in range(self.batch_size):
+        for i in range(0, self.image_shape[0], self.tile_shape[0]):
+          for j in range(0, self.image_shape[1], self.tile_shape[1]):
+            image_tiles.append(images[
+              b, i:i + self.tile_shape[0] + 2*self.pad,
+              j:j + self.tile_shape[1] + 2*self.pad])
+            field_tiles.append(fields[
+              b, i:i + self.tile_shape[0],
+              j:j + self.tile_shape[1]])
 
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
       out = tf.data.Dataset.zip((images, fields))
+      out = out.batch(self.batch_size, drop_remainder=True)
       return out
     return self.fielded.flat_map(map_func)
 
