@@ -624,10 +624,11 @@ class AugmentationData(Data):
   
   def augment(self, dataset):
     """Generate the desired labels and then map them over the batched set."""
-    labels = tf.data.Dataset.from_generator(self.label_generator, tf.float32)
-    labels = labels.batch(self.batch_size, drop_remainder=True)
+    new_labels = tf.data.Dataset.from_generator(
+      self.label_generator, tf.float32, tf.TensorShape(self.label_shape))
+    new_labels = new_labels.batch(self.batch_size, drop_remainder=True)
     dataset = dataset.repeat(-1)
-    zip_set = tf.data.Dataset.zip((labels, dataset))
+    zip_set = tf.data.Dataset.zip((new_labels, dataset))
 
     def map_func(new_label, scene):
       example, annotation = scene
