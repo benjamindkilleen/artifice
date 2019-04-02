@@ -295,15 +295,15 @@ def cmd_visualize(art):
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
 
-  get_next = test_set.visualized.make_one_shot_iterator().get_next()
+  get_next = test_set.dataset.make_one_shot_iterator().get_next()
   writer = vid.MP4Writer(art.detections_video_path)
   logger.info(f"writing detections to video...")
   with tf.Session() as sess:
     for i, detection in enumerate(detections):
       if i % 100 == 0:
         logger.info(f"{i} / {detections.shape[0]}")
-      image, field, label = sess.run(get_next)
-      fig, _ = vis.plot_detection(image, field, label, detection)
+      image, label = sess.run(get_next)
+      fig, _ = vis.plot_detection(label, detection, image)
       if i == 0:
         writer.write_fig(fig, close=False)
         plt.savefig(art.example_detection_path)

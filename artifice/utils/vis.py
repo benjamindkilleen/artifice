@@ -27,8 +27,8 @@ def plot_image(*images, columns=10, ticks=False):
   fig.subplots_adjust(wspace=0, hspace=0)
   return fig, axes
 
-def plot_detection(image, field, label, detection):
-  fig, axes = plot_image(image, field)
+def plot_detection(label, detection, *images):
+  fig, axes = plot_image(*images)
   axes = np.squeeze(axes)
   for i in range(axes.shape[0]):
     axes[i].plot(label[:,2], label[:,1], 'g+', markersize=8., label='known position')

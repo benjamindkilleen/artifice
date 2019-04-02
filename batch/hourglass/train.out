@@ -3,3 +3,7 @@ Epoch 1/50
 
 Epoch 00001: saving model to models/coupled_spheres_e50/hourglass/cp-0001.hdf5
  - 3233s - loss: 0.0375 - mean_absolute_error: 0.0026 - val_loss: 0.0326 - val_mean_absolute_error: 0.0020
+Epoch 2/50
+
+Epoch 00002: saving model to models/coupled_spheres_e50/hourglass/cp-0002.hdf5
+ - 1986s - loss: 0.0369 - mean_absolute_error: 0.0022 - val_loss: 0.0304 - val_mean_absolute_error: 0.0019

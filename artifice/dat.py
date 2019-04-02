@@ -478,7 +478,7 @@ class Data(object):
 
   @property
   def tiled(self):
-    """Tile the fielded dataset."""
+    """Tile the (possibly batched) fielded dataset."""
     def map_func(image, field):
       images = tform.ensure_batched_images(image)
       fields = tform.ensure_batched_images(field)
@@ -494,29 +494,31 @@ class Data(object):
       images = tf.pad(images, model_pad)
       image_tiles = []
       field_tiles = []
-      for b in range(self.batch_size):
-        for i in range(0, self.image_shape[0], self.tile_shape[0]):
-          for j in range(0, self.image_shape[1], self.tile_shape[1]):
-            image_tiles.append(images[
-              b, i:i + self.tile_shape[0] + 2*self.pad,
-              j:j + self.tile_shape[1] + 2*self.pad])
-            field_tiles.append(fields[
-              b, i:i + self.tile_shape[0],
-              j:j + self.tile_shape[1]])
-
+      for i in range(0, self.image_shape[0], self.tile_shape[0]):
+        for j in range(0, self.image_shape[1], self.tile_shape[1]):
+          image_tiles.append(images[
+            :, i:i + self.tile_shape[0] + 2*self.pad,
+            j:j + self.tile_shape[1] + 2*self.pad])
+          field_tiles.append(fields[
+            :, i:i + self.tile_shape[0],
+            j:j + self.tile_shape[1]])
+          
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
       out = tf.data.Dataset.zip((images, fields))
-      out = out.batch(self.num_tiles*self.batch_size, drop_remainder=True)
+      # out = out.batch(self.num_tiles*self.batch_size, drop_remainder=True)
       return out
     return self.fielded.flat_map(map_func)
 
   def untile(self, tiles):
     """Untile from `self.num_tiles` numpy tiles.
 
-    :param tiles: iterable of `self.num_tiles` numpy tiles with `tile_shape`
-    :returns: a single image reconstructed from `tiles`.
-    :rtype: 
+    Note: does not support batches.
+
+    :param tiles: iterable of `self.num_tiles` numpy tiles each with
+    `tile_shape`.  
+    :returns: an image reconstructed from `tiles` 
+    :rtype: ndarray
 
     """
     image = np.empty(self.image_shape, dtype=np.float32)
