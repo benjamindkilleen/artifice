@@ -23,11 +23,6 @@ def ensure_batched_images(inputs):
   :param inputs: a numpy or tensor image or batch of images
 
   """
-  if type(inputs) == np.ndarray:
-    if inputs.ndim < 4:
-      return np.expand_dims(np.atleast_3d(inputs), axis=0)
-    else:
-      return inputs
   if inputs.get_shape().ndims is None:
     raise TypeError("rank must be statically known")
   rank = len(inputs.get_shape())
@@ -45,10 +40,7 @@ def ensure_batched_images(inputs):
 def restore_image_rank(images, inputs=None, rank=None):
   """Restore original rank of `inputs` to `images`."""
   if inputs is not None:
-    if type(images) == np.ndarray:
-      rank = images.ndim
-    else:
-      rank = len(inputs.get_shape())
+    rank = len(inputs.get_shape())
   assert rank is not None
   if rank == 2:
     return images[0, :, :, 0]
