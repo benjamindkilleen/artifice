@@ -300,6 +300,8 @@ def cmd_visualize(art):
   logger.info(f"writing detections to video...")
   with tf.Session() as sess:
     for i, detection in enumerate(detections):
+      if i % 100 == 0:
+        logger.info(f"{i} / {detections.shape[0]}")
       image, field, label = sess.run(get_next)
       fig, _ = vis.plot_detection(image, field, label, detection)
       if i == 0:
