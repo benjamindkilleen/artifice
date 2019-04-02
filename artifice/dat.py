@@ -504,7 +504,7 @@ class Data(object):
       images = tf.data.Dataset.from_tensor_slices(image_tiles)
       fields = tf.data.Dataset.from_tensor_slices(field_tiles)
       out = tf.data.Dataset.zip((images, fields))
-      out = out.batch(self.batch_size, drop_remainder=True)
+      out = out.batch(self.num_tiles*self.batch_size, drop_remainder=True)
       return out
     return self.fielded.flat_map(map_func)
 
