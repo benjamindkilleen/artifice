@@ -237,10 +237,13 @@ def cmd_augment(art):
 
   """
   train_set, validation_set, test_set = art.load_data()
-  if art.show and tf.executing_eagerly():
-    for image, field in train_set.fielded:
-      vis.plot_image(image, field)
-      plt.show()
+  get_next = train_set.fielded.make_one_shot_iterator().get_next()
+  with tf.Session() as sess:
+    while True:
+      images, fields = sess.run(get_next)
+      for image, field in zip(images, fields):
+        vis.plot_image(image, field)
+        plt.show()
   
 def cmd_train(art):
   model = art.load_model()

@@ -114,6 +114,7 @@ def transform_objects(image, label, annotation, new_label,
   new_images = tf.identity(images)
   
   for i in range(num_objects):
+    logger.debug(f"transforming object {i}...")
     obj_images = tf.identity(images)
     obj_annotations = tf.identity(annotations)
 
@@ -123,11 +124,10 @@ def transform_objects(image, label, annotation, new_label,
     obj_ids = tf.reshape(obj_labels[:,0], [-1,1,1,1])
 
     # translate the object to center
-    positions = obj_labels[:,1:3]
     translations = swap(center - obj_labels[:,1:3])
     obj_images = tf.contrib.image.translate(
       obj_images, translations, interpolation='BILINEAR')
-    obj_annotation = tf.contrib.image.translate(
+    obj_annotations = tf.contrib.image.translate(
       obj_annotations, translations, interpolation='NEAREST')
 
     # Rotate the objects

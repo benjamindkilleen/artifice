@@ -426,9 +426,12 @@ class Data(object):
     indices = tf.expand_dims(indices, axis=0)
     indices = tf.expand_dims(indices, axis=2)
     positions = tf.expand_dims(positions, axis=1)
+    logger.debug(f"indices: {indices.shape}")
+    logger.debug(f"positions: {positions.shape}")
 
     # distances: (batch_size, M*N, num_objects)
-    distances = tf.norm(indices - positions, axis=2)
+    distances = tf.norm(indices - positions, axis=3)
+    logger.debug(f"distances: {distances.shape}")
     
     # take inverse distance
     eps = tf.constant(0.001)
