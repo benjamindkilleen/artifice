@@ -541,7 +541,7 @@ class Data(object):
     images = np.zeros([num_images] + self.image_shape, tiles.dtype)
     step = self.batch_size * self.num_tiles
     for i in range(images.shape[0]):
-      images[i] = self.untile(tiles[step*i : step*i + step])
+      images[i] = self.untile_single(tiles[step*i : step*i + step])
     return images
 
   # TODO: shuffle the original dataset, in preprocessing, only for training.

@@ -222,7 +222,7 @@ class HourglassModel(FunctionalModel):
     inputs = conv(inputs, 1, activation=None, padding='same')
     return inputs
 
-  def full_predict(self, data, steps=250, verbose=2):
+  def full_predict(self, data, steps=None, verbose=1):
     """Yield reassembled fields from the data.
 
     Requires batch_size to be a multiple of num_tiles
@@ -235,12 +235,14 @@ class HourglassModel(FunctionalModel):
 
     """
     # TODO: fix
+    if steps is None:
+      steps = data.size // data.batch_size
     round_size = steps*data.batch_size
     rounds = int(np.ceil(data.size / round_size))
     for r in range(rounds):
       logger.info(f"predicting round {r}...")
       tiles = self.predict(data.eval_input.skip(r*round_size),
-                           steps=data.num_tiles*steps, verbose=verbose)
+                           steps=steps, verbose=verbose)
       logger.debug(f"tiles: {tiles.shape}")
       for field in data.untile(tiles):
         yield field
