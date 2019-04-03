@@ -97,7 +97,7 @@ class Model():
         self.checkpoint_path, verbose=1, save_weights_only=True,
         period=1))
     if self.tensorboard:
-      # Need to have an actual director in which to store the logs.
+      # Need to have an actual directory in which to store the logs.
       raise NotImplementedError
     return callbacks
     

@@ -105,10 +105,9 @@ class Artifice:
     self.test_size = self.splits[2]
 
     # number of steps per epochs
-    self.train_steps = int(np.ceil(self.num_tiles*self.epoch_size / self.batch_size))
-    self.validation_steps = int(np.ceil(self.num_tiles*self.validation_size /
-                                        self.batch_size))
-    self.test_steps = int(np.ceil(self.num_tiles*self.test_size / self.batch_size))
+    self.train_steps = int(np.ceil(self.epoch_size / self.batch_size))
+    self.validation_steps = int(np.ceil(self.validation_size / self.batch_size))
+    self.test_steps = int(np.ceil(self.test_size / self.batch_size))
 
     # model dirs
     self.hourglass_dir = join(self.model_root, 'hourglass/')

@@ -442,3 +442,12 @@ slight pause. Unknown if changing the batch size affects this behavior, but it
 shows that the GPU is being underutilized during data generation on the CPU.
 
 Still much quicker than unbatched data generation.
+
+## April 3, 2019: Oops
+
+The above speedup may have been due to a `steps_per_epoch` error. Additionally,
+it relied on batches of `batch_size` tiles, when we really want
+`batch_size*num_tiles` tiles per batch, in order that they can be conveniently
+reconstructed. Now, it seems, and epoch should take about an hour. So was there
+any speedup at all? Possibly not. Might want to go back to the previous
+paradigm of batching after augmenting. Possibly. 

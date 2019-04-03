@@ -378,16 +378,16 @@ class Data(object):
     if self._labels is None:
       self._labels = self.accumulate_labels()
     return self._labels
+      
+  @property
+  def dataset(self):
+    return self._dataset
 
   def preprocess(self, dataset):
     """Responsible for converting dataset to (image, label) form.
 
     Can be overwritten by subclasses to perform augmentation."""
     return dataset.batch(self.batch_size, drop_remainder=True)
-      
-  @property
-  def dataset(self):
-    return self._dataset
 
   @property
   def preprocessed(self):
@@ -482,19 +482,20 @@ class Data(object):
       images = tf.pad(images, model_pad)
       image_tiles = []
       field_tiles = []
-      for i in range(0, self.image_shape[0], self.tile_shape[0]):
-        for j in range(0, self.image_shape[1], self.tile_shape[1]):
-          image_tiles.append(images[
-            :, i:i + self.tile_shape[0] + 2*self.pad,
-            j:j + self.tile_shape[1] + 2*self.pad])
-          field_tiles.append(fields[
-            :, i:i + self.tile_shape[0],
-            j:j + self.tile_shape[1]])
+      for b in range(self.batch_size):
+        for i in range(0, self.image_shape[0], self.tile_shape[0]):
+          for j in range(0, self.image_shape[1], self.tile_shape[1]):
+            image_tiles.append(images[
+              b, i:i + self.tile_shape[0] + 2*self.pad,
+              j:j + self.tile_shape[1] + 2*self.pad])
+            field_tiles.append(fields[
+              b, i:i + self.tile_shape[0],
+              j:j + self.tile_shape[1]])
           
-      images = tf.data.Dataset.from_tensor_slices(image_tiles)
-      fields = tf.data.Dataset.from_tensor_slices(field_tiles)
+      images = tf.data.Dataset.from_tensors(image_tiles)
+      fields = tf.data.Dataset.from_tensors(field_tiles)
       out = tf.data.Dataset.zip((images, fields))
-      # out = out.batch(self.num_tiles*self.batch_size, drop_remainder=True)
+      logger.debug(f"tiled: {out}")
       return out
     return self.fielded.flat_map(map_func)
 
@@ -529,7 +530,7 @@ class Data(object):
     return image
 
   def untile(self, tiles):
-    """Untile the batch-ordered tiles
+    """Untile the tiles as output in batches
 
     :param tiles: array of batch-ordered tiles, outer dimension (number of
     tiles) must be a multiple of `batch_size * num_tiles`.
@@ -545,14 +546,12 @@ class Data(object):
     images = np.zeros([num_images] + self.image_shape, tiles.dtype)
     step = self.batch_size * self.num_tiles
     for i in range(images.shape[0]):
-      b = i % self.batch_size
-      images[i] = self.untile_single(
-        tiles[step*i + b : step*(i+1) + b : self.batch_size])
+      images[i] = self.untile(tiles[step*i : step*i + step])
     return images
 
+  # TODO: shuffle the original dataset, in preprocessing, only for training.
   def postprocess_for_training(self, dataset):
-    return (dataset.shuffle(self.num_shuffle)
-            .repeat(-1)
+    return (dataset.repeat(-1)
             .prefetch(self.prefetch_buffer_size))
 
   def postprocess_for_evaluation(self, dataset):
