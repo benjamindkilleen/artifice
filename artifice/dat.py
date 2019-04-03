@@ -223,7 +223,7 @@ class Data(object):
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
     self.parse_entry = kwargs.get('parse_entry', example_from_proto)
     self.encode_entry = kwargs.get('encode_entry', proto_from_example)
-    self.num_shuffle = kwargs.get('num_shuffle', 1250)
+    self.num_shuffle = kwargs.get('num_shuffle', self.size // self.batch_size)
     self._kwargs = kwargs
     
     if issubclass(type(data), Data):
@@ -384,16 +384,7 @@ class Data(object):
 
     Can be overwritten by subclasses to perform augmentation."""
     return dataset.batch(self.batch_size, drop_remainder=True)
-  
-  def postprocess_for_training(self, dataset):
-    return (dataset.shuffle(self.num_shuffle)
-            .repeat(-1)
-            .prefetch(self.prefetch_buffer_size))
-
-  def postprocess_for_evaluation(self, dataset):
-    return (dataset.repeat(-1)
-            .prefetch(self.prefetch_buffer_size))
-    
+      
   @property
   def dataset(self):
     return self._dataset
@@ -426,12 +417,9 @@ class Data(object):
     indices = tf.expand_dims(indices, axis=0)
     indices = tf.expand_dims(indices, axis=2)
     positions = tf.expand_dims(positions, axis=1)
-    logger.debug(f"indices: {indices.shape}")
-    logger.debug(f"positions: {positions.shape}")
 
     # distances: (batch_size, M*N, num_objects)
     distances = tf.norm(indices - positions, axis=3)
-    logger.debug(f"distances: {distances.shape}")
     
     # take inverse distance
     eps = tf.constant(0.001)
@@ -510,14 +498,14 @@ class Data(object):
       return out
     return self.fielded.flat_map(map_func)
 
-  def untile(self, tiles):
-    """Untile from `self.num_tiles` numpy tiles.
+  def untile_single(self, tiles):
+    """Untile from `self.num_tiles` numpy tiles, corresponding to single image.
 
-    Note: does not support batches.
-
+    Does not support batch-ordered inputs
+    
     :param tiles: iterable of `self.num_tiles` numpy tiles each with
-    `tile_shape`.  
-    :returns: an image reconstructed from `tiles` 
+    `tile_shape`. 
+    :returns: an image reconstructed from `tiles`
     :rtype: ndarray
 
     """
@@ -540,10 +528,40 @@ class Data(object):
         image[i:i + si, j:j + sj] = tile[:si,:sj]
     return image
 
+  def untile(self, tiles):
+    """Untile the batch-ordered tiles
+
+    :param tiles: array of batch-ordered tiles, outer dimension (number of
+    tiles) must be a multiple of `batch_size * num_tiles`.
+    :returns: array of corresponding images.
+
+    """
+
+    logger.debug(f"tiles: {tiles.shape}, num_tiles: {self.num_tiles}, "
+                 f"batch_size: {self.batch_size}")
+
+    assert tiles.shape[0] % (self.batch_size * self.num_tiles) == 0
+    num_images = tiles.shape[0] // self.num_tiles
+    images = np.zeros([num_images] + self.image_shape, tiles.dtype)
+    step = self.batch_size * self.num_tiles
+    for i in range(images.shape[0]):
+      b = i % self.batch_size
+      images[i] = self.untile_single(
+        tiles[step*i + b : step*(i+1) + b : self.batch_size])
+    return images
+
+  def postprocess_for_training(self, dataset):
+    return (dataset.shuffle(self.num_shuffle)
+            .repeat(-1)
+            .prefetch(self.prefetch_buffer_size))
+
+  def postprocess_for_evaluation(self, dataset):
+    return (dataset.repeat(-1)
+            .prefetch(self.prefetch_buffer_size))
+
   @property
   def training_input(self):
-    out = self.postprocess_for_training(self.tiled)
-    return out
+    return self.postprocess_for_training(self.tiled)
 
   @property
   def eval_input(self):

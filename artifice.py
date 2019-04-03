@@ -105,9 +105,10 @@ class Artifice:
     self.test_size = self.splits[2]
 
     # number of steps per epochs
-    self.train_steps = int(np.ceil(self.epoch_size / self.batch_size))
-    self.validation_steps = int(np.ceil(self.validation_size / self.batch_size))
-    self.test_steps = int(np.ceil(self.test_size / self.batch_size))
+    self.train_steps = int(np.ceil(self.num_tiles*self.epoch_size / self.batch_size))
+    self.validation_steps = int(np.ceil(self.num_tiles*self.validation_size /
+                                        self.batch_size))
+    self.test_steps = int(np.ceil(self.num_tiles*self.test_size / self.batch_size))
 
     # model dirs
     self.hourglass_dir = join(self.model_root, 'hourglass/')
@@ -275,7 +276,7 @@ def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""
   model = art.load_model()
   train_set, validation_set, test_set = art.load_data()
-  detections = model.detect(test_set)
+  detections = model.detect(test_set, show=art.show)
   np.save(art.model_detections_path, detections)
   logger.info(f"saved detections to {art.model_detections_path}")
   labels = test_set.labels

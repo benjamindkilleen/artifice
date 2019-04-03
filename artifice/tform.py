@@ -135,7 +135,7 @@ def transform_objects(image, label, annotation, new_label,
       obj_annotations, translations, interpolation='NEAREST')
 
     # Rotate the objects
-    angles = new_obj_labels[3] - obj_labels[3]
+    angles = new_obj_labels[:,3] - obj_labels[:,3]
     obj_images = tf.contrib.image.rotate(
       obj_images, angles, interpolation='BILINEAR')
     obj_annotations = tf.contrib.image.rotate(

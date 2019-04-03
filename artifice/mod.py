@@ -5,6 +5,8 @@ import tensorflow as tf
 from tensorflow import keras
 from os.path import join
 from artifice import lay, dat
+from artifice.utils import vis  # for debugging
+import matplotlib.pyplot as plt # for debugging
 import numpy as np
 import logging
 
@@ -226,24 +228,24 @@ class HourglassModel(FunctionalModel):
     Requires batch_size to be a multiple of num_tiles
 
     :param data: dat.Data set
-    :param size: number of examples in the dataset
+    :param steps: number of image batches to do at once
+    :param verbose: 
     :returns: 
     :rtype: 
 
     """
-    n = 0
     # TODO: fix
-    round_size = int(np.ceil(data.size / (steps*data.batch_size)))
-    for r in range(round_size):
+    round_size = steps*data.batch_size
+    rounds = int(np.ceil(data.size / round_size))
+    for r in range(rounds):
       logger.info(f"predicting round {r}...")
-      tiles = self.predict(data.eval_input.skip(n), steps=steps, verbose=verbose)
-      for i in range(0, steps*data.batch_size*data.num_tiles, data.num_tiles):
-        logger.debug(f"  | yielding example {round_size*r + i // data.num_tiles},"
-                     f"total : {n}")
-        n += 1
-        yield data.untile(tiles[i:i+data.num_tiles])
+      tiles = self.predict(data.eval_input.skip(r*round_size),
+                           steps=data.num_tiles*steps, verbose=verbose)
+      logger.debug(f"tiles: {tiles.shape}")
+      for image in data.untile(tiles):
+        yield image
   
-  def detect(self, data, max_iter=None):
+  def detect(self, data, max_iter=None, show=False):
     """Detect objects in the reassembled fields.
     
     :param data: dat.Data set
@@ -255,4 +257,7 @@ class HourglassModel(FunctionalModel):
       if max_iter is not None and i >= max_iter:
         break
       detections[i] = data.from_field(field)
+      if show:
+        vis.plot_detection(None, detections[i], field)
+        plt.show()
     return dat.match_detections(detections, data.labels)
