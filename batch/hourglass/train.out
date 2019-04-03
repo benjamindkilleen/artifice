@@ -1,1 +1,13 @@
 Starting training...
+Epoch 1/20
+
+Epoch 00001: saving model to models/coupled_spheres_e20/hourglass/cp-0001.hdf5
+ - 2294s - loss: 0.0427 - mean_absolute_error: 0.0028 - val_loss: 0.0335 - val_mean_absolute_error: 0.0035
+Epoch 2/20
+
+Epoch 00002: saving model to models/coupled_spheres_e20/hourglass/cp-0002.hdf5
+ - 2169s - loss: 0.0375 - mean_absolute_error: 0.0024 - val_loss: 0.0320 - val_mean_absolute_error: 0.0017
+Epoch 3/20
+
+Epoch 00003: saving model to models/coupled_spheres_e20/hourglass/cp-0003.hdf5
+ - 2165s - loss: 0.0298 - mean_absolute_error: 0.0025 - val_loss: 0.0302 - val_mean_absolute_error: 0.0024

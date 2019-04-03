@@ -242,8 +242,8 @@ class HourglassModel(FunctionalModel):
       tiles = self.predict(data.eval_input.skip(r*round_size),
                            steps=data.num_tiles*steps, verbose=verbose)
       logger.debug(f"tiles: {tiles.shape}")
-      for image in data.untile(tiles):
-        yield image
+      for field in data.untile(tiles):
+        yield field
   
   def detect(self, data, max_iter=None, show=False):
     """Detect objects in the reassembled fields.

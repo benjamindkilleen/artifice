@@ -466,11 +466,8 @@ class Data(object):
 
   @property
   def tiled(self):
-    """Tile the (possibly batched) fielded dataset."""
-    def map_func(image, field):
-      images = tform.ensure_batched_images(image)
-      fields = tform.ensure_batched_images(field)
-      
+    """Tile the batched, fielded dataset."""
+    def map_func(images, fields):
       even_pad = [
         [0,0],
         [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
@@ -491,13 +488,11 @@ class Data(object):
             field_tiles.append(fields[
               b, i:i + self.tile_shape[0],
               j:j + self.tile_shape[1]])
-          
-      images = tf.data.Dataset.from_tensors(image_tiles)
-      fields = tf.data.Dataset.from_tensors(field_tiles)
-      out = tf.data.Dataset.zip((images, fields))
+
+      out = tf.stack(image_tiles), tf.stack(field_tiles)
       logger.debug(f"tiled: {out}")
       return out
-    return self.fielded.flat_map(map_func)
+    return self.fielded.map(map_func, num_parallel_calls=self.num_parallel_calls)
 
   def untile_single(self, tiles):
     """Untile from `self.num_tiles` numpy tiles, corresponding to single image.
