@@ -451,3 +451,13 @@ it relied on batches of `batch_size` tiles, when we really want
 reconstructed. Now, it seems, and epoch should take about an hour. So was there
 any speedup at all? Possibly not. Might want to go back to the previous
 paradigm of batching after augmenting. Possibly. 
+
+## April 4, 2019: Results:
+
+Training for 20 epochs, using skimage local peak finder, yields:
+```
+INFO:artifice:average error: 2.25
+INFO:artifice:error std: 1.94
+INFO:artifice:minimum error: 0.04
+INFO:artifice:maximum error: 8.71
+```
