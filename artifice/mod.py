@@ -259,7 +259,7 @@ class HourglassModel(FunctionalModel):
       if max_iter is not None and i >= max_iter:
         break
       detections[i] = data.from_field(field)
-      if show:
+      if i == 0 and show:
         vis.plot_detection(None, detections[i], field)
         plt.show()
     return dat.match_detections(detections, data.labels)

@@ -533,13 +533,15 @@ class Data(object):
 
     """
 
+    # TODO: this is still royally fucking up. Figure out why.
+
     logger.debug(f"tiles: {tiles.shape}, num_tiles: {self.num_tiles}, "
                  f"batch_size: {self.batch_size}")
 
     assert tiles.shape[0] % (self.batch_size * self.num_tiles) == 0
     num_images = tiles.shape[0] // self.num_tiles
     images = np.zeros([num_images] + self.image_shape, tiles.dtype)
-    step = self.batch_size * self.num_tiles
+    step = self.num_tiles
     for i in range(images.shape[0]):
       images[i] = self.untile_single(tiles[step*i : step*i + step])
     return images
