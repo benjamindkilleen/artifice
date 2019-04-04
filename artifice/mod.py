@@ -148,7 +148,7 @@ class FunctionalModel(Model):
 
     """
     return inputs
-
+  
   
 class HourglassModel(FunctionalModel):
   def __init__(self, tile_shape,
@@ -157,7 +157,6 @@ class HourglassModel(FunctionalModel):
                valid=True,
                pool_dropout=0.25,
                concat_dropout=0.5,
-               num_objects=2,
                **kwargs):
     """Create an hourglass-shaped model for object detection.
 
@@ -167,7 +166,6 @@ class HourglassModel(FunctionalModel):
     :param valid: whether to use valid padding
     :param pool_dropout: 
     :param concat_dropout: 
-    :param num_objects: maximum number of objects
     :returns: 
     :rtype: 
 
@@ -221,7 +219,7 @@ class HourglassModel(FunctionalModel):
 
     inputs = conv(inputs, 1, activation=None, padding='same')
     return inputs
-
+  
   def full_predict(self, data, steps=None, verbose=1):
     """Yield reassembled fields from the data.
 
