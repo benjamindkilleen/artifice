@@ -27,14 +27,26 @@ def plot_image(*images, columns=10, ticks=False):
   fig.subplots_adjust(wspace=0, hspace=0)
   return fig, axes
 
-def plot_detection(label, detection, *images):
+def plot_detection(label, detection, *images, n=1):
+  """Plot the detections onto the image.
+
+  Allows for multiple images to be plotted, but by default only plots the
+  detection onto the first one.
+
+  :param label: 
+  :param detection: 
+  :param n: how many of `images` to plot onto.
+  :returns: 
+  :rtype: 
+
+  """
   fig, axes = plot_image(*images)
-  for ax in axes.flat:
+  for ax in axes.flat[:n]:
     if label is not None:
       ax.plot(label[:,2], label[:,1], 'g+', markersize=8., label='known position')
     if detection is not None:
       ax.plot(detection[:,2], detection[:,1], 'rx', markersize=8.,
                    label='model prediction')
-  axes.flat[-1].legend(loc='upper right')
+  axes.flat[0].legend(loc='upper left')
   fig.suptitle('Object Detection')
   return fig, axes
