@@ -1,7 +1,7 @@
 """Functions for reading and writing datasets in tfrecords, as needed by
-artifice and test_utils. A "scene" is the info needed for a single, labeled
-example. It should always be a 2-tuple, usually (image, annotation),
-although it could also be (image, (annotation, label)).
+artifice and test_utils.
+
+Data class for feeding data into models, possibly with augmentation.
 
 """
 
@@ -241,9 +241,11 @@ class Data(object):
       kwargs to be overwritten.
     """
 
+    # kind of required arguments
     self.size = kwargs.get('size', 0)
-
     self.image_shape = kwargs.get('image_shape', None) # TODO: gather with acc
+    assert(len(self.image_shape) == 3)
+
     self.num_objects = kwargs.get('num_objects', 2)
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
     self.pad = kwargs.get('pad', 0)
@@ -330,8 +332,8 @@ class Data(object):
     """
     s = tf.constant(sampling, dtype=tf.int64)
     dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
-    def map_func(idx, example):
-      return tf.data.Dataset.from_tensors(example).repeat(s[idx])
+    def map_func(idx, entry):
+      return tf.data.Dataset.from_tensors(entry).repeat(s[idx])
     dataset = dataset.flat_map(map_func)
 
     kwargs = self._kwargs
@@ -500,15 +502,16 @@ class Data(object):
   def tiled(self):
     """Tile the batched, fielded dataset."""
     def map_func(images, fields):
-      even_pad = [
+      fields = tf.pad(fields, [
         [0,0],
         [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
         [0,self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
-        [0,0]]
-      images = tf.pad(images, even_pad)
-      fields = tf.pad(fields, even_pad)
-      model_pad = [[0,0], [self.pad,self.pad], [self.pad,self.pad], [0,0]]
-      images = tf.pad(images, model_pad)
+        [0,0]], 'REFLECT')
+      images = tf.pad(images, [
+        [0,0],
+        [self.pad, self.pad + self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
+        [self.pad, self.pad + self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
+        [0,0]], 'REFLECT')
       image_tiles = []
       field_tiles = []
       for b in range(self.batch_size):
@@ -598,11 +601,56 @@ class Data(object):
 
 class UnlabeledData(Data):
   def __init__(self, *args, **kwargs):
+    """Hold data with no labels.
+
+    Stores the "mode" background image. Provides a sample_and_annotate method
+    that returns a new AugmentationData object with the sampling annotated and
+    labeled.
+
+    """
     super().__init__(*args,
                      parse_entry=image_from_proto,
                      encode_entry=proto_from_image,
                      **kwargs)
     self.background = kwargs.get('background')
+    self.annotator = kwargs.get('annotator', ann.HumanOracle())
+
+    accumulators = {}
+    if self.background is None:
+      accumulators['background'] = UnlabeledData.mode_background_accumulator
+      
+    aggregates = self.accumulate(accumulators)
+    for k,v in aggregates.items():
+      setattr(self, k, v)
+
+  def sample_and_annotate(self, sampling):
+    """Draw a sampling from the dataset and annotate each example
+
+    :param sampling: 1D boolean or "counts" array indexing the dataset.
+    :returns: new AugmentationData object with scenes for the sampled points
+
+    """
+    s = tf.constant(sampling, dtype=tf.int64)
+    dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
+    def map_func(idx, entry):
+      return tf.data.Dataset.from_tensors((idx, entry)).repeat(s[idx])
+    dataset = dataset.flat_map(map_func)
+
+    if tf.executing_eagerly():
+      raise NotImplementedError
+    else:
+      get_next = dataset.make_one_shot_iterator().get_next()
+      # TODO: figure out how to iterate over the dataset, easier if executing
+      # eagerly, and get the scene for each one. Then save that somehow? Might
+      # have to just save it for now and deal with repetition of examples later,
+      # so the sampling will always include old examples?
+      # Unless we expect the new dataset to fit in memory, going to have to save
+      # it. Should we expect this, generally? Probably not. So save it to
+      # memory, load it as a new TFRecordDataset, and yeah. Keep these files in
+      # a annotated_sets subdir inside the model root, or something.
+    
+          
+    
 
   @staticmethod
   def mode_background_accumulator(image, agg):
@@ -612,7 +660,7 @@ class UnlabeledData(Data):
     images are 8-bit. Finalized output will convert this back to a float32
     image in [0,1].
 
-    :param image: either None (last call), or the 
+    :param image: either None (last call), or numpy image, ndim == 3
     :param agg: either None (first call), or the histogram of image values
     :returns: new agg or the background ()
     :rtype: 
@@ -621,19 +669,19 @@ class UnlabeledData(Data):
     if agg is None:
       # first call
       assert image is not None
-      hist = np.zeros(image.shape + (256,), dtype=np.int64)
-    else:
-      hist = agg
+      assert image.ndim == 3
+      agg = np.zeros(image.shape + (256,), dtype=np.int64)
 
     if image is None:
       # last call
       assert agg is not None
-      hist = agg
-      return as_float(np.argmax(hist, axis=-1))
+      return as_float(np.argmax(agg, axis=-1))
 
-    raise NotImplementedError
     idx = (255. * image).astype(np.int64)
-      
+    for i in range(image.shape[0]):
+      for j in range(image.shape[1]):
+        for k in range(image.shape[2]):
+          agg[i,j,k,idx[i,j,k]] += 1
     return agg
     
       
@@ -645,7 +693,6 @@ class AugmentationData(Data):
                      **kwargs)
     self.background = kwargs.get('background')
 
-    
     accumulators = {}
     if self.background is None:
       accumulators['background'] = AugmentationData.mean_background_accumulator

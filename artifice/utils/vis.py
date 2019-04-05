@@ -16,7 +16,7 @@ def plot_image(*images, columns=10, ticks=False):
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
   fig, axes = plt.subplots(rows,columns, squeeze=False,
-                           figsize=(10, 10*rows/columns))
+                           figsize=(20, 20*rows/columns))
   for i, image in enumerate(images):
     ax = axes[i // columns, i % columns]
     im = ax.imshow(np.squeeze(image), cmap='gray', vmin=0., vmax=1.)

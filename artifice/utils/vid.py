@@ -56,7 +56,7 @@ class MP4Writer:
       '-r', str(self.fps),                      # frames per second
       '-i', '-',                                # input from pipe
       '-an',                                    # no audio
-      '-b', '20000k',                           # bitrate, controls compression, TODO: customize
+      '-b', '40000k',                           # bitrate, controls compression, TODO: customize
       '-vcodec', 'mpeg4',
       self.fname]
 
