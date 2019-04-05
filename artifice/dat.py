@@ -213,9 +213,10 @@ class Data(object):
       kwargs to be overwritten.
     """
 
+    self.size = kwargs.get('size', 0)
+
     self.image_shape = kwargs.get('image_shape', None)
     self.num_objects = kwargs.get('num_objects', 2)
-    self.size = kwargs.get('size', 1)
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
     self.pad = kwargs.get('pad', 0)
     self.distance_threshold = kwargs.get('distance_threshold', 20.)
@@ -299,12 +300,15 @@ class Data(object):
     :rtype: a Data subclass, same as self
 
     """
-    sampling = tf.constant(sampling, dtype=tf.int64)
+    s = tf.constant(sampling, dtype=tf.int64)
     dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
     def map_func(idx, example):
-      return tf.data.Dataset.from_tensors(example).repeat(sampling[idx])
+      return tf.data.Dataset.from_tensors(example).repeat(s[idx])
     dataset = dataset.flat_map(map_func)
-    return type(self)(dataset, **self._kwargs)
+
+    kwargs = self._kwargs
+    kwargs['size'] = np.sum(sampling)
+    return type(self)(dataset, **kwargs)
   
   def accumulate(self, accumulator):
     """Runs the accumulators across the dataset.
@@ -562,6 +566,11 @@ class Data(object):
   @property
   def eval_input(self):
     return self.postprocess_for_evaluation(self.tiled)
+
+
+class UnlabeledData(Data):
+  pass
+# move background accumulator into here.
 
   
 class AugmentationData(Data):

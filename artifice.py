@@ -113,6 +113,7 @@ class Artifice:
     self.hourglass_dir = join(self.model_root, 'hourglass/')
 
     # model-dependent paths
+    self.predicted_fields_path = join(self.model_root, 'predicted_fields.npy')
     self.model_detections_path = join(self.model_root, 'detections.npy')
     self.detections_video_path = join(self.model_root, 'detections.mp4')
     self.example_detection_path = join(self.model_root, 'example_detection.pdf')
@@ -168,7 +169,6 @@ class Artifice:
     """Create and compile the model."""
     model = mod.HourglassModel(
       self.tile_shape,
-      num_objects=self.num_objects,
       model_dir=self.hourglass_dir)
 
     self._pad = model.pad
@@ -275,9 +275,11 @@ def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""
   model = art.load_model()
   train_set, validation_set, test_set = art.load_data()
-  detections = model.detect(test_set, show=art.show)
+  detections, fields = model.detect(test_set, show=art.show)
   np.save(art.model_detections_path, detections)
   logger.info(f"saved detections to {art.model_detections_path}")
+  np.save(art.predicted_fields_path, fields)
+  logger.info(f"saved predicted_fields to {art.predicted_fields_path}")
   labels = test_set.labels
   errors = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
   logger.info(f"average error: {errors.mean():.02f}")
@@ -289,6 +291,7 @@ def cmd_visualize(art):
   train_set, validation_set, test_set = art.load_data()
   labels = test_set.labels
   detections = np.load(art.model_detections_path)
+  fields = np.load(art.predicted_fields_path)
   errors = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
   logger.info(f"average error: {errors.mean():.02f}")
   logger.info(f"error std: {errors.std():.02f}")
@@ -303,7 +306,7 @@ def cmd_visualize(art):
       if i % 100 == 0:
         logger.info(f"{i} / {detections.shape[0]}")
       image, label = sess.run(get_next)
-      fig, _ = vis.plot_detection(label, detection, image)
+      fig, _ = vis.plot_detection(label, detection, image, fields[i])
       if i == 0:
         writer.write_fig(fig, close=False)
         plt.savefig(art.example_detection_path)

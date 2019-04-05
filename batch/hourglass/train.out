@@ -1,82 +1,97 @@
 Starting training...
-Epoch 1/20
+Epoch 1/50
 
-Epoch 00001: saving model to models/coupled_spheres_e20/hourglass/cp-0001.hdf5
- - 2294s - loss: 0.0427 - mean_absolute_error: 0.0028 - val_loss: 0.0335 - val_mean_absolute_error: 0.0035
-Epoch 2/20
+Epoch 00001: saving model to models/coupled_spheres_e50/hourglass/cp-0001.hdf5
+ - 2363s - loss: 0.0325 - mean_absolute_error: 0.0025 - val_loss: 0.0326 - val_mean_absolute_error: 0.0021
+Epoch 2/50
 
-Epoch 00002: saving model to models/coupled_spheres_e20/hourglass/cp-0002.hdf5
- - 2169s - loss: 0.0375 - mean_absolute_error: 0.0024 - val_loss: 0.0320 - val_mean_absolute_error: 0.0017
-Epoch 3/20
+Epoch 00002: saving model to models/coupled_spheres_e50/hourglass/cp-0002.hdf5
+ - 2190s - loss: 0.0339 - mean_absolute_error: 0.0021 - val_loss: 0.0313 - val_mean_absolute_error: 0.0018
+Epoch 3/50
 
-Epoch 00003: saving model to models/coupled_spheres_e20/hourglass/cp-0003.hdf5
- - 2165s - loss: 0.0298 - mean_absolute_error: 0.0025 - val_loss: 0.0302 - val_mean_absolute_error: 0.0024
-Epoch 4/20
+Epoch 00003: saving model to models/coupled_spheres_e50/hourglass/cp-0003.hdf5
+ - 2191s - loss: 0.0281 - mean_absolute_error: 0.0022 - val_loss: 0.0284 - val_mean_absolute_error: 0.0019
+Epoch 4/50
 
-Epoch 00004: saving model to models/coupled_spheres_e20/hourglass/cp-0004.hdf5
- - 2165s - loss: 0.0386 - mean_absolute_error: 0.0025 - val_loss: 0.0273 - val_mean_absolute_error: 0.0022
-Epoch 5/20
+Epoch 00004: saving model to models/coupled_spheres_e50/hourglass/cp-0004.hdf5
+ - 2186s - loss: 0.0280 - mean_absolute_error: 0.0023 - val_loss: 0.0276 - val_mean_absolute_error: 0.0022
+Epoch 5/50
 
-Epoch 00005: saving model to models/coupled_spheres_e20/hourglass/cp-0005.hdf5
- - 2159s - loss: 0.0265 - mean_absolute_error: 0.0023 - val_loss: 0.0260 - val_mean_absolute_error: 0.0025
-Epoch 6/20
+Epoch 00005: saving model to models/coupled_spheres_e50/hourglass/cp-0005.hdf5
+ - 2188s - loss: 0.0300 - mean_absolute_error: 0.0022 - val_loss: 0.0260 - val_mean_absolute_error: 0.0023
+Epoch 6/50
 
-Epoch 00006: saving model to models/coupled_spheres_e20/hourglass/cp-0006.hdf5
- - 2107s - loss: 0.0278 - mean_absolute_error: 0.0022 - val_loss: 0.0267 - val_mean_absolute_error: 0.0016
-Epoch 7/20
+Epoch 00006: saving model to models/coupled_spheres_e50/hourglass/cp-0006.hdf5
+ - 2130s - loss: 0.0335 - mean_absolute_error: 0.0022 - val_loss: 0.0257 - val_mean_absolute_error: 0.0022
+Epoch 7/50
 
-Epoch 00007: saving model to models/coupled_spheres_e20/hourglass/cp-0007.hdf5
- - 2109s - loss: 0.0258 - mean_absolute_error: 0.0021 - val_loss: 0.0257 - val_mean_absolute_error: 0.0015
-Epoch 8/20
+Epoch 00007: saving model to models/coupled_spheres_e50/hourglass/cp-0007.hdf5
+ - 2112s - loss: 0.0302 - mean_absolute_error: 0.0022 - val_loss: 0.0253 - val_mean_absolute_error: 0.0023
+Epoch 8/50
 
-Epoch 00008: saving model to models/coupled_spheres_e20/hourglass/cp-0008.hdf5
- - 2134s - loss: 0.0268 - mean_absolute_error: 0.0020 - val_loss: 0.0254 - val_mean_absolute_error: 0.0014
-Epoch 9/20
+Epoch 00008: saving model to models/coupled_spheres_e50/hourglass/cp-0008.hdf5
+ - 2111s - loss: 0.0253 - mean_absolute_error: 0.0021 - val_loss: 0.0248 - val_mean_absolute_error: 0.0022
+Epoch 9/50
 
-Epoch 00009: saving model to models/coupled_spheres_e20/hourglass/cp-0009.hdf5
- - 2152s - loss: 0.0222 - mean_absolute_error: 0.0019 - val_loss: 0.0268 - val_mean_absolute_error: 0.0016
-Epoch 10/20
+Epoch 00009: saving model to models/coupled_spheres_e50/hourglass/cp-0009.hdf5
+ - 2111s - loss: 0.0350 - mean_absolute_error: 0.0021 - val_loss: 0.0248 - val_mean_absolute_error: 0.0028
+Epoch 10/50
 
-Epoch 00010: saving model to models/coupled_spheres_e20/hourglass/cp-0010.hdf5
- - 2153s - loss: 0.0264 - mean_absolute_error: 0.0019 - val_loss: 0.0249 - val_mean_absolute_error: 0.0014
-Epoch 11/20
+Epoch 00010: saving model to models/coupled_spheres_e50/hourglass/cp-0010.hdf5
+ - 2111s - loss: 0.0233 - mean_absolute_error: 0.0021 - val_loss: 0.0244 - val_mean_absolute_error: 0.0016
+Epoch 11/50
 
-Epoch 00011: saving model to models/coupled_spheres_e20/hourglass/cp-0011.hdf5
- - 2150s - loss: 0.0255 - mean_absolute_error: 0.0019 - val_loss: 0.0256 - val_mean_absolute_error: 0.0023
-Epoch 12/20
+Epoch 00011: saving model to models/coupled_spheres_e50/hourglass/cp-0011.hdf5
+ - 2133s - loss: 0.0237 - mean_absolute_error: 0.0020 - val_loss: 0.0243 - val_mean_absolute_error: 0.0021
+Epoch 12/50
 
-Epoch 00012: saving model to models/coupled_spheres_e20/hourglass/cp-0012.hdf5
- - 2150s - loss: 0.0296 - mean_absolute_error: 0.0018 - val_loss: 0.0246 - val_mean_absolute_error: 0.0014
-Epoch 13/20
+Epoch 00012: saving model to models/coupled_spheres_e50/hourglass/cp-0012.hdf5
+ - 2500s - loss: 0.0340 - mean_absolute_error: 0.0020 - val_loss: 0.0243 - val_mean_absolute_error: 0.0019
+Epoch 13/50
 
-Epoch 00013: saving model to models/coupled_spheres_e20/hourglass/cp-0013.hdf5
- - 2154s - loss: 0.0270 - mean_absolute_error: 0.0018 - val_loss: 0.0243 - val_mean_absolute_error: 0.0013
-Epoch 14/20
+Epoch 00013: saving model to models/coupled_spheres_e50/hourglass/cp-0013.hdf5
+ - 2499s - loss: 0.0284 - mean_absolute_error: 0.0019 - val_loss: 0.0260 - val_mean_absolute_error: 0.0019
+Epoch 14/50
 
-Epoch 00014: saving model to models/coupled_spheres_e20/hourglass/cp-0014.hdf5
- - 2154s - loss: 0.0251 - mean_absolute_error: 0.0018 - val_loss: 0.0243 - val_mean_absolute_error: 0.0013
-Epoch 15/20
+Epoch 00014: saving model to models/coupled_spheres_e50/hourglass/cp-0014.hdf5
+ - 2500s - loss: 0.0247 - mean_absolute_error: 0.0019 - val_loss: 0.0239 - val_mean_absolute_error: 0.0015
+Epoch 15/50
 
-Epoch 00015: saving model to models/coupled_spheres_e20/hourglass/cp-0015.hdf5
- - 2159s - loss: 0.0278 - mean_absolute_error: 0.0017 - val_loss: 0.0243 - val_mean_absolute_error: 0.0015
-Epoch 16/20
+Epoch 00015: saving model to models/coupled_spheres_e50/hourglass/cp-0015.hdf5
+ - 2562s - loss: 0.0196 - mean_absolute_error: 0.0019 - val_loss: 0.0251 - val_mean_absolute_error: 0.0021
+Epoch 16/50
 
-Epoch 00016: saving model to models/coupled_spheres_e20/hourglass/cp-0016.hdf5
- - 2162s - loss: 0.0196 - mean_absolute_error: 0.0017 - val_loss: 0.0242 - val_mean_absolute_error: 0.0018
-Epoch 17/20
+Epoch 00016: saving model to models/coupled_spheres_e50/hourglass/cp-0016.hdf5
+ - 2623s - loss: 0.0207 - mean_absolute_error: 0.0018 - val_loss: 0.0238 - val_mean_absolute_error: 0.0015
+Epoch 17/50
 
-Epoch 00017: saving model to models/coupled_spheres_e20/hourglass/cp-0017.hdf5
- - 2161s - loss: 0.0247 - mean_absolute_error: 0.0017 - val_loss: 0.0240 - val_mean_absolute_error: 0.0012
-Epoch 18/20
+Epoch 00017: saving model to models/coupled_spheres_e50/hourglass/cp-0017.hdf5
+ - 2624s - loss: 0.0262 - mean_absolute_error: 0.0018 - val_loss: 0.0239 - val_mean_absolute_error: 0.0018
+Epoch 18/50
 
-Epoch 00018: saving model to models/coupled_spheres_e20/hourglass/cp-0018.hdf5
- - 2163s - loss: 0.0246 - mean_absolute_error: 0.0016 - val_loss: 0.0244 - val_mean_absolute_error: 0.0014
-Epoch 19/20
+Epoch 00018: saving model to models/coupled_spheres_e50/hourglass/cp-0018.hdf5
+ - 2625s - loss: 0.0570 - mean_absolute_error: 0.0018 - val_loss: 0.0244 - val_mean_absolute_error: 0.0017
+Epoch 19/50
 
-Epoch 00019: saving model to models/coupled_spheres_e20/hourglass/cp-0019.hdf5
- - 2162s - loss: 0.0237 - mean_absolute_error: 0.0016 - val_loss: 0.0238 - val_mean_absolute_error: 0.0012
-Epoch 20/20
+Epoch 00019: saving model to models/coupled_spheres_e50/hourglass/cp-0019.hdf5
+ - 2624s - loss: 0.0249 - mean_absolute_error: 0.0018 - val_loss: 0.0247 - val_mean_absolute_error: 0.0015
+Epoch 20/50
 
-Epoch 00020: saving model to models/coupled_spheres_e20/hourglass/cp-0020.hdf5
- - 2160s - loss: 0.0387 - mean_absolute_error: 0.0015 - val_loss: 0.0239 - val_mean_absolute_error: 0.0014
-Finished.
+Epoch 00020: saving model to models/coupled_spheres_e50/hourglass/cp-0020.hdf5
+ - 2624s - loss: 0.0342 - mean_absolute_error: 0.0017 - val_loss: 0.0236 - val_mean_absolute_error: 0.0022
+Epoch 21/50
+
+Epoch 00021: saving model to models/coupled_spheres_e50/hourglass/cp-0021.hdf5
+ - 2624s - loss: 0.0175 - mean_absolute_error: 0.0017 - val_loss: 0.0233 - val_mean_absolute_error: 0.0020
+Epoch 22/50
+
+Epoch 00022: saving model to models/coupled_spheres_e50/hourglass/cp-0022.hdf5
+ - 2624s - loss: 0.0173 - mean_absolute_error: 0.0018 - val_loss: 0.0231 - val_mean_absolute_error: 0.0023
+Epoch 23/50
+
+Epoch 00023: saving model to models/coupled_spheres_e50/hourglass/cp-0023.hdf5
+ - 2624s - loss: 0.0181 - mean_absolute_error: 0.0017 - val_loss: 0.0248 - val_mean_absolute_error: 0.0017
+Epoch 24/50
+
+Epoch 00024: saving model to models/coupled_spheres_e50/hourglass/cp-0024.hdf5
+ - 2624s - loss: 0.0174 - mean_absolute_error: 0.0017 - val_loss: 0.0234 - val_mean_absolute_error: 0.0012

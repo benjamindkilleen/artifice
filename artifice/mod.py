@@ -5,8 +5,6 @@ import tensorflow as tf
 from tensorflow import keras
 from os.path import join
 from artifice import lay, dat
-from artifice.utils import vis  # for debugging
-import matplotlib.pyplot as plt # for debugging
 import numpy as np
 import logging
 
@@ -232,7 +230,6 @@ class HourglassModel(FunctionalModel):
     :rtype: 
 
     """
-    # TODO: fix
     if steps is None:
       steps = data.size // data.batch_size
     round_size = steps*data.batch_size
@@ -245,19 +242,18 @@ class HourglassModel(FunctionalModel):
       for field in data.untile(tiles):
         yield field
   
-  def detect(self, data, max_iter=None, show=False):
+  def detect(self, data, show=False):
     """Detect objects in the reassembled fields.
     
     :param data: dat.Data set
-    :returns: generator over these elements
+    :returns: matched_detections, predicted fields
     
     """
     detections = np.zeros((data.size, data.num_objects, 3), np.float32)
+    fields = np.zeros([data.size] + data.image_shape, np.float32)
     for i, field in enumerate(self.full_predict(data)):
-      if max_iter is not None and i >= max_iter:
-        break
+      fields[i] = field
       detections[i] = data.from_field(field)
-      if i == 0 and show:
-        vis.plot_detection(None, detections[i], field)
-        plt.show()
-    return dat.match_detections(detections, data.labels)
+    return dat.match_detections(detections, data.labels), fields
+
+
