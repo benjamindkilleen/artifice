@@ -464,3 +464,23 @@ then maybe that's an uncertain prediction.
 Of course, the KL divergence idea also tests this. Be sure to use the same
 tiling function.
 
+### Results:
+
+Training for 20 epochs, using skimage local peak finder, yields:
+```
+INFO:artifice:average error: 2.25
+INFO:artifice:error std: 1.94
+INFO:artifice:minimum error: 0.04
+INFO:artifice:maximum error: 8.71
+```
+
+## April 5, 2019: Results:
+Training for 50 epochs yielded:
+```
+INFO:artifice:average error: 2.07
+INFO:artifice:error std: 1.86
+INFO:artifice:minimum error: 0.02
+INFO:artifice:maximum error: 9.01
+```
+Which is better, actually, but still not great.
+
