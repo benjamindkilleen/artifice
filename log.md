@@ -451,3 +451,16 @@ it relied on batches of `batch_size` tiles, when we really want
 reconstructed. Now, it seems, and epoch should take about an hour. So was there
 any speedup at all? Possibly not. Might want to go back to the previous
 paradigm of batching after augmenting. Possibly. 
+
+## April 4, 2019: Query Selection for Augmentation
+
+Idea: after training for a bit on one example, maybe select the next example
+based on KL divergence of the predicted field with an expected field where
+object locations match the predicted max peaks. Could also consider methods
+based on the activations of the peak in question? Like, somewhere, the peak
+should have a value greater than 1. If the peaks don't have very high values,
+then maybe that's an uncertain prediction.
+
+Of course, the KL divergence idea also tests this. Be sure to use the same
+tiling function.
+
