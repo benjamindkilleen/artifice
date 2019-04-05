@@ -38,6 +38,37 @@ def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
 
 
+def proto_from_image(image):
+  """Create a tf example proto from an image.
+
+  :param image: single numpy array
+  :returns: 
+  :rtype: 
+
+  """
+  image = as_float(image)
+  image_string = image.tostring()
+  image_shape = np.array(image.shape, dtype=np.int64)
+  feature = {"image" : _bytes_feature(image_string),
+             "image_shape" : _int64_feature(image_shape)}
+  features = tf.train.Features(feature=feature)
+  example = tf.train.Example(features=features)
+  return example.SerializeToString()
+
+
+def example_from_proto(proto):
+  """Parse `proto` into tensor `image`."""
+  features = tf.parse_single_example(
+    proto,
+    features={
+      'image': tf.FixedLenFeature([], tf.string),
+      'image_shape': tf.FixedLenFeature([3], tf.int64)
+    })
+  image = tf.decode_raw(features['image'], tf.float32)
+  image = tf.reshape(image, features['image_shape'])
+  return image
+
+
 def proto_from_example(example):
   """Creates a tf example proto from an (image, label) pair.
 
@@ -51,15 +82,12 @@ def proto_from_example(example):
   label = label.astype(np.float32)
   image_string = image.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
-
   label_string = label.tostring()
   label_shape = np.array(label.shape, dtype=np.int64)
-
   feature = {"image" : _bytes_feature(image_string),
              "image_shape" : _int64_feature(image_shape),
              "label" : _bytes_feature(label_string),
              "label_shape" : _int64_feature(label_shape)}
-
   features = tf.train.Features(feature=feature)
   example = tf.train.Example(features=features)
   return example.SerializeToString()
@@ -215,7 +243,7 @@ class Data(object):
 
     self.size = kwargs.get('size', 0)
 
-    self.image_shape = kwargs.get('image_shape', None)
+    self.image_shape = kwargs.get('image_shape', None) # TODO: gather with acc
     self.num_objects = kwargs.get('num_objects', 2)
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
     self.pad = kwargs.get('pad', 0)
@@ -580,16 +608,35 @@ class UnlabeledData(Data):
   def mode_background_accumulator(image, agg):
     """Approximate a running mode of the images.
 
-    
+    Quantizes the image to 256 bins for this mode, makes sense because original
+    images are 8-bit. Finalized output will convert this back to a float32
+    image in [0,1].
 
-    :param image: 
-    :param agg: 
-    :returns: 
+    :param image: either None (last call), or the 
+    :param agg: either None (first call), or the histogram of image values
+    :returns: new agg or the background ()
     :rtype: 
 
     """
-    pass
-  
+    if agg is None:
+      # first call
+      assert image is not None
+      hist = np.zeros(image.shape + (256,), dtype=np.int64)
+    else:
+      hist = agg
+
+    if image is None:
+      # last call
+      assert agg is not None
+      hist = agg
+      return as_float(np.argmax(hist, axis=-1))
+
+    raise NotImplementedError
+    idx = (255. * image).astype(np.int64)
+      
+    return agg
+    
+      
 class AugmentationData(Data):
   def __init__(self, *args, **kwargs):
     super().__init__(*args,
