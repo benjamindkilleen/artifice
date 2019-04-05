@@ -569,9 +569,26 @@ class Data(object):
 
 
 class UnlabeledData(Data):
-  pass
-# move background accumulator into here.
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args,
+                     parse_entry=image_from_proto,
+                     encode_entry=proto_from_image,
+                     **kwargs)
+    self.background = kwargs.get('background')
 
+  @staticmethod
+  def mode_background_accumulator(image, agg):
+    """Approximate a running mode of the images.
+
+    
+
+    :param image: 
+    :param agg: 
+    :returns: 
+    :rtype: 
+
+    """
+    pass
   
 class AugmentationData(Data):
   def __init__(self, *args, **kwargs):
@@ -581,6 +598,7 @@ class AugmentationData(Data):
                      **kwargs)
     self.background = kwargs.get('background')
 
+    
     accumulators = {}
     if self.background is None:
       accumulators['background'] = AugmentationData.mean_background_accumulator

@@ -4,6 +4,11 @@ import logging
 
 logger = logging.getLogger('artifice')
 
+class Detector():
+  def __init__(self, model):
+    pass
+  
+
 class ActiveLearner():
   def __init__(self, model):
     """Wrapper around model's that performs active learning on dat.Data objects.
@@ -27,5 +32,5 @@ class ActiveLearner():
     
     sampling = np.zeros(unlabeled_set.size, np.int64)
     sampling[0] = 1
-
+    pass
     

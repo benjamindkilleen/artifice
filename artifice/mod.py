@@ -242,7 +242,7 @@ class HourglassModel(FunctionalModel):
       for field in data.untile(tiles):
         yield field
   
-  def detect(self, data, show=False):
+  def detect(self, data):
     """Detect objects in the reassembled fields.
     
     :param data: dat.Data set
