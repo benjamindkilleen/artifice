@@ -233,6 +233,8 @@ class Data(object):
   datasets. The self._dataset object should never be altered.
 
   """
+
+  eps = 0.001
   
   def __init__(self, data, **kwargs):
     """args:
@@ -321,6 +323,19 @@ class Data(object):
       
     return datas
 
+  def skip(self, count):
+    """Wrapper around tf.data.Dataset.skip."""
+    dataset = self.dataset.repeat(-1).skip(count)
+    kwargs = self._kwargs
+    kwargs['size'] = count
+    return type(self)(dataset, **kwargs)
+
+  def take(self, count):
+    dataset = self.dataset.repeat(-1).skip(count)
+    kwargs = self._kwargs
+    kwargs['size'] = count
+    return type(self)(dataset, **kwargs)
+  
   def sample(self, sampling):
     """Draw a sampling from the dataset, returning a new dataset of the same type.
 
@@ -426,12 +441,37 @@ class Data(object):
   @property
   def preprocessed(self):
     return self.preprocess(self.dataset)
-  
-  def to_field(self, label):
-    """Create a distance annotation with from `label`.
 
-    :param label: label for the example with shape (num_objects, label_dim) OR
-    (batch_size, num_objects, label_dim)
+
+  def to_numpy_field(self, label):
+    """Create a distance annotation with numpy `label`.
+
+    :param label: numpy 
+    :returns: 
+    :rtype: 
+
+    """
+    positions = label[:,1:3].astype(np.float32)
+    indices = np.array([np.array([i,j])
+                        for i in range(self.image_shape[0])
+                        for j in range(self.image_shape[1])],
+                       dtype=np.float32)
+    positions = np.expand_dims(positions, axis=0) # (1,num_objects,2)
+    indices = np.expand_dims(indices, axis=1) # (M*N, 1, 2)
+    distances = np.linalg.norm(indices - positions, axis=2)
+    flat_field = np.reciprocal(np.min(distances, axis=1) + self.eps)
+    inv_thresh = 1. / self.distance_threshold
+    flat_field = np.where(flat_field > inv_thresh, flat_field, 0.)
+    field = np.reshape(flat_field, self.image_shape)
+    return field
+    
+  def to_field(self, label):
+    """Create a tensor distance annotation with tensor `label`.
+
+    Operates on tensors. Use `to_numpy_field` for the numpy version.
+
+    :param label: tensor label for the example with shape
+    `(num_objects,label_dim)` OR `(batch_size, num_objects, label_dim)`
 
     """
     labels = tform.ensure_batched_labels(label)
@@ -456,7 +496,7 @@ class Data(object):
     distances = tf.norm(indices - positions, axis=3)
     
     # take inverse distance
-    eps = tf.constant(0.001)
+    eps = tf.constant(self.eps)
     flat_field = tf.reciprocal(tf.reduce_min(distances, axis=2) + eps)
 
     # zero the inverse distances outside of threshold
@@ -568,8 +608,6 @@ class Data(object):
 
     """
 
-    # TODO: this is still royally fucking up. Figure out why.
-
     logger.debug(f"tiles: {tiles.shape}, num_tiles: {self.num_tiles}, "
                  f"batch_size: {self.batch_size}")
 
@@ -581,7 +619,6 @@ class Data(object):
       images[i] = self.untile_single(tiles[step*i : step*i + step])
     return images
 
-  # TODO: shuffle the original dataset, in preprocessing, only for training.
   def postprocess_for_training(self, dataset):
     return (dataset.repeat(-1)
             .prefetch(self.prefetch_buffer_size))
@@ -612,8 +649,8 @@ class UnlabeledData(Data):
                      parse_entry=image_from_proto,
                      encode_entry=proto_from_image,
                      **kwargs)
-    self.background = kwargs.get('background')
-    self.annotator = kwargs.get('annotator', ann.HumanOracle())
+    self.background = kwargs.get('background')    
+    self.oracle = kwargs.get('oracle', ann.HumanOracle())
 
     accumulators = {}
     if self.background is None:
@@ -623,10 +660,21 @@ class UnlabeledData(Data):
     for k,v in aggregates.items():
       setattr(self, k, v)
 
-  def sample_and_annotate(self, sampling):
-    """Draw a sampling from the dataset and annotate each example
+    self._kwargs['background'] = self.background
+
+  def preprocess(self, dataset):
+    """Responsible for converting dataset to batched `(image, dummy_label)` form."""
+    def map_func(image):
+      return image, tf.zeros(self.label_shape, tf.float32, name='dummy')
+    dataset = dataset.map(map_func, self.num_parallel_calls)
+    dataset = dataset.batch(self.batch_size, drop_remainder=True)
+    return dataset
+    
+  def annotate_and_save(self, sampling, record_name):
+    """Draw a sampling from the dataset and annotate each example, and save
 
     :param sampling: 1D boolean or "counts" array indexing the dataset.
+    :param record_name: tfrecord path to save the newly annotated dataset to.
     :returns: new AugmentationData object with scenes for the sampled points
 
     """
@@ -639,18 +687,20 @@ class UnlabeledData(Data):
     if tf.executing_eagerly():
       raise NotImplementedError
     else:
+      writer = tf.python_io.TFRecordWriter(record_name)
       get_next = dataset.make_one_shot_iterator().get_next()
-      # TODO: figure out how to iterate over the dataset, easier if executing
-      # eagerly, and get the scene for each one. Then save that somehow? Might
-      # have to just save it for now and deal with repetition of examples later,
-      # so the sampling will always include old examples?
-      # Unless we expect the new dataset to fit in memory, going to have to save
-      # it. Should we expect this, generally? Probably not. So save it to
-      # memory, load it as a new TFRecordDataset, and yeah. Keep these files in
-      # a annotated_sets subdir inside the model root, or something.
-    
-          
-    
+      while True:
+        try:
+          idx, image = sess.run(get_next)
+          scene = self.oracle(image, idx)
+          writer.write(proto_from_scene(scene))
+        except tf.errors.OutOfRangeError:
+          break
+      writer.close()
+
+    kwargs = self._kwargs
+    kwargs['size'] = np.sum(sampling)
+    return AugmentationData(record_name, **kwargs)
 
   @staticmethod
   def mode_background_accumulator(image, agg):

@@ -38,13 +38,14 @@ class Oracle:
   
 class PerfectOracle(Oracle):
   """Query the existing labels (for testing purposes)"""
-  def __init__(self, labels, annotation_paths):
+  def __init__(self, labels, annotation_paths, **kwargs):
     """A "perfect" annotator that uses premade labels/annotations
 
     :param labels: numpy array of labels 
     :param annotation_paths: list of filenames, indexes corresponding to labels
 
     """
+    super().__init__(**kwargs)
     self.labels = labels
     self.annotation_paths = annotation_paths
 

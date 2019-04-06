@@ -39,6 +39,11 @@ epoch_size_help = """Number of artificial examples per training epoch."""
 num_annotated_help = """Number of examples from the unlabeled set which are
 annotated."""
 
+num_candidates_help = """Number of unlabeled examples to consider at once for 
+annotation."""
+
+query_size_help = """Number of examples to query at once."""
+
 l2_reg_help = """Not used."""
 
 cores_help = """Number of CPU cores to parallelize over. Default (-1) uses

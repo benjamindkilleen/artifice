@@ -20,7 +20,7 @@ import numpy as np
 import tensorflow as tf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from artifice import dat, mod
+from artifice import dat, mod, learn, oracles
 from artifice.utils import docs, img, vis, vid
 from multiprocessing import cpu_count
 import itertools
@@ -60,6 +60,8 @@ class Artifice:
     self.cores = args.cores[0] if args.cores[0] > 0 else os.cpu_count()
     self.eager = args.eager
     self.show = args.show
+    self.num_candidates = args.num_candidates[0]
+    self.query_size = args.query_size[0]
 
     # runtime configurations
     if self.verbose == 0:
@@ -93,13 +95,13 @@ class Artifice:
 
     # standard model input data paths
     self.annotated_set_path = join(self.data_root, 'annotated_set.tfrecord')
-    self.train_set_path = join(self.data_root, 'train_set.tfrecord') # not used
+    self.unlabeled_set_path = join(self.data_root, 'unlabeled_set.tfrecord')
     self.validation_set_path = join(self.data_root, 'validation_set.tfrecord')
     self.test_set_path = join(self.data_root, 'test_set.tfrecord')
 
     # training set sizes
-    self.annotated_size = self.num_annotated
     self.train_size = self.epoch_size
+    self.annotated_size = self.num_annotated
     self.unlabeled_size = self.splits[0]
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
@@ -113,6 +115,7 @@ class Artifice:
     self.hourglass_dir = join(self.model_root, 'hourglass/')
 
     # model-dependent paths
+    self.annotated_set_dir = join(self.model_root, 'annotated_sets')
     self.predicted_fields_path = join(self.model_root, 'predicted_fields.npy')
     self.model_detections_path = join(self.model_root, 'detections.npy')
     self.detections_video_path = join(self.model_root, 'detections.mp4')
@@ -143,17 +146,26 @@ class Artifice:
         self.data_root, 'annotations', '*.npy')))
     return self._annotation_paths
 
+  def make_oracle(self):
+    return oracles.PerfectOracle(
+      np.load(self.labels_path), self.annotation_paths)
+  
   def load_data(self):
-    """Load the train (annotated), validation, and test sets."""
+    """Load the unlabeled, annotated, validation, and test sets."""
     kwargs = {'image_shape' : self.image_shape,
               'tile_shape' : self.tile_shape,
               'batch_size' : self.batch_size,
               'num_parallel_calls' : self.cores,
               'pad' : self.pad,
               'num_objects' : self.num_objects}
-    train_set = dat.AugmentationData(
+    unlabeled_set = dat.UnlabeledData(
+      self.unlabeled_set_path,
+      size=self.unlabeled_size,
+      oracle=self.make_oracle(),
+      **kwargs)
+    annotated_set = dat.AugmentationData(
       self.annotated_set_path,
-      size=self.epoch_size,
+      size=self.annotated_size,
       **kwargs)
     validation_set = dat.Data(
       self.validation_set_path,
@@ -163,7 +175,7 @@ class Artifice:
       self.test_set_path,
       size=self.test_size,
       **kwargs)
-    return train_set, validation_set, test_set
+    return train_set, annotated_set, validation_set, test_set
 
   def make_model(self):
     """Create and compile the model."""
@@ -181,6 +193,14 @@ class Artifice:
     if not self.overwrite:
       model.load()
     return model
+
+  def load_learner(self):
+    """Create a learner around a loaded model."""
+    model = self.load_model()
+    learner = learn.ActiveLearner(
+      model, self.annotated_set_dir,
+      num_candidates=self.num_candidates,
+      query_size=self.query_size)
     
   
 def cmd_convert(art):
@@ -189,20 +209,23 @@ def cmd_convert(art):
   example_iterator = zip(art.image_paths, labels)
   annotation_iterator = iter(art.annotation_paths)
 
-  # Over training set, taking annotated examples
-  logger.info(f"writing annotated set to '{art.annotated_set_path}'...")
-  writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
+  # Over unlabeled set
+  logger.info(f"writing unlabeled set to '{art.unlabeled_set_path}'...")
+  writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
+  annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
   for i in range(art.unlabeled_size):
     image_path, label = next(example_iterator)
+    image = img.open_as_array(image_path)
+    writer.write(dat.proto_from_image(image))
     if i < art.annotated_size:
       annotation_path = next(annotation_iterator)
-      image = img.open_as_array(image_path)
       annotation = np.load(annotation_path)
       scene = (image, label), annotation
       writer.write(dat.proto_from_scene(scene))
+  annotated_writer.close()
   writer.close()
   logger.info("finished")
-  logger.info(f"wrote {art.annotated_size} annotated examples")
+  logger.info(f"wrote {art.unlabeled_size} unlabeled images")
   
   # Collect the validation set
   logger.info(f"writing validation set to '{art.validation_set_path}'...")
@@ -236,30 +259,40 @@ def cmd_augment(art):
   train_set.
 
   """
-  train_set, validation_set, test_set = art.load_data()
-  get_next = train_set.fielded.make_one_shot_iterator().get_next()
+  _, annotated_set, _, _ = art.load_data()
+  get_next = annotated_set.fielded.make_one_shot_iterator().get_next()
   with tf.Session() as sess:
     while True:
       images, fields = sess.run(get_next)
       for image, field in zip(images, fields):
         vis.plot_image(image, field)
         plt.show()
-  
+
 def cmd_train(art):
   model = art.load_model()
-  train_set, validation_set, test_set = art.load_data()
+  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
   model.fit(
-    train_set.training_input,
+    annotated_set.training_input,
     epochs=art.epochs,
     steps_per_epoch=art.train_steps,
     validation_data=validation_set.eval_input,
     validation_steps=art.validation_steps,
     verbose=art.keras_verbose)
 
+def cmd_active(art):
+  learner = art.load_learner()
+  unlabeled_set, _, validation_set, _ = art.load_data()
+  learner.fit(
+    unlabeled_set,
+    epochs=art.epochs,
+    steps_per_epoch=art.train_steps,
+    validation_data=validation_set.eval_input,
+    validation_steps=art.validation_steps,
+    verbose=art.keras_verbose)
   
 def cmd_predict(art):
   model = art.load_model()
-  train_set, validation_set, test_set = art.load_data()
+  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
   predictions = model.full_predict(test_set, steps=1, verbose=art.keras_verbose)
   if art.show and tf.executing_eagerly():
     for i, (prediction, example) in enumerate(zip(predictions, test_set.fielded)):
@@ -267,14 +300,13 @@ def cmd_predict(art):
       vis.plot_image(image, field, prediction)
       plt.show()
     
-    
 def cmd_evaluate(art):
   pass
 
 def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""
   model = art.load_model()
-  train_set, validation_set, test_set = art.load_data()
+  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
   detections, fields = model.detect(test_set, show=art.show)
   np.save(art.model_detections_path, detections)
   logger.info(f"saved detections to {art.model_detections_path}")
@@ -288,7 +320,7 @@ def cmd_detect(art):
   logger.info(f"maximum error: {errors.max():.02f}")
   
 def cmd_visualize(art):
-  train_set, validation_set, test_set = art.load_data()
+  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
   labels = test_set.labels
   detections = np.load(art.model_detections_path)
   fields = np.load(art.predicted_fields_path)
@@ -354,6 +386,12 @@ def main():
   parser.add_argument('--num-annotated', nargs=1,
                       default=[10], type=int,
                       help=docs.num_annotated_help)
+  parser.add_argument('--num-candidates', nargs=1,
+                      default=[1000], type=int,
+                      help=docs.num_candidates_help)
+  parser.add_argument('--query-size', nargs=1,
+                      default=[1], type=int,
+                      help=docs.query_size_help)
   parser.add_argument('--epoch-size', '--num-examples', '-n', nargs=1,
                       default=[5000], type=int,
                       help=docs.epoch_size_help)
@@ -387,6 +425,8 @@ def main():
     cmd_augment(art)
   elif art.command == 'train':
     cmd_train(art)
+  elif art.command == 'active':
+    cmd_active(art)
   elif art.command == 'predict':
     cmd_predict(art)
   elif art.command == 'evaluate':
