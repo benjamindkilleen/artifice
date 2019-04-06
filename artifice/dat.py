@@ -7,7 +7,7 @@ Data class for feeding data into models, possibly with augmentation.
 
 import numpy as np
 import tensorflow as tf
-from artifice import tform
+from artifice import tform, oracles
 from artifice.utils import img
 from skimage.feature import peak_local_max
 from scipy.spatial.distance import cdist
@@ -56,7 +56,7 @@ def proto_from_image(image):
   return example.SerializeToString()
 
 
-def example_from_proto(proto):
+def image_from_proto(proto):
   """Parse `proto` into tensor `image`."""
   features = tf.parse_single_example(
     proto,
@@ -326,13 +326,13 @@ class Data(object):
   def skip(self, count):
     """Wrapper around tf.data.Dataset.skip."""
     dataset = self.dataset.repeat(-1).skip(count)
-    kwargs = self._kwargs
+    kwargs = self._kwargs.copy()
     kwargs['size'] = count
     return type(self)(dataset, **kwargs)
 
   def take(self, count):
     dataset = self.dataset.repeat(-1).skip(count)
-    kwargs = self._kwargs
+    kwargs = self._kwargs.copy()
     kwargs['size'] = count
     return type(self)(dataset, **kwargs)
   
@@ -351,7 +351,7 @@ class Data(object):
       return tf.data.Dataset.from_tensors(entry).repeat(s[idx])
     dataset = dataset.flat_map(map_func)
 
-    kwargs = self._kwargs
+    kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
     return type(self)(dataset, **kwargs)
   
@@ -388,7 +388,6 @@ class Data(object):
     else:
       iterator = self.dataset.make_initializable_iterator()
       next_item = iterator.get_next()
-    
       with tf.Session() as sess:
         sess.run(iterator.initializer)
         logger.info("initialized iterator, starting accumulation...")
@@ -645,22 +644,21 @@ class UnlabeledData(Data):
     labeled.
 
     """
-    super().__init__(*args,
-                     parse_entry=image_from_proto,
-                     encode_entry=proto_from_image,
-                     **kwargs)
+    kwargs['parse_entry'] = image_from_proto
+    kwargs['encode_entry'] = proto_from_image
+    super().__init__(*args, **kwargs)
     self.background = kwargs.get('background')    
-    self.oracle = kwargs.get('oracle', ann.HumanOracle())
+    self.oracle = kwargs.get('oracle', oracles.HumanOracle())
 
     accumulators = {}
-    if self.background is None:
-      accumulators['background'] = UnlabeledData.mode_background_accumulator
+    # if self.background is None:
+    #   accumulators['background'] = UnlabeledData.mode_background_accumulator
       
-    aggregates = self.accumulate(accumulators)
-    for k,v in aggregates.items():
-      setattr(self, k, v)
+    # aggregates = self.accumulate(accumulators)
+    # for k,v in aggregates.items():
+    #   setattr(self, k, v)
 
-    self._kwargs['background'] = self.background
+    # self._kwargs['background'] = self.background
 
   def preprocess(self, dataset):
     """Responsible for converting dataset to batched `(image, dummy_label)` form."""
@@ -670,7 +668,7 @@ class UnlabeledData(Data):
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     return dataset
     
-  def annotate_and_save(self, sampling, record_name):
+  def sample_and_annotate(self, sampling, record_name):
     """Draw a sampling from the dataset and annotate each example, and save
 
     :param sampling: 1D boolean or "counts" array indexing the dataset.
@@ -678,27 +676,32 @@ class UnlabeledData(Data):
     :returns: new AugmentationData object with scenes for the sampled points
 
     """
+    logger.debug(f"sampling: {sampling}")
     s = tf.constant(sampling, dtype=tf.int64)
     dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
     def map_func(idx, entry):
       return tf.data.Dataset.from_tensors((idx, entry)).repeat(s[idx])
     dataset = dataset.flat_map(map_func)
 
+    writer = tf.python_io.TFRecordWriter(record_name)
     if tf.executing_eagerly():
-      raise NotImplementedError
+      for idx, image in dataset:
+        scene = self.oracle(image, idx)
+        scene = (np.array(scene[0][0]), np.array(scene[0][1])), np.array(scene[1])
+        writer.write(proto_from_scene(scene))
     else:
-      writer = tf.python_io.TFRecordWriter(record_name)
       get_next = dataset.make_one_shot_iterator().get_next()
-      while True:
-        try:
-          idx, image = sess.run(get_next)
-          scene = self.oracle(image, idx)
-          writer.write(proto_from_scene(scene))
-        except tf.errors.OutOfRangeError:
-          break
-      writer.close()
+      with tf.Session() as sess:
+        while True:
+          try:
+            idx, image = sess.run(get_next)
+            scene = self.oracle(image, idx)
+            writer.write(proto_from_scene(scene))
+          except tf.errors.OutOfRangeError:
+            break
+    writer.close()
 
-    kwargs = self._kwargs
+    kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
     return AugmentationData(record_name, **kwargs)
 
@@ -737,10 +740,9 @@ class UnlabeledData(Data):
       
 class AugmentationData(Data):
   def __init__(self, *args, **kwargs):
-    super().__init__(*args,
-                     parse_entry=scene_from_proto,
-                     encode_entry=proto_from_scene,
-                     **kwargs)
+    kwargs['parse_entry'] = scene_from_proto
+    kwargs['encode_entry'] = proto_from_scene
+    super().__init__(*args, **kwargs)
     self.background = kwargs.get('background')
 
     accumulators = {}

@@ -78,11 +78,6 @@ class Artifice:
       mpl.use('Agg')
       plt.ioff()
     
-    # ensure directories exist
-    for path in [self.data_root, self.model_root]:
-      if not exists(path):
-        os.makedirs(path)
-
     # relating to tiling
     self._pad = None
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
@@ -121,6 +116,12 @@ class Artifice:
     self.detections_video_path = join(self.model_root, 'detections.mp4')
     self.example_detection_path = join(self.model_root, 'example_detection.pdf')
 
+    # ensure directories exist
+    for path in [self.data_root, self.model_root, self.annotated_set_dir]:
+      if not exists(path):
+        os.makedirs(path)
+
+    
   def __str__(self):
     return f"<run '{self.command}'>"
 
@@ -163,10 +164,6 @@ class Artifice:
       size=self.unlabeled_size,
       oracle=self.make_oracle(),
       **kwargs)
-    annotated_set = dat.AugmentationData(
-      self.annotated_set_path,
-      size=self.annotated_size,
-      **kwargs)
     validation_set = dat.Data(
       self.validation_set_path,
       size=self.validation_size,
@@ -175,8 +172,21 @@ class Artifice:
       self.test_set_path,
       size=self.test_size,
       **kwargs)
-    return train_set, annotated_set, validation_set, test_set
+    return unlabeled_set, validation_set, test_set
 
+  def load_annotated(self):
+    kwargs = {'image_shape' : self.image_shape,
+              'tile_shape' : self.tile_shape,
+              'batch_size' : self.batch_size,
+              'num_parallel_calls' : self.cores,
+              'pad' : self.pad,
+              'num_objects' : self.num_objects}
+    annotated_set = dat.AugmentationData(
+      self.annotated_set_path,
+      size=self.annotated_size,
+      **kwargs)
+    return annotated_set
+  
   def make_model(self):
     """Create and compile the model."""
     model = mod.HourglassModel(
@@ -201,7 +211,8 @@ class Artifice:
       model, self.annotated_set_dir,
       num_candidates=self.num_candidates,
       query_size=self.query_size)
-    
+    return learner
+  
   
 def cmd_convert(art):
   """Standardize input data."""
@@ -214,6 +225,8 @@ def cmd_convert(art):
   writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
   annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
   for i in range(art.unlabeled_size):
+    if i % 100 == 0:
+      logger.info(f"writing {i} / {art.unlabeled_size}")
     image_path, label = next(example_iterator)
     image = img.open_as_array(image_path)
     writer.write(dat.proto_from_image(image))
@@ -221,35 +234,39 @@ def cmd_convert(art):
       annotation_path = next(annotation_iterator)
       annotation = np.load(annotation_path)
       scene = (image, label), annotation
-      writer.write(dat.proto_from_scene(scene))
+      annotated_writer.write(dat.proto_from_scene(scene))
   annotated_writer.close()
   writer.close()
   logger.info("finished")
-  logger.info(f"wrote {art.unlabeled_size} unlabeled images")
+  logger.info(f"wrote {i + 1} unlabeled images")
   
   # Collect the validation set
   logger.info(f"writing validation set to '{art.validation_set_path}'...")
   writer = tf.python_io.TFRecordWriter(art.validation_set_path)
   for i in range(art.validation_size):
+    if i % 100 == 0:
+      logger.info(f"writing {i} / {art.validation_size}")
     image_path, label = next(example_iterator)
     image = img.open_as_array(image_path)
     example = (image, label)
     writer.write(dat.proto_from_example(example))
   writer.close()
   logger.info("finished")
-  logger.info(f"wrote {art.validation_size} validation examples")
+  logger.info(f"wrote {i + 1} validation examples")
 
   # Collect the test set
   logger.info(f"writing validation set to '{art.test_set_path}'...")
   writer = tf.python_io.TFRecordWriter(art.test_set_path)
-  for _ in range(art.validation_size):
+  for i in range(art.test_size):
+    if i % 100 == 0:
+      logger.info(f"writing {i} / {art.test_size}")
     image_path, label = next(example_iterator)
     image = img.open_as_array(image_path)
     example = (image, label)
     writer.write(dat.proto_from_example(example))
   writer.close()
   logger.info("finished")
-  logger.info(f"wrote {art.validation_size} test examples")
+  logger.info(f"wrote {i + 1} test examples")
 
 
 def cmd_augment(art):
@@ -259,7 +276,7 @@ def cmd_augment(art):
   train_set.
 
   """
-  _, annotated_set, _, _ = art.load_data()
+  annotated_set = art.load_annotated()
   get_next = annotated_set.fielded.make_one_shot_iterator().get_next()
   with tf.Session() as sess:
     while True:
@@ -270,7 +287,8 @@ def cmd_augment(art):
 
 def cmd_train(art):
   model = art.load_model()
-  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
+  unlabeled_set, validation_set, test_set = art.load_data()
+  annotated_set = art.load_annotated()
   model.fit(
     annotated_set.training_input,
     epochs=art.epochs,
@@ -281,7 +299,7 @@ def cmd_train(art):
 
 def cmd_active(art):
   learner = art.load_learner()
-  unlabeled_set, _, validation_set, _ = art.load_data()
+  unlabeled_set, validation_set, test_set = art.load_data()
   learner.fit(
     unlabeled_set,
     epochs=art.epochs,
@@ -292,7 +310,7 @@ def cmd_active(art):
   
 def cmd_predict(art):
   model = art.load_model()
-  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
+  unlabeled_set, validation_set, test_set = art.load_data()
   predictions = model.full_predict(test_set, steps=1, verbose=art.keras_verbose)
   if art.show and tf.executing_eagerly():
     for i, (prediction, example) in enumerate(zip(predictions, test_set.fielded)):
@@ -306,7 +324,7 @@ def cmd_evaluate(art):
 def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""
   model = art.load_model()
-  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
+  unlabeled_set, validation_set, test_set = art.load_data()
   detections, fields = model.detect(test_set, show=art.show)
   np.save(art.model_detections_path, detections)
   logger.info(f"saved detections to {art.model_detections_path}")
@@ -320,7 +338,7 @@ def cmd_detect(art):
   logger.info(f"maximum error: {errors.max():.02f}")
   
 def cmd_visualize(art):
-  unlabeled_set, annotated_set, validation_set, test_set = art.load_data()
+  unlabeled_set, validation_set, test_set = art.load_data()
   labels = test_set.labels
   detections = np.load(art.model_detections_path)
   fields = np.load(art.predicted_fields_path)

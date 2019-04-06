@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 from artifice import mod, dat
 from os.path import join
 import logging
@@ -132,12 +133,12 @@ class ActiveLearner(Detector):
         sampling[0] = 1
       else:
         query = self.choose_query(unlabeled_set)
-      logger.debug(f"querying {query}...")
-      sampling[query] += 1
+        logger.debug(f"querying {query}...")
+        sampling[query] += 1
       annotated_set_path = join(
         self.annotated_set_dir, f'annotated_set_{epoch}.tfrecord')
-      annotated_set = unlabeled_set.annotate_and_save(
-        sampling, annotated_set_path, size)
+      annotated_set = unlabeled_set.sample_and_annotate(
+        sampling, annotated_set_path)
       self.model.fit(annotated_set.training_input,
                      epochs=epoch+1, initial_epoch=epoch, **kwargs)
       
