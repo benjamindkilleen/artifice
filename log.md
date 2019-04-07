@@ -492,4 +492,15 @@ INFO:artifice:error std: 1.47
 INFO:artifice:minimum error: 0.02
 INFO:artifice:maximum error: 7.63
 ```
-marginally better.
+marginally better BUT the error is now seemingly more random, due to edge
+effects and whatnot. Crucially, we don't observe the shadow dependent behavior,
+and we also see much better performance at the edges of the whole image. Problem
+seems to arise from untiling. Perhaps further training will improve, still very
+preliminary.
+
+Need to do active learning for a certain number of epochs, then continue on with
+regular learning. Perhaps the learner.fit method can return the active
+`annotated_set` with `annotated_size` (after that many epochs), and then
+training can continue to fill out the difference.
+
+Also, be sure to not keep updating the background image? Something to consider.
