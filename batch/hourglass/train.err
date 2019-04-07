@@ -193,3 +193,103 @@ INFO:artifice:choose query: 950 / 1000
 2019-04-07 01:43:19.742852: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
+INFO:artifice:Epoch 6 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-07 02:53:25.220763: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 02:53:25.220840: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 02:53:25.220854: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 02:53:25.220863: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 02:53:25.221053: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-07 02:53:32.363911: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 02:53:32.363982: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 02:53:32.363996: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 02:53:32.364004: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 02:53:32.364137: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+INFO:artifice:Epoch 7 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-07 04:01:49.422051: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 04:01:49.422136: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 04:01:49.422152: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 04:01:49.422170: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 04:01:49.422399: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-07 04:01:54.753322: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 04:01:54.753389: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 04:01:54.753402: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 04:01:54.753411: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 04:01:54.753551: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+INFO:artifice:Epoch 8 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+Traceback (most recent call last):
+  File "artifice.py", line 460, in <module>
+    main()
+  File "artifice.py", line 447, in main
+    cmd_active(art)
+  File "artifice.py", line 309, in cmd_active
+    verbose=art.keras_verbose)
+  File "/project2/glk/artifice/artifice/learn.py", line 140, in fit
+    logger.debug(f"querying {query}...")
+IndexError: index 7476 is out of bounds for axis 1 with size 7000
