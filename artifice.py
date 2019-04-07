@@ -325,7 +325,7 @@ def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""
   model = art.load_model()
   unlabeled_set, validation_set, test_set = art.load_data()
-  detections, fields = model.detect(test_set, show=art.show)
+  detections, fields = model.detect(test_set)
   np.save(art.model_detections_path, detections)
   logger.info(f"saved detections to {art.model_detections_path}")
   np.save(art.predicted_fields_path, fields)

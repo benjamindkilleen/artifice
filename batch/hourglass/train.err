@@ -1,20 +1,195 @@
-INFO:artifice:<run 'train'>
+INFO:artifice:<run 'active'>
 INFO:artifice:model: model
-2019-04-04 13:16:19.618083: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-04 13:16:19.818600: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+INFO:artifice:Epoch 0 / 25
+2019-04-06 19:59:18.704421: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-06 19:59:18.942559: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
 pciBusID: 0000:08:00.0
-totalMemory: 11.17GiB freeMemory: 11.03GiB
-2019-04-04 13:16:19.818686: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-04 13:16:29.842084: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-04 13:16:29.842138: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-04 13:16:29.842152: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-04 13:16:29.842556: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10686 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2019-04-06 19:59:18.942643: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 19:59:19.319197: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 19:59:19.321970: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 19:59:19.322014: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 19:59:19.322512: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-06 19:59:25.653652: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 19:59:25.656698: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 19:59:25.656726: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 19:59:25.656738: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 19:59:25.657114: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
-2019-04-04 13:17:05.490589: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-04 13:17:05.490670: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-04 13:17:05.490684: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-04 13:17:05.490693: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-04 13:17:05.490999: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10686 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
-slurmstepd-midway2-gpu05: error: *** JOB 59222563 ON midway2-gpu05 CANCELLED AT 2019-04-05T05:16:28 DUE TO TIME LIMIT ***
+2019-04-06 19:59:36.193494: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 19:59:36.196407: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 19:59:36.196431: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 19:59:36.196441: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 19:59:36.196722: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:Epoch 1 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-06 21:07:27.606564: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 21:07:27.606641: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 21:07:27.606654: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 21:07:27.607782: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 21:07:27.608011: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-06 21:07:32.664822: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 21:07:32.664890: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 21:07:32.664903: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 21:07:32.664912: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 21:07:32.665096: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+INFO:artifice:Epoch 2 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-06 22:15:25.798901: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 22:15:25.798977: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 22:15:25.798990: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 22:15:25.798998: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 22:15:25.799200: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-06 22:15:30.702735: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 22:15:30.702811: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 22:15:30.702828: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 22:15:30.702840: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 22:15:30.703050: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+INFO:artifice:Epoch 3 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-06 23:23:30.436298: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 23:23:30.437386: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 23:23:30.437405: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 23:23:30.437415: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 23:23:30.437651: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-06 23:23:34.621176: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-06 23:23:34.621981: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-06 23:23:34.621997: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-06 23:23:34.622006: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-06 23:23:34.622156: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+INFO:artifice:Epoch 4 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-07 00:33:04.739182: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 00:33:04.739261: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 00:33:04.739275: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 00:33:04.739284: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 00:33:04.739479: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-07 00:33:09.442103: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 00:33:09.442162: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 00:33:09.442196: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 00:33:09.442206: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 00:33:09.442340: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+INFO:artifice:Epoch 5 / 25
+INFO:artifice:predicting round 0...
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+2019-04-07 01:43:12.527440: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 01:43:12.527520: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 01:43:12.527534: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 01:43:12.527543: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 01:43:12.527749: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+2019-04-07 01:43:19.742555: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-07 01:43:19.742631: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-07 01:43:19.742646: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-07 01:43:19.742655: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-07 01:43:19.742852: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation

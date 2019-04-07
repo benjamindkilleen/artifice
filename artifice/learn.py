@@ -114,6 +114,7 @@ class ActiveLearner(Detector):
 
     self.candidate_idx += self.num_candidates
     query = [t[0] for t in uncertainties]
+    logger.info(f"chose query: {query}")
     return query
   
   def fit(self, unlabeled_set, epochs=1, **kwargs):

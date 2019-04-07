@@ -484,3 +484,12 @@ INFO:artifice:maximum error: 9.01
 ```
 Which is better, actually, but still not great.
 
+## April 7, 2019: Results
+After training for a few epochs with active learning approach, we get
+```
+INFO:artifice:average error: 2.04
+INFO:artifice:error std: 1.47
+INFO:artifice:minimum error: 0.02
+INFO:artifice:maximum error: 7.63
+```
+marginally better.
