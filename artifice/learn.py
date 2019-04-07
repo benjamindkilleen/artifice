@@ -54,6 +54,7 @@ class ActiveLearner(Detector):
   def __init__(self, model, annotated_set_dir,
                num_candidates=1000,
                query_size=1,
+               num_annotated=-1,
                **kwargs):
     """Wrapper around model's that performs active learning on dat.Data objects.
 
@@ -61,13 +62,15 @@ class ActiveLearner(Detector):
     :param annotated_set_dir: directory to save annotated sets
     :param num_candidates: max number of images to consider for query
     :param query_size: number of images in each query
-    :returns: 
-    :rtype: 
+    :param num_annotated: max number of examples in annotated set. After
+    acquiring this many, continue training without acquiring more. -1 imposes no
+    limit.
 
     """
     super().__init__(model, **kwargs)
     self.annotated_set_dir = annotated_set_dir
     self.num_candidates = num_candidates
+    self.num_annotated = num_annotated
     self.query_size = query_size
     self.candidate_idx = 0
 
@@ -132,6 +135,8 @@ class ActiveLearner(Detector):
     sampling = np.zeros(unlabeled_set.size, np.int64)
     
     for epoch in range(epochs):
+      if epoch == self.num_annotated:
+        break
       logger.info(f"Epoch {epoch} / {epochs}")
       if epoch == 0:
         sampling[0] = 1
@@ -145,6 +150,10 @@ class ActiveLearner(Detector):
         sampling, annotated_set_path)
       self.model.fit(annotated_set.training_input,
                      epochs=epoch+1, initial_epoch=epoch, **kwargs)
-      
+
+    if epoch < epochs:
+      self.model.fit(annotated_set.training_input, epochs=epochs,
+                     initial_epoch=epoch, **kwargs)
+                
     return annotated_set
       

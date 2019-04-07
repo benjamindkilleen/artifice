@@ -509,3 +509,13 @@ Also, be sure to not keep updating the background image? Something to consider.
 
 Reflection padding is resulting in possible better edge performance, but it
 could also be hurting the performance in those regions slightly. Something to consider.
+
+## April 7, 2019: Results from active learning
+After 8 epochs (10000 examples each), we have
+```
+INFO:artifice:average error: 1.91
+INFO:artifice:error std: 1.35
+INFO:artifice:minimum error: 0.02
+INFO:artifice:maximum error: 6.13
+```
+which is the best so far.

@@ -210,7 +210,8 @@ class Artifice:
     learner = learn.ActiveLearner(
       model, self.annotated_set_dir,
       num_candidates=self.num_candidates,
-      query_size=self.query_size)
+      query_size=self.query_size,
+      num_annotated=self.num_annotated)
     return learner
   
   
