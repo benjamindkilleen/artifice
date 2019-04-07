@@ -504,3 +504,8 @@ regular learning. Perhaps the learner.fit method can return the active
 training can continue to fill out the difference.
 
 Also, be sure to not keep updating the background image? Something to consider.
+
+### Thoughts on padding:
+
+Reflection padding is resulting in possible better edge performance, but it
+could also be hurting the performance in those regions slightly. Something to consider.
