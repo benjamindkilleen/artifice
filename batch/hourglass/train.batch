@@ -19,10 +19,11 @@ module load povray/3.7
 
 cd /project2/glk/artifice
 
-epochs=50
+epochs=25
+cmd=active
 
 echo "Starting training..."
-python artifice.py train --overwrite -e $epochs \
-       -m models/coupled_spheres_e${epochs} \
+python artifice.py $cmd --overwrite -e $epochs \
+       -m models/coupled_spheres_${cmd}_e${epochs} \
        --keras-verbose 2
 echo "Finished."

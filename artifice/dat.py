@@ -817,11 +817,14 @@ class AugmentationData(Data):
     return gen
   
   def augment(self, dataset):
-    """Generate the desired labels and then map them over the batched set."""
+    """Generate the desired labels and then map them over the batched set.
+
+    Dataset should already be repeating indefinitely and batched (if applicable)
+
+    """
     new_labels = tf.data.Dataset.from_generator(
       self.label_generator, tf.float32, tf.TensorShape(self.label_shape))
     new_labels = new_labels.batch(self.batch_size, drop_remainder=True)
-    dataset = dataset.repeat(-1)
     zip_set = tf.data.Dataset.zip((new_labels, dataset))
 
     background = np.stack([self.background.copy() for _ in range(self.batch_size)])
@@ -837,7 +840,7 @@ class AugmentationData(Data):
       
   def preprocess(self, dataset):
     """Call the augment function."""
-    dataset = dataset.batch(self.batch_size, drop_remainder=True)
+    dataset = dataset.repeat(-1).batch(self.batch_size, drop_remainder=True)
     return self.augment(dataset)
   
   @staticmethod

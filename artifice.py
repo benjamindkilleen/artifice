@@ -304,8 +304,8 @@ def cmd_active(art):
     unlabeled_set,
     epochs=art.epochs,
     steps_per_epoch=art.train_steps,
-    validation_data=validation_set.eval_input,
-    validation_steps=art.validation_steps,
+    # validation_data=validation_set.eval_input,
+    # validation_steps=art.validation_steps,
     verbose=art.keras_verbose)
   
 def cmd_predict(art):
@@ -411,7 +411,7 @@ def main():
                       default=[1], type=int,
                       help=docs.query_size_help)
   parser.add_argument('--epoch-size', '--num-examples', '-n', nargs=1,
-                      default=[5000], type=int,
+                      default=[10000], type=int,
                       help=docs.epoch_size_help)
   parser.add_argument('--num-objects', nargs=1,
                       default=[2], type=int,

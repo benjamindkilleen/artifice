@@ -100,17 +100,20 @@ class ActiveLearner(Detector):
     :returns: list of indices into the dataset, at most `self.query_size`
 
     """
-    query = []
+    uncertainties = []
     candidate_set = unlabeled_set.skip(self.candidate_idx).take(self.num_candidates)
     
     for i, field in enumerate(self.predict(candidate_set)):
-      idx = i + self.candidate_idx
-      uncertainty = self.compute_uncertainty(candidate_set, field)
-      query.append((idx, uncertainty))
-      query.sort(key=lambda t: t[1], reverse=True)
-      query = query[:self.query_size]
+      if i % 50 == 0:
+        logger.info(f"choose query: {i} / {self.num_candidates}")
+      idx = self.candidate_idx + i
+      uncertainty = self.compute_uncertainty(field, candidate_set)
+      uncertainties.append((idx, uncertainty))
+      uncertainties.sort(key=lambda t: t[1], reverse=True)
+      uncertainties = uncertainties[:self.query_size]
 
     self.candidate_idx += self.num_candidates
+    query = [t[0] for t in uncertainties]
     return query
   
   def fit(self, unlabeled_set, epochs=1, **kwargs):
