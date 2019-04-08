@@ -298,15 +298,15 @@ def cmd_train(art):
     validation_steps=art.validation_steps,
     verbose=art.keras_verbose)
 
-def cmd_active(art):
+def cmd_learn(art):
   learner = art.load_learner()
   unlabeled_set, validation_set, test_set = art.load_data()
   learner.fit(
     unlabeled_set,
     epochs=art.epochs,
     steps_per_epoch=art.train_steps,
-    # validation_data=validation_set.eval_input,
-    # validation_steps=art.validation_steps,
+    validation_data=validation_set.eval_input,
+    validation_steps=art.validation_steps,
     verbose=art.keras_verbose)
   
 def cmd_predict(art):
@@ -444,8 +444,8 @@ def main():
     cmd_augment(art)
   elif art.command == 'train':
     cmd_train(art)
-  elif art.command == 'active':
-    cmd_active(art)
+  elif art.command == 'learn':
+    cmd_learn(art)
   elif art.command == 'predict':
     cmd_predict(art)
   elif art.command == 'evaluate':

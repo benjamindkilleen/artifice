@@ -29,19 +29,35 @@ def maxpool(inputs, dropout=None):
     inputs = keras.layers.Dropout(dropout)(inputs)
   return inputs
 
-def conv(inputs, filters, activation='relu', padding='valid'):
+def conv(inputs, filters, kernel_shape=(3,3),
+         activation='relu', padding='valid', norm=True):
+  """Perform 3x3 convolution on the layer.
+
+  :param inputs: input tensor
+  :param filters: number of filters or kernels
+  :param activation: keras activation to use. Default is 'relu'
+  :param padding: 'valid' or 'same'
+  :param norm: whether or not to perform batch normalization on the output
+  :returns: 
+  :rtype: 
+
+  """
   inputs = keras.layers.Conv2D(
-    filters, (3,3),
+    filters, kernel_shape,
     activation=activation,
     padding=padding,
     kernel_initializer='glorot_normal')(inputs)
+  if norm:
+    inputs = keras.layers.BatchNormalization()(inputs)
   return inputs
 
-def dense(inputs, nodes, activation='relu'):
+def dense(inputs, nodes, activation='relu', norm=False):
   inputs = keras.layers.Dense(nodes, activation=activation)(inputs)
+  if norm:
+    inputs = keras.layers.BatchNormalization()(inputs)
   return inputs
 
-def conv_transpose(inputs, filters, activation='relu', dropout=None):
+def conv_transpose(inputs, filters, activation='relu', dropout=None, norm=True):
   inputs = keras.layers.Conv2DTranspose(
     filters, (2,2),
     strides=(2,2),
@@ -49,8 +65,10 @@ def conv_transpose(inputs, filters, activation='relu', dropout=None):
     activation=activation)(inputs)
   if dropout is not None:
     inputs = keras.layers.Dropout(dropout)(inputs)
+  if norm:
+    inputs = keras.layers.BatchNormalization()(inputs)
   return inputs
-
+        
 def concat(inputs, *other_inputs, axis=-1, dropout=None):
   """Apply dropout to inputs and concat with other_inputs."""
   if dropout is not None:
@@ -166,7 +184,7 @@ class HourglassModel(FunctionalModel):
     :param concat_dropout: 
     :returns: 
     :rtype: 
-
+    
     """
     self.tile_shape = tile_shape
     self.level_filters = level_filters
@@ -215,7 +233,8 @@ class HourglassModel(FunctionalModel):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters, padding=self.padding)
 
-    inputs = conv(inputs, 1, activation=None, padding='same')
+    inputs = conv(inputs, 1, kernel_shape=(1,1), activation=None,
+                  padding='same', norm=False)
     return inputs
   
   def full_predict(self, data, steps=None, verbose=1):
