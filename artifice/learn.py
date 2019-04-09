@@ -11,7 +11,7 @@ class Detector():
   def __init__(self, model):
     self.model = model
 
-  def predict(self, data, steps=None, verbose=1):
+  def predict(self, data, steps=None, verbose=2):
     """Yield reassembled fields from the data.
 
     Requires batch_size to be a multiple of num_tiles
@@ -109,7 +109,7 @@ class ActiveLearner(Detector):
     for i, field in enumerate(self.predict(candidate_set)):
       if i % 50 == 0:
         logger.info(f"choose query: {i} / {self.num_candidates}")
-      idx = self.candidate_idx + i
+      idx = (self.candidate_idx + i) % unlabeled_set.size
       uncertainty = self.compute_uncertainty(field, candidate_set)
       uncertainties.append((idx, uncertainty))
       uncertainties.sort(key=lambda t: t[1], reverse=True)

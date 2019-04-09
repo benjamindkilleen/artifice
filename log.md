@@ -519,3 +519,13 @@ INFO:artifice:minimum error: 0.02
 INFO:artifice:maximum error: 6.13
 ```
 which is the best so far.
+
+## April 9, 2019: using Batch Normalization
+```
+INFO:artifice:average error: 1.61
+INFO:artifice:error std: 1.39
+INFO:artifice:minimum error: 0.02
+INFO:artifice:maximum error: 7.28
+```
+which has lower average error. This was after just 8 epochs(failed because of
+error, now caught). So batch normalization actually does help.

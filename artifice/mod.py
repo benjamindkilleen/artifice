@@ -42,13 +42,21 @@ def conv(inputs, filters, kernel_shape=(3,3),
   :rtype: 
 
   """
-  inputs = keras.layers.Conv2D(
-    filters, kernel_shape,
-    activation=activation,
-    padding=padding,
-    kernel_initializer='glorot_normal')(inputs)
   if norm:
+    inputs = keras.layers.Conv2D(
+      filters, kernel_shape,
+      activation=None,
+      padding=padding,
+      use_bias=False,
+      kernel_initializer='glorot_normal')(inputs)
     inputs = keras.layers.BatchNormalization()(inputs)
+    inputs = keras.layers.Activation(activation)(inputs)
+  else:
+    inputs = keras.layers.Conv2D(
+      filters, kernel_shape,
+      activation=activation,
+      padding=padding,
+      kernel_initializer='glorot_normal')(inputs)
   return inputs
 
 def dense(inputs, nodes, activation='relu', norm=False):
@@ -57,7 +65,7 @@ def dense(inputs, nodes, activation='relu', norm=False):
     inputs = keras.layers.BatchNormalization()(inputs)
   return inputs
 
-def conv_transpose(inputs, filters, activation='relu', dropout=None, norm=True):
+def conv_transpose(inputs, filters, activation='relu', dropout=None):
   inputs = keras.layers.Conv2DTranspose(
     filters, (2,2),
     strides=(2,2),
@@ -65,8 +73,6 @@ def conv_transpose(inputs, filters, activation='relu', dropout=None, norm=True):
     activation=activation)(inputs)
   if dropout is not None:
     inputs = keras.layers.Dropout(dropout)(inputs)
-  if norm:
-    inputs = keras.layers.BatchNormalization()(inputs)
   return inputs
         
 def concat(inputs, *other_inputs, axis=-1, dropout=None):
