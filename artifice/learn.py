@@ -51,7 +51,7 @@ class Detector():
     return self.detect(*args, **kwargs)
 
 class ActiveLearner(Detector):
-  def __init__(self, model, annotated_set_dir,
+  def __init__(self, model, oracle, annotated_set_dir,
                num_candidates=1000,
                query_size=1,
                num_annotated=-1,
@@ -68,6 +68,7 @@ class ActiveLearner(Detector):
 
     """
     super().__init__(model, **kwargs)
+    self.oracle = oracle
     self.annotated_set_dir = annotated_set_dir
     self.num_candidates = num_candidates
     self.num_annotated = num_annotated
@@ -105,7 +106,8 @@ class ActiveLearner(Detector):
     """
     uncertainties = []
     candidate_set = unlabeled_set.skip(self.candidate_idx).take(self.num_candidates)
-    
+
+    # TODO: only query examples with an existing annotation, from the oracle.
     for i, field in enumerate(self.predict(candidate_set)):
       if i % 50 == 0:
         logger.info(f"choose query: {i} / {self.num_candidates}")
@@ -126,14 +128,31 @@ class ActiveLearner(Detector):
     TODO: use already annotated examples, if they exist.
     TODO: determine better method for training size in between queries
 
+    TODO: need to handle PreparedOracle differently than HumanOracle. For a
+    HumanOracle, can query any image, without regard for index. For a
+    PreparedOracle, should only query the images with valid_indices. We could
+    handle these separate cases in difference classes of ActiveLearners? Then
+    just create oracle inside the ActiveLearner, given the required args for
+    it. But this is unsatisfying, since the ActiveLearner should be somewhat
+    independent of the underlying oracle. But the PreparedOracle is restricting
+    which examples can be queried.
+
+    So fuck it. Forget about a prepared oracle having valid indices. That's just
+    wrong. A prepared oracle has to have a prepared annotation for every
+    example. We'll just have to approximate this for the coupled_spheres
+    dataset.
+
+    TODO: probably revert to previous commit, don't worry about only querying
+    certain examples, and focus on creating valid annotations for every gyro example.
+
     :param unlabeled_set: a dat.Data object with an `annotate()` method.
     :param epochs: number of epochs to run
     :returns: annotated_set created during active_learning
-    :rtype: 
+    :rtype:
 
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
-    
+        
     for epoch in range(epochs):
       if epoch == self.num_annotated:
         break
@@ -147,7 +166,7 @@ class ActiveLearner(Detector):
       annotated_set_path = join(
         self.annotated_set_dir, f'annotated_set_{epoch}.tfrecord')
       annotated_set = unlabeled_set.sample_and_annotate(
-        sampling, annotated_set_path)
+        sampling, self.oracle, annotated_set_path)
       self.model.fit(annotated_set.training_input,
                      epochs=epoch+1, initial_epoch=epoch, **kwargs)
 
@@ -156,4 +175,7 @@ class ActiveLearner(Detector):
                      initial_epoch=epoch, **kwargs)
                 
     return annotated_set
-      
+
+
+
+  

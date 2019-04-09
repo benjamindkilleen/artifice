@@ -174,7 +174,7 @@ class FunctionalModel(Model):
   
 class HourglassModel(FunctionalModel):
   def __init__(self, tile_shape,
-               level_filters=[64,64,128],
+               level_filters=[64,64,128,128],
                level_depth=2,
                valid=True,
                pool_dropout=0.25,

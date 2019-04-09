@@ -83,8 +83,10 @@ class Artifice:
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
         
-    # png input format paths
+    # original input format paths
     self.labels_path = join(self.data_root, 'labels.npy')
+    self.annotations_dir = join(self.data_root, 'annotations')
+    self.images_dir = join(self.data_root, 'images')
     self._image_paths = None
     self._annotation_paths = None
 
@@ -137,19 +139,19 @@ class Artifice:
   @property
   def image_paths(self):
     if self._image_paths is None:
-      self._image_paths = sorted(glob(join(self.data_root, 'images', '*.png')))
+      self._image_paths = sorted(glob(join(self.images_dir, '*.png')))
     return self._image_paths
   
   @property
   def annotation_paths(self):
     if self._annotation_paths is None:
-      self._annotation_paths = sorted(glob(join(
-        self.data_root, 'annotations', '*.npy')))
+      self._annotation_paths = sorted(glob(join(self.annotations_dir, '*.npy')))
     return self._annotation_paths
 
   def make_oracle(self):
-    return oracles.PerfectOracle(
-      np.load(self.labels_path), self.annotation_paths)
+    return oracles.PreparedOracle(
+      np.load(self.labels_path), self.annotations_dir,
+      images_dir=self.images_dir)
   
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
@@ -162,7 +164,6 @@ class Artifice:
     unlabeled_set = dat.UnlabeledData(
       self.unlabeled_set_path,
       size=self.unlabeled_size,
-      oracle=self.make_oracle(),
       **kwargs)
     validation_set = dat.Data(
       self.validation_set_path,
@@ -208,7 +209,7 @@ class Artifice:
     """Create a learner around a loaded model."""
     model = self.load_model()
     learner = learn.ActiveLearner(
-      model, self.annotated_set_dir,
+      model, self.make_oracle(), self.annotated_set_dir,
       num_candidates=self.num_candidates,
       query_size=self.query_size,
       num_annotated=self.num_annotated)
@@ -221,7 +222,7 @@ def cmd_convert(art):
   example_iterator = zip(art.image_paths, labels)
   annotation_iterator = iter(art.annotation_paths)
 
-  # Over unlabeled set
+  # over unlabeled set
   logger.info(f"writing unlabeled set to '{art.unlabeled_set_path}'...")
   writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
   annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
@@ -231,11 +232,13 @@ def cmd_convert(art):
     image_path, label = next(example_iterator)
     image = img.open_as_array(image_path)
     writer.write(dat.proto_from_image(image))
-    if i < art.annotated_size:
-      annotation_path = next(annotation_iterator)
-      annotation = np.load(annotation_path)
-      scene = (image, label), annotation
-      annotated_writer.write(dat.proto_from_scene(scene))
+    # TODO: decide how to handle the below. New paradigm creates the annotated
+    # sets during active learning, using provided numpy images in a directory.
+    # if i < art.annotated_size:
+    #   annotation_path = next(annotation_iterator)
+    #   annotation = np.load(annotation_path)
+    #   scene = (image, label), annotation
+    #   annotated_writer.write(dat.proto_from_scene(scene))
   annotated_writer.close()
   writer.close()
   logger.info("finished")
@@ -387,7 +390,7 @@ def main():
                       type=int, default=[388, 388, 1],
                       help=docs.image_shape_help)
   parser.add_argument('--tile-shape', nargs=3,
-                      type=int, default=[100,100,1],
+                      type=int, default=[196,196,1],
                       help=docs.tile_shape_help)
   parser.add_argument('--epochs', '-e', nargs=1,
                       default=[1], type=int,

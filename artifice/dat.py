@@ -152,9 +152,6 @@ def proto_from_scene(scene):
 def scene_from_proto(proto):
   """Parse `proto` into tensors `(image, label), annotation`.
 
-  TODO: allow for loading an unlabelled example. Can do this by including a
-  boolean in the data? That's one possibility.
-
   """
   features = tf.parse_single_example(
     proto,
@@ -648,7 +645,6 @@ class UnlabeledData(Data):
     kwargs['encode_entry'] = proto_from_image
     super().__init__(*args, **kwargs)
     self.background = kwargs.get('background')    
-    self.oracle = kwargs.get('oracle', oracles.HumanOracle())
 
     accumulators = {}
     # if self.background is None:
@@ -668,11 +664,12 @@ class UnlabeledData(Data):
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     return dataset
     
-  def sample_and_annotate(self, sampling, record_name):
+  def sample_and_annotate(self, sampling, oracle, record_name):
     """Draw a sampling from the dataset and annotate each example, and save
 
     :param sampling: 1D boolean or "counts" array indexing the dataset.
     :param record_name: tfrecord path to save the newly annotated dataset to.
+    :param oracle: a callable with type `(image,idx) -> scene`
     :returns: new AugmentationData object with scenes for the sampled points
 
     """
@@ -686,7 +683,7 @@ class UnlabeledData(Data):
     writer = tf.python_io.TFRecordWriter(record_name)
     if tf.executing_eagerly():
       for idx, image in dataset:
-        scene = self.oracle(image, idx)
+        scene = oracle(image, idx)
         scene = (np.array(scene[0][0]), np.array(scene[0][1])), np.array(scene[1])
         writer.write(proto_from_scene(scene))
     else:
@@ -695,7 +692,7 @@ class UnlabeledData(Data):
         while True:
           try:
             idx, image = sess.run(get_next)
-            scene = self.oracle(image, idx)
+            scene = oracle(image, idx)
             writer.write(proto_from_scene(scene))
           except tf.errors.OutOfRangeError:
             break
