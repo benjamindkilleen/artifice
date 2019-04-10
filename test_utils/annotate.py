@@ -68,10 +68,15 @@ def main():
   labels = np.load('data/gyros/original_labels.npy')
   image_paths = sorted(glob('data/gyros/images/*.png'))
   annotator = GyroAnnotator()
-  for image_path in image_paths:
+  for image_path, label in zip(image_paths, labels):
     image = img.open_as_float(image_path)
+    # annotation = annotator(image)
+    
     edges = canny(image, sigma=1.7)
-    vis.plot_image(image, edges, scale=50)
+    edge_ys, edge_xs = np.where(edges)
+    vis.plot_image(image, scale=75)
+    plt.plot(edge_xs, edge_ys, 'r,')
+    plt.plot(label[:,1], label[:,2], 'gx')
     # plt.show()
     plt.savefig('docs/gyros_edges.png')
     break
