@@ -70,7 +70,7 @@ def main():
     image = img.open_as_float(image_path)
     # annotation = annotator(image)
     
-    edges = canny(image, sigma=1.5)
+    edges = canny(image, sigma=1.)
     edge_ys, edge_xs = np.where(edges)
     vis.plot_image(image, scale=50)
     plt.plot(edge_xs, edge_ys, 'r,')
