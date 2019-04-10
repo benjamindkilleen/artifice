@@ -74,7 +74,7 @@ def main():
     
     edges = canny(image, sigma=1.7)
     edge_ys, edge_xs = np.where(edges)
-    vis.plot_image(image, scale=75)
+    vis.plot_image(image, scale=60)
     plt.plot(edge_xs, edge_ys, 'r,')
     plt.plot(label[:,1], label[:,2], 'gx')
     # plt.show()
