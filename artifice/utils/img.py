@@ -90,6 +90,24 @@ def open_as_array(fname):
     raise NotImplementedError("Cannot create image mode '{}'".format(im.mode))
   return image
 
+
+def as_float(image, atleast_3d=True):
+  """Return image as a grayscale float32 array at least 3d, scaled to [0,1]."""
+  if image.dtype in [np.float32, np.float64]:
+    image = image.astype(np.float32)
+  elif image.dtype in [np.uint8, np.int32, np.int64]:
+    image = image.astype(np.float32) / 255.
+  else:
+    raise ValueError(f"image dtype '{image.dtype}' not allowed")
+  if atleast_3d:
+    return np.atleast_3d(image)
+  else:
+    return image
+
+def open_as_float(image_path):
+  return as_float(open_as_array(image_path), atleast_3d=False)
+
+
 def save(fname, image):
   """Save the array image to png in fname."""
   im = Image.fromarray(image)

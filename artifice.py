@@ -150,7 +150,7 @@ class Artifice:
 
   def make_oracle(self):
     return oracles.PerfectOracle(
-      np.load(self.labels_path), self.annotations_dir)
+      np.load(self.labels_path), self.annotation_paths)
   
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""

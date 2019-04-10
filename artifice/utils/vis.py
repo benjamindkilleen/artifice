@@ -12,11 +12,11 @@ import logging
 logger = logging.getLogger('artifice')
 
 
-def plot_image(*images, columns=10, ticks=False):
+def plot_image(*images, columns=10, ticks=False, scale=20):
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
   fig, axes = plt.subplots(rows,columns, squeeze=False,
-                           figsize=(20, 20*rows/columns))
+                           figsize=(scale, scale*rows/columns))
   for i, image in enumerate(images):
     ax = axes[i // columns, i % columns]
     im = ax.imshow(np.squeeze(image), cmap='gray', vmin=0., vmax=1.)

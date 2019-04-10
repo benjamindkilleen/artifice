@@ -18,17 +18,6 @@ import logging
 
 logger = logging.getLogger('artifice')
 
-
-def as_float(image):
-  """Return image as a grayscale float32 array at least 3d."""
-  if image.dtype in [np.float32, np.float64]:
-    image = image.astype(np.float32)
-  elif image.dtype in [np.uint8, np.int32, np.int64]:
-    image = image.astype(np.float32) / 255.
-  else:
-    raise ValueError(f"image dtype '{image.dtype}' not allowed")
-  return np.atleast_3d(image)
-
 def _bytes_feature(value):
   # Helper function for writing a string to a tfrecord
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
@@ -46,7 +35,7 @@ def proto_from_image(image):
   :rtype: 
 
   """
-  image = as_float(image)
+  image = img.as_float(image)
   image_string = image.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
   feature = {"image" : _bytes_feature(image_string),
@@ -78,7 +67,7 @@ def proto_from_example(example):
 
   """
   image, label = example
-  image = as_float(image)
+  image = img.as_float(image)
   label = label.astype(np.float32)
   image_string = image.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
@@ -124,7 +113,7 @@ def proto_from_scene(scene):
   """
   example, annotation = scene
   image, label = example
-  image = as_float(image)
+  image = img.as_float(image)
   label = label.astype(np.float32)
   annotation = annotation.astype(np.float32)
 
@@ -725,7 +714,7 @@ class UnlabeledData(Data):
     if image is None:
       # last call
       assert agg is not None
-      return as_float(np.argmax(agg, axis=-1))
+      return img.as_float(np.argmax(agg, axis=-1))
 
     idx = (255. * image).astype(np.int64)
     for i in range(image.shape[0]):
