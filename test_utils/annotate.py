@@ -9,7 +9,8 @@ from skimage.feature import canny
 import matplotlib.pyplot as plt
 
 class Annotator():
-  def annotate_object(self, image, obj_label, grad=None):
+  sigma = 1.0
+  def annotate_object(self, image, obj_label):
     """Annotate the object at index-space position.
 
     :param image: numpy image, float32
@@ -30,8 +31,9 @@ class Annotator():
     """
     annotation = np.zeros_like(image)
     grad = np.gradient(image)
+    edges = canny(image, sigma=self.sigma)
     for obj_label in label:
-      xs, ys = self.annotate_object(image, obj_label, grad=grad)
+      xs, ys = self.annotate_object(image, obj_label)
       annotation[xs,ys] = obj_label[0]
     return annotation
 
@@ -39,7 +41,8 @@ class Annotator():
     return self.annotate_image(*args, **kwargs)
 
 class GyroAnnotator(Annotator):
-  def annotate_object(self, image, obj_label, grad=None):
+  sigma = 1.7
+  def annotate_object(self, image, obj_label, edges=None):
     """Annotate the gyro at `obj_label`.
 
     Run a canny edge detector on the image, if needed
@@ -54,6 +57,9 @@ class GyroAnnotator(Annotator):
     """
     if grad is None:
       grad = np.gradient(image)
+
+    
+    
     raise NotImplementedError
     
   
@@ -64,8 +70,9 @@ def main():
   annotator = GyroAnnotator()
   for image_path in image_paths:
     image = img.open_as_float(image_path)
-    edges = canny(image, sigma=2)
+    edges = canny(image, sigma=1.7)
     vis.plot_image(image, edges, scale=50)
+    # plt.show()
     plt.savefig('docs/gyros_edges.png')
     break
 

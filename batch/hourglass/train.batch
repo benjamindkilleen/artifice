@@ -19,7 +19,7 @@ module load povray/3.7
 
 cd /project2/glk/artifice
 
-epochs=20
+epochs=12
 cmd=learn
 
 echo "Starting training..."
