@@ -128,23 +128,6 @@ class ActiveLearner(Detector):
     TODO: use already annotated examples, if they exist.
     TODO: determine better method for training size in between queries
 
-    TODO: need to handle PreparedOracle differently than HumanOracle. For a
-    HumanOracle, can query any image, without regard for index. For a
-    PreparedOracle, should only query the images with valid_indices. We could
-    handle these separate cases in difference classes of ActiveLearners? Then
-    just create oracle inside the ActiveLearner, given the required args for
-    it. But this is unsatisfying, since the ActiveLearner should be somewhat
-    independent of the underlying oracle. But the PreparedOracle is restricting
-    which examples can be queried.
-
-    So fuck it. Forget about a prepared oracle having valid indices. That's just
-    wrong. A prepared oracle has to have a prepared annotation for every
-    example. We'll just have to approximate this for the coupled_spheres
-    dataset.
-
-    TODO: probably revert to previous commit, don't worry about only querying
-    certain examples, and focus on creating valid annotations for every gyro example.
-
     :param unlabeled_set: a dat.Data object with an `annotate()` method.
     :param epochs: number of epochs to run
     :returns: annotated_set created during active_learning
