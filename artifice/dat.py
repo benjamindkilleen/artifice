@@ -636,14 +636,6 @@ class UnlabeledData(Data):
     self.background = kwargs.get('background')    
 
     accumulators = {}
-    # if self.background is None:
-    #   accumulators['background'] = UnlabeledData.mode_background_accumulator
-      
-    # aggregates = self.accumulate(accumulators)
-    # for k,v in aggregates.items():
-    #   setattr(self, k, v)
-
-    # self._kwargs['background'] = self.background
 
   def preprocess(self, dataset):
     """Responsible for converting dataset to batched `(image, dummy_label)` form."""

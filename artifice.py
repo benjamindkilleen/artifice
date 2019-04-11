@@ -220,6 +220,7 @@ def cmd_convert(art):
   labels = np.load(art.labels_path)
   example_iterator = zip(art.image_paths, labels)
   annotation_iterator = iter(art.annotation_paths)
+  more_annotations = True
 
   # over unlabeled set
   logger.info(f"writing unlabeled set to '{art.unlabeled_set_path}'...")
@@ -231,13 +232,14 @@ def cmd_convert(art):
     image_path, label = next(example_iterator)
     image = img.open_as_array(image_path)
     writer.write(dat.proto_from_image(image))
-    # TODO: decide how to handle the below. New paradigm creates the annotated
-    # sets during active learning, using provided numpy images in a directory.
-    # if i < art.annotated_size:
-    #   annotation_path = next(annotation_iterator)
-    #   annotation = np.load(annotation_path)
-    #   scene = (image, label), annotation
-    #   annotated_writer.write(dat.proto_from_scene(scene))
+    if more_annotations and i < art.annotated_size:
+      try:
+        annotation_path = next(annotation_iterator)
+        annotation = np.load(annotation_path)
+        scene = (image, label), annotation
+        annotated_writer.write(dat.proto_from_scene(scene))
+      except StopIteration:
+        more_annotations = False
   annotated_writer.close()
   writer.close()
   logger.info("finished")
@@ -273,7 +275,7 @@ def cmd_convert(art):
 
 
 def cmd_augment(art):
-  """Run augmentation of the train_set. 
+  """Run augmentation of the unlabeled set. 
 
   If `art.show`, then show the new examples, otherwise, save the augmented
   train_set.
