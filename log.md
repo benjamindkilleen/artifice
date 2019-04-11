@@ -529,3 +529,13 @@ INFO:artifice:maximum error: 7.28
 ```
 which has lower average error. This was after just 8 epochs(failed because of
 error, now caught). So batch normalization actually does help.
+
+## April 11, 2019: results from active learning, larger tiles
+After 12 epochs:
+```
+INFO:artifice:average error: 1.69
+INFO:artifice:error std: 1.20
+INFO:artifice:minimum error: 0.03
+INFO:artifice:maximum error: 7.43
+```
+about the same as above.
