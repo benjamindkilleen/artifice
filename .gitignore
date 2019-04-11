@@ -12,11 +12,8 @@ reports/spring_2018_report/**/*.png
 **.pyc
 data/**/*.png
 data/**/*.npy
+!data/gyros/labels.npy
+!data/gyros/annotations/*.npy
 models/**/*.npy
 reports/grant
 models/coupled_spheres/detection_*.*
-!models/coupled_spheres/detection_0000.*
-!models/coupled_spheres/detection_0001.*
-!models/coupled_spheres/detection_0002.*
-!models/coupled_spheres/detection_0003.*
-!models/coupled_spheres/detection_0004.*

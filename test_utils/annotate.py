@@ -6,6 +6,7 @@ import numpy as np
 from artifice.utils import img, vis
 from glob import glob
 from skimage.feature import canny
+from skimage.draw import circle
 import matplotlib.pyplot as plt
 
 class Annotator():
@@ -30,10 +31,9 @@ class Annotator():
 
     """
     annotation = np.zeros_like(image)
-    grad = np.gradient(image)
     edges = canny(image, sigma=self.sigma)
     for obj_label in label:
-      xs, ys = self.annotate_object(image, obj_label)
+      xs, ys = self.annotate_object(image, obj_label, edges=edges)
       annotation[xs,ys] = obj_label[0]
     return annotation
 
@@ -41,58 +41,45 @@ class Annotator():
     return self.annotate_image(*args, **kwargs)
 
 class GyroAnnotator(Annotator):
-  def annotate_object(self, image, obj_label, edges=None, grad=None):
+  initial_radius = 10
+  def annotate_object(self, image, obj_label, edges=None):
     """Annotate the gyro at `obj_label`.
 
     Run a canny edge detector on the image, if needed
 
-    Exploits the fact that the gyros should be roughly circular, but the given
-    location may not be the center, need to calculate the edge. So, within the
-    region. Calculates the
-    radius along 8 directions and takes the median of these (not the average, in
-    case one example throws everything off). The "radius" is determined to be
-    when the image gradient is at a peak.
-
     """
-    if grad is None:
-      grad = np.gradient(image)
     if edges is None:
       edges = canny(image, sigma=self.sigma)
-      
-    xi = round(obj_label[1])
-    yi = round(obj_label[2])
-    val = image[xi, yi]
-
-    """So val might be useless, but we can get like the pixels within 
 
     """
+    Grab the edge pixels within 10 pixels, calculate distance to center, take
+    their median as the true radius and return pixels within that range.
+    """
 
-    
-    
-    return image
-    
+    rr, cc = circle(obj_label[1], obj_label[2], self.initial_radius,
+                    shape=image.shape)
+
+    mask = np.zeros_like(image, dtype=bool)
+    mask[rr,cc] = True
+    xs, ys = np.where(np.logical_and(edges, mask))
+    distances = np.linalg.norm(
+      np.stack((xs - obj_label[1], ys - obj_label[2]), axis=1), axis=1)
+    r = np.median(distances) + 1.5
+    return circle(obj_label[1], obj_label[2], r, shape=image.shape)
+
   
-
 def main():
-  labels = np.load('data/gyros/original_labels.npy')
+  labels = np.load('data/gyros/labels.npy')
   image_paths = sorted(glob('data/gyros/images/*.png'))
   annotator = GyroAnnotator()
-  for image_path, label in zip(image_paths, labels):
+  for i, (image_path, label) in enumerate(zip(image_paths, labels)):
     image = img.open_as_float(image_path)
-    # annotation = annotator(image)
-    
-    edges = canny(image, sigma=1.)
-    grads = np.gradient(image)
-    grad = np.sqrt(grads[0]**2 + grads[1]**2)
-    edge_ys, edge_xs = np.where(edges)
-    fig, axes = vis.plot_image(image, grad, scale=80)
-    axes[0,0].plot(edge_xs, edge_ys, 'r,')
-    axes[0,1].plot(edge_xs, edge_ys, 'r,')
-    axes[0,0].plot(label[:,1], label[:,2], 'g,')
-    axes[0,1].plot(label[:,1], label[:,2], 'g,')
-    # axes[0,2].plot(label[:,1], label[:,2], 'g,')
-    # plt.show()
-    plt.savefig('docs/gyros_edges.png')
+    annotation = annotator(image, labels[0])
+    np.save(f'data/gyros/annotations/{str(i).zfill(4)}.npy', annotation)
+    # fig, axes = vis.plot_image(image, scale=80)
+    # xs, ys = np.where(annotation)
+    # plt.plot(ys, xs, 'r,')
+    # plt.savefig('docs/gyro_annotation.png')
     break
 
 if __name__ == "__main__":
