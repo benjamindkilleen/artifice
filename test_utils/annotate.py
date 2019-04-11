@@ -41,8 +41,7 @@ class Annotator():
     return self.annotate_image(*args, **kwargs)
 
 class GyroAnnotator(Annotator):
-  sigma = 1.7
-  def annotate_object(self, image, obj_label, edges=None):
+  def annotate_object(self, image, obj_label, edges=None, grad=None):
     """Annotate the gyro at `obj_label`.
 
     Run a canny edge detector on the image, if needed
@@ -57,8 +56,20 @@ class GyroAnnotator(Annotator):
     """
     if grad is None:
       grad = np.gradient(image)
+    if edges is None:
+      edges = canny(image, sigma=self.sigma)
+      
+    xi = round(obj_label[1])
+    yi = round(obj_label[2])
+    val = image[xi, yi]
+
+    """So val might be useless, but we can get like the pixels within 
+
+    """
+
     
-    raise NotImplementedError
+    
+    return image
     
   
 
@@ -71,10 +82,12 @@ def main():
     # annotation = annotator(image)
     
     edges = canny(image, sigma=1.)
+    grads = np.gradient(image)
     edge_ys, edge_xs = np.where(edges)
-    vis.plot_image(image, scale=50)
-    plt.plot(edge_xs, edge_ys, 'r,')
-    plt.plot(label[:,1], label[:,2], 'gx')
+    fig, axes = vis.plot_image(image, grads[0], grads[1], scale=50)
+    axes[0,0].plot(edge_xs, edge_ys, 'r,')
+    axes[0,0].plot(label[:,1], label[:,2], 'gx')
+    axes[0,1].plot(label[:,1], label[:,2], 'gx')
     # plt.show()
     plt.savefig('docs/gyros_edges.png')
     break
