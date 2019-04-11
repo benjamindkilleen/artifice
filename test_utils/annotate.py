@@ -84,10 +84,11 @@ def main():
     edges = canny(image, sigma=1.)
     grads = np.gradient(image)
     edge_ys, edge_xs = np.where(edges)
-    fig, axes = vis.plot_image(image, grads[0], grads[1], scale=50)
+    fig, axes = vis.plot_image(image, grads[0], grads[1], scale=60)
     axes[0,0].plot(edge_xs, edge_ys, 'r,')
     axes[0,0].plot(label[:,1], label[:,2], 'gx')
-    axes[0,1].plot(label[:,1], label[:,2], 'gx')
+    axes[0,1].plot(label[:,1], label[:,2], 'g,')
+    axes[0,2].plot(label[:,1], label[:,2], 'g,')
     # plt.show()
     plt.savefig('docs/gyros_edges.png')
     break
