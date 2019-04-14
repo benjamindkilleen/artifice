@@ -17,7 +17,7 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 300
+seconds = 400                   # 12000 frames, at 30fps
 
 # dataset parameters
 root = "data/coupled_spheres/"  # root dir for fname

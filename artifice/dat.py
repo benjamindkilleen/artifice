@@ -418,15 +418,14 @@ class Data(object):
     return self._dataset
 
   def preprocess(self, dataset):
-    """Responsible for converting dataset to (image, label) form.
+    """Responsible for converting dataset to well-shuffled (image, label) form.
 
     Can be overwritten by subclasses to perform augmentation."""
-    return dataset.batch(self.batch_size, drop_remainder=True)
+    return dataset.shuffle(self.num_shuffle).batch(self.batch_size, drop_remainder=True)
 
   @property
   def preprocessed(self):
     return self.preprocess(self.dataset)
-
 
   def to_numpy_field(self, label):
     """Create a distance annotation with numpy `label`.

@@ -93,6 +93,7 @@ class Artifice:
     # standard model input data paths
     self.annotated_set_path = join(self.data_root, 'annotated_set.tfrecord')
     self.unlabeled_set_path = join(self.data_root, 'unlabeled_set.tfrecord')
+    self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
     self.validation_set_path = join(self.data_root, 'validation_set.tfrecord')
     self.test_set_path = join(self.data_root, 'test_set.tfrecord')
 
@@ -100,6 +101,7 @@ class Artifice:
     self.train_size = self.epoch_size
     self.annotated_size = self.num_annotated
     self.unlabeled_size = self.splits[0]
+    self.labeled_size = self.splits[0]
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
 
@@ -151,41 +153,35 @@ class Artifice:
   def make_oracle(self):
     return oracles.PerfectOracle(
       np.load(self.labels_path), self.annotation_paths)
-  
+
+  dat_kwargs = {'image_shape' : self.image_shape,
+                'tile_shape' : self.tile_shape,
+                'batch_size' : self.batch_size,
+                'num_parallel_calls' : self.cores,
+                'pad' : self.pad,
+                'num_objects' : self.num_objects}
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
-    kwargs = {'image_shape' : self.image_shape,
-              'tile_shape' : self.tile_shape,
-              'batch_size' : self.batch_size,
-              'num_parallel_calls' : self.cores,
-              'pad' : self.pad,
-              'num_objects' : self.num_objects}
     unlabeled_set = dat.UnlabeledData(
       self.unlabeled_set_path,
       size=self.unlabeled_size,
-      **kwargs)
+      **self.dat_kwargs)
     validation_set = dat.Data(
       self.validation_set_path,
       size=self.validation_size,
-      **kwargs)
+      **self.dat_kwargs)
     test_set = dat.Data(
       self.test_set_path,
       size=self.test_size,
-      **kwargs)
+      **self.dat_kwargs)
     return unlabeled_set, validation_set, test_set
 
+  def load_labeled(self):
+    return dat.Data(self.labeled_set_path, size=self.labeled_size, **self.dat_kwargs)
+  
   def load_annotated(self):
-    kwargs = {'image_shape' : self.image_shape,
-              'tile_shape' : self.tile_shape,
-              'batch_size' : self.batch_size,
-              'num_parallel_calls' : self.cores,
-              'pad' : self.pad,
-              'num_objects' : self.num_objects}
-    annotated_set = dat.AugmentationData(
-      self.annotated_set_path,
-      size=self.annotated_size,
-      **kwargs)
-    return annotated_set
+    return dat.AugmentationData(self.annotated_set_path, size=self.annotated_size,
+                                **self.dat_kwargs)
   
   def make_model(self):
     """Create and compile the model."""
@@ -214,7 +210,6 @@ class Artifice:
       num_annotated=self.num_annotated)
     return learner
   
-  
 def cmd_convert(art):
   """Standardize input data."""
   labels = np.load(art.labels_path)
@@ -224,14 +219,16 @@ def cmd_convert(art):
 
   # over unlabeled set
   logger.info(f"writing unlabeled set to '{art.unlabeled_set_path}'...")
-  writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
+  unlabeled_writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
+  labeled_writer = tf.python_io.TFRecordWriter(art.labeled_set_path)
   annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
   for i in range(art.unlabeled_size):
     if i % 100 == 0:
       logger.info(f"writing {i} / {art.unlabeled_size}")
     image_path, label = next(example_iterator)
     image = img.open_as_array(image_path)
-    writer.write(dat.proto_from_image(image))
+    unlabeled_writer.write(dat.proto_from_image(image))
+    labeled_writer.write(dat.proto_from_example((image, label)))
     if more_annotations and i < art.annotated_size:
       try:
         annotation_path = next(annotation_iterator)
@@ -240,8 +237,9 @@ def cmd_convert(art):
         annotated_writer.write(dat.proto_from_scene(scene))
       except StopIteration:
         more_annotations = False
+  unlabeled_writer.close()
+  labeled_writer.close()
   annotated_writer.close()
-  writer.close()
   logger.info("finished")
   logger.info(f"wrote {i + 1} unlabeled images")
   
@@ -273,24 +271,22 @@ def cmd_convert(art):
   logger.info("finished")
   logger.info(f"wrote {i + 1} test examples")
 
-
-def cmd_augment(art):
-  """Run augmentation of the unlabeled set. 
-
-  If `art.show`, then show the new examples, otherwise, save the augmented
-  train_set.
-
-  """
-  annotated_set = art.load_annotated()
-  get_next = annotated_set.fielded.make_one_shot_iterator().get_next()
-  with tf.Session() as sess:
-    while True:
-      images, fields = sess.run(get_next)
-      for image, field in zip(images, fields):
-        vis.plot_image(image, field)
-        plt.show()
-
-def cmd_train(art):
+  
+def cmd_labeled(art):
+  """Run classic supervised training from the fully-labeled data."""
+  model = art.load_model()
+  unlabeled_set, validation_set, test_set = art.load_data()
+  labeled_set = art.load_labeled()
+  model.fit(
+    labeled_set.training_input,
+    epochs=art.epochs,
+    steps_per_epoch=art.train_steps,
+    validation_data=validation_set.eval_input,
+    validation_steps=art.validation_steps,
+    verbose=art.keras_verbose)
+  
+def cmd_augmented(art):
+  """Run training with just a few original examples, performing augmentation."""
   model = art.load_model()
   unlabeled_set, validation_set, test_set = art.load_data()
   annotated_set = art.load_annotated()
@@ -302,7 +298,8 @@ def cmd_train(art):
     validation_steps=art.validation_steps,
     verbose=art.keras_verbose)
 
-def cmd_learn(art):
+def cmd_learned(art):
+  """Run training with an active learning strategy."""
   learner = art.load_learner()
   unlabeled_set, validation_set, test_set = art.load_data()
   learner.fit(
@@ -397,7 +394,7 @@ def main():
                       default=[1], type=int,
                       help=docs.epochs_help)
   parser.add_argument('--splits', nargs=3,
-                      default=[7000,1000,1000],
+                      default=[10000,1000,1000],
                       type=int,
                       help=docs.splits_help)
   parser.add_argument('--batch-size', '-b', nargs=1,
@@ -444,11 +441,11 @@ def main():
 
   if art.command == 'convert':
     cmd_convert(art)
-  elif art.command == 'augment':
+  elif art.command == 'labeled':
     cmd_augment(art)
-  elif art.command == 'train':
+  elif art.command == 'augmented':
     cmd_train(art)
-  elif art.command == 'learn':
+  elif art.command == 'learned':
     cmd_learn(art)
   elif art.command == 'predict':
     cmd_predict(art)
