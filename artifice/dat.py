@@ -442,10 +442,10 @@ class Data(object):
                        dtype=np.float32)
     positions = np.expand_dims(positions, axis=0) # (1,num_objects,2)
     indices = np.expand_dims(indices, axis=1) # (M*N, 1, 2)
-    distances = np.linalg.norm(indices - positions, axis=2)
-    flat_field = np.reciprocal(np.min(distances, axis=1) + self.eps)
-    inv_thresh = 1. / self.distance_threshold
-    flat_field = np.where(flat_field > inv_thresh, flat_field, 0.)
+    distances = np.min(np.linalg.norm(indices - positions, axis=2), axis=1)
+    flat_field = np.reciprocal(np.square(distances + self.eps))
+    thresh = self.distance_threshold
+    flat_field = np.where(distances < thresh, flat_field, 0.)
     field = np.reshape(flat_field, self.image_shape)
     return field
     
@@ -477,17 +477,16 @@ class Data(object):
     positions = tf.expand_dims(positions, axis=1)
 
     # distances: (batch_size, M*N, num_objects)
-    distances = tf.norm(indices - positions, axis=3)
+    distances = tf.reduce_min(tf.norm(indices - positions, axis=3), axis=2)
     
     # take inverse distance
     eps = tf.constant(self.eps)
-    flat_field = tf.reciprocal(tf.reduce_min(distances, axis=2) + eps)
+    flat_field = tf.square(tf.reciprocal(distances + eps))
 
     # zero the inverse distances outside of threshold
-    inv_thresh = tf.constant(1. / self.distance_threshold, tf.float32,
-                             flat_field.shape)
+    thresh = tf.constant(self.distance_threshold, tf.float32, flat_field.shape)
     zeros = tf.zeros_like(flat_field)
-    flat_field = tf.where(flat_field > inv_thresh, flat_field, zeros)
+    flat_field = tf.where(distances < thresh, flat_field, zeros)
     field = tf.reshape(flat_field, [-1,] + self.image_shape)
     field = tform.restore_image_rank(field, rank=len(label.get_shape()) + 1)
     return field
