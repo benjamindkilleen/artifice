@@ -96,6 +96,7 @@ class Artifice:
     self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
     self.validation_set_path = join(self.data_root, 'validation_set.tfrecord')
     self.test_set_path = join(self.data_root, 'test_set.tfrecord')
+    self.labels_hist_path = join(self.data_root, 'labels_histogram.pdf')
 
     # training set sizes
     self.train_size = self.epoch_size
@@ -154,12 +155,15 @@ class Artifice:
     return oracles.PerfectOracle(
       np.load(self.labels_path), self.annotation_paths)
 
-  dat_kwargs = {'image_shape' : self.image_shape,
-                'tile_shape' : self.tile_shape,
-                'batch_size' : self.batch_size,
-                'num_parallel_calls' : self.cores,
-                'pad' : self.pad,
-                'num_objects' : self.num_objects}
+  @property
+  def dat_kwargs(self):
+    return {'image_shape' : self.image_shape,
+            'tile_shape' : self.tile_shape,
+            'batch_size' : self.batch_size,
+            'num_parallel_calls' : self.cores,
+            'pad' : self.pad,
+            'num_objects' : self.num_objects}
+  
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
     unlabeled_set = dat.UnlabeledData(
@@ -270,6 +274,15 @@ def cmd_convert(art):
   writer.close()
   logger.info("finished")
   logger.info(f"wrote {i + 1} test examples")
+
+
+def cmd_analyze(art):
+  labels = np.load(art.labels_path)
+  vis.plot_labels(labels, art.image_shape)
+  if art.show:
+    plt.show()
+  else:
+    plt.savefig(art.labels_hist_path)
 
   
 def cmd_labeled(art):
@@ -442,19 +455,19 @@ def main():
   if art.command == 'convert':
     cmd_convert(art)
   elif art.command == 'labeled':
-    cmd_augment(art)
+    cmd_labeled(art)
   elif art.command == 'augmented':
-    cmd_train(art)
+    cmd_augmented(art)
   elif art.command == 'learned':
-    cmd_learn(art)
+    cmd_learned(art)
   elif art.command == 'predict':
     cmd_predict(art)
-  elif art.command == 'evaluate':
-    cmd_evaluate(art)
   elif art.command == 'detect':
     cmd_detect(art)
   elif art.command == 'visualize':
     cmd_visualize(art)
+  elif art.command == 'analyze':
+    cmd_analyze(art)
   else:
     logger.error(f"No command '{args.command}'.")
 

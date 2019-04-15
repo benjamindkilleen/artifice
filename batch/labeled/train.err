@@ -1,0 +1,8 @@
+INFO:artifice:<run 'labeled'>
+INFO:artifice:model: model
+2019-04-15 11:43:51.650448: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-15 11:43:51.903305: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:09:00.0
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2019-04-15 11:43:51.903367: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0

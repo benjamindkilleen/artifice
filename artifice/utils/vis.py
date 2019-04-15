@@ -50,3 +50,16 @@ def plot_detection(label, detection, *images, n=1):
   axes.flat[0].legend(loc='upper left')
   fig.suptitle('Object Detection')
   return fig, axes
+
+def plot_labels(labels, image_shape):
+  fig, axes = plt.subplots(1, labels.shape[1])
+  for i in range(labels.shape[1]):
+    axes[i].hist2d(labels[:,i,2], labels[:,i,1],
+                   bins=[image_shape[1],image_shape[0]],
+                   range=[[0,image_shape[1]],[0,image_shape[0]]],
+                   normed=True)
+    axes[i].set_ylim(image_shape[0],0)
+    axes[i].axis('off')
+    axes[i].set_aspect('equal')
+    axes[i].set_title(f"Object '{int(labels[0,i,0])}'")
+  fig.suptitle('Object Positions')
