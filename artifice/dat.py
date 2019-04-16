@@ -417,15 +417,20 @@ class Data(object):
   def dataset(self):
     return self._dataset
 
-  def preprocess(self, dataset):
+  def preprocess(self, dataset, training=False):
     """Responsible for converting dataset to well-shuffled (image, label) form.
 
     Can be overwritten by subclasses to perform augmentation."""
-    return dataset.shuffle(self.num_shuffle).batch(self.batch_size, drop_remainder=True)
+    if training:
+      dataset = dataset.shuffle(self.num_shuffle)
+    return dataset.batch(self.batch_size, drop_remainder=True)
 
-  @property
-  def preprocessed(self):
-    return self.preprocess(self.dataset)
+  def postprocess(self, dataset, training=False):
+    return (dataset.repeat(-1)
+            .prefetch(self.prefetch_buffer_size))
+
+  def preprocessed(self, training=False):
+    return self.preprocess(self.dataset, training=training)
 
   def to_numpy_field(self, label):
     """Create a distance annotation with numpy `label`.
@@ -509,11 +514,11 @@ class Data(object):
     label[:coords.shape[0],0] = np.arange(coords.shape[0])
     return label
   
-  @property
-  def fielded(self):
+  def fielded(self, training=False):
     def map_func(image, label):
       return image, self.to_field(label)
-    return self.preprocessed.map(map_func, self.num_parallel_calls)
+    return (self.preprocessed(training=training)
+            .map(map_func, self.num_parallel_calls))
 
   @property
   def visualized(self):
@@ -521,37 +526,50 @@ class Data(object):
       return image, self.to_field(label), label
     return self.dataset.map(map_func, self.num_parallel_calls)
 
-  @property
-  def tiled(self):
+  def tile(self, images, fields):
     """Tile the batched, fielded dataset."""
+    fields = tf.pad(fields, [
+      [0,0],
+      [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
+      [0,self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
+      [0,0]], 'REFLECT')
+    images = tf.pad(images, [
+      [0,0],
+      [self.pad,
+       self.pad + self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
+      [self.pad,
+       self.pad + self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
+      [0,0]], 'REFLECT')
+    image_tiles = []
+    field_tiles = []
+    for b in range(self.batch_size):
+      for i in range(0, self.image_shape[0], self.tile_shape[0]):
+        for j in range(0, self.image_shape[1], self.tile_shape[1]):
+          image_tiles.append(images[
+            b, i:i + self.tile_shape[0] + 2*self.pad,
+            j:j + self.tile_shape[1] + 2*self.pad])
+          field_tiles.append(fields[
+            b, i:i + self.tile_shape[0],
+            j:j + self.tile_shape[1]])
+          
+    out = tf.stack(image_tiles), tf.stack(field_tiles)
+    logger.debug(f"tiled: {out}")
+    return out
+
+  def tiled(self, training=False):
     def map_func(images, fields):
-      fields = tf.pad(fields, [
-        [0,0],
-        [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
-        [0,self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
-        [0,0]], 'REFLECT')
-      images = tf.pad(images, [
-        [0,0],
-        [self.pad, self.pad + self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
-        [self.pad, self.pad + self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
-        [0,0]], 'REFLECT')
-      image_tiles = []
-      field_tiles = []
-      for b in range(self.batch_size):
-        for i in range(0, self.image_shape[0], self.tile_shape[0]):
-          for j in range(0, self.image_shape[1], self.tile_shape[1]):
-            image_tiles.append(images[
-              b, i:i + self.tile_shape[0] + 2*self.pad,
-              j:j + self.tile_shape[1] + 2*self.pad])
-            field_tiles.append(fields[
-              b, i:i + self.tile_shape[0],
-              j:j + self.tile_shape[1]])
+      return self.tile(images, fields)
+    return (self.fielded(training=training)
+            .map(map_func, num_parallel_calls=self.num_parallel_calls))
 
-      out = tf.stack(image_tiles), tf.stack(field_tiles)
-      logger.debug(f"tiled: {out}")
-      return out
-    return self.fielded.map(map_func, num_parallel_calls=self.num_parallel_calls)
+  @property
+  def training_input(self):
+    return self.postprocess(self.tiled(training=True), training=True)
 
+  @property
+  def eval_input(self):
+    return self.postprocess(self.tiled(training=False), training=False)
+  
   def untile_single(self, tiles):
     """Untile from `self.num_tiles` numpy tiles, corresponding to single image.
 
@@ -588,7 +606,6 @@ class Data(object):
     :param tiles: array of batch-ordered tiles, outer dimension (number of
     tiles) must be a multiple of `batch_size * num_tiles`.
     :returns: array of corresponding images.
-
     """
 
     logger.debug(f"tiles: {tiles.shape}, num_tiles: {self.num_tiles}, "
@@ -601,22 +618,6 @@ class Data(object):
     for i in range(images.shape[0]):
       images[i] = self.untile_single(tiles[step*i : step*i + step])
     return images
-
-  def postprocess_for_training(self, dataset):
-    return (dataset.repeat(-1)
-            .prefetch(self.prefetch_buffer_size))
-
-  def postprocess_for_evaluation(self, dataset):
-    return (dataset.repeat(-1)
-            .prefetch(self.prefetch_buffer_size))
-
-  @property
-  def training_input(self):
-    return self.postprocess_for_training(self.tiled)
-
-  @property
-  def eval_input(self):
-    return self.postprocess_for_evaluation(self.tiled)
 
 
 class UnlabeledData(Data):
@@ -635,8 +636,15 @@ class UnlabeledData(Data):
 
     accumulators = {}
 
-  def preprocess(self, dataset):
-    """Responsible for converting dataset to batched `(image, dummy_label)` form."""
+  def preprocess(self, dataset, training=True):
+    """Responsible for converting dataset to batched `(image, dummy_label)` form.
+
+    :param dataset: the dataset
+    :param training: asserted True, otherwise ignored (maintained for
+    compatibility)
+
+    """
+    assert training
     def map_func(image):
       return image, tf.zeros(self.label_shape, tf.float32, name='dummy')
     dataset = dataset.map(map_func, self.num_parallel_calls)
@@ -814,8 +822,14 @@ class AugmentationData(Data):
     
     return zip_set.map(map_func, self.num_parallel_calls)
       
-  def preprocess(self, dataset):
-    """Call the augment function."""
+  def preprocess(self, dataset, training=True):
+    """Call the augment function.
+
+    :param dataset: the dataset
+    :param training: asserted True, maintained for compatibility
+
+    """
+    assert training
     dataset = dataset.repeat(-1).batch(self.batch_size, drop_remainder=True)
     return self.augment(dataset)
   

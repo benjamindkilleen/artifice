@@ -328,7 +328,7 @@ def cmd_predict(art):
   unlabeled_set, validation_set, test_set = art.load_data()
   predictions = model.full_predict(test_set, steps=1, verbose=art.keras_verbose)
   if art.show and tf.executing_eagerly():
-    for i, (prediction, example) in enumerate(zip(predictions, test_set.fielded)):
+    for i, (prediction, example) in enumerate(zip(predictions, test_set.fielded())):
       image, field = example
       vis.plot_image(image, field, prediction)
       plt.show()

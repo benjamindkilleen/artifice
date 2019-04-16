@@ -564,8 +564,65 @@ INFO:artifice:maximum error: 418.25
 
 For "learned":
 ```
-
+INFO:artifice:average error: 100.21
+INFO:artifice:error std: 70.95
+INFO:artifice:minimum error: 0.52
+INFO:artifice:maximum error: 430.97
 ```
 
 This is obviously a bug that's been introduced, possibly with the new fielding
 strategy? (1/r^2 as opposed to 1/r).
+
+Looking at the video results, it's obvious that the error here is not with the
+actual model but rather the untiling process. Obviously a bug introduced with
+that. Still figuring it out. But the good news is, choosing the sharper field
+seems to result in actually sharper outputs.
+
+### Fixed
+
+Oh, I'm dumb. I was shuffling the test inputs, so of course it
+failed. Spectacularly. After fixing this bug, we have:
+
+
+For "labeled":
+```
+INFO:artifice:average error: 0.49
+INFO:artifice:error std: 0.43
+INFO:artifice:minimum error: 0.02
+INFO:artifice:maximum error: 6.26
+```
+
+For "augmented":
+```
+INFO:artifice:average error: 1.61
+INFO:artifice:error std: 1.35
+INFO:artifice:minimum error: 0.03
+INFO:artifice:maximum error: 8.70
+```
+
+For "learned":
+```
+INFO:artifice:average error: 1.27
+INFO:artifice:error std: 0.98
+INFO:artifice:minimum error: 0.03
+INFO:artifice:maximum error: 5.06
+```
+
+Some interpretation: the main source of improved accuracy, I would guess, is the
+change in the field function. This just encourages sharper peaks around the
+center, making life easier for the classical peak-finding algorithm. This is
+interesting becuase it's a combination of modern deep networks with classical
+image analysis. 
+
+Additionally, it should be noted that the "labeled" set had quite a few more
+epochs to train. Of course, its relative accuracy is not a huge source of
+concern, since we achieve comparable performance with much fewer human
+annotation. This is the chicken and the egg problem: goal is to analyze the data
+quickly, but to train a model to analyze it, we already need analyzed
+data. Augmentation solves this somewhat, active learning even better.
+
+Just for kicks, going to knock off the last few epochs of training, bring the
+labeled set back to twelve, and see how it does.
+
+Notably, the "learned" stratgy has a lower maximum error, but the std isn't as
+good as labeled.
