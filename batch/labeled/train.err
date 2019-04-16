@@ -6,3 +6,8 @@ name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
 pciBusID: 0000:09:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
 2019-04-15 11:43:51.903367: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-15 11:44:27.031305: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-15 11:44:27.033612: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-15 11:44:27.033638: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-15 11:44:27.033996: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+slurmstepd-midway2-gpu05: error: *** JOB 59455645 ON midway2-gpu05 CANCELLED AT 2019-04-16T03:43:48 DUE TO TIME LIMIT ***

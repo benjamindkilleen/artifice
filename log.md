@@ -539,3 +539,33 @@ INFO:artifice:minimum error: 0.03
 INFO:artifice:maximum error: 7.43
 ```
 about the same as above.
+
+## April 16, 2019: Results from labeled, augmented, and learned methods.
+
+Each trained for 16 hours, but the labeled training was somewhat quicker. In
+that time, it managed to train for 18 epochs, while augmented trained for 13,
+and learned for 12. 
+
+For "labeled":
+```
+INFO:artifice:average error: 100.06
+INFO:artifice:error std: 69.18
+INFO:artifice:minimum error: 0.26
+INFO:artifice:maximum error: 383.96
+```
+
+For "augmented":
+```
+INFO:artifice:average error: 102.16
+INFO:artifice:error std: 71.51
+INFO:artifice:minimum error: 0.28
+INFO:artifice:maximum error: 418.25
+```
+
+For "learned":
+```
+
+```
+
+This is obviously a bug that's been introduced, possibly with the new fielding
+strategy? (1/r^2 as opposed to 1/r).
