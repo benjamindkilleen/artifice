@@ -18,7 +18,7 @@
 \DeclareMathOperator{\vol}{Vol}
 \DeclareMathOperator{\argmax}{argmax}
 
-\title{Confronting Data Scarcity for Object Detection in Scientific Images}
+\title{Active Image Analysis for Point-based Object Detection}
 
 \author{Benjamin Killeen and Gordon Kindlmann %
   \thanks{Benjamin Killeen is an undergraduate with the Department of Computer
@@ -33,6 +33,8 @@
 \maketitle
 
 \begin{abstract}
+  % TODO: rewrite
+  
   Recently, deep convolutional neural networks (DCNNs) have enabled remarkable
   progress in computer vision tasks. Given this success, we consider the
   application of DCNNs to image analysis in scientific experiments, which
@@ -51,6 +53,23 @@
 
 \section{Introduction}
 \label{sec:introduction}
+
+\section{Related Work}
+\label{sec:related-work}
+
+% 
+
+\section{Method}
+\label{sec:method}
+
+\section{Results}
+\label{sec:results}
+
+
+
+% Old shit:
+\section{Original Introduction}
+\label{sec:orig-intr}
 
 % TODO: Labeling is perhaps a bad word, limiting to classification. Analysis is
 % the word that we might be looking for. Real-valued multivariate descriptions
@@ -94,9 +113,7 @@ also undesirable non-uniformity, resulting from general principles.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\linewidth]{free_fall}
-  \caption{An object in free fall \cite{duquevieira_simple_2012}. (PLACEHOLDER
-    IMAGE)}
+  \caption{PLACEHOLDER: illustrate uneven distribution in experiments}
   \label{fig:free-fall}
 \end{figure}
 
@@ -123,23 +140,15 @@ $y$.
 \begin{figure*}
   \centering
   \subfloat[]{
-    \includegraphics[width=0.46\linewidth]{traditional_graph}
     \label{fig:traditional-graph}
   }
   \hfill
   \subfloat[]{
-    \includegraphics[width=0.50\linewidth]{artifice_graph}
     \label{fig:artifice-graph}
   }
-  \caption{During supervised learning for real-world vision tasks \textbf{(a)},
-    a camera samples a large dataset $X$ from the ``visual world'' distribution
-    $f$. For scientific tasks \textbf{(b)}, an experiment samples a small
-    initial dataset $X_0$ from the natural distribution $f_n$, which includes
-    the effects of any governing principles. Our proposed training method
-    incorporates a boundary-aware augmenter $A$, which uses the training set
-    $(X,Y)$ to simulate drawing examples from the agnostic distribution
-    $f_a$. Dashed lines indicate theoretical or simulated objects.}
-  \label{fig:dependency-graphs}
+  \caption{PLACEHOLDER: figure comparing our method with traditional or even
+    augmented learning.}
+  \label{fig:overview}
 \end{figure*}
 
 Unfortunately, a DCNN can incorporate that distribution into its parameters
@@ -288,12 +297,10 @@ $X_a \sim f_a$.
 \begin{figure}
   \centering
   \subfloat[Gyroscopic Model]{
-    \includegraphics[height=0.37\linewidth]{gyros}
     \label{fig:gyros}
   }
   \hfill
   \subfloat[Coupled Spheres]{
-    \includegraphics[height=0.37\linewidth]{coupled_spheres}
     \label{fig:coupled-spheres}
   }
   \caption[example experiments]{Example images from scientific experiments:
@@ -356,11 +363,8 @@ frame to the next, within some reasonable maximum.
 \section*{Acknowledgment}
 \label{sec:acknowledgment}
 
-Thanks to Michael Maire for input and guidance, as well as William Irvine for
-access to image data from his laboratory.
-
 \bibliographystyle{IEEEtran}
-\bibliography{report}
+\bibliography{artifice}
 
 \end{document}
 %%% Local Variables:
