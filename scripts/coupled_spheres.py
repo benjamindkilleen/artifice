@@ -116,7 +116,7 @@ def calculate_acceleration(x1, x2):
     if mag_l > 0:
       mag_F = attractor(mag_l)
       l_hat = l / mag_l
-      a2 -= mag_F * l_hat / m2
+      a2 += mag_F * l_hat / m2
   return a1, a2
 
 
