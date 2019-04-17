@@ -34,7 +34,7 @@ num_classes = 3                          # including background
 
 # Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
-r1 = 10              # radius (cm)
+r1 = 5                          # radius (cm)
 m1 = 1               # mass (kg)
 x1 = 50              # initial x position (cm)
 y1 = 0               # initial y position
@@ -42,7 +42,7 @@ vx1 = -30            # initial x velocity (cm/s)
 vy1 = 100            # initial y velocity
 
 # ball 2
-r2 = 30
+r2 = 15
 m2 = 27
 x2 = 0
 y2 = 0
