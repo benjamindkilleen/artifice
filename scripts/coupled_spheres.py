@@ -54,8 +54,8 @@ k = 15                               # Hooke's constant (N / m)
 relaxed_length = image_shape[0] / 2. # For Hooke's law (cm)
 minimum_length = r1 + r2             # Nonlinear boundary of spring (cm)
 
-# tether parameters
-tether_center = np.array(image_shape, np.float64) / 2.
+# attractor/tether parameters
+attractor_center = np.zeros(2, np.float64)
 
 # Add walls at the boundary of the image plane
 do_walls = True                # TODO: fix this behavior
@@ -89,7 +89,7 @@ def spring(l):
 
 # attractor:
 attractor_relaxed = 0
-attractor_k = 25
+attractor_k = 15.
 def attractor(l):
   """Return a spring-like force as a function of mag_l
 
@@ -111,7 +111,7 @@ def calculate_acceleration(x1, x2):
   a1 = mag_F * l_hat / m1
   a2 = -mag_F * l_hat / m2
   if tether:
-    l = x2 - tether_center
+    l = x2 - attractor_center
     mag_l = np.linalg.norm(l)
     mag_F = attractor(mag_l)
     l_hat = l / mag_l
