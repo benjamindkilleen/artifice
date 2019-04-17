@@ -640,11 +640,9 @@ class UnlabeledData(Data):
     """Responsible for converting dataset to batched `(image, dummy_label)` form.
 
     :param dataset: the dataset
-    :param training: asserted True, otherwise ignored (maintained for
-    compatibility)
+    :param training: otherwise ignored (maintained for compatibility)
 
     """
-    assert training
     def map_func(image):
       return image, tf.zeros(self.label_shape, tf.float32, name='dummy')
     dataset = dataset.map(map_func, self.num_parallel_calls)
@@ -829,7 +827,6 @@ class AugmentationData(Data):
     :param training: asserted True, maintained for compatibility
 
     """
-    assert training
     dataset = dataset.repeat(-1).batch(self.batch_size, drop_remainder=True)
     return self.augment(dataset)
   
