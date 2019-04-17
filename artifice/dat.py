@@ -532,14 +532,14 @@ class Data(object):
       [0,0],
       [0,self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
       [0,self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
-      [0,0]], 'REFLECT')
+      [0,0]], 'CONSTANT')
     images = tf.pad(images, [
       [0,0],
       [self.pad,
        self.pad + self.image_shape[0] - (self.image_shape[0] % self.tile_shape[0])],
       [self.pad,
        self.pad + self.image_shape[1] - (self.image_shape[1] % self.tile_shape[1])],
-      [0,0]], 'REFLECT')
+      [0,0]], 'CONSTANT')
     image_tiles = []
     field_tiles = []
     for b in range(self.batch_size):

@@ -17,24 +17,26 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 400                   # 12000 frames, at 30fps
+seconds = 1 # 400                   # 12000 frames, at 30fps
+tether = True                  # Tether the (large) ball to center.
 
 # dataset parameters
-root = "data/coupled_spheres/"  # root dir for fname
-fps = 30                        # frame rate of the video
-frame_step = 1/float(fps)       # time per frame (DERIVED)
-steps_per_frame = 1             # number of simulated time steps per frame
+root = "data/coupled_spheres{}/".format(
+  "_tethered" if tether else "") # root dir for fname
+fps = 30                         # frame rate of the video
+frame_step = 1/float(fps)        # time per frame (DERIVED)
+steps_per_frame = 5              # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'png', 'mp4'}          # output formats
-image_shape = (388, 388)                 # image shape
+image_shape = (196, 196)                 # image shape
 num_classes = 3                          # including background
 
 # Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
 r1 = 10              # radius (cm)
 m1 = 1               # mass (kg)
-x1 = 150             # initial x position (cm)
+x1 = 50              # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = -30            # initial x velocity (cm/s)
 vy1 = 100            # initial y velocity
@@ -51,6 +53,9 @@ vy2 = 0
 k = 15                          # Hooke's constant (N / m)
 relaxed_length = 200            # For Hooke's law (cm)
 minimum_length = r1 + r2        # Nonlinear boundary of spring (cm)
+
+# tether parameters
+tether_center = np.array(image_shape, np.float64) / 2.
 
 # Add walls at the boundary of the image plane
 do_walls = True                # TODO: fix this behavior
@@ -82,6 +87,17 @@ def spring(l):
   
   return -k * (l - l_relaxed) + lower_boundary
 
+# attractor:
+attractor_relaxed = 0
+def attractor(l):
+  """Return a spring-like force as a function of mag_l
+
+  :param l: distance from object to attractor, in meters
+  :returns: attractive force in Newtons
+
+  """
+  return -k * (l - attractor_relaxed)
+
 
 def calculate_acceleration(x1, x2):
   """Calculate the accelerations of the system from equations of motion, given
@@ -93,8 +109,13 @@ def calculate_acceleration(x1, x2):
   l_hat = l / mag_l
   a1 = mag_F * l_hat / m1
   a2 = -mag_F * l_hat / m2
+  if tether:
+    l = x2 - tether_center
+    mag_l = np.linalg.norm(l)
+    mag_F = attractor(mag_l)
+    l_hat = l / mag_l
+    a2 -= mag_F
   return a1, a2
-
 
 def impose_walls():
   """Impose the walls at the boundary of the image_plane on the CURRENT state of

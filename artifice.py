@@ -398,7 +398,7 @@ def main():
   parser.add_argument('--overwrite', '-f', action='store_true',
                       help=docs.overwrite_help)
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3,
-                      type=int, default=[388, 388, 1],
+                      type=int, default=[196,196,1],
                       help=docs.image_shape_help)
   parser.add_argument('--tile-shape', nargs=3,
                       type=int, default=[196,196,1],
