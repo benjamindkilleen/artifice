@@ -113,10 +113,12 @@ def calculate_acceleration(x1, x2):
   if tether:
     l = x2 - attractor_center
     mag_l = np.linalg.norm(l)
-    mag_F = attractor(mag_l)
-    l_hat = l / mag_l
-    a2 -= mag_F
+    if mag_l > 0:
+      mag_F = attractor(mag_l)
+      l_hat = l / mag_l
+      a2 -= mag_F * l_hat / m2
   return a1, a2
+
 
 def impose_walls():
   """Impose the walls at the boundary of the image_plane on the CURRENT state of
