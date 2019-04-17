@@ -1,20 +1,41 @@
 INFO:artifice:<run 'augmented'>
 INFO:artifice:model: model
-2019-04-15 11:43:53.438195: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-15 11:43:53.647808: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+2019-04-16 16:38:56.058828: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-16 16:38:56.277623: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:89:00.0
+pciBusID: 0000:08:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-15 11:43:53.647877: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-15 11:44:27.011160: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-15 11:44:27.014089: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-15 11:44:27.014117: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-15 11:44:27.014533: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
+2019-04-16 16:38:56.277703: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-16 16:39:46.609443: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-16 16:39:46.609487: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-16 16:39:46.609501: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-16 16:39:46.609832: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
-2019-04-15 11:45:13.438456: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-15 11:45:13.440537: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-15 11:45:13.440560: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-15 11:45:13.440570: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-15 11:45:13.440891: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-slurmstepd-midway2-gpu05: error: *** JOB 59455647 ON midway2-gpu05 CANCELLED AT 2019-04-16T03:43:48 DUE TO TIME LIMIT ***
+2019-04-16 16:40:36.241371: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-16 16:40:36.241494: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-16 16:40:36.241523: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-16 16:40:36.241532: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-16 16:40:36.241807: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+Traceback (most recent call last):
+  File "artifice.py", line 475, in <module>
+    main()
+  File "artifice.py", line 460, in main
+    cmd_augmented(art)
+  File "artifice.py", line 312, in cmd_augmented
+    verbose=art.keras_verbose)
+  File "/project2/glk/artifice/artifice/mod.py", line 128, in fit
+    return self.model.fit(*args, **kwargs)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/site-packages/tensorflow/python/keras/engine/training.py", line 1639, in fit
+    validation_steps=validation_steps)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/site-packages/tensorflow/python/keras/engine/training_arrays.py", line 154, in fit_loop
+    outs = f(ins)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/site-packages/tensorflow/python/keras/backend.py", line 2986, in __call__
+    run_metadata=self.run_metadata)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/site-packages/tensorflow/python/client/session.py", line 1439, in __call__
+    run_metadata_ptr)
+  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.12.0/lib/python3.6/site-packages/tensorflow/python/framework/errors_impl.py", line 528, in __exit__
+    c_api.TF_GetCode(self.status.status))
+tensorflow.python.framework.errors_impl.NotFoundError: data/coupled_spheres/annotated_set.tfrecord; No such file or directory
+	 [[{{node IteratorGetNext_1}} = IteratorGetNext[output_shapes=[[16,284,284,1], [16,196,196,1]], output_types=[DT_FLOAT, DT_FLOAT], _device="/job:localhost/replica:0/task:0/device:CPU:0"](IteratorV2_1)]]
+	 [[{{node training/TFOptimizer/gradients/loss/conv2d_14_loss/Mean_1_grad/Fill/_396}} = _HostSend[T=DT_INT32, client_terminated=false, recv_device="/job:localhost/replica:0/task:0/device:GPU:0", send_device="/job:localhost/replica:0/task:0/device:GPU:0", send_device_incarnation=1, tensor_name="edge_1774_training/TFOptimizer/gradients/loss/conv2d_14_loss/Mean_1_grad/Fill", _device="/job:localhost/replica:0/task:0/device:GPU:0"](training/TFOptimizer/gradients/loss/conv2d_14_loss/Mean_1_grad/Fill)]]
