@@ -18,7 +18,7 @@ logger = logging.getLogger('experiment')
 # Main parameters
 debug = False
 seconds = 1 # 400                   # 12000 frames, at 30fps
-tether = True                  # Tether the (large) ball to center.
+tether = False                  # Tether the (large) ball to center.
 
 # dataset parameters
 root = "data/coupled_spheres{}/".format(
@@ -50,9 +50,9 @@ vx2 = 0
 vy2 = 0
 
 # Spring parameters
-k = 15                          # Hooke's constant (N / m)
-relaxed_length = 200            # For Hooke's law (cm)
-minimum_length = r1 + r2        # Nonlinear boundary of spring (cm)
+k = 15                               # Hooke's constant (N / m)
+relaxed_length = image_shape[0] / 2. # For Hooke's law (cm)
+minimum_length = r1 + r2             # Nonlinear boundary of spring (cm)
 
 # tether parameters
 tether_center = np.array(image_shape, np.float64) / 2.
