@@ -1,9 +1,8 @@
-"""Create a dataset of two spheres coupled by an invisible spring, floating
-without gravity. Outputs a tfrecord in data/coupled_spheres. (Should be run from
-$ARTIFICE)
+"""Create a dataset of two spheres that walk regularly along the image plane,
+separated, with some step size between each one. Useful for a test-set.
 
-# TODO: add realistic physics simulation as in
-https://gist.github.com/Zulko/f828b38421dfbee59daf, using package 'ode'.
+Each "time step" is just a shift over. "steps_per_frame" is useful for skipping
+by a few pixels at a time.
 
 """
 
@@ -17,17 +16,13 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 300                   # 9000 frames, at 30fps
-tether = False                  # Tether the (large) ball to center.
 
 # dataset parameters
-root = "data/coupled_spheres{}/".format(
-  "_tethered" if tether else "") # root dir for fname
+root = "data/waltzing_spheres/"  # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
-steps_per_frame = 5              # number of simulated time steps per frame
+steps_per_frame = 4              # number of time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
-N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'png', 'mp4'}          # output formats
 image_shape = (196, 196)                 # image shape
 num_classes = 3                          # including background
@@ -35,125 +30,20 @@ num_classes = 3                          # including background
 # Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
 r1 = 5                          # radius (cm)
-m1 = 1               # mass (kg)
-x1 = 50              # initial x position (cm)
-y1 = 0               # initial y position
-vx1 = -30            # initial x velocity (cm/s)
-vy1 = 100            # initial y velocity
+x1 = 0                          # initial x position (cm)
+y1 = 0                          # initial y position
 
 # ball 2
 r2 = 15
-m2 = 27
 x2 = 0
 y2 = 0
-vx2 = 0
-vy2 = 0
-
-# Spring parameters
-k = 15                               # Hooke's constant (N / m)
-relaxed_length = image_shape[0] / 2. # For Hooke's law (cm)
-minimum_length = r1 + r2             # Nonlinear boundary of spring (cm)
-
-# attractor/tether parameters
-attractor_center = np.zeros(2, np.float64)
-
-# Add walls at the boundary of the image plane
-do_walls = True                # TODO: fix this behavior
 
 #################### CONFIGURABLE OPTIONS ABOVE ####################
 
-# spring:
-l_relaxed = relaxed_length / 100.
-l_min = minimum_length / 100.
-def spring(l):
-  """
-  :param l: distance between masses, in meters
-
-  Return the force in Newtons exerted by the spring as a function of its length
-  `l`. Negative force is attractive, positive repulsive. In center-of-mass polar
-  coordinates, this should be (will be) a radial force.
-
-  In the small-displacement approximation, this should be a linear relation
-  according to Hooke's law. This function allows us to encode non-linearities in
-  the forces, in case I want to expand the simulation to do that.
-
-  """
-
-  # Prevent occlusion, possibly.
-  if l > l_min:
-    lower_boundary = 0.1 / np.square(l - l_min) # coefficient may require tuning.
-  else:
-    lower_boundary = 10000      # Shouldn't happen, if above tuned correctly
-  
-  return -k * (l - l_relaxed) + lower_boundary
-
-# attractor:
-attractor_relaxed = 0
-attractor_k = 15.
-def attractor(l):
-  """Return a spring-like force as a function of mag_l
-
-  :param l: distance from object to attractor, in meters
-  :returns: attractive force in Newtons
-
-  """
-  return -attractor_k * (l - attractor_relaxed)
-
-
-def calculate_acceleration(x1, x2):
-  """Calculate the accelerations of the system from equations of motion, given
-  position vectors x1 and x2 for the two spheres.
-  """
-  l = x1 - x2
-  mag_l = np.linalg.norm(l)
-  mag_F = spring(mag_l)
-  l_hat = l / mag_l
-  a1 = mag_F * l_hat / m1
-  a2 = -mag_F * l_hat / m2
-  if tether:
-    l = x2 - attractor_center
-    mag_l = np.linalg.norm(l)
-    if mag_l > 0:
-      mag_F = attractor(mag_l)
-      l_hat = l / mag_l
-      a2 += mag_F * l_hat / m2
-  return a1, a2
-
-
-def impose_walls():
-  """Impose the walls at the boundary of the image_plane on the CURRENT state of
-  the system.
-  `walls` consists of top, left, bottom, right bounds.
-  """
-  if not do_walls:
-    return
-
-  global current, walls
-  for objNum in ['1', '2']:
-    xk = 'x' + objNum
-    vk = 'v' + objNum
-    if current[xk][0] < walls[1]:
-      logger.debug(f"bouncing off left wall at {walls[1]}")
-      current[xk][0] = 2*walls[1] - current[xk][0]
-      current[vk][0] *= -1
-    if current[xk][0] > walls[3]:
-      logger.debug(f"bouncing off right wall at {walls[3]}")
-      current[xk][0] = 2*walls[3] - current[xk][0]
-      current[vk][0] *= -1
-    if current[xk][1] > walls[0]:
-      logger.debug(f"bouncing off top wall at {walls[0]}")
-      current[xk][1] = 2*walls[0] - current[xk][1]
-      current[vk][1] *= -1
-    if current[xk][1] < walls[2]:
-      logger.debug(f"bouncing off bottom wall at {walls[2]}")
-      current[xk][1] = 2*walls[2] - current[xk][1]
-      current[vk][1] *= -1
-
-
 def step(n=1):
-  """Update the polar and CM system over n time steps of length dt, using the
-  velocity Verlet algorithm, as on
-  https://en.wikipedia.org/wiki/Verlet_integration
+  """
+
+  :param n: 
 
   """
   global initial, current
@@ -198,6 +88,9 @@ def update_to_step(t):
     step(n = t - step_cnt)
     step_cnt = t
 
+def positions():
+  pass
+    
 # experiment spheres: whichever one is called first updates the global
 # state. Then each of them translates the global state back into cartesian
 # coordinates. Takes the frame number as argument.
