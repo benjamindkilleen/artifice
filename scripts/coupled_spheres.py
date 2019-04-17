@@ -25,7 +25,7 @@ root = "data/coupled_spheres{}/".format(
   "_tethered" if tether else "") # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
-steps_per_frame = 5              # number of simulated time steps per frame
+steps_per_frame = 1              # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'png', 'mp4'}          # output formats
