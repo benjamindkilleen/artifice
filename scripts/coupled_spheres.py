@@ -17,8 +17,8 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 300                   # 9000 frames, at 30fps
-tether = False                  # Tether the (large) ball to center.
+seconds = 400                   # 12000 frames, at 30fps
+tether = True                   # Tether the (large) ball to center.
 
 # dataset parameters
 root = "data/coupled_spheres{}/".format(
@@ -38,8 +38,8 @@ r1 = 5                          # radius (cm)
 m1 = 1               # mass (kg)
 x1 = 50              # initial x position (cm)
 y1 = 0               # initial y position
-vx1 = -30            # initial x velocity (cm/s)
-vy1 = 100            # initial y velocity
+vx1 = -20            # initial x velocity (cm/s)
+vy1 = 40             # initial y velocity
 
 # ball 2
 r2 = 15
@@ -50,7 +50,7 @@ vx2 = 0
 vy2 = 0
 
 # Spring parameters
-k = 15                               # Hooke's constant (N / m)
+k = 10                               # Hooke's constant (N / m)
 relaxed_length = image_shape[0] / 2. # For Hooke's law (cm)
 minimum_length = r1 + r2             # Nonlinear boundary of spring (cm)
 

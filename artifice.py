@@ -105,7 +105,7 @@ class Artifice:
     self.labeled_size = self.splits[0]
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
-
+    
     # number of steps per epochs
     self.train_steps = int(np.ceil(self.epoch_size / self.batch_size))
     self.validation_steps = int(np.ceil(self.validation_size / self.batch_size))
@@ -217,6 +217,7 @@ class Artifice:
 def cmd_convert(art):
   """Standardize input data."""
   labels = np.load(art.labels_path)
+  logger.debug(art.image_paths, labels)
   example_iterator = zip(art.image_paths, labels)
   annotation_iterator = iter(art.annotation_paths)
   more_annotations = True
@@ -226,6 +227,7 @@ def cmd_convert(art):
   unlabeled_writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
   labeled_writer = tf.python_io.TFRecordWriter(art.labeled_set_path)
   annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
+  i = -1
   for i in range(art.unlabeled_size):
     if i % 100 == 0:
       logger.info(f"writing {i} / {art.unlabeled_size}")
@@ -245,7 +247,7 @@ def cmd_convert(art):
   labeled_writer.close()
   annotated_writer.close()
   logger.info("finished")
-  logger.info(f"wrote {i + 1} unlabeled images")
+  logger.info(f"wrote {i+1} unlabeled images")
   
   # Collect the validation set
   logger.info(f"writing validation set to '{art.validation_set_path}'...")
@@ -259,7 +261,7 @@ def cmd_convert(art):
     writer.write(dat.proto_from_example(example))
   writer.close()
   logger.info("finished")
-  logger.info(f"wrote {i + 1} validation examples")
+  logger.info(f"wrote {i+1} validation examples")
 
   # Collect the test set
   logger.info(f"writing validation set to '{art.test_set_path}'...")
@@ -273,7 +275,7 @@ def cmd_convert(art):
     writer.write(dat.proto_from_example(example))
   writer.close()
   logger.info("finished")
-  logger.info(f"wrote {i + 1} test examples")
+  logger.info(f"wrote {i+1} test examples")
 
 
 def cmd_analyze(art):
@@ -362,6 +364,13 @@ def cmd_visualize(art):
   logger.info(f"error std: {errors.std():.02f}")
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
+
+  # visualize the color map of errors
+  vis.plot_errors(labels, errors, art.image_shape)
+  if art.show:
+    plt.show()
+  else:
+    plt.close()
 
   get_next = test_set.dataset.make_one_shot_iterator().get_next()
   writer = vid.MP4Writer(art.detections_video_path)
