@@ -21,89 +21,52 @@ debug = False
 root = "data/waltzing_spheres/"  # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
-steps_per_frame = 4              # number of time steps per frame
-time_step = steps_per_frame * frame_step # delta t for simulation
-output_formats = {'png', 'mp4'}          # output formats
-image_shape = (196, 196)                 # image shape
-num_classes = 3                          # including background
+separation = 4                   # separation between cell-centered samples
+output_formats = {'png', 'mp4'}  # output formats
+image_shape = (196, 196)         # image shape
+num_classes = 3                  # including background
+num_rows = image_shape[0] // separation
+num_cols = image_shape[1] // separation
+N = num_rows * num_cols
 
 # Configure initial parameters. 1 povray unit = 1 cm
 # ball 1 in povray unites
 r1 = 5                          # radius (cm)
-x1 = 0                          # initial x position (cm)
-y1 = 0                          # initial y position
 
 # ball 2
 r2 = 15
-x2 = 0
-y2 = 0
 
 #################### CONFIGURABLE OPTIONS ABOVE ####################
 
-def step(n=1):
+"""
+Given the global index, which is stepping over the spots separated by
+steps_per_frame pixels, calculate the index at which it would be in the image
+and convert that to world-space.
+"""
+
+def compute_position(n, offset=0):
+  """Return the x,y world-space position at step (n + offset) % N.
+
+  :param n: the global step
+  :param offset: offset for the sphere's starting position.
+  :returns: world-space position of sphere.
+  :rtype: 
+
   """
-
-  :param n: 
-
-  """
-  global initial, current
-  dt = time_step
-
-  # Just do cartesian coordinates. Cartesian coordinates are just easier, in
-  # case I have multiple things flying around.
-  while (n > 0):
-    for k in current.keys():
-      initial[k] = current[k]
-
-    # 1. Calculate half-step velocity
-    half_step_v1 = initial['v1'] + 0.5*initial['a1'] * dt
-    half_step_v2 = initial['v2'] + 0.5*initial['a2'] * dt
-
-    # 2. Calculate current position
-    current['x1'] = initial['x1'] + half_step_v1 * dt
-    current['x2'] = initial['x2'] + half_step_v2 * dt
-
-    # 3. Calculate current acceleration
-    current['a1'], current['a2'] = calculate_acceleration(current['x1'],
-                                                          current['x2'])
-
-    # 4. Calculate current velocity
-    current['v1'] = half_step_v1 + 0.5*current['a1'] * dt
-    current['v2'] = half_step_v2 + 0.5*current['a2'] * dt
-
-    # Correct for bouncing off of walls
-    impose_walls()
-
-    logger.debug("position:{},{}".format(current['x1'], current['x2']))
-    n -= 1
-
-    
-global step_cnt
-step_cnt = 0
-def update_to_step(t):
-  """Update to physical time step t (proportional to frame number fn)"""
-  global step_cnt
-  if t > step_cnt:
-    if debug: print("updating to step", t)
-    step(n = t - step_cnt)
-    step_cnt = t
-
-def positions():
-  pass
-    
-# experiment spheres: whichever one is called first updates the global
-# state. Then each of them translates the global state back into cartesian
-# coordinates. Takes the frame number as argument.
-def argsf1(fn):
-  t = steps_per_frame * fn
-  update_to_step(t)
-  x, y = 100 * current['x1']
+  global exp
+  idx = (n + offset) % N
+  i = separation*(idx // num_cols) + separation / 2. + 0.5
+  j = separation*(idx % num_cols) + separation / 2. + 0.5
+  return list(exp.unproject_to_image_plane([i,j]))[:2]
+  
+def argsf1(n):
+  x,y = compute_position(n)
+  # logger.info(f"x1: {x,y}")
   return [x,y,0], r1
 
-def argsf2(fn):
-  t = steps_per_frame * fn      # TODO: fix
-  update_to_step(t)
-  x, y = 100 * current['x2']
+def argsf2(n):
+  x,y = compute_position(n, offset = N // 2)
+  # logger.info(f"x2: {x,y}")
   return [x,y,0], r2
 
 
@@ -112,20 +75,6 @@ def main():
   color = lambda col : vapory.Texture(vapory.Pigment('color', col))
   texture = lambda text : vapory.Texture(text)
   
-  # initial state, in SI units
-  global initial, current
-  initial = {}
-  initial['x1'] = np.array([x1, y1]) / 100.
-  initial['v1'] = np.array([vx1, vy1]) / 100.
-  initial['x2'] = np.array([x2, y2]) / 100.
-  initial['v2'] = np.array([vx2, vy2]) / 100.
-
-  # Calculate initial acceleration with equations of motion
-  initial['a1'], initial['a2'] = calculate_acceleration(initial['x1'],
-                                                        initial['x2'])
-
-  current = initial.copy()
-
   # Begin setup
   s1 = experiment.ExperimentSphere(argsf1, texture('PinkAlabaster'),
                                    semantic_label=1)
@@ -133,6 +82,7 @@ def main():
                                    semantic_label=2)
 
   # experiment
+  global exp
   exp = experiment.Experiment(image_shape=image_shape,
                               num_classes=num_classes,
                               N=N, data_root=root,
@@ -145,17 +95,9 @@ def main():
 
   # Background
   exp.add_object(vapory.Plane([0,0,1], max(r1, r2), texture('Blue_Sky')))
-
-  if do_walls:
-    global walls
-    walls = np.zeros(4)         # top, left, bottom, right
-    walls[:2] = exp.unproject_to_image_plane((0, 0))[:2]
-    walls[2:] = exp.unproject_to_image_plane(image_shape)[:2]
-    walls /= 100.               # convert to meters
-
   exp.add_object(s1)
   exp.add_object(s2)
-
+  
   if debug:
     image, annotation = exp.render_scene(0)
     plt.imshow(image[:,:,0], cmap='gray')

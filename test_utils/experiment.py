@@ -429,10 +429,12 @@ class Experiment:
     return (X / X[3])[:3]
 
   def unproject(self, Xi):
-    """From index space point Xi = [x,y], unproject back into world-space. Due
-    to 3D-2D ambiguity, an image-space corresponds to a ray in
+    """From index space point Xi = [x,y], unproject back into world-space. 
+
+    Due to 3D-2D ambiguity, an image-space corresponds to a ray in
     world-space. Returns a unit-vector along this ray. Together with camera
     location, this can recover any point along the ray.
+
     """
     Xi = np.array(Xi)
     a = self.unproject_point(Xi)
@@ -444,8 +446,12 @@ class Experiment:
       return V * V[2] / abs(V[2]) # ensure V points toward +z
 
   def unproject_to_image_plane(self, Xi):
-    """From index space point Xi = [x,y], unproject back to the world-space
-    point which lies on the image plane.
+    """Unproject back to the world-space point which lies on the image plane.
+
+    :param Xi: [i,j] index-space point
+    :returns: 3-vector world-space position
+    :rtype: numpy array
+
     """
     Xi = np.array(Xi)
     u_hat = self.unproject(Xi)
