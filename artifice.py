@@ -264,7 +264,7 @@ def cmd_convert(art):
   logger.info(f"wrote {i+1} validation examples")
 
   # Collect the test set
-  logger.info(f"writing validation set to '{art.test_set_path}'...")
+  logger.info(f"writing test set to '{art.test_set_path}'...")
   writer = tf.python_io.TFRecordWriter(art.test_set_path)
   for i in range(art.test_size):
     if i % 100 == 0:

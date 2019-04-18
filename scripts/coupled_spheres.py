@@ -18,7 +18,7 @@ logger = logging.getLogger('experiment')
 # Main parameters
 debug = False
 seconds = 400                   # 12000 frames, at 30fps
-tether = True                   # Tether the (large) ball to center.
+tether = False                   # Tether the (large) ball to center.
 
 # dataset parameters
 root = "data/coupled_spheres{}/".format(
