@@ -55,7 +55,7 @@ class Artifice:
     self.epochs = args.epochs[0]
     self.batch_size = args.batch_size[0]
     self.learning_rate = args.learning_rate[0]
-    self.num_annotated = args.num_annotated[0]
+    self.num_labeled = args.num_labeled[0]
     self.epoch_size = args.epoch_size[0]
     self.num_objects = args.num_objects[0]
     self.splits = args.splits
@@ -96,15 +96,18 @@ class Artifice:
     self.annotated_set_path = join(self.data_root, 'annotated_set.tfrecord')
     self.unlabeled_set_path = join(self.data_root, 'unlabeled_set.tfrecord')
     self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
+    self.labeled_subset_path = join(
+      self.data_root, f'labeled_subset_{self.num_labeled}.tfrecord')
     self.validation_set_path = join(self.data_root, 'validation_set.tfrecord')
     self.test_set_path = join(self.data_root, 'test_set.tfrecord')
     self.labels_hist_path = join(self.data_root, 'labels_histogram.pdf')
 
     # training set sizes
     self.train_size = self.epoch_size
-    self.annotated_size = self.num_annotated
+    self.labeled_subset_size = self.num_labeled
+    self.annotated_subset_size = self.num_labeled
+    self.annotated_size = self.splits[0]
     self.unlabeled_size = self.splits[0]
-    self.labeled_size = self.splits[0]
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
     
@@ -117,14 +120,17 @@ class Artifice:
     self.hourglass_dir = join(self.model_root, 'hourglass/')
 
     # model-dependent paths
-    self.annotated_set_dir = join(self.model_root, 'annotated_sets')
+    self.annotated_subset_dir = join(self.model_root, 'annotated_subsets')
+    self.labeled_subset_dir = join(self.model_root, 'labeled_subsets')
     self.predicted_fields_path = join(self.model_root, 'predicted_fields.npy')
     self.model_detections_path = join(self.model_root, 'detections.npy')
     self.detections_video_path = join(self.model_root, 'detections.mp4')
     self.example_detection_path = join(self.model_root, 'example_detection.pdf')
 
     # ensure directories exist
-    for path in [self.data_root, self.model_root, self.annotated_set_dir]:
+    for path in [self.data_root, self.model_root,
+                 self.annotated_subset_dir,
+                 self.labeled_subset_dir]:
       if not exists(path):
         os.makedirs(path)
 
@@ -183,11 +189,26 @@ class Artifice:
     return unlabeled_set, validation_set, test_set
 
   def load_labeled(self):
-    return dat.Data(self.labeled_set_path, size=self.labeled_size, **self.dat_kwargs)
-  
+    return dat.Data(self.full_set_path, size=self.labeled_size, **self.dat_kwargs)
+
   def load_annotated(self):
     return dat.AugmentationData(self.annotated_set_path, size=self.annotated_size,
                                 **self.dat_kwargs)
+
+  def load_labeled_subset(self):
+    if not exists(self.labeled_subset_path) or self.overwrite:
+      oracle = self.make_oracle()
+      labeled_set = self.load_labeled()
+      indices = np.random.choice(self.labeled_size,
+                                 size=self.labeled_subset_size, replace=False)
+      sampling = np.zeros(self.labeled_size, dtype=np.int64)
+      sampling[indices] = 1
+      labeled_subset = labeled_set.sample_and_label(
+        sampling, oracle, self.labeled_subset_path)
+      return labeled_subset
+    else:
+      return dat.Data(self.labeled_subset_path, size=self.labeled_subset_size,
+                      **self.dat_kwargs)
   
   def make_model(self):
     """Create and compile the model."""
@@ -206,16 +227,17 @@ class Artifice:
       model.load()
     return model
 
-  def load_learner(self):
+  def load_learner(self, model=None):
     """Create a learner around a loaded model."""
-    model = self.load_model()
+    if model is None:
+      model = self.load_model()
     learner = learn.ActiveLearner(
-      model, self.make_oracle(), self.annotated_set_dir,
+      model, self.make_oracle(), self.annotated_subset_dir,
       num_candidates=self.num_candidates,
       query_size=self.query_size,
-      num_annotated=self.num_annotated)
+      num_annotated=self.num_labeled)
     return learner
-  
+
 def cmd_convert(art):
   """Standardize input data."""
   labels = np.load(art.labels_path)
@@ -226,9 +248,9 @@ def cmd_convert(art):
 
   # over unlabeled set
   logger.info(f"writing unlabeled set to '{art.unlabeled_set_path}'...")
+  annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
   unlabeled_writer = tf.python_io.TFRecordWriter(art.unlabeled_set_path)
   labeled_writer = tf.python_io.TFRecordWriter(art.labeled_set_path)
-  annotated_writer = tf.python_io.TFRecordWriter(art.annotated_set_path)
   i = -1
   for i in range(art.unlabeled_size):
     if i % 100 == 0:
@@ -237,7 +259,7 @@ def cmd_convert(art):
     image = img.open_as_array(image_path)
     unlabeled_writer.write(dat.proto_from_image(image))
     labeled_writer.write(dat.proto_from_example((image, label)))
-    if more_annotations and i < art.annotated_size:
+    if more_annotations:
       try:
         annotation_path = next(annotation_iterator)
         annotation = np.load(annotation_path)
@@ -280,19 +302,11 @@ def cmd_convert(art):
   logger.info(f"wrote {i+1} test examples")
 
 
-def cmd_analyze(art):
-  labels = np.load(art.labels_path)
-  vis.plot_labels(labels, art.image_shape)
-  if art.show:
-    plt.show()
-  else:
-    plt.savefig(art.labels_hist_path)
-
 def cmd_train(art):
-  if art.mode == 'labeled':
-    # Run classic supervised training from the fully-labeled data.
-    model = art.load_model()
-    unlabeled_set, validation_set, test_set = art.load_data()
+  unlabeled_set, validation_set, test_set = art.load_data()
+  model = art.load_model()
+  if art.mode == 'full':
+    # run "traditional" training on the full, labeled dataset
     labeled_set = art.load_labeled()
     model.fit(
       labeled_set.training_input,
@@ -301,11 +315,29 @@ def cmd_train(art):
       validation_data=validation_set.eval_input,
       validation_steps=art.validation_steps,
       verbose=art.keras_verbose)
-
-  elif art.mode == 'augmented':
-    # Run training with just a few original examples, performing augmentation.
-    model = art.load_model()
-    unlabeled_set, validation_set, test_set = art.load_data()
+  elif art.mode == 'random':
+    # Label a small, random subset of the data, as a human might
+    labeled_subset = art.load_labeled_subset()
+    model.fit(
+      labeled_subset.training_input,
+      epochs=art.epochs,
+      steps_per_epoch=art.train_steps,
+      validation_data=validation_set.eval_input,
+      validation_steps=art.validation_steps,
+      verbose=art.keras_verbose)
+  elif art.mode == 'active':
+    # Label a small, actively selected subset of the data during training
+    learner = art.load_learner(model)
+    learner.fit(
+      unlabeled_set,
+      art.labeled_subset_dir,
+      epochs=art.epochs,
+      steps_per_epoch=art.train_steps,
+      validation_data=validation_set.eval_input,
+      validation_steps=art.validation_steps,
+      verbose=art.keras_verbose)
+  elif art.mode == 'augmented-full':
+    # run training with full dataset, augmented
     annotated_set = art.load_annotated()
     model.fit(
       annotated_set.training_input,
@@ -314,21 +346,30 @@ def cmd_train(art):
       validation_data=validation_set.eval_input,
       validation_steps=art.validation_steps,
       verbose=art.keras_verbose)
-    
-  elif art.mode == 'learned':
-    # Run training with an active learning strategy.
-    learner = art.load_learner()
-    unlabeled_set, validation_set, test_set = art.load_data()
-    learner.fit(
-      unlabeled_set,
+  elif art.mode == 'augmented-random':
+    # use a random set of original examples, augmented
+    annotated_set = art.load_annotated()
+    model.fit(
+      annotated_set.training_input,
       epochs=art.epochs,
       steps_per_epoch=art.train_steps,
       validation_data=validation_set.eval_input,
       validation_steps=art.validation_steps,
       verbose=art.keras_verbose)
-
+  elif art.mode == 'augmented-active':
+    # actively select examples and augment
+    learner = art.load_learner(model)
+    learner.fit(
+      unlabeled_set,
+      art.annotated_subset_dir,
+      epochs=art.epochs,
+      steps_per_epoch=art.train_steps,
+      validation_data=validation_set.eval_input,
+      validation_steps=art.validation_steps,
+      verbose=art.keras_verbose)
   else:
     raise RuntimeError(f"no such mode: '{art.mode}'")
+
     
 def cmd_predict(art):
   model = art.load_model()
@@ -406,6 +447,11 @@ def cmd_analyze(art):
   else:
     plt.close()
 
+  vis.plot_labels(labels, art.image_shape)
+  if art.show:
+    plt.show()
+  else:
+    plt.close() # savefig(art.labels_hist_path)
   
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -442,9 +488,9 @@ def main():
   parser.add_argument('--learning-rate', '-l', nargs=1,
                       default=[0.1], type=float,
                       help=docs.learning_rate_help)
-  parser.add_argument('--num-annotated', nargs=1,
+  parser.add_argument('--num-labeled', nargs=1,
                       default=[10], type=int,
-                      help=docs.num_annotated_help)
+                      help=docs.num_labeled_help)
   parser.add_argument('--num-candidates', nargs=1,
                       default=[1000], type=int,
                       help=docs.num_candidates_help)

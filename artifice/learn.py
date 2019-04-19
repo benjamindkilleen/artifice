@@ -51,7 +51,7 @@ class Detector():
     return self.detect(*args, **kwargs)
 
 class ActiveLearner(Detector):
-  def __init__(self, model, oracle, annotated_set_dir,
+  def __init__(self, model, oracle,
                num_candidates=1000,
                query_size=1,
                num_annotated=-1,
@@ -69,7 +69,6 @@ class ActiveLearner(Detector):
     """
     super().__init__(model, **kwargs)
     self.oracle = oracle
-    self.annotated_set_dir = annotated_set_dir
     self.num_candidates = num_candidates
     self.num_annotated = num_annotated
     self.query_size = query_size
@@ -122,20 +121,22 @@ class ActiveLearner(Detector):
     logger.info(f"chose query: {query}")
     return query
   
-  def fit(self, unlabeled_set, epochs=1, **kwargs):
+  def fit(self, unlabeled_set, subset_dir, epochs=1, augment=True, **kwargs):
     """Fit using an active learning approach to the unlabeled data.
 
     TODO: use already annotated examples, if they exist.
     TODO: determine better method for training size in between queries
 
     :param unlabeled_set: a dat.Data object with an `annotate()` method.
+    :param subset_dir: place to store subsets
     :param epochs: number of epochs to run
+    :param augment: 
     :returns: annotated_set created during active_learning
-    :rtype:
+    :rtype: 
 
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
-        
+    
     for epoch in range(epochs):
       if epoch == self.num_annotated:
         break
@@ -146,15 +147,19 @@ class ActiveLearner(Detector):
         query = self.choose_query(unlabeled_set)
         logger.debug(f"querying {query}...")
         sampling[query] += 1
-      annotated_set_path = join(
-        self.annotated_set_dir, f'annotated_set_{epoch}.tfrecord')
-      annotated_set = unlabeled_set.sample_and_annotate(
-        sampling, self.oracle, annotated_set_path)
-      self.model.fit(annotated_set.training_input,
+      subset_path = join(
+        self.subset_dir, f'subset_{epoch}.tfrecord')
+      if augment:
+        subset = unlabeled_set.sample_and_annotate(
+          sampling, self.oracle, subset_path)
+      else:
+        subset = unlabeled_set.sample_and_label(
+          sampling, self.oracle, subset_path)
+      self.model.fit(subset.training_input,
                      epochs=epoch+1, initial_epoch=epoch, **kwargs)
 
     if epoch < epochs:
-      self.model.fit(annotated_set.training_input, epochs=epochs,
+      self.model.fit(subset.training_input, epochs=epochs,
                      initial_epoch=epoch, **kwargs)
                 
     return annotated_set

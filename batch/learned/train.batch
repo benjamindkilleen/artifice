@@ -20,10 +20,12 @@ module load povray/3.7
 cd /project2/glk/artifice
 
 epochs=20
-cmd=learned
+mode=learned
+data=coupled_spheres
 
 echo "Starting training..."
-python artifice.py $cmd --overwrite -e $epochs \
-       -m models/coupled_spheres_${cmd}_e${epochs} \
+python artifice.py train --mode $mode -i $data \
+       --overwrite -e $epochs \
+       -m models/${data}_${mode}_e${epochs} \
        --keras-verbose 2
 echo "Finished."

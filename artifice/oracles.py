@@ -33,13 +33,26 @@ class Oracle:
     """
     raise NotImplementedError
 
-  def __call__(self, *args, **kwargs):
-    return self.annotate(*args, **kwargs)
+  def label(self, image, idx=None):
+    """Label a single image
 
+    :param image: 
+    :param idx: 
+    :returns: `(image, label)` example pair
+    :rtype: 
+
+    """
+    
+    raise NotImplementedError
+  
+  def __call__(self, *args, **kwargs):
+    return self.label(*args, **kwargs)
+
+  
   
 class PerfectOracle(Oracle):
   """Query the existing labels (for testing purposes)"""
-  def __init__(self, labels, annotation_paths, **kwargs):
+  def __init__(self, labels, annotation_paths=None, **kwargs):
     """A "perfect" annotator that uses premade labels/annotations.
 
     Note that ALL the annotations must be provided. TODO: check this.
@@ -52,10 +65,14 @@ class PerfectOracle(Oracle):
     self.labels = labels
     self.annotation_paths = annotation_paths
 
+  def label(self, image, idx):
+    return (image, self.labels[idx])
+
   def annotate(self, image, idx):
+    if self.annotation_paths is None:
+      raise RuntimeError("Must provide annotations for PerfectOracle.annotate()")
     return (image, self.labels[idx]), np.load(self.annotation_paths[idx])
 
-  
   
 class HumanOracle(Oracle):
   """Query a human being."""

@@ -221,6 +221,8 @@ class Data(object):
   """
 
   eps = 0.001
+  parse_entry = example_from_proto
+  encode_entry = proto_from_example
   
   def __init__(self, data, **kwargs):
     """args:
@@ -240,8 +242,6 @@ class Data(object):
     self.distance_threshold = kwargs.get('distance_threshold', 20.)
     self.batch_size = kwargs.get('batch_size', 1) # in multiples of num_tiles
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
-    self.parse_entry = kwargs.get('parse_entry', example_from_proto)
-    self.encode_entry = kwargs.get('encode_entry', proto_from_example)
     self.num_shuffle = kwargs.get('num_shuffle', self.size // self.batch_size)
     self._kwargs = kwargs
     
@@ -321,6 +321,17 @@ class Data(object):
     kwargs = self._kwargs.copy()
     kwargs['size'] = count
     return type(self)(dataset, **kwargs)
+
+  def _sample(self, sampling):
+    """First part of any sampling, just retruns the tf.data.Dataset
+
+    """
+    s = tf.constant(sampling, dtype=tf.int64)
+    dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
+    def map_func(idx, entry):
+      return tf.data.Dataset.from_tensors(entry).repeat(s[idx])
+    return dataset.flat_map(map_func)
+
   
   def sample(self, sampling):
     """Draw a sampling from the dataset, returning a new dataset of the same type.
@@ -331,12 +342,7 @@ class Data(object):
     :rtype: a Data subclass, same as self
 
     """
-    s = tf.constant(sampling, dtype=tf.int64)
-    dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
-    def map_func(idx, entry):
-      return tf.data.Dataset.from_tensors(entry).repeat(s[idx])
-    dataset = dataset.flat_map(map_func)
-
+    dataset = self._sample(sampling)
     kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
     return type(self)(dataset, **kwargs)
@@ -621,6 +627,8 @@ class Data(object):
 
 
 class UnlabeledData(Data):
+  parse_entry = image_from_proto
+  encode_entry = proto_from_image
   def __init__(self, *args, **kwargs):
     """Hold data with no labels.
 
@@ -629,8 +637,6 @@ class UnlabeledData(Data):
     labeled.
 
     """
-    kwargs['parse_entry'] = image_from_proto
-    kwargs['encode_entry'] = proto_from_image
     super().__init__(*args, **kwargs)
     self.background = kwargs.get('background')    
 
@@ -648,45 +654,67 @@ class UnlabeledData(Data):
     dataset = dataset.map(map_func, self.num_parallel_calls)
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     return dataset
-    
-  def sample_and_annotate(self, sampling, oracle, record_name):
-    """Draw a sampling from the dataset and annotate each example, and save
 
-    :param sampling: 1D boolean or "counts" array indexing the dataset.
-    :param record_name: tfrecord path to save the newly annotated dataset to.
-    :param oracle: a callable with type `(image,idx) -> scene`
-    :returns: new AugmentationData object with scenes for the sampled points
+  def _sample_and_query(self, sampling, oracle, record_name, query_name,
+                        output_type):
+    """Helper function to generalize sample_and_{blank}
+
+    :param sampling: 
+    :param oracle: 
+    :param record_name: 
+    :param query_name: name of oracle function to use
+    :param output_type: class of output
+    :returns: 
+    :rtype: 
 
     """
-    logger.debug(f"sampling: {sampling}")
-    s = tf.constant(sampling, dtype=tf.int64)
-    dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
-    def map_func(idx, entry):
-      return tf.data.Dataset.from_tensors((idx, entry)).repeat(s[idx])
-    dataset = dataset.flat_map(map_func)
+    query_function = getattr(oracle, query_function)
+    dataset = self._sample(sampling)
 
     writer = tf.python_io.TFRecordWriter(record_name)
     if tf.executing_eagerly():
       for idx, image in dataset:
-        scene = oracle(image, idx)
-        scene = (np.array(scene[0][0]), np.array(scene[0][1])), np.array(scene[1])
-        writer.write(proto_from_scene(scene))
+        entry = query_function(image, idx)
+        entry = (np.array(scene[0][0]), np.array(scene[0][1])), np.array(scene[1])
+        writer.write(output_type.encode_entry(entry))
     else:
       get_next = dataset.make_one_shot_iterator().get_next()
       with tf.Session() as sess:
         while True:
           try:
             idx, image = sess.run(get_next)
-            scene = oracle(image, idx)
-            writer.write(proto_from_scene(scene))
+            entry = query_function(image, idx)
+            writer.write(output_type.encode_entry(entry))
           except tf.errors.OutOfRangeError:
             break
     writer.close()
 
     kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
-    return AugmentationData(record_name, **kwargs)
+    return output_type(record_name, **kwargs)
+    
+  
+  def sample_and_label(self, sampling, oracle, record_name):
+    """Draw a sampling from the dataset and label each example, and save.
 
+    :param sampling: 1D boolean or "counts" array indexing the dataset.
+    :param record_name: tfrecord path to save the newly annotated dataset to.
+    :param oracle: an Oracle subclass with annotations
+    :returns: new AugmentationData object with scenes for the sampled points
+    """
+    return self._sample_and_query(sampling, oracle, record_name, 'label', Data)
+  
+  def sample_and_annotate(self, sampling, oracle, record_name):
+    """Draw a sampling from the dataset and annotate each example, and save
+
+    :param sampling: 1D boolean or "counts" array indexing the dataset.
+    :param record_name: tfrecord path to save the newly annotated dataset to.
+    :param oracle: an Oracle subclass with annotations
+    :returns: new AugmentationData object with scenes for the sampled points
+    """
+    return self._sample_and_query(sampling, oracle, record_name, 'annotate',
+                                  AugmentationData)
+    
   @staticmethod
   def mode_background_accumulator(image, agg):
     """Approximate a running mode of the images.
@@ -721,9 +749,9 @@ class UnlabeledData(Data):
     
       
 class AugmentationData(Data):
+  parse_entry = scene_from_proto
+  encode_entry = proto_from_scene
   def __init__(self, *args, **kwargs):
-    kwargs['parse_entry'] = scene_from_proto
-    kwargs['encode_entry'] = proto_from_scene
     super().__init__(*args, **kwargs)
     self.background = kwargs.get('background')
 
