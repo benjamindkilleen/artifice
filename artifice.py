@@ -22,6 +22,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from artifice import dat, mod, learn, oracles
 from artifice.utils import docs, img, vis, vid
+from test_utils import springs
 from multiprocessing import cpu_count
 import itertools
 
@@ -43,6 +44,7 @@ class Artifice:
 
     # copy arguments
     self.command = args.command
+    self.mode = args.mode[0]
     self.data_root = args.data_root[0]
     self.model_root = args.model_root[0]
     self.verbose = args.verbose[0]
@@ -286,45 +288,48 @@ def cmd_analyze(art):
   else:
     plt.savefig(art.labels_hist_path)
 
-  
-def cmd_labeled(art):
-  """Run classic supervised training from the fully-labeled data."""
-  model = art.load_model()
-  unlabeled_set, validation_set, test_set = art.load_data()
-  labeled_set = art.load_labeled()
-  model.fit(
-    labeled_set.training_input,
-    epochs=art.epochs,
-    steps_per_epoch=art.train_steps,
-    validation_data=validation_set.eval_input,
-    validation_steps=art.validation_steps,
-    verbose=art.keras_verbose)
-  
-def cmd_augmented(art):
-  """Run training with just a few original examples, performing augmentation."""
-  model = art.load_model()
-  unlabeled_set, validation_set, test_set = art.load_data()
-  annotated_set = art.load_annotated()
-  model.fit(
-    annotated_set.training_input,
-    epochs=art.epochs,
-    steps_per_epoch=art.train_steps,
-    validation_data=validation_set.eval_input,
-    validation_steps=art.validation_steps,
-    verbose=art.keras_verbose)
+def cmd_train(art):
+  if art.mode == 'labeled':
+    # Run classic supervised training from the fully-labeled data.
+    model = art.load_model()
+    unlabeled_set, validation_set, test_set = art.load_data()
+    labeled_set = art.load_labeled()
+    model.fit(
+      labeled_set.training_input,
+      epochs=art.epochs,
+      steps_per_epoch=art.train_steps,
+      validation_data=validation_set.eval_input,
+      validation_steps=art.validation_steps,
+      verbose=art.keras_verbose)
 
-def cmd_learned(art):
-  """Run training with an active learning strategy."""
-  learner = art.load_learner()
-  unlabeled_set, validation_set, test_set = art.load_data()
-  learner.fit(
-    unlabeled_set,
-    epochs=art.epochs,
-    steps_per_epoch=art.train_steps,
-    validation_data=validation_set.eval_input,
-    validation_steps=art.validation_steps,
-    verbose=art.keras_verbose)
-  
+  elif art.mode == 'augmented':
+    # Run training with just a few original examples, performing augmentation.
+    model = art.load_model()
+    unlabeled_set, validation_set, test_set = art.load_data()
+    annotated_set = art.load_annotated()
+    model.fit(
+      annotated_set.training_input,
+      epochs=art.epochs,
+      steps_per_epoch=art.train_steps,
+      validation_data=validation_set.eval_input,
+      validation_steps=art.validation_steps,
+      verbose=art.keras_verbose)
+    
+  elif art.mode == 'learned':
+    # Run training with an active learning strategy.
+    learner = art.load_learner()
+    unlabeled_set, validation_set, test_set = art.load_data()
+    learner.fit(
+      unlabeled_set,
+      epochs=art.epochs,
+      steps_per_epoch=art.train_steps,
+      validation_data=validation_set.eval_input,
+      validation_steps=art.validation_steps,
+      verbose=art.keras_verbose)
+
+  else:
+    raise RuntimeError(f"no such mode: '{art.mode}'")
+    
 def cmd_predict(art):
   model = art.load_model()
   unlabeled_set, validation_set, test_set = art.load_data()
@@ -353,7 +358,7 @@ def cmd_detect(art):
   logger.info(f"error std: {errors.std():.02f}")
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
-  
+
 def cmd_visualize(art):
   unlabeled_set, validation_set, test_set = art.load_data()
   labels = test_set.labels
@@ -391,10 +396,22 @@ def cmd_visualize(art):
   logger.info(f"finished")
   logger.info(f"wrote mp4 to {art.detections_video_path}")
 
+def cmd_analyze(art):
+  """Analayze the detections for a spring constant."""
+  labels = np.load(art.labels_path)
+  ls = springs.find_constant(labels)
+  plt.plot(ls, 'b.')
+  if art.show:
+    plt.show()
+  else:
+    plt.close()
+
   
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('command', help=docs.command_help)
+  parser.add_argument('--mode', nargs=1, default=['learned'],
+                      help=docs.mode_help)
   parser.add_argument('--data-root', '--input', '-i', nargs=1,
                       default=['data/coupled_spheres'],
                       help=docs.data_dir_help)
@@ -463,12 +480,8 @@ def main():
 
   if art.command == 'convert':
     cmd_convert(art)
-  elif art.command == 'labeled':
-    cmd_labeled(art)
-  elif art.command == 'augmented':
-    cmd_augmented(art)
-  elif art.command == 'learned':
-    cmd_learned(art)
+  elif art.command == 'train':
+    cmd_train(art)
   elif art.command == 'predict':
     cmd_predict(art)
   elif art.command == 'detect':

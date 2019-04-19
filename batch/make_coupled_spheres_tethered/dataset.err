@@ -12119,7 +12119,7 @@ INFO:artifice:writing 800 / 1000
 INFO:artifice:writing 900 / 1000
 INFO:artifice:finished
 INFO:artifice:wrote 1000 validation examples
-INFO:artifice:writing validation set to 'data/coupled_spheres_tethered/test_set.tfrecord'...
+INFO:artifice:writing test set to 'data/coupled_spheres_tethered/test_set.tfrecord'...
 INFO:artifice:writing 0 / 1000
 INFO:artifice:writing 100 / 1000
 INFO:artifice:writing 200 / 1000

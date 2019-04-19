@@ -18,14 +18,14 @@ logger = logging.getLogger('experiment')
 # Main parameters
 debug = False
 seconds = 400                   # 12000 frames, at 30fps
-tether = False                   # Tether the (large) ball to center.
+tether = True                  # Tether the (large) ball to center.
 
 # dataset parameters
 root = "data/coupled_spheres{}/".format(
   "_tethered" if tether else "") # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
-steps_per_frame = 5              # number of simulated time steps per frame
+steps_per_frame = 1              # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'png', 'mp4'}          # output formats
@@ -39,7 +39,7 @@ m1 = 1               # mass (kg)
 x1 = 50              # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = -20            # initial x velocity (cm/s)
-vy1 = 40             # initial y velocity
+vy1 = 20             # initial y velocity
 
 # ball 2
 r2 = 15
@@ -50,7 +50,7 @@ vx2 = 0
 vy2 = 0
 
 # Spring parameters
-k = 10                               # Hooke's constant (N / m)
+k = 5.                               # Hooke's constant (N / m)
 relaxed_length = image_shape[0] / 2. # For Hooke's law (cm)
 minimum_length = r1 + r2             # Nonlinear boundary of spring (cm)
 
@@ -89,7 +89,7 @@ def spring(l):
 
 # attractor:
 attractor_relaxed = 0
-attractor_k = 15.
+attractor_k = 10.
 def attractor(l):
   """Return a spring-like force as a function of mag_l
 

@@ -57,3 +57,4 @@ eager_help = """Enable eager execution."""
 
 show_help = """Show plots rather than save them."""
 
+mode_help = """Training mode."""
