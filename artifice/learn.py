@@ -146,7 +146,7 @@ class ActiveLearner(Detector):
       else:
         query = self.choose_query(unlabeled_set)
         logger.info(f"querying {query}...")
-        history['queries'] = history.get('queries', []) + query
+        history['queries'] = history.get('queries', []).append(query)
         sampling[query] += 1
       subset_path = join(subset_dir, f'subset_{epoch}.tfrecord')
       if augment:

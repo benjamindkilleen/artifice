@@ -21,3 +21,4 @@ reports/grant
 reports/**/*.out
 reports/**/*.el
 models/coupled_spheres/detection_*.*
+batch/train
