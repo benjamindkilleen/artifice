@@ -221,8 +221,6 @@ class Data(object):
   """
 
   eps = 0.001
-  parse_entry = example_from_proto
-  encode_entry = proto_from_example
   
   def __init__(self, data, **kwargs):
     """args:
@@ -263,6 +261,14 @@ class Data(object):
     self._labels = None
     self.label_shape = (self.num_objects, 4)
     self.labels_shape = (self.batch_size,) + self.label_shape
+
+  @staticmethod
+  def parse_entry(*args):
+    return example_from_proto(*args)
+
+  @staticmethod
+  def encode_entry(*args):
+    return proto_from_example(*args)
     
   def save(self, record_name):
     """Save the dataset to record_name."""
@@ -329,7 +335,7 @@ class Data(object):
     s = tf.constant(sampling, dtype=tf.int64)
     dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
     def map_func(idx, entry):
-      return tf.data.Dataset.from_tensors(entry).repeat(s[idx])
+      return tf.data.Dataset.from_tensors((idx, entry)).repeat(s[idx])
     return dataset.flat_map(map_func)
 
   
@@ -343,6 +349,8 @@ class Data(object):
 
     """
     dataset = self._sample(sampling)
+    dataset = dataset.map(lambda idx, entry : entry,
+                          num_parallel_calls=self.num_parallel_calls)
     kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
     return type(self)(dataset, **kwargs)
@@ -627,8 +635,6 @@ class Data(object):
 
 
 class UnlabeledData(Data):
-  parse_entry = image_from_proto
-  encode_entry = proto_from_image
   def __init__(self, *args, **kwargs):
     """Hold data with no labels.
 
@@ -641,6 +647,14 @@ class UnlabeledData(Data):
     self.background = kwargs.get('background')    
 
     accumulators = {}
+
+  @staticmethod
+  def parse_entry(*args):
+    return image_from_proto(*args)
+
+  @staticmethod
+  def encode_entry(*args):
+    return proto_from_image(*args)
 
   def preprocess(self, dataset, training=True):
     """Responsible for converting dataset to batched `(image, dummy_label)` form.
@@ -668,7 +682,7 @@ class UnlabeledData(Data):
     :rtype: 
 
     """
-    query_function = getattr(oracle, query_function)
+    query_function = getattr(oracle, query_name)
     dataset = self._sample(sampling)
 
     writer = tf.python_io.TFRecordWriter(record_name)
@@ -749,8 +763,6 @@ class UnlabeledData(Data):
     
       
 class AugmentationData(Data):
-  parse_entry = scene_from_proto
-  encode_entry = proto_from_scene
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.background = kwargs.get('background')
@@ -763,6 +775,14 @@ class AugmentationData(Data):
     for k,v in aggregates.items():
       setattr(self, k, v)
 
+  @staticmethod
+  def parse_entry(*args):
+    return scene_from_proto(*args)
+
+  @staticmethod
+  def encode_entry(*args):
+    return proto_from_scene(*args)
+      
   def as_numpy(self, entry):
     """Convert `entry` to corresponding tuple of numpy arrys.
 

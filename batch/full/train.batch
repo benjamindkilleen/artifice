@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=learned
+#SBATCH --job-name=full
 #SBATCH --output=train.out
 #SBATCH --error=train.err
 #SBATCH -p gpu2
@@ -20,12 +20,15 @@ module load povray/3.7
 cd /project2/glk/artifice
 
 epochs=20
-mode=learned
+mode=full
 data=coupled_spheres
+subset_size=10
+query_size=1
 
 echo "Starting training..."
 python artifice.py train --mode $mode -i $data \
        --overwrite -e $epochs \
-       -m models/${data}_${mode}_e${epochs} \
-       --keras-verbose 2
+       -m models/${data}_${mode}_subset${subset_size} \
+       --subset-size $subset_size --query-size $query_size \
+       --verbose 2 --keras-verbose 2
 echo "Finished."

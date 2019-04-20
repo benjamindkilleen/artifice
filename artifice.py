@@ -24,6 +24,7 @@ from artifice import dat, mod, learn, oracles
 from artifice.utils import docs, img, vis, vid
 from test_utils import springs
 from multiprocessing import cpu_count
+import json
 import itertools
 
 
@@ -43,6 +44,7 @@ class Artifice:
     """
 
     # copy arguments
+    self.args = args
     self.command = args.command
     self.mode = args.mode[0]
     self.data_root = args.data_root[0]
@@ -55,7 +57,7 @@ class Artifice:
     self.epochs = args.epochs[0]
     self.batch_size = args.batch_size[0]
     self.learning_rate = args.learning_rate[0]
-    self.num_labeled = args.num_labeled[0]
+    self.subset_size = args.subset_size[0]
     self.epoch_size = args.epoch_size[0]
     self.num_objects = args.num_objects[0]
     self.splits = args.splits
@@ -97,15 +99,14 @@ class Artifice:
     self.unlabeled_set_path = join(self.data_root, 'unlabeled_set.tfrecord')
     self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
     self.labeled_subset_path = join(
-      self.data_root, f'labeled_subset_{self.num_labeled}.tfrecord')
+      self.data_root, f'labeled_subset_{self.subset_size}.tfrecord')
     self.validation_set_path = join(self.data_root, 'validation_set.tfrecord')
     self.test_set_path = join(self.data_root, 'test_set.tfrecord')
     self.labels_hist_path = join(self.data_root, 'labels_histogram.pdf')
 
     # training set sizes
-    self.train_size = self.epoch_size
-    self.labeled_subset_size = self.num_labeled
-    self.annotated_subset_size = self.num_labeled
+    # self.labeled_subset_size already set
+    self.labeled_size = self.splits[0]
     self.annotated_size = self.splits[0]
     self.unlabeled_size = self.splits[0]
     self.validation_size = self.splits[1]
@@ -126,6 +127,7 @@ class Artifice:
     self.model_detections_path = join(self.model_root, 'detections.npy')
     self.detections_video_path = join(self.model_root, 'detections.mp4')
     self.example_detection_path = join(self.model_root, 'example_detection.pdf')
+    self.history_path = join(self.model_root, 'history.json')
 
     # ensure directories exist
     for path in [self.data_root, self.model_root,
@@ -136,7 +138,7 @@ class Artifice:
 
     
   def __str__(self):
-    return f"<run '{self.command}'>"
+    return self.args.__str__()
 
   @property
   def pad(self):
@@ -171,13 +173,16 @@ class Artifice:
             'num_parallel_calls' : self.cores,
             'pad' : self.pad,
             'num_objects' : self.num_objects}
-  
-  def load_data(self):
-    """Load the unlabeled, annotated, validation, and test sets."""
-    unlabeled_set = dat.UnlabeledData(
+
+  def load_unlabeled(self):
+    return dat.UnlabeledData(
       self.unlabeled_set_path,
       size=self.unlabeled_size,
       **self.dat_kwargs)
+  
+  def load_data(self):
+    """Load the unlabeled, annotated, validation, and test sets."""
+    unlabeled_set = self.load_unlabeled()
     validation_set = dat.Data(
       self.validation_set_path,
       size=self.validation_size,
@@ -189,7 +194,7 @@ class Artifice:
     return unlabeled_set, validation_set, test_set
 
   def load_labeled(self):
-    return dat.Data(self.full_set_path, size=self.labeled_size, **self.dat_kwargs)
+    return dat.Data(self.labeled_set_path, size=self.labeled_size, **self.dat_kwargs)
 
   def load_annotated(self):
     return dat.AugmentationData(self.annotated_set_path, size=self.annotated_size,
@@ -198,16 +203,16 @@ class Artifice:
   def load_labeled_subset(self):
     if not exists(self.labeled_subset_path) or self.overwrite:
       oracle = self.make_oracle()
-      labeled_set = self.load_labeled()
+      unlabeled_set = self.load_unlabeled()
       indices = np.random.choice(self.labeled_size,
-                                 size=self.labeled_subset_size, replace=False)
+                                 size=self.subset_size, replace=False)
       sampling = np.zeros(self.labeled_size, dtype=np.int64)
       sampling[indices] = 1
-      labeled_subset = labeled_set.sample_and_label(
+      labeled_subset = unlabeled_set.sample_and_label(
         sampling, oracle, self.labeled_subset_path)
       return labeled_subset
     else:
-      return dat.Data(self.labeled_subset_path, size=self.labeled_subset_size,
+      return dat.Data(self.labeled_subset_path, size=self.subset_size,
                       **self.dat_kwargs)
   
   def make_model(self):
@@ -232,11 +237,15 @@ class Artifice:
     if model is None:
       model = self.load_model()
     learner = learn.ActiveLearner(
-      model, self.make_oracle(), self.annotated_subset_dir,
+      model, self.make_oracle(),
       num_candidates=self.num_candidates,
       query_size=self.query_size,
-      num_annotated=self.num_labeled)
+      subset_size=self.subset_size)
     return learner
+
+  def save_history(self, history):
+    with open(self.history_path, 'w') as f:
+      f.write(json.dumps(history))
 
 def cmd_convert(art):
   """Standardize input data."""
@@ -303,72 +312,47 @@ def cmd_convert(art):
 
 
 def cmd_train(art):
-  unlabeled_set, validation_set, test_set = art.load_data()
   model = art.load_model()
+  unlabeled_set, validation_set, test_set = art.load_data()
+  kwargs = {'epochs' : art.epochs,
+            'steps_per_epoch' : art.train_steps,
+            'validation_data' : validation_set.eval_input,
+            'validation_steps' : art.validation_steps,
+            'verbose' : art.keras_verbose}
+  
   if art.mode == 'full':
     # run "traditional" training on the full, labeled dataset
     labeled_set = art.load_labeled()
-    model.fit(
-      labeled_set.training_input,
-      epochs=art.epochs,
-      steps_per_epoch=art.train_steps,
-      validation_data=validation_set.eval_input,
-      validation_steps=art.validation_steps,
-      verbose=art.keras_verbose)
+    hist = model.fit(labeled_set.training_input, **kwargs)
+    
   elif art.mode == 'random':
     # Label a small, random subset of the data, as a human might
     labeled_subset = art.load_labeled_subset()
-    model.fit(
-      labeled_subset.training_input,
-      epochs=art.epochs,
-      steps_per_epoch=art.train_steps,
-      validation_data=validation_set.eval_input,
-      validation_steps=art.validation_steps,
-      verbose=art.keras_verbose)
+    hist = model.fit(labeled_subset.training_input, **kwargs)
+    
   elif art.mode == 'active':
     # Label a small, actively selected subset of the data during training
     learner = art.load_learner(model)
-    learner.fit(
-      unlabeled_set,
-      art.labeled_subset_dir,
-      epochs=art.epochs,
-      steps_per_epoch=art.train_steps,
-      validation_data=validation_set.eval_input,
-      validation_steps=art.validation_steps,
-      verbose=art.keras_verbose)
+    hist = learner.fit(unlabeled_set, art.labeled_subset_dir, **kwargs)
+    
   elif art.mode == 'augmented-full':
     # run training with full dataset, augmented
     annotated_set = art.load_annotated()
-    model.fit(
-      annotated_set.training_input,
-      epochs=art.epochs,
-      steps_per_epoch=art.train_steps,
-      validation_data=validation_set.eval_input,
-      validation_steps=art.validation_steps,
-      verbose=art.keras_verbose)
+    hist = model.fit(annotated_set.training_input, **kwargs)
+    
   elif art.mode == 'augmented-random':
     # use a random set of original examples, augmented
     annotated_set = art.load_annotated()
-    model.fit(
-      annotated_set.training_input,
-      epochs=art.epochs,
-      steps_per_epoch=art.train_steps,
-      validation_data=validation_set.eval_input,
-      validation_steps=art.validation_steps,
-      verbose=art.keras_verbose)
+    hist = model.fit(annotated_set.training_input, **kwargs)
+    
   elif art.mode == 'augmented-active':
     # actively select examples and augment
     learner = art.load_learner(model)
-    learner.fit(
-      unlabeled_set,
-      art.annotated_subset_dir,
-      epochs=art.epochs,
-      steps_per_epoch=art.train_steps,
-      validation_data=validation_set.eval_input,
-      validation_steps=art.validation_steps,
-      verbose=art.keras_verbose)
+    hist = learner.fit(unlabeled_set, art.annotated_subset_dir, **kwargs)
   else:
     raise RuntimeError(f"no such mode: '{art.mode}'")
+
+  art.save_history(hist)
 
     
 def cmd_predict(art):
@@ -456,7 +440,7 @@ def cmd_analyze(art):
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('command', help=docs.command_help)
-  parser.add_argument('--mode', nargs=1, default=['learned'],
+  parser.add_argument('--mode', nargs=1, default=['augmented-active'],
                       help=docs.mode_help)
   parser.add_argument('--data-root', '--input', '-i', nargs=1,
                       default=['data/coupled_spheres'],
@@ -488,9 +472,8 @@ def main():
   parser.add_argument('--learning-rate', '-l', nargs=1,
                       default=[0.1], type=float,
                       help=docs.learning_rate_help)
-  parser.add_argument('--num-labeled', nargs=1,
-                      default=[10], type=int,
-                      help=docs.num_labeled_help)
+  parser.add_argument('--subset-size', nargs=1, default=[10], type=int,
+                      help=docs.subset_size_help)
   parser.add_argument('--num-candidates', nargs=1,
                       default=[1000], type=int,
                       help=docs.num_candidates_help)

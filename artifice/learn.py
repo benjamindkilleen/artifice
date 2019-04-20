@@ -54,15 +54,14 @@ class ActiveLearner(Detector):
   def __init__(self, model, oracle,
                num_candidates=1000,
                query_size=1,
-               num_annotated=-1,
+               subset_size=10,
                **kwargs):
     """Wrapper around model's that performs active learning on dat.Data objects.
 
     :param model: a `mod.Model`
-    :param annotated_set_dir: directory to save annotated sets
     :param num_candidates: max number of images to consider for query
     :param query_size: number of images in each query
-    :param num_annotated: max number of examples in annotated set. After
+    :param subset_size: max number of examples in annotated set. After
     acquiring this many, continue training without acquiring more. -1 imposes no
     limit.
 
@@ -70,7 +69,7 @@ class ActiveLearner(Detector):
     super().__init__(model, **kwargs)
     self.oracle = oracle
     self.num_candidates = num_candidates
-    self.num_annotated = num_annotated
+    self.subset_size = subset_size
     self.query_size = query_size
     self.candidate_idx = 0
 
@@ -131,38 +130,44 @@ class ActiveLearner(Detector):
     :param subset_dir: place to store subsets
     :param epochs: number of epochs to run
     :param augment: 
-    :returns: annotated_set created during active_learning
+    :returns: history object returned by fit instances
     :rtype: 
 
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
+    history = {}
     
     for epoch in range(epochs):
-      if epoch == self.num_annotated:
+      if epoch*self.query_size >= self.subset_size:
         break
       logger.info(f"Epoch {epoch} / {epochs}")
       if epoch == 0:
         sampling[0] = 1
       else:
         query = self.choose_query(unlabeled_set)
-        logger.debug(f"querying {query}...")
+        logger.info(f"querying {query}...")
+        history['queries'] = history.get('queries', []) + query
         sampling[query] += 1
-      subset_path = join(
-        self.subset_dir, f'subset_{epoch}.tfrecord')
+      subset_path = join(subset_dir, f'subset_{epoch}.tfrecord')
       if augment:
         subset = unlabeled_set.sample_and_annotate(
           sampling, self.oracle, subset_path)
       else:
         subset = unlabeled_set.sample_and_label(
           sampling, self.oracle, subset_path)
-      self.model.fit(subset.training_input,
-                     epochs=epoch+1, initial_epoch=epoch, **kwargs)
+      hist = self.model.fit(subset.training_input,
+                            epochs=epoch+1, initial_epoch=epoch, **kwargs)
+      for k,v in hist.items():
+        history[k] = history.get(k, []) + v
 
     if epoch < epochs:
-      self.model.fit(subset.training_input, epochs=epochs,
-                     initial_epoch=epoch, **kwargs)
+      hist = self.model.fit(subset.training_input, epochs=epochs,
+                            initial_epoch=epoch, **kwargs)
+
+    for k,v in hist.items():
+      history[k] = history.get(k, []) + v      
                 
-    return annotated_set
+    return history
 
 
 

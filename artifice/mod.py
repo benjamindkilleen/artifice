@@ -125,7 +125,8 @@ class Model():
     
   def fit(self, *args, **kwargs):
     kwargs['callbacks'] = self.callbacks
-    return self.model.fit(*args, **kwargs)
+    hist = self.model.fit(*args, **kwargs)
+    return hist.history
 
   def predict(self, *args, **kwargs):
     return self.model.predict(*args, **kwargs)

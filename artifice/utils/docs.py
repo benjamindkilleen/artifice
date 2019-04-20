@@ -36,7 +36,7 @@ splits_help = """Splits to use for unlabeled, validation, and testing."""
 
 epoch_size_help = """Number of artificial examples per training epoch."""
 
-num_labeled_help = """Number of examples from the unlabeled set to label or
+subset_size_help = """Number of examples from the unlabeled set to label or
 annotate."""
 
 num_candidates_help = """Number of unlabeled examples to consider at once for 
