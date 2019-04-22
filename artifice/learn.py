@@ -1,13 +1,18 @@
-import tensorflow as tf
-import numpy as np
-from artifice import mod, dat
+"""Enable active learning.
+
+"""
+
 from os.path import join
 import logging
+import numpy as np
+from artifice import dat
+
 
 logger = logging.getLogger('artifice')
 
 
 class Detector():
+  """Detector."""
   def __init__(self, model):
     self.model = model
 
@@ -18,9 +23,9 @@ class Detector():
 
     :param data: dat.Data set
     :param steps: number of image batches to do at once
-    :param verbose: 
-    :returns: 
-    :rtype: 
+    :param verbose:
+    :returns:
+    :rtype:
 
     """
     if steps is None:
@@ -135,7 +140,7 @@ class ActiveLearner(Detector):
 
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
-    history = {}
+    history = {'queries' : []}
     
     for epoch in range(epochs):
       if epoch*self.query_size >= self.subset_size:
@@ -146,7 +151,7 @@ class ActiveLearner(Detector):
       else:
         query = self.choose_query(unlabeled_set)
         logger.info(f"querying {query}...")
-        history['queries'] = history.get('queries', []).append(query)
+        history['queries'].append(query)
         sampling[query] += 1
       subset_path = join(subset_dir, f'subset_{epoch}.tfrecord')
       if augment:
