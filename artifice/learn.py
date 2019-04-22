@@ -92,8 +92,13 @@ class ActiveLearner(Detector):
 
     """
     detection = data.from_field(field)
+    logger.debug(f"detection: {detection}")
     other_field = data.to_numpy_field(detection)
-    uncertainty = np.linalg.norm(field - other_field)
+    logger.debug(f"other_field: {other_field}")
+    logger.debug(f"field: {field}")
+    uncertainty = np.square(field - other_field).mean()
+    logger.debug(f"uncertainty: {uncertainty}")
+    # TODO: currently NAN, why?
     return uncertainty
 
   def choose_query(self, unlabeled_set):
@@ -119,10 +124,11 @@ class ActiveLearner(Detector):
       uncertainties.append((idx, uncertainty))
       uncertainties.sort(key=lambda t: t[1], reverse=True)
       uncertainties = uncertainties[:self.query_size]
+      # TODO: figure out why this is always querying the first candidates.
 
     self.candidate_idx += self.num_candidates
     query = [t[0] for t in uncertainties]
-    logger.info(f"chose query: {query}")
+    logger.info(f"chose query {query} with uncertainties {uncertainties}")
     return query
   
   def fit(self, unlabeled_set, subset_dir, epochs=1, augment=True, **kwargs):

@@ -4,29 +4,26 @@
 
 """
 
+import os
+from os.path import join, exists
 import logging
+from glob import glob
+import argparse
+import json
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from artifice import dat, mod, learn, oracles
+from artifice.utils import docs, img, vis, vid
+from test_utils import springs
+
+
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(levelname)s:artifice:%(message)s'))
 logger.addHandler(handler)
-
-import os
-from os.path import join, exists
-from glob import glob
-import numpy as np
-import argparse
-import numpy as np
-import tensorflow as tf
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-from artifice import dat, mod, learn, oracles
-from artifice.utils import docs, img, vis, vid
-from test_utils import springs
-from multiprocessing import cpu_count
-import json
-import itertools
-
 
 logger.debug(f"Use Python{3.6} or higher.")
 
@@ -81,12 +78,12 @@ class Artifice:
     if not self.show:
       mpl.use('Agg')
       plt.ioff()
-    
+
     # relating to tiling
     self._pad = None
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
-        
+
     # original input format paths
     self.labels_path = join(self.data_root, 'labels.npy')
     self.annotations_dir = join(self.data_root, 'annotations')
@@ -111,7 +108,7 @@ class Artifice:
     self.unlabeled_size = self.splits[0]
     self.validation_size = self.splits[1]
     self.test_size = self.splits[2]
-    
+
     # number of steps per epochs
     self.train_steps = int(np.ceil(self.epoch_size / self.batch_size))
     self.validation_steps = int(np.ceil(self.validation_size / self.batch_size))
@@ -136,7 +133,7 @@ class Artifice:
       if not exists(path):
         os.makedirs(path)
 
-    
+
   def __str__(self):
     return self.args.__str__()
 
@@ -148,13 +145,13 @@ class Artifice:
       return 0
     else:
       return self._pad
-  
+
   @property
   def image_paths(self):
     if self._image_paths is None:
       self._image_paths = sorted(glob(join(self.images_dir, '*.png')))
     return self._image_paths
-  
+
   @property
   def annotation_paths(self):
     if self._annotation_paths is None:
@@ -179,7 +176,7 @@ class Artifice:
       self.unlabeled_set_path,
       size=self.unlabeled_size,
       **self.dat_kwargs)
-  
+
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
     unlabeled_set = self.load_unlabeled()
@@ -214,7 +211,7 @@ class Artifice:
     else:
       return dat.Data(self.labeled_subset_path, size=self.subset_size,
                       **self.dat_kwargs)
-  
+
   def make_model(self):
     """Create and compile the model."""
     model = mod.HourglassModel(
@@ -224,7 +221,7 @@ class Artifice:
     self._pad = model.pad
     model.compile(learning_rate=self.learning_rate)
     return model
-  
+
   def load_model(self):
     """Load the model, depending on self.overwrite."""
     model = self.make_model()
@@ -281,7 +278,7 @@ def cmd_convert(art):
   annotated_writer.close()
   logger.info("finished")
   logger.info(f"wrote {i+1} unlabeled images")
-  
+
   # Collect the validation set
   logger.info(f"writing validation set to '{art.validation_set_path}'...")
   writer = tf.python_io.TFRecordWriter(art.validation_set_path)
@@ -319,32 +316,32 @@ def cmd_train(art):
             'validation_data' : validation_set.eval_input,
             'validation_steps' : art.validation_steps,
             'verbose' : art.keras_verbose}
-  
+
   if art.mode == 'full':
     # run "traditional" training on the full, labeled dataset
     labeled_set = art.load_labeled()
     hist = model.fit(labeled_set.training_input, **kwargs)
-    
+
   elif art.mode == 'random':
     # Label a small, random subset of the data, as a human might
     labeled_subset = art.load_labeled_subset()
     hist = model.fit(labeled_subset.training_input, **kwargs)
-    
+
   elif art.mode == 'active':
     # Label a small, actively selected subset of the data during training
     learner = art.load_learner(model)
     hist = learner.fit(unlabeled_set, art.labeled_subset_dir, **kwargs)
-    
+
   elif art.mode == 'augmented-full':
     # run training with full dataset, augmented
     annotated_set = art.load_annotated()
     hist = model.fit(annotated_set.training_input, **kwargs)
-    
+
   elif art.mode == 'augmented-random':
     # use a random set of original examples, augmented
     annotated_set = art.load_annotated()
     hist = model.fit(annotated_set.training_input, **kwargs)
-    
+
   elif art.mode == 'augmented-active':
     # actively select examples and augment
     learner = art.load_learner(model)
@@ -354,7 +351,7 @@ def cmd_train(art):
 
   art.save_history(hist)
 
-    
+
 def cmd_predict(art):
   model = art.load_model()
   unlabeled_set, validation_set, test_set = art.load_data()
@@ -364,7 +361,7 @@ def cmd_predict(art):
       image, field = example
       vis.plot_image(image, field, prediction)
       plt.show()
-    
+
 def cmd_evaluate(art):
   pass
 
@@ -436,7 +433,7 @@ def cmd_analyze(art):
     plt.show()
   else:
     plt.close() # savefig(art.labels_hist_path)
-  
+
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('command', help=docs.command_help)
@@ -497,7 +494,7 @@ def main():
                       help=docs.verbose_help)
   parser.add_argument('--keras-verbose', nargs=1,
                       default=[1], type=int,
-                      help=docs.keras_verbose_help)  
+                      help=docs.keras_verbose_help)
   parser.add_argument('--eager', action='store_true',
                       help=docs.eager_help)
   parser.add_argument('--show', action='store_true',
