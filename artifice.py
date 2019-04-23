@@ -124,6 +124,7 @@ class Artifice:
     self.model_detections_path = join(self.model_root, 'detections.npy')
     self.detections_video_path = join(self.model_root, 'detections.mp4')
     self.example_detection_path = join(self.model_root, 'example_detection.pdf')
+    self.regional_errors_path = join(self.model_root, 'regional_errors.pdf')
     self.history_path = join(self.model_root, 'history.json')
 
     # ensure directories exist
@@ -397,7 +398,8 @@ def cmd_visualize(art):
   if art.show:
     plt.show()
   else:
-    plt.close()
+    plt.savefig(art.regional_errors_path)
+    logger.info(f"saved error map to {art.regional_errors_path}")
 
   get_next = test_set.dataset.make_one_shot_iterator().get_next()
   writer = vid.MP4Writer(art.detections_video_path)
