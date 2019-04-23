@@ -95,22 +95,10 @@ class ActiveLearner(Detector):
 
     """
     detection = data.from_field(field)
-    logger.debug(f"detection: {detection}")
     other_field = data.to_numpy_field(detection)
-    logger.debug(f"other_field: {other_field.shape}, "
-                 f"nans at {list(zip(*np.where(np.isnan(other_field))))}")
-    logger.debug(f"field: {field.shape}, "
-                 f"nans at {list(zip(*np.where(np.isnan(field))))}")
-    diff = field - other_field
-    logger.debug(f"diff: {diff.shape}, "
-                 f"nans at {list(zip(*np.where(np.isnan(diff))))}")
+    diff = other_field - field
     sqr = np.square(diff)
-    logger.debug(f"sqr: {diff.shape}, {np.sum(np.isnan(sqr))} nans")
     uncertainty = sqr.mean()
-    logger.debug(f"uncertainty: {uncertainty}")
-    # vis.plot_image(field, other_field)
-    # plt.show()
-    # TODO: currently getting NANs, why?
     return uncertainty
 
   def choose_query(self, unlabeled_set):
