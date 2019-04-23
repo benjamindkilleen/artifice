@@ -5,7 +5,9 @@
 from os.path import join
 import logging
 import numpy as np
+import matplotlib.pyplot as plt
 from artifice import dat
+from artifice.utils import vis
 
 
 logger = logging.getLogger('artifice')
@@ -36,6 +38,7 @@ class Detector():
       logger.info(f"predicting round {r}...")
       tiles = self.model.predict(data.eval_input.skip(r*round_size),
                                  steps=steps, verbose=verbose)
+      
       logger.debug(f"tiles: {tiles.shape}")
       for field in data.untile(tiles):
         yield field
@@ -94,11 +97,20 @@ class ActiveLearner(Detector):
     detection = data.from_field(field)
     logger.debug(f"detection: {detection}")
     other_field = data.to_numpy_field(detection)
-    logger.debug(f"other_field: {other_field}")
-    logger.debug(f"field: {field}")
-    uncertainty = np.square(field - other_field).mean()
+    logger.debug(f"other_field: {other_field.shape}, "
+                 f"nans at {list(zip(*np.where(np.isnan(other_field))))}")
+    logger.debug(f"field: {field.shape}, "
+                 f"nans at {list(zip(*np.where(np.isnan(field))))}")
+    diff = field - other_field
+    logger.debug(f"diff: {diff.shape}, "
+                 f"nans at {list(zip(*np.where(np.isnan(diff))))}")
+    sqr = np.square(diff)
+    logger.debug(f"sqr: {diff.shape}, {np.sum(np.isnan(sqr))} nans")
+    uncertainty = sqr.mean()
     logger.debug(f"uncertainty: {uncertainty}")
-    # TODO: currently NAN, why?
+    # vis.plot_image(field, other_field)
+    # plt.show()
+    # TODO: currently getting NANs, why?
     return uncertainty
 
   def choose_query(self, unlabeled_set):
@@ -151,7 +163,7 @@ class ActiveLearner(Detector):
     for epoch in range(epochs):
       if epoch*self.query_size >= self.subset_size:
         break
-      logger.info(f"Epoch {epoch} / {epochs}")
+      logger.info(f"Epoch {epoch}/{epochs}")
       if epoch == 0:
         sampling[0] = 1
       else:

@@ -5,15 +5,14 @@ Data class for feeding data into models, possibly with augmentation.
 
 """
 
+import logging
 import numpy as np
-import tensorflow as tf
-from artifice import tform, oracles
-from artifice.utils import img
 from skimage.feature import peak_local_max
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
-import os
-import logging
+import tensorflow as tf
+from artifice import tform
+from artifice.utils import img
 
 
 logger = logging.getLogger('artifice')
@@ -595,6 +594,9 @@ class Data(object):
     :rtype: ndarray
 
     """
+    if self.num_tiles == 1:
+      return tiles[0]
+    
     image = np.empty(self.image_shape, dtype=np.float32)
     next_tile = iter(tiles)
     for i in range(0, self.image_shape[0], self.tile_shape[0]):

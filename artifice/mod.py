@@ -22,7 +22,7 @@ def log_layers(layers):
 
 def crop(inputs, shape):
   return lay.Crop(shape)(inputs)
-    
+
 def maxpool(inputs, dropout=None):
   inputs = keras.layers.MaxPool2D()(inputs)
   if dropout is not None:
@@ -38,8 +38,8 @@ def conv(inputs, filters, kernel_shape=(3,3),
   :param activation: keras activation to use. Default is 'relu'
   :param padding: 'valid' or 'same'
   :param norm: whether or not to perform batch normalization on the output
-  :returns: 
-  :rtype: 
+  :returns:
+  :rtype:
 
   """
   if norm:
@@ -74,7 +74,7 @@ def conv_transpose(inputs, filters, activation='relu', dropout=None):
   if dropout is not None:
     inputs = keras.layers.Dropout(dropout)(inputs)
   return inputs
-        
+
 def concat(inputs, *other_inputs, axis=-1, dropout=None):
   """Apply dropout to inputs and concat with other_inputs."""
   if dropout is not None:
@@ -82,7 +82,7 @@ def concat(inputs, *other_inputs, axis=-1, dropout=None):
   inputs = keras.layers.concatenate([inputs] + list(other_inputs))
   return inputs
 
-    
+
 class Model():
   def __init__(self, model, model_dir=None, tensorboard=None):
     """Wrapper around a keras.Model for saving, loading, and running.
@@ -94,16 +94,16 @@ class Model():
     __init__, after it has initialized variables necessary for
     self.create_layers().
 
-    :param input_shape: 
-    :returns: 
-    :rtype: 
+    :param input_shape:
+    :returns:
+    :rtype:
 
     """
     self.model_dir = model_dir
     self.checkpoint_path = (None if model_dir is None else
                             join(model_dir, "cp-{epoch:04d}.hdf5"))
     self.tensorboard = tensorboard
-    
+
     self.model = model
     log_model(self.model)
 
@@ -122,27 +122,30 @@ class Model():
       # Need to have an actual directory in which to store the logs.
       raise NotImplementedError
     return callbacks
-    
+
   def fit(self, *args, **kwargs):
     kwargs['callbacks'] = self.callbacks
     hist = self.model.fit(*args, **kwargs)
     return hist.history
 
   def predict(self, *args, **kwargs):
-    return self.model.predict(*args, **kwargs)
+    out = self.model.predict(*args, **kwargs)
+    out[np.logical_not(np.isfinite(out))] = 0.
+    logger.debug("predict: {np.sum(np.isnan(out))} nan values")
+    return out
 
   def evaluate(self, *args, **kwargs):
     return self.model.evaluate(*args, **kwargs)
 
   def save(self, *args, **kwargs):
     return self.model.save(*args, **kwargs)
-    
+
   # load the model from a most recent checkpoint
   def load(self):
     if self.model_dir is None:
       logger.warning(f"failed to load weights; no `model_dir` set")
       return
-    
+
     latest = tf.train.latest_checkpoint(self.model_dir)
     if latest is None:
       logger.info(f"no checkpoint found in {self.model_dir}")
@@ -165,14 +168,14 @@ class FunctionalModel(Model):
 
     Subclasses override this.
 
-    :param inputs: 
-    :returns: 
-    :rtype: 
+    :param inputs:
+    :returns:
+    :rtype:
 
     """
     return inputs
-  
-  
+
+
 class HourglassModel(FunctionalModel):
   def __init__(self, tile_shape,
                level_filters=[64,64,128,128],
@@ -184,14 +187,14 @@ class HourglassModel(FunctionalModel):
     """Create an hourglass-shaped model for object detection.
 
     :param tile_shape: shape of the output tiles
-    :param level_filters: 
-    :param level_depth: 
+    :param level_filters:
+    :param level_depth:
     :param valid: whether to use valid padding
-    :param pool_dropout: 
-    :param concat_dropout: 
-    :returns: 
-    :rtype: 
-    
+    :param pool_dropout:
+    :param concat_dropout:
+    :returns:
+    :rtype:
+
     """
     self.tile_shape = tile_shape
     self.level_filters = level_filters
@@ -212,7 +215,7 @@ class HourglassModel(FunctionalModel):
     for _ in range(self.levels - 1):
       pad = 2*pad + 2*self.level_depth
     return pad
-    
+
   def compile(self, learning_rate=0.1, **kwargs):
     kwargs['optimizer'] = kwargs.get(
       'optimizer', tf.train.AdadeltaOptimizer(learning_rate))
@@ -243,7 +246,7 @@ class HourglassModel(FunctionalModel):
     inputs = conv(inputs, 1, kernel_shape=(1,1), activation=None,
                   padding='same', norm=False)
     return inputs
-  
+
   def full_predict(self, data, steps=None, verbose=1):
     """Yield reassembled fields from the data.
 
@@ -251,9 +254,9 @@ class HourglassModel(FunctionalModel):
 
     :param data: dat.Data set
     :param steps: number of image batches to do at once
-    :param verbose: 
-    :returns: 
-    :rtype: 
+    :param verbose:
+    :returns:
+    :rtype:
 
     """
     if steps is None:
@@ -267,13 +270,13 @@ class HourglassModel(FunctionalModel):
       logger.debug(f"tiles: {tiles.shape}")
       for field in data.untile(tiles):
         yield field
-  
+
   def detect(self, data):
     """Detect objects in the reassembled fields.
-    
+
     :param data: dat.Data set
     :returns: matched_detections, predicted fields
-    
+
     """
     detections = np.zeros((data.size, data.num_objects, 3), np.float32)
     fields = np.zeros([data.size] + data.image_shape, np.float32)
@@ -281,5 +284,3 @@ class HourglassModel(FunctionalModel):
       fields[i] = field
       detections[i] = data.from_field(field)
     return dat.match_detections(detections, data.labels), fields
-
-
