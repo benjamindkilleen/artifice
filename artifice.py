@@ -117,18 +117,22 @@ class Artifice:
     # model dirs
     self.hourglass_dir = join(self.model_root, 'hourglass/')
 
-    # model-dependent paths
+    # model-dependent paths, i.e. made during training
+    self.model_data_root = join(self.model_root, self.data_root.split(os.sep)[-1])
     self.annotated_subset_dir = join(self.model_root, 'annotated_subsets')
     self.labeled_subset_dir = join(self.model_root, 'labeled_subsets')
-    self.predicted_fields_path = join(self.model_root, 'predicted_fields.npy')
-    self.model_detections_path = join(self.model_root, 'detections.npy')
-    self.detections_video_path = join(self.model_root, 'detections.mp4')
-    self.example_detection_path = join(self.model_root, 'example_detection.pdf')
-    self.regional_errors_path = join(self.model_root, 'regional_errors.pdf')
     self.history_path = join(self.model_root, 'history.json')
+
+    # model-data dependent paths, i.e. figures and predictions
+    self.predicted_fields_path = join(self.model_data_root, 'predicted_fields.npy')
+    self.model_detections_path = join(self.model_data_root, 'detections.npy')
+    self.detections_video_path = join(self.model_data_root, 'detections.mp4')
+    self.example_detection_path = join(self.model_data_root, 'example_detection.pdf')
+    self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
 
     # ensure directories exist
     for path in [self.data_root, self.model_root,
+                 self.model_data_root,
                  self.annotated_subset_dir,
                  self.labeled_subset_dir]:
       if not exists(path):

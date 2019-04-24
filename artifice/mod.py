@@ -281,6 +281,8 @@ class HourglassModel(FunctionalModel):
     detections = np.zeros((data.size, data.num_objects, 3), np.float32)
     fields = np.zeros([data.size] + data.image_shape, np.float32)
     for i, field in enumerate(self.full_predict(data)):
+      if i >= data.size:
+        break
       fields[i] = field
       detections[i] = data.from_field(field)
     return dat.match_detections(detections, data.labels), fields

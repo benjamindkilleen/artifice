@@ -72,11 +72,11 @@ def plot_errors(labels, errors, image_shape):
     h, xedges, yedges, im = axes[i].hist2d(
       labels[:,i,2], labels[:,i,1],
       weights=errors[:,i],
-      bins=[image_shape[1] // 4,image_shape[0]] // 4,
+      bins=[image_shape[1] // 4,image_shape[0] // 4],
       range=[[0,image_shape[1]],[0,image_shape[0]]],
       cmap='magma', vmin=0.0, vmax=errors.max())
     axes[i].set_ylim(image_shape[0],0)
     axes[i].set_aspect('equal')
     axes[i].set_title(f"Object '{int(labels[0,i,0])}'")
-  axes[i].colorbar(im)
+  plt.colorbar(im)
   return fig, axes

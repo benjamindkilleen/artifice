@@ -49,7 +49,7 @@ analysis_template = """#!/bin/bash
 #SBATCH --error={err_name}
 #SBATCH -p gpu2
 #SBATCH --gres=gpu:1
-#SBATCH --time=24:00:00
+#SBATCH --time=01:00:00
 #SBATCH --account=pi-glk
 #SBATCH --mem-per-cpu=32000
 
@@ -65,15 +65,26 @@ cd /project2/glk/artifice
 
 mode={mode}
 data={data}
-subset_size={subset_size} # ignored if mode is 'full'
+subset_size={subset_size}
 
-echo "Starting..."
-python artifice.py {cmd} --mode $mode -i data/$data \\
+echo "Starting coupled_spheres..."
+python artifice.py {cmd} --mode $mode -i data/coupled_spheres \\
        -m models/${{data}}_${{mode}}{subset_addon} \\
-       --subset-size $subset_size --query-size \\
        --verbose 2 --keras-verbose 2
 echo "Finished."
 
+echo "Starting coupled_spheres_tethered..."
+python artifice.py {cmd} --mode $mode -i data/coupled_spheres_tethered \\
+       -m models/${{data}}_${{mode}}{subset_addon} \\
+       --verbose 2 --keras-verbose 2
+echo "Finished."
+
+echo "Starting waltzing_spheres..."
+python artifice.py {cmd} --mode $mode -i data/waltzing_spheres \\
+       -m models/${{data}}_${{mode}}{subset_addon} \\
+       --splits 0 0 2041 \\
+       --verbose 2 --keras-verbose 2
+echo "Finished."
 """
 
 
@@ -87,12 +98,12 @@ subset_sizes = [10, 100]
 
 for t in itertools.product(which_epochs, modes, datas, subset_sizes):
   print(t)
+  epochs, mode, data, subset_size = t
   dir_name = f"train/{mode}_{data}" + ("" if 'full' in mode
                                        else f"_subset{subset_size}")
   if not os.path.exists(dir_name):
     os.mkdir(dir_name)
 
-  epochs, mode, data, subset_size = t
   subset_addon = "" if 'full' in mode else "_subset${subset_size}"
   query_size = subset_size // num_active_epochs
   out_name = os.path.join(os.getcwd(), dir_name, 'train.out')
@@ -112,7 +123,7 @@ for t in itertools.product(which_epochs, modes, datas, subset_sizes):
     subset_addon=subset_addon, out_name=out_name, err_name=err_name)
   with open(os.path.join(dir_name, 'detect.batch'), 'w') as f:
     f.write(script)
-  
+
   cmd = 'visualize'
   out_name = os.path.join(os.getcwd(), dir_name, f'{cmd}.out')
   err_name = os.path.join(os.getcwd(), dir_name, f'{cmd}.err')  
