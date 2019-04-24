@@ -22,3 +22,5 @@ reports/**/*.out
 reports/**/*.el
 models/coupled_spheres/detection_*.*
 batch/train/**/*.batch
+models/**/waltzing_spheres/*.mp4
+models/**/*.mp4
