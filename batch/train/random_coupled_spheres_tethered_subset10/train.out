@@ -1,0 +1,82 @@
+Starting training...
+Epoch 1/20
+
+Epoch 00001: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0001.hdf5
+ - 854s - loss: 0.0965 - mean_absolute_error: 0.0343 - val_loss: 1.9792 - val_mean_absolute_error: 0.0071
+Epoch 2/20
+
+Epoch 00002: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0002.hdf5
+ - 844s - loss: 0.0320 - mean_absolute_error: 0.0067 - val_loss: 1.9752 - val_mean_absolute_error: 0.0052
+Epoch 3/20
+
+Epoch 00003: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0003.hdf5
+ - 843s - loss: 0.0298 - mean_absolute_error: 0.0065 - val_loss: 1.9717 - val_mean_absolute_error: 0.0040
+Epoch 4/20
+
+Epoch 00004: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0004.hdf5
+ - 843s - loss: 0.0202 - mean_absolute_error: 0.0081 - val_loss: 1.9778 - val_mean_absolute_error: 0.0051
+Epoch 5/20
+
+Epoch 00005: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0005.hdf5
+ - 844s - loss: 0.0069 - mean_absolute_error: 0.0064 - val_loss: 1.9710 - val_mean_absolute_error: 0.0035
+Epoch 6/20
+
+Epoch 00006: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0006.hdf5
+ - 843s - loss: 0.0029 - mean_absolute_error: 0.0043 - val_loss: 1.9730 - val_mean_absolute_error: 0.0032
+Epoch 7/20
+
+Epoch 00007: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0007.hdf5
+ - 843s - loss: 0.0019 - mean_absolute_error: 0.0032 - val_loss: 1.9735 - val_mean_absolute_error: 0.0030
+Epoch 8/20
+
+Epoch 00008: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0008.hdf5
+ - 842s - loss: 0.0014 - mean_absolute_error: 0.0027 - val_loss: 1.9731 - val_mean_absolute_error: 0.0028
+Epoch 9/20
+
+Epoch 00009: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0009.hdf5
+ - 842s - loss: 0.0011 - mean_absolute_error: 0.0024 - val_loss: 1.9729 - val_mean_absolute_error: 0.0032
+Epoch 10/20
+
+Epoch 00010: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0010.hdf5
+ - 842s - loss: 9.5897e-04 - mean_absolute_error: 0.0022 - val_loss: 1.9712 - val_mean_absolute_error: 0.0028
+Epoch 11/20
+
+Epoch 00011: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0011.hdf5
+ - 842s - loss: 8.4637e-04 - mean_absolute_error: 0.0020 - val_loss: 1.9700 - val_mean_absolute_error: 0.0031
+Epoch 12/20
+
+Epoch 00012: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0012.hdf5
+ - 843s - loss: 7.3597e-04 - mean_absolute_error: 0.0019 - val_loss: 1.9739 - val_mean_absolute_error: 0.0035
+Epoch 13/20
+
+Epoch 00013: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0013.hdf5
+ - 842s - loss: 6.7914e-04 - mean_absolute_error: 0.0018 - val_loss: 1.9711 - val_mean_absolute_error: 0.0026
+Epoch 14/20
+
+Epoch 00014: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0014.hdf5
+ - 843s - loss: 6.0068e-04 - mean_absolute_error: 0.0017 - val_loss: 1.9723 - val_mean_absolute_error: 0.0026
+Epoch 15/20
+
+Epoch 00015: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0015.hdf5
+ - 842s - loss: 5.4841e-04 - mean_absolute_error: 0.0016 - val_loss: 1.9729 - val_mean_absolute_error: 0.0030
+Epoch 16/20
+
+Epoch 00016: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0016.hdf5
+ - 843s - loss: 5.0841e-04 - mean_absolute_error: 0.0016 - val_loss: 1.9720 - val_mean_absolute_error: 0.0026
+Epoch 17/20
+
+Epoch 00017: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0017.hdf5
+ - 842s - loss: 4.7742e-04 - mean_absolute_error: 0.0015 - val_loss: 1.9727 - val_mean_absolute_error: 0.0026
+Epoch 18/20
+
+Epoch 00018: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0018.hdf5
+ - 842s - loss: 4.4356e-04 - mean_absolute_error: 0.0015 - val_loss: 1.9728 - val_mean_absolute_error: 0.0026
+Epoch 19/20
+
+Epoch 00019: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0019.hdf5
+ - 843s - loss: 4.2186e-04 - mean_absolute_error: 0.0014 - val_loss: 1.9724 - val_mean_absolute_error: 0.0027
+Epoch 20/20
+
+Epoch 00020: saving model to models/coupled_spheres_tethered_random_subset10/hourglass/cp-0020.hdf5
+ - 842s - loss: 4.0119e-04 - mean_absolute_error: 0.0014 - val_loss: 1.9728 - val_mean_absolute_error: 0.0029
+Finished.

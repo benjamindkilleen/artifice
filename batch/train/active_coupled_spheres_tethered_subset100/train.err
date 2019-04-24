@@ -1,0 +1,481 @@
+INFO:artifice:Namespace(batch_size=[4], command='train', cores=[-1], data_root=['data/coupled_spheres_tethered'], eager=False, epoch_size=[10000], epochs=[20], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['active'], model_root=['models/coupled_spheres_tethered_active_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=True, query_size=[10], show=False, splits=[10000, 1000, 1000], subset_size=[100], tile_shape=[196, 196, 1], verbose=[2])
+INFO:artifice:model: model
+DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 284, 284, 1):input_1
+DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 282, 282, 64):conv2d
+DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 282, 282, 64):batch_normalization
+DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 282, 282, 64):activation
+DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 280, 280, 64):conv2d_1
+DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 280, 280, 64):batch_normalization_1
+DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 280, 280, 64):activation_1
+DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 140, 140, 64):max_pooling2d
+DEBUG:artifice:layer:(None, 140, 140, 64) -> (None, 140, 140, 64):dropout
+DEBUG:artifice:layer:(None, 140, 140, 64) -> (None, 138, 138, 64):conv2d_2
+DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 138, 138, 64):batch_normalization_2
+DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 138, 138, 64):activation_2
+DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 136, 136, 64):conv2d_3
+DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 136, 136, 64):batch_normalization_3
+DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 136, 136, 64):activation_3
+DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 68, 68, 64):max_pooling2d_1
+DEBUG:artifice:layer:(None, 68, 68, 64) -> (None, 68, 68, 64):dropout_1
+DEBUG:artifice:layer:(None, 68, 68, 64) -> (None, 66, 66, 128):conv2d_4
+DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 66, 66, 128):batch_normalization_4
+DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 66, 66, 128):activation_4
+DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 64, 64, 128):conv2d_5
+DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 64, 64, 128):batch_normalization_5
+DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 64, 64, 128):activation_5
+DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 32, 32, 128):max_pooling2d_2
+DEBUG:artifice:layer:(None, 32, 32, 128) -> (None, 32, 32, 128):dropout_2
+DEBUG:artifice:layer:(None, 32, 32, 128) -> (None, 30, 30, 128):conv2d_6
+DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 30, 30, 128):batch_normalization_6
+DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 30, 30, 128):activation_6
+DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 28, 28, 128):conv2d_7
+DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 28, 28, 128):batch_normalization_7
+DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 56, 56, 128):crop
+DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 28, 28, 128):activation_7
+DEBUG:artifice:layer:(None, 56, 56, 128) -> (None, 56, 56, 128):dropout_3
+DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 56, 56, 128):conv2d_transpose
+DEBUG:artifice:layer:[(None, 56, 56, 128), (None, 56, 56, 128)] -> (None, 56, 56, 256):concatenate
+DEBUG:artifice:layer:(None, 56, 56, 256) -> (None, 54, 54, 128):conv2d_8
+DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 54, 54, 128):batch_normalization_8
+DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 54, 54, 128):activation_8
+DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 52, 52, 128):conv2d_9
+DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 52, 52, 128):batch_normalization_9
+DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 104, 104, 64):crop_1
+DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 52, 52, 128):activation_9
+DEBUG:artifice:layer:(None, 104, 104, 64) -> (None, 104, 104, 64):dropout_4
+DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 104, 104, 64):conv2d_transpose_1
+DEBUG:artifice:layer:[(None, 104, 104, 64), (None, 104, 104, 64)] -> (None, 104, 104, 128):concatenate_1
+DEBUG:artifice:layer:(None, 104, 104, 128) -> (None, 102, 102, 64):conv2d_10
+DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 102, 102, 64):batch_normalization_10
+DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 102, 102, 64):activation_10
+DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 100, 100, 64):conv2d_11
+DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 100, 100, 64):batch_normalization_11
+DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 200, 200, 64):crop_2
+DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 100, 100, 64):activation_11
+DEBUG:artifice:layer:(None, 200, 200, 64) -> (None, 200, 200, 64):dropout_5
+DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 200, 200, 64):conv2d_transpose_2
+DEBUG:artifice:layer:[(None, 200, 200, 64), (None, 200, 200, 64)] -> (None, 200, 200, 128):concatenate_2
+DEBUG:artifice:layer:(None, 200, 200, 128) -> (None, 198, 198, 64):conv2d_12
+DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 198, 198, 64):batch_normalization_12
+DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 198, 198, 64):activation_12
+DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 196, 196, 64):conv2d_13
+DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):batch_normalization_13
+DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):activation_13
+DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 1):conv2d_14
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 0/20
+2019-04-23 03:34:12.198755: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-23 03:34:12.976506: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:09:00.0
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2019-04-23 03:34:12.976567: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 03:34:31.563500: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 03:34:31.563587: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 03:34:31.563604: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 03:34:31.564062: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 03:34:34.282439: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 03:34:34.282484: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 03:34:34.282497: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 03:34:34.282506: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 03:34:34.282763: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+2019-04-23 03:35:00.840648: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 03:35:00.840715: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 03:35:00.840730: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 03:35:00.840738: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 03:35:00.841260: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:Epoch 1/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [0, 1, 16, 17, 20, 33, 34, 35, 36, 113] with uncertainties [(0, 52061612.0), (1, 52061612.0), (16, 52061612.0), (17, 52061612.0), (20, 52061612.0), (33, 52061612.0), (34, 52061612.0), (35, 52061612.0), (36, 52061612.0), (113, 52061612.0)]
+INFO:artifice:querying [0, 1, 16, 17, 20, 33, 34, 35, 36, 113]...
+2019-04-23 03:56:33.924418: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 03:56:33.924501: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 03:56:33.924514: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 03:56:33.924522: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 03:56:33.924725: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 03:56:36.045399: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 03:56:36.045472: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 03:56:36.045486: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 03:56:36.045494: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 03:56:36.045659: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 2/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [1661, 1818, 1189, 1425, 1583, 1619, 1662, 1817, 1819, 1855] with uncertainties [(1661, 52061610.0), (1818, 52061610.0), (1189, 52061604.0), (1425, 52061604.0), (1583, 52061604.0), (1619, 52061604.0), (1662, 52061604.0), (1817, 52061604.0), (1819, 52061604.0), (1855, 52061604.0)]
+INFO:artifice:querying [1661, 1818, 1189, 1425, 1583, 1619, 1662, 1817, 1819, 1855]...
+2019-04-23 04:18:00.966982: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 04:18:00.967049: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 04:18:00.967063: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 04:18:00.967071: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 04:18:00.967268: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 04:18:03.156187: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 04:18:03.156243: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 04:18:03.156256: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 04:18:03.156265: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 04:18:03.156398: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 3/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [2759, 2595, 2161, 2714, 2760, 2882, 2971, 2437, 2438, 2758] with uncertainties [(2759, 52061580.0), (2595, 52061576.0), (2161, 52061570.0), (2714, 52061570.0), (2760, 52061570.0), (2882, 52061570.0), (2971, 52061570.0), (2437, 52061564.0), (2438, 52061564.0), (2758, 52061564.0)]
+INFO:artifice:querying [2759, 2595, 2161, 2714, 2760, 2882, 2971, 2437, 2438, 2758]...
+2019-04-23 04:39:28.382332: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 04:39:28.382393: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 04:39:28.382407: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 04:39:28.382415: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 04:39:28.382628: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 04:39:31.063493: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 04:39:31.063561: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 04:39:31.063595: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 04:39:31.063605: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 04:39:31.063759: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 4/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [3683, 3230, 3646, 3025, 3068, 3113, 3170, 3314, 3171, 3112] with uncertainties [(3683, 52061570.0), (3230, 52061564.0), (3646, 52061564.0), (3025, 52061560.0), (3068, 52061560.0), (3113, 52061560.0), (3170, 52061560.0), (3314, 52061556.0), (3171, 52061550.0), (3112, 52061548.0)]
+INFO:artifice:querying [3683, 3230, 3646, 3025, 3068, 3113, 3170, 3314, 3171, 3112]...
+2019-04-23 05:00:56.563618: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 05:00:56.563681: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 05:00:56.563696: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 05:00:56.563705: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 05:00:56.563944: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 05:00:59.113126: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 05:00:59.113193: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 05:00:59.113206: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 05:00:59.113214: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 05:00:59.113365: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 5/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [4643, 4957, 4764, 4171, 4307, 4487, 4642, 4697, 4799, 4958] with uncertainties [(4643, 52061520.0), (4957, 52061520.0), (4764, 52061516.0), (4171, 52061500.0), (4307, 52061496.0), (4487, 52061496.0), (4642, 52061496.0), (4697, 52061496.0), (4799, 52061496.0), (4958, 52061496.0)]
+INFO:artifice:querying [4643, 4957, 4764, 4171, 4307, 4487, 4642, 4697, 4799, 4958]...
+2019-04-23 05:22:27.713904: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 05:22:27.713966: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 05:22:27.713980: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 05:22:27.713988: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 05:22:27.714182: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 05:22:30.103143: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 05:22:30.103216: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 05:22:30.103230: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 05:22:30.103238: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 05:22:30.103384: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 6/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [5055, 5200, 5292, 5324, 5027, 5201, 5415, 5325, 5530, 5694] with uncertainties [(5055, 52061460.0), (5200, 52061460.0), (5292, 52061452.0), (5324, 52061450.0), (5027, 52061440.0), (5201, 52061440.0), (5415, 52061436.0), (5325, 52061430.0), (5530, 52061430.0), (5694, 52061430.0)]
+INFO:artifice:querying [5055, 5200, 5292, 5324, 5027, 5201, 5415, 5325, 5530, 5694]...
+2019-04-23 05:43:59.659743: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 05:43:59.659835: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 05:43:59.659850: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 05:43:59.659859: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 05:43:59.660084: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 05:44:02.232747: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 05:44:02.232815: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 05:44:02.232828: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 05:44:02.232836: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 05:44:02.232992: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 7/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [6098, 6473, 6242, 6099, 6100, 6152, 6243, 6474, 6097, 6779] with uncertainties [(6098, 52061384.0), (6473, 52061384.0), (6242, 52061376.0), (6099, 52061364.0), (6100, 52061364.0), (6152, 52061356.0), (6243, 52061356.0), (6474, 52061356.0), (6097, 52061350.0), (6779, 52061344.0)]
+INFO:artifice:querying [6098, 6473, 6242, 6099, 6100, 6152, 6243, 6474, 6097, 6779]...
+2019-04-23 06:05:36.112577: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 06:05:36.112694: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 06:05:36.112712: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 06:05:36.112722: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 06:05:36.112974: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 06:05:39.029970: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 06:05:39.030060: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 06:05:39.030074: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 06:05:39.030082: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 06:05:39.030242: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 8/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [7271, 7272, 7655, 7810, 7110, 7812, 7656, 7809, 7811, 7456] with uncertainties [(7271, 52061276.0), (7272, 52061240.0), (7655, 52061240.0), (7810, 52061230.0), (7110, 52061220.0), (7812, 52061220.0), (7656, 52061216.0), (7809, 52061216.0), (7811, 52061210.0), (7456, 52061204.0)]
+INFO:artifice:querying [7271, 7272, 7655, 7810, 7110, 7812, 7656, 7809, 7811, 7456]...
+2019-04-23 06:27:06.905790: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 06:27:06.905872: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 06:27:06.905901: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 06:27:06.905909: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 06:27:06.906120: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 06:27:09.569786: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 06:27:09.569855: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 06:27:09.569869: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 06:27:09.569877: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 06:27:09.570043: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+INFO:artifice:Epoch 9/20
+INFO:artifice:predicting round 0...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
+DEBUG:artifice:tiles: (1000, 196, 196, 1)
+DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
+INFO:artifice:choose query: 0 / 1000
+INFO:artifice:choose query: 50 / 1000
+INFO:artifice:choose query: 100 / 1000
+INFO:artifice:choose query: 150 / 1000
+INFO:artifice:choose query: 200 / 1000
+INFO:artifice:choose query: 250 / 1000
+INFO:artifice:choose query: 300 / 1000
+INFO:artifice:choose query: 350 / 1000
+INFO:artifice:choose query: 400 / 1000
+INFO:artifice:choose query: 450 / 1000
+INFO:artifice:choose query: 500 / 1000
+INFO:artifice:choose query: 550 / 1000
+INFO:artifice:choose query: 600 / 1000
+INFO:artifice:choose query: 650 / 1000
+INFO:artifice:choose query: 700 / 1000
+INFO:artifice:choose query: 750 / 1000
+INFO:artifice:choose query: 800 / 1000
+INFO:artifice:choose query: 850 / 1000
+INFO:artifice:choose query: 900 / 1000
+INFO:artifice:choose query: 950 / 1000
+INFO:artifice:chose query [8940, 8941, 8315, 8566, 8427, 8530, 8678, 8367, 8682, 8149] with uncertainties [(8940, 52061160.0), (8941, 52061148.0), (8315, 52061144.0), (8566, 52061140.0), (8427, 52061124.0), (8530, 52061124.0), (8678, 52061124.0), (8367, 52061120.0), (8682, 52061116.0), (8149, 52061110.0)]
+INFO:artifice:querying [8940, 8941, 8315, 8566, 8427, 8530, 8678, 8367, 8682, 8149]...
+2019-04-23 06:48:38.598860: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 06:48:38.598941: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 06:48:38.598956: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 06:48:38.598964: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 06:48:38.599173: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-23 06:48:41.381380: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-23 06:48:41.381446: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-23 06:48:41.381460: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-23 06:48:41.381468: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-23 06:48:41.381650: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
+DEBUG:artifice:transforming object 0...
+DEBUG:artifice:transforming object 1...
+DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, 284, 284, 1) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)

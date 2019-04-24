@@ -1,0 +1,82 @@
+Starting training...
+Epoch 1/20
+
+Epoch 00001: saving model to models/coupled_spheres_full/hourglass/cp-0001.hdf5
+ - 892s - loss: 20840.8776 - mean_absolute_error: 0.0397 - val_loss: 53.6785 - val_mean_absolute_error: 0.0129
+Epoch 2/20
+
+Epoch 00002: saving model to models/coupled_spheres_full/hourglass/cp-0002.hdf5
+ - 877s - loss: 20840.8174 - mean_absolute_error: 0.0157 - val_loss: 53.6689 - val_mean_absolute_error: 0.0092
+Epoch 3/20
+
+Epoch 00003: saving model to models/coupled_spheres_full/hourglass/cp-0003.hdf5
+ - 876s - loss: 20840.7455 - mean_absolute_error: 0.0163 - val_loss: 53.6517 - val_mean_absolute_error: 0.0098
+Epoch 4/20
+
+Epoch 00004: saving model to models/coupled_spheres_full/hourglass/cp-0004.hdf5
+ - 875s - loss: 20840.7095 - mean_absolute_error: 0.0170 - val_loss: 53.6406 - val_mean_absolute_error: 0.0076
+Epoch 5/20
+
+Epoch 00005: saving model to models/coupled_spheres_full/hourglass/cp-0005.hdf5
+ - 876s - loss: 20840.6754 - mean_absolute_error: 0.0180 - val_loss: 53.6251 - val_mean_absolute_error: 0.0084
+Epoch 6/20
+
+Epoch 00006: saving model to models/coupled_spheres_full/hourglass/cp-0006.hdf5
+ - 876s - loss: 20840.6480 - mean_absolute_error: 0.0187 - val_loss: 53.6232 - val_mean_absolute_error: 0.0104
+Epoch 7/20
+
+Epoch 00007: saving model to models/coupled_spheres_full/hourglass/cp-0007.hdf5
+ - 875s - loss: 20840.5588 - mean_absolute_error: 0.0199 - val_loss: 53.6047 - val_mean_absolute_error: 0.0121
+Epoch 8/20
+
+Epoch 00008: saving model to models/coupled_spheres_full/hourglass/cp-0008.hdf5
+ - 877s - loss: 20840.5527 - mean_absolute_error: 0.0202 - val_loss: 53.5877 - val_mean_absolute_error: 0.0160
+Epoch 9/20
+
+Epoch 00009: saving model to models/coupled_spheres_full/hourglass/cp-0009.hdf5
+ - 876s - loss: 20840.5353 - mean_absolute_error: 0.0219 - val_loss: 53.5782 - val_mean_absolute_error: 0.0170
+Epoch 10/20
+
+Epoch 00010: saving model to models/coupled_spheres_full/hourglass/cp-0010.hdf5
+ - 876s - loss: 20840.5644 - mean_absolute_error: 0.0234 - val_loss: 53.5577 - val_mean_absolute_error: 0.0229
+Epoch 11/20
+
+Epoch 00011: saving model to models/coupled_spheres_full/hourglass/cp-0011.hdf5
+ - 876s - loss: 20840.3142 - mean_absolute_error: 0.0251 - val_loss: 53.5418 - val_mean_absolute_error: 0.0387
+Epoch 12/20
+
+Epoch 00012: saving model to models/coupled_spheres_full/hourglass/cp-0012.hdf5
+ - 876s - loss: 20840.2584 - mean_absolute_error: 0.0267 - val_loss: 53.5207 - val_mean_absolute_error: 0.0439
+Epoch 13/20
+
+Epoch 00013: saving model to models/coupled_spheres_full/hourglass/cp-0013.hdf5
+ - 877s - loss: 20840.3274 - mean_absolute_error: 0.0272 - val_loss: 53.4854 - val_mean_absolute_error: 0.0284
+Epoch 14/20
+
+Epoch 00014: saving model to models/coupled_spheres_full/hourglass/cp-0014.hdf5
+ - 876s - loss: 20840.1513 - mean_absolute_error: 0.0289 - val_loss: 53.4442 - val_mean_absolute_error: 0.0585
+Epoch 15/20
+
+Epoch 00015: saving model to models/coupled_spheres_full/hourglass/cp-0015.hdf5
+ - 876s - loss: 20839.7842 - mean_absolute_error: 0.0332 - val_loss: 53.3986 - val_mean_absolute_error: 0.0324
+Epoch 16/20
+
+Epoch 00016: saving model to models/coupled_spheres_full/hourglass/cp-0016.hdf5
+ - 877s - loss: 20839.3748 - mean_absolute_error: 0.0360 - val_loss: 53.3553 - val_mean_absolute_error: 0.0298
+Epoch 17/20
+
+Epoch 00017: saving model to models/coupled_spheres_full/hourglass/cp-0017.hdf5
+ - 875s - loss: 20839.3202 - mean_absolute_error: 0.0360 - val_loss: 53.2985 - val_mean_absolute_error: 0.0274
+Epoch 18/20
+
+Epoch 00018: saving model to models/coupled_spheres_full/hourglass/cp-0018.hdf5
+ - 875s - loss: 20839.4391 - mean_absolute_error: 0.0373 - val_loss: 53.2184 - val_mean_absolute_error: 0.0301
+Epoch 19/20
+
+Epoch 00019: saving model to models/coupled_spheres_full/hourglass/cp-0019.hdf5
+ - 876s - loss: 20839.2852 - mean_absolute_error: 0.0375 - val_loss: 53.1099 - val_mean_absolute_error: 0.0239
+Epoch 20/20
+
+Epoch 00020: saving model to models/coupled_spheres_full/hourglass/cp-0020.hdf5
+ - 875s - loss: 20838.9063 - mean_absolute_error: 0.0383 - val_loss: 53.1194 - val_mean_absolute_error: 0.0278
+Finished.
