@@ -16,11 +16,10 @@ data/**/*.npy
 data/particle_tracking
 !data/gyros/labels.npy
 !data/gyros/annotations/*.npy
-models/**/*.npy
 reports/grant
 reports/**/*.out
 reports/**/*.el
-models/coupled_spheres/detection_*.*
 batch/train/**/*.batch
+models/**/*.npy
 models/**/waltzing_spheres/*.mp4
 models/**/*.mp4
