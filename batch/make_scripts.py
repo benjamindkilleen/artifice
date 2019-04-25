@@ -82,7 +82,7 @@ echo "Finished."
 echo "Starting waltzing_spheres..."
 python artifice.py {cmd} --mode $mode -i data/waltzing_spheres \\
        -m models/${{data}}_${{mode}}{subset_addon} \\
-       --splits 0 0 2041 \\
+       --splits 0 0 2401 \\
        --verbose 2 --keras-verbose 2
 echo "Finished."
 """
