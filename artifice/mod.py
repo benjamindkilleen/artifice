@@ -260,16 +260,20 @@ class HourglassModel(FunctionalModel):
 
     """
     if steps is None:
-      steps = data.size // data.batch_size
+      steps = int(np.ceil(data.size / data.batch_size))
     round_size = steps*data.batch_size
     rounds = int(np.ceil(data.size / round_size))
+    n = 0
     for r in range(rounds):
       logger.info(f"predicting round {r}...")
       tiles = self.predict(data.eval_input.skip(r*round_size),
                            steps=steps, verbose=verbose)
       logger.debug(f"tiles: {tiles.shape}")
       for field in data.untile(tiles):
+        if n >= data.size:
+          break
         yield field
+        n += 1
 
   def detect(self, data):
     """Detect objects in the reassembled fields.
@@ -281,8 +285,6 @@ class HourglassModel(FunctionalModel):
     detections = np.zeros((data.size, data.num_objects, 3), np.float32)
     fields = np.zeros([data.size] + data.image_shape, np.float32)
     for i, field in enumerate(self.full_predict(data)):
-      if i >= data.size:
-        break
       fields[i] = field
       detections[i] = data.from_field(field)
     return dat.match_detections(detections, data.labels), fields

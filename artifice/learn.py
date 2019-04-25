@@ -14,14 +14,16 @@ logger = logging.getLogger('artifice')
 
 
 class Detector():
-  """Detector."""
+  """Detector.
+
+  TODO: consolidate with mod.py
+
+  """
   def __init__(self, model):
     self.model = model
 
   def predict(self, data, steps=None, verbose=2):
-    """Yield reassembled fields from the data.
-
-    Requires batch_size to be a multiple of num_tiles
+    """Yield data.size reassembled fields from the data.
 
     :param data: dat.Data set
     :param steps: number of image batches to do at once
@@ -31,24 +33,27 @@ class Detector():
 
     """
     if steps is None:
-      steps = data.size // data.batch_size
+      steps = int(np.ceil(data.size / data.batch_size))
     round_size = steps*data.batch_size
     rounds = int(np.ceil(data.size / round_size))
+    n = 0
     for r in range(rounds):
       logger.info(f"predicting round {r}...")
       tiles = self.model.predict(data.eval_input.skip(r*round_size),
                                  steps=steps, verbose=verbose)
-      
       logger.debug(f"tiles: {tiles.shape}")
       for field in data.untile(tiles):
+        if n >= data.size:
+          break
         yield field
+        n += 1
 
   def detect(self, data):
     """Detect objects in the reassembled fields.
-    
+
     :param data: dat.Data set
     :returns: matched_detections
-    
+
     """
     detections = np.zeros((data.size, data.num_objects, 3), np.float32)
     for i, field in enumerate(self.predict(data)):
@@ -130,7 +135,7 @@ class ActiveLearner(Detector):
     query = [t[0] for t in uncertainties]
     logger.info(f"chose query {query} with uncertainties {uncertainties}")
     return query
-  
+
   def fit(self, unlabeled_set, subset_dir, epochs=1, augment=True, **kwargs):
     """Fit using an active learning approach to the unlabeled data.
 
@@ -140,14 +145,14 @@ class ActiveLearner(Detector):
     :param unlabeled_set: a dat.Data object with an `annotate()` method.
     :param subset_dir: place to store subsets
     :param epochs: number of epochs to run
-    :param augment: 
+    :param augment:
     :returns: history object returned by fit instances
-    :rtype: 
+    :rtype:
 
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
     history = {'queries' : []}
-    
+
     for epoch in range(epochs):
       if epoch*self.query_size >= self.subset_size:
         break
@@ -176,10 +181,6 @@ class ActiveLearner(Detector):
                             initial_epoch=epoch, **kwargs)
 
     for k,v in hist.items():
-      history[k] = history.get(k, []) + v      
-                
+      history[k] = history.get(k, []) + v
+
     return history
-
-
-
-  

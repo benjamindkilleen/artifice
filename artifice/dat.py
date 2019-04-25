@@ -431,16 +431,15 @@ class Data(object):
     return self._dataset
 
   def preprocess(self, dataset, training=False):
-    """Responsible for converting dataset to well-shuffled (image, label) form.
+    """Responsible for converting dataset to well-shuffled, repeated (image, label) form.
 
     Can be overwritten by subclasses to perform augmentation."""
     if training:
       dataset = dataset.shuffle(self.num_shuffle)
-    return dataset.batch(self.batch_size, drop_remainder=True)
+    return dataset.repeat(-1).batch(self.batch_size, drop_remainder=True)
 
   def postprocess(self, dataset, training=False):
-    return (dataset.repeat(-1)
-            .prefetch(self.prefetch_buffer_size))
+    return (dataset.prefetch(self.prefetch_buffer_size))
 
   def preprocessed(self, training=False):
     return self.preprocess(self.dataset, training=training)
@@ -668,7 +667,8 @@ class UnlabeledData(Data):
     def map_func(image):
       return image, tf.zeros(self.label_shape, tf.float32, name='dummy')
     dataset = dataset.map(map_func, self.num_parallel_calls)
-    dataset = dataset.batch(self.batch_size, drop_remainder=True)
+    dataset = dataset.repeat(-1)
+    dataset = dataset.batch(self.batch_size)
     return dataset
 
   def _sample_and_query(self, sampling, oracle, record_name, query_name,
@@ -877,7 +877,7 @@ class AugmentationData(Data):
     :param training: asserted True, maintained for compatibility
 
     """
-    dataset = dataset.repeat(-1).batch(self.batch_size, drop_remainder=True)
+    dataset = dataset.repeat(-1).batch(self.batch_size)
     return self.augment(dataset)
   
   @staticmethod
