@@ -1,91 +1,3 @@
-INFO:artifice:Namespace(batch_size=[4], command='visualize', cores=[-1], data_root=['data/coupled_spheres'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['random'], model_root=['models/coupled_spheres_random_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[10000, 1000, 1000], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
-WARNING:artifice:loading data before model
-WARNING:artifice:pad values may be incorrect
-WARNING:artifice:loading data before model
-WARNING:artifice:pad values may be incorrect
-WARNING:artifice:loading data before model
-WARNING:artifice:pad values may be incorrect
-2019-04-25 15:03:15.097134: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-25 15:03:15.847178: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
-name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:88:00.0
-totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-25 15:03:15.847262: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 15:03:16.262246: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 15:03:16.262288: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 15:03:16.262302: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 15:03:16.262669: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
-INFO:artifice:initialized iterator, starting accumulation...
-INFO:artifice:finished accumulation
-INFO:artifice:average error: 0.69
-INFO:artifice:error std: 0.86
-INFO:artifice:minimum error: 0.02
-INFO:artifice:maximum error: 11.99
-INFO:artifice:saved error map to models/coupled_spheres_random_subset100/coupled_spheres/regional_errors.pdf
-INFO:artifice:writing detections to video...
-2019-04-25 15:03:19.231431: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 15:03:19.231475: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 15:03:19.231487: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 15:03:19.231495: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 15:03:19.231745: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
-INFO:artifice:0 / 1000
-INFO:artifice:ffmpeg -y -f rawvideo -vcodec rawvideo -s 2000x1000 -pix_fmt rgba -r 30 -i - -an -b 40000k -vcodec mpeg4 models/coupled_spheres_random_subset100/coupled_spheres/detections.mp4
-INFO:artifice:saved example detection to models/coupled_spheres_random_subset100/coupled_spheres/example_detection.pdf
-INFO:artifice:100 / 1000
-INFO:artifice:200 / 1000
-INFO:artifice:300 / 1000
-INFO:artifice:400 / 1000
-INFO:artifice:500 / 1000
-INFO:artifice:600 / 1000
-INFO:artifice:700 / 1000
-INFO:artifice:800 / 1000
-INFO:artifice:900 / 1000
-INFO:artifice:finished
-INFO:artifice:wrote mp4 to models/coupled_spheres_random_subset100/coupled_spheres/detections.mp4
-INFO:artifice:Namespace(batch_size=[4], command='visualize', cores=[-1], data_root=['data/coupled_spheres_tethered'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['random'], model_root=['models/coupled_spheres_random_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[10000, 1000, 1000], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
-WARNING:artifice:loading data before model
-WARNING:artifice:pad values may be incorrect
-WARNING:artifice:loading data before model
-WARNING:artifice:pad values may be incorrect
-WARNING:artifice:loading data before model
-WARNING:artifice:pad values may be incorrect
-2019-04-25 15:05:32.420811: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-25 15:05:33.162259: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
-name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:88:00.0
-totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-25 15:05:33.162321: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 15:05:33.573737: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 15:05:33.573782: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 15:05:33.573798: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 15:05:33.574126: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
-INFO:artifice:initialized iterator, starting accumulation...
-INFO:artifice:finished accumulation
-INFO:artifice:average error: 0.78
-INFO:artifice:error std: 1.56
-INFO:artifice:minimum error: 0.02
-INFO:artifice:maximum error: 21.41
-INFO:artifice:saved error map to models/coupled_spheres_random_subset100/coupled_spheres_tethered/regional_errors.pdf
-INFO:artifice:writing detections to video...
-2019-04-25 15:05:35.448013: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 15:05:35.448057: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 15:05:35.448069: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 15:05:35.448077: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 15:05:35.448341: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
-INFO:artifice:0 / 1000
-INFO:artifice:ffmpeg -y -f rawvideo -vcodec rawvideo -s 2000x1000 -pix_fmt rgba -r 30 -i - -an -b 40000k -vcodec mpeg4 models/coupled_spheres_random_subset100/coupled_spheres_tethered/detections.mp4
-INFO:artifice:saved example detection to models/coupled_spheres_random_subset100/coupled_spheres_tethered/example_detection.pdf
-INFO:artifice:100 / 1000
-INFO:artifice:200 / 1000
-INFO:artifice:300 / 1000
-INFO:artifice:400 / 1000
-INFO:artifice:500 / 1000
-INFO:artifice:600 / 1000
-INFO:artifice:700 / 1000
-INFO:artifice:800 / 1000
-INFO:artifice:900 / 1000
-INFO:artifice:finished
-INFO:artifice:wrote mp4 to models/coupled_spheres_random_subset100/coupled_spheres_tethered/detections.mp4
 INFO:artifice:Namespace(batch_size=[4], command='visualize', cores=[-1], data_root=['data/waltzing_spheres'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['random'], model_root=['models/coupled_spheres_random_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[0, 0, 2401], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
 WARNING:artifice:loading data before model
 WARNING:artifice:pad values may be incorrect
@@ -93,16 +5,16 @@ WARNING:artifice:loading data before model
 WARNING:artifice:pad values may be incorrect
 WARNING:artifice:loading data before model
 WARNING:artifice:pad values may be incorrect
-2019-04-25 15:07:48.263038: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-25 15:07:49.018283: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+2019-04-25 20:30:55.995122: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-25 20:30:56.749647: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:88:00.0
+pciBusID: 0000:08:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-25 15:07:49.018341: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 15:07:49.429445: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 15:07:49.429487: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 15:07:49.429501: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 15:07:49.429825: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
+2019-04-25 20:30:56.749706: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-25 20:30:57.155992: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-25 20:30:57.156033: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-25 20:30:57.156047: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-25 20:30:57.156366: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
 INFO:artifice:average error: 1.16
@@ -110,38 +22,29 @@ INFO:artifice:error std: 1.92
 INFO:artifice:minimum error: 0.71
 INFO:artifice:maximum error: 16.51
 INFO:artifice:saved error map to models/coupled_spheres_random_subset100/waltzing_spheres/regional_errors.pdf
-INFO:artifice:writing detections to video...
-2019-04-25 15:07:52.364859: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 15:07:52.364906: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 15:07:52.364918: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 15:07:52.364926: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 15:07:52.365230: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
-INFO:artifice:0 / 2401
-INFO:artifice:ffmpeg -y -f rawvideo -vcodec rawvideo -s 2000x1000 -pix_fmt rgba -r 30 -i - -an -b 40000k -vcodec mpeg4 models/coupled_spheres_random_subset100/waltzing_spheres/detections.mp4
-INFO:artifice:saved example detection to models/coupled_spheres_random_subset100/waltzing_spheres/example_detection.pdf
-INFO:artifice:100 / 2401
-INFO:artifice:200 / 2401
-INFO:artifice:300 / 2401
-INFO:artifice:400 / 2401
-INFO:artifice:500 / 2401
-INFO:artifice:600 / 2401
-INFO:artifice:700 / 2401
-INFO:artifice:800 / 2401
-INFO:artifice:900 / 2401
-INFO:artifice:1000 / 2401
-INFO:artifice:1100 / 2401
-INFO:artifice:1200 / 2401
-INFO:artifice:1300 / 2401
-INFO:artifice:1400 / 2401
-INFO:artifice:1500 / 2401
-INFO:artifice:1600 / 2401
-INFO:artifice:1700 / 2401
-INFO:artifice:1800 / 2401
-INFO:artifice:1900 / 2401
-INFO:artifice:2000 / 2401
-INFO:artifice:2100 / 2401
-INFO:artifice:2200 / 2401
-INFO:artifice:2300 / 2401
-INFO:artifice:2400 / 2401
-INFO:artifice:finished
-INFO:artifice:wrote mp4 to models/coupled_spheres_random_subset100/waltzing_spheres/detections.mp4
+INFO:artifice:calculating object-wise loss at 0/2401
+INFO:artifice:calculating object-wise loss at 100/2401
+INFO:artifice:calculating object-wise loss at 200/2401
+INFO:artifice:calculating object-wise loss at 300/2401
+INFO:artifice:calculating object-wise loss at 400/2401
+INFO:artifice:calculating object-wise loss at 500/2401
+INFO:artifice:calculating object-wise loss at 600/2401
+INFO:artifice:calculating object-wise loss at 700/2401
+INFO:artifice:calculating object-wise loss at 800/2401
+INFO:artifice:calculating object-wise loss at 900/2401
+INFO:artifice:calculating object-wise loss at 1000/2401
+INFO:artifice:calculating object-wise loss at 1100/2401
+INFO:artifice:calculating object-wise loss at 1200/2401
+INFO:artifice:calculating object-wise loss at 1300/2401
+INFO:artifice:calculating object-wise loss at 1400/2401
+INFO:artifice:calculating object-wise loss at 1500/2401
+INFO:artifice:calculating object-wise loss at 1600/2401
+INFO:artifice:calculating object-wise loss at 1700/2401
+INFO:artifice:calculating object-wise loss at 1800/2401
+INFO:artifice:calculating object-wise loss at 1900/2401
+INFO:artifice:calculating object-wise loss at 2000/2401
+INFO:artifice:calculating object-wise loss at 2100/2401
+INFO:artifice:calculating object-wise loss at 2200/2401
+INFO:artifice:calculating object-wise loss at 2300/2401
+INFO:artifice:calculating object-wise loss at 2400/2401
+INFO:artifice:saved losses map to models/coupled_spheres_random_subset100/waltzing_spheres/regional_losses.pdf
