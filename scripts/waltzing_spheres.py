@@ -18,7 +18,7 @@ logger = logging.getLogger('experiment')
 debug = False
 
 # dataset parameters
-root = "data/waltzing_spheres/"  # root dir for fname
+root = "data/shadowed_right_spheres/"  # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
 separation = 4                   # separation between cell-centered samples
@@ -35,6 +35,7 @@ r1 = 5                          # radius (cm)
 
 # ball 2
 r2 = 15
+big_sphere_offset = -image_shape[0] // 2 # N//2
 
 #################### CONFIGURABLE OPTIONS ABOVE ####################
 
@@ -65,7 +66,7 @@ def argsf1(n):
   return [x,y,0], r1
 
 def argsf2(n):
-  x,y = compute_position(n, offset = N // 2)
+  x,y = compute_position(n, offset=big_sphere_offset)
   # logger.info(f"x2: {x,y}")
   return [x,y,0], r2
 

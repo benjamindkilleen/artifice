@@ -85,6 +85,14 @@ python artifice.py {cmd} --mode $mode -i data/waltzing_spheres \\
        --splits 0 0 2401 \\
        --verbose 2 --keras-verbose 2
 echo "Finished."
+
+echo "Starting shadowed_right_spheres..."
+python artifice.py {cmd} --mode $mode -i data/shadowed_right_spheres \\
+       -m models/${{data}}_${{mode}}{subset_addon} \\
+       --splits 0 0 2401 \\
+       --verbose 2 --keras-verbose 2
+echo "Finished."
+
 """
 
 

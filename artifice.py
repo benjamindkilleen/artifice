@@ -400,7 +400,7 @@ def cmd_visualize(art):
   logger.info(f"maximum error: {errors.max():.02f}")
 
   # visualize the color map of errors
-  vis.plot_errors(labels, errors, art.image_shape, log=True)
+  vis.plot_errors(labels, errors, art.image_shape, power=True)
   if art.show:
     plt.show()
   else:
@@ -421,7 +421,7 @@ def cmd_visualize(art):
   if art.show:
     plt.show()
   else:
-    plt.savefig(art.regional_errors_path)
+    plt.savefig(art.regional_losses_path)
     logger.info(f"saved losses map to {art.regional_losses_path}")
 
   # get_next = test_set.dataset.make_one_shot_iterator().get_next()
