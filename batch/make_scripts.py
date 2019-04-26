@@ -67,17 +67,17 @@ mode={mode}
 data={data}
 subset_size={subset_size}
 
-echo "Starting coupled_spheres..."
-python artifice.py {cmd} --mode $mode -i data/coupled_spheres \\
-       -m models/${{data}}_${{mode}}{subset_addon} \\
-       --verbose 2 --keras-verbose 2
-echo "Finished."
+# echo "Starting coupled_spheres..."
+# python artifice.py {cmd} --mode $mode -i data/coupled_spheres \\
+#        -m models/${{data}}_${{mode}}{subset_addon} \\
+#        --verbose 2 --keras-verbose 2
+# echo "Finished."
 
-echo "Starting coupled_spheres_tethered..."
-python artifice.py {cmd} --mode $mode -i data/coupled_spheres_tethered \\
-       -m models/${{data}}_${{mode}}{subset_addon} \\
-       --verbose 2 --keras-verbose 2
-echo "Finished."
+# echo "Starting coupled_spheres_tethered..."
+# python artifice.py {cmd} --mode $mode -i data/coupled_spheres_tethered \\
+#        -m models/${{data}}_${{mode}}{subset_addon} \\
+#        --verbose 2 --keras-verbose 2
+# echo "Finished."
 
 echo "Starting waltzing_spheres..."
 python artifice.py {cmd} --mode $mode -i data/waltzing_spheres \\

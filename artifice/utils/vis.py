@@ -5,6 +5,7 @@ called without clearing the matplotlib buffer.
 
 """
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
@@ -65,7 +66,7 @@ def plot_labels(labels, image_shape):
   fig.suptitle('Object Positions')
   return fig, axes
 
-def plot_errors(labels, errors, image_shape):
+def plot_errors(labels, errors, image_shape, log=False):
   """Plot the histogram for each object."""
   fig, axes = plt.subplots(1,labels.shape[1], sharex=True, sharey=True)
   for i in range(labels.shape[1]):
@@ -74,7 +75,9 @@ def plot_errors(labels, errors, image_shape):
       weights=errors[:,i],
       bins=[image_shape[1] // 4,image_shape[0] // 4],
       range=[[0,image_shape[1]],[0,image_shape[0]]],
-      cmap='magma', vmin=0.0, vmax=errors.max())
+      cmap='magma',
+      vmin=errors.min() if log else 0.0, vmax=errors.max(),
+      norm=mpl.colors.LogNorm() if log else mpl.colors.Normalize())
     axes[i].set_ylim(image_shape[0],0)
     axes[i].set_aspect('equal')
     axes[i].set_title(f"Object '{int(labels[0,i,0])}'")

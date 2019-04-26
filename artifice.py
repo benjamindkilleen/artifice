@@ -129,6 +129,7 @@ class Artifice:
     self.detections_video_path = join(self.model_data_root, 'detections.mp4')
     self.example_detection_path = join(self.model_data_root, 'example_detection.pdf')
     self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
+    self.regional_losses_path = join(self.model_data_root, 'regional_losses.pdf')
 
     # ensure directories exist
     for path in [self.data_root, self.model_root,
@@ -396,33 +397,46 @@ def cmd_visualize(art):
   logger.info(f"error std: {errors.std():.02f}")
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
-
+  
   # visualize the color map of errors
-  vis.plot_errors(labels, errors, art.image_shape)
+  vis.plot_errors(labels, errors, art.image_shape, log=True)
   if art.show:
     plt.show()
   else:
     plt.savefig(art.regional_errors_path)
     logger.info(f"saved error map to {art.regional_errors_path}")
 
-  get_next = test_set.dataset.make_one_shot_iterator().get_next()
-  writer = vid.MP4Writer(art.detections_video_path)
-  logger.info(f"writing detections to video...")
-  with tf.Session() as sess:
-    for i, detection in enumerate(detections):
-      if i % 100 == 0:
-        logger.info(f"{i} / {detections.shape[0]}")
-      image, label = sess.run(get_next)
-      fig, _ = vis.plot_detection(label, detection, image, fields[i])
-      if i == 0:
-        writer.write_fig(fig, close=False)
-        plt.savefig(art.example_detection_path)
-        logger.info(f"saved example detection to {art.example_detection_path}")
-      else:
-        writer.write_fig(fig)
-  writer.close()
-  logger.info(f"finished")
-  logger.info(f"wrote mp4 to {art.detections_video_path}")
+  # visualize the losses at each point
+  losses = np.zeros(fields.shape[0])
+  for i in range(fields.shape[0]):
+    if i % 100 == 0:
+      logger.info(f"calculating loss at {i}/{fields.shape[0]}")
+    losses[i] = np.square(fields[i] - test_set.to_numpy_field(labels[i])).mean()
+  vis.plot_errors(labels, losses, art.image_shape)
+  if art.show:
+    plt.show()
+  else:
+    plt.savefig(art.regional_errors_path)
+    logger.info(f"saved losses map to {art.regional_losses_path}")
+    
+  # get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  # writer = vid.MP4Writer(art.detections_video_path)
+  # logger.info(f"writing detections to video...")
+  # with tf.Session() as sess:
+  #   for i, detection in enumerate(detections):
+  #     if i % 100 == 0:
+  #       logger.info(f"{i} / {detections.shape[0]}")
+  #     image, label = sess.run(get_next)
+  #     fig, _ = vis.plot_detection(label, detection, image, fields[i])
+  #     if i == 0:
+  #       writer.write_fig(fig, close=False)
+  #       plt.savefig(art.example_detection_path)
+  #       logger.info(f"saved example detection to {art.example_detection_path}")
+  #     else:
+  #       writer.write_fig(fig)
+  # writer.close()
+  # logger.info(f"finished")
+  # logger.info(f"wrote mp4 to {art.detections_video_path}")
 
 def cmd_analyze(art):
   """Analayze the detections for a spring constant."""
