@@ -1,5 +1,5 @@
-INFO:experiment:writing images to data/waltzing_spheres/images/
-INFO:experiment:writing video to data/waltzing_spheres/data.mp4
+INFO:experiment:writing images to data/shadowed_right_spheres/images/
+INFO:experiment:writing video to data/shadowed_right_spheres/data.mp4
 INFO:experiment:Rendering scene 0 of 2401...
 INFO:experiment:Rendering scene 1 of 2401...
 INFO:experiment:Rendering scene 2 of 2401...
@@ -2403,3 +2403,38 @@ INFO:experiment:Rendering scene 2399 of 2401...
 INFO:experiment:Rendering scene 2400 of 2401...
 INFO:experiment:Finished writing images.
 INFO:experiment:Finished writing video.
+INFO:artifice:Namespace(batch_size=[4], command='convert', cores=[-1], data_root=['data/waltzing_spheres'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[1], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/coupled_spheres'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[0, 0, 2401], subset_size=[10], tile_shape=[196, 196, 1], verbose=[1])
+INFO:artifice:writing unlabeled set to 'data/waltzing_spheres/unlabeled_set.tfrecord'...
+INFO:artifice:finished
+INFO:artifice:wrote 0 unlabeled images
+INFO:artifice:writing validation set to 'data/waltzing_spheres/validation_set.tfrecord'...
+INFO:artifice:finished
+INFO:artifice:wrote 0 validation examples
+INFO:artifice:writing test set to 'data/waltzing_spheres/test_set.tfrecord'...
+INFO:artifice:writing 0 / 2401
+INFO:artifice:writing 100 / 2401
+INFO:artifice:writing 200 / 2401
+INFO:artifice:writing 300 / 2401
+INFO:artifice:writing 400 / 2401
+INFO:artifice:writing 500 / 2401
+INFO:artifice:writing 600 / 2401
+INFO:artifice:writing 700 / 2401
+INFO:artifice:writing 800 / 2401
+INFO:artifice:writing 900 / 2401
+INFO:artifice:writing 1000 / 2401
+INFO:artifice:writing 1100 / 2401
+INFO:artifice:writing 1200 / 2401
+INFO:artifice:writing 1300 / 2401
+INFO:artifice:writing 1400 / 2401
+INFO:artifice:writing 1500 / 2401
+INFO:artifice:writing 1600 / 2401
+INFO:artifice:writing 1700 / 2401
+INFO:artifice:writing 1800 / 2401
+INFO:artifice:writing 1900 / 2401
+INFO:artifice:writing 2000 / 2401
+INFO:artifice:writing 2100 / 2401
+INFO:artifice:writing 2200 / 2401
+INFO:artifice:writing 2300 / 2401
+INFO:artifice:writing 2400 / 2401
+INFO:artifice:finished
+INFO:artifice:wrote 2401 test examples

@@ -1,189 +1,3 @@
-INFO:artifice:Namespace(batch_size=[4], command='detect', cores=[-1], data_root=['data/coupled_spheres'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/coupled_spheres_augmented-active_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[10000, 1000, 1000], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
-INFO:artifice:model: model
-DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 284, 284, 1):input_1
-DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 282, 282, 64):conv2d
-DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 282, 282, 64):batch_normalization
-DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 282, 282, 64):activation
-DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 280, 280, 64):conv2d_1
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 280, 280, 64):batch_normalization_1
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 280, 280, 64):activation_1
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 140, 140, 64):max_pooling2d
-DEBUG:artifice:layer:(None, 140, 140, 64) -> (None, 140, 140, 64):dropout
-DEBUG:artifice:layer:(None, 140, 140, 64) -> (None, 138, 138, 64):conv2d_2
-DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 138, 138, 64):batch_normalization_2
-DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 138, 138, 64):activation_2
-DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 136, 136, 64):conv2d_3
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 136, 136, 64):batch_normalization_3
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 136, 136, 64):activation_3
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 68, 68, 64):max_pooling2d_1
-DEBUG:artifice:layer:(None, 68, 68, 64) -> (None, 68, 68, 64):dropout_1
-DEBUG:artifice:layer:(None, 68, 68, 64) -> (None, 66, 66, 128):conv2d_4
-DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 66, 66, 128):batch_normalization_4
-DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 66, 66, 128):activation_4
-DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 64, 64, 128):conv2d_5
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 64, 64, 128):batch_normalization_5
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 64, 64, 128):activation_5
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 32, 32, 128):max_pooling2d_2
-DEBUG:artifice:layer:(None, 32, 32, 128) -> (None, 32, 32, 128):dropout_2
-DEBUG:artifice:layer:(None, 32, 32, 128) -> (None, 30, 30, 128):conv2d_6
-DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 30, 30, 128):batch_normalization_6
-DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 30, 30, 128):activation_6
-DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 28, 28, 128):conv2d_7
-DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 28, 28, 128):batch_normalization_7
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 56, 56, 128):crop
-DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 28, 28, 128):activation_7
-DEBUG:artifice:layer:(None, 56, 56, 128) -> (None, 56, 56, 128):dropout_3
-DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 56, 56, 128):conv2d_transpose
-DEBUG:artifice:layer:[(None, 56, 56, 128), (None, 56, 56, 128)] -> (None, 56, 56, 256):concatenate
-DEBUG:artifice:layer:(None, 56, 56, 256) -> (None, 54, 54, 128):conv2d_8
-DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 54, 54, 128):batch_normalization_8
-DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 54, 54, 128):activation_8
-DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 52, 52, 128):conv2d_9
-DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 52, 52, 128):batch_normalization_9
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 104, 104, 64):crop_1
-DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 52, 52, 128):activation_9
-DEBUG:artifice:layer:(None, 104, 104, 64) -> (None, 104, 104, 64):dropout_4
-DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 104, 104, 64):conv2d_transpose_1
-DEBUG:artifice:layer:[(None, 104, 104, 64), (None, 104, 104, 64)] -> (None, 104, 104, 128):concatenate_1
-DEBUG:artifice:layer:(None, 104, 104, 128) -> (None, 102, 102, 64):conv2d_10
-DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 102, 102, 64):batch_normalization_10
-DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 102, 102, 64):activation_10
-DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 100, 100, 64):conv2d_11
-DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 100, 100, 64):batch_normalization_11
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 200, 200, 64):crop_2
-DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 100, 100, 64):activation_11
-DEBUG:artifice:layer:(None, 200, 200, 64) -> (None, 200, 200, 64):dropout_5
-DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 200, 200, 64):conv2d_transpose_2
-DEBUG:artifice:layer:[(None, 200, 200, 64), (None, 200, 200, 64)] -> (None, 200, 200, 128):concatenate_2
-DEBUG:artifice:layer:(None, 200, 200, 128) -> (None, 198, 198, 64):conv2d_12
-DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 198, 198, 64):batch_normalization_12
-DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 198, 198, 64):activation_12
-DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 196, 196, 64):conv2d_13
-DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):batch_normalization_13
-DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):activation_13
-DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 1):conv2d_14
-2019-04-25 13:22:32.737912: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-25 13:22:33.342991: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
-name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:09:00.0
-totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-25 13:22:33.343086: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 13:22:33.729863: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 13:22:33.729909: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 13:22:33.729922: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 13:22:33.730251: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
-INFO:artifice:restored model from models/coupled_spheres_augmented-active_subset100/hourglass/cp-0020.hdf5
-INFO:artifice:predicting round 0...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
-DEBUG:artifice:tiles: (1000, 196, 196, 1)
-DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
-2019-04-25 13:23:26.139633: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 13:23:26.139696: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 13:23:26.139710: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 13:23:26.139718: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 13:23:26.139911: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
-INFO:artifice:initialized iterator, starting accumulation...
-INFO:artifice:finished accumulation
-INFO:artifice:saved detections to models/coupled_spheres_augmented-active_subset100/coupled_spheres/detections.npy
-INFO:artifice:saved predicted_fields to models/coupled_spheres_augmented-active_subset100/coupled_spheres/predicted_fields.npy
-INFO:artifice:average error: 0.55
-INFO:artifice:error std: 0.35
-INFO:artifice:minimum error: 0.03
-INFO:artifice:maximum error: 10.67
-INFO:artifice:Namespace(batch_size=[4], command='detect', cores=[-1], data_root=['data/coupled_spheres_tethered'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/coupled_spheres_augmented-active_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[10000, 1000, 1000], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
-INFO:artifice:model: model
-DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 284, 284, 1):input_1
-DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 282, 282, 64):conv2d
-DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 282, 282, 64):batch_normalization
-DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 282, 282, 64):activation
-DEBUG:artifice:layer:(None, 282, 282, 64) -> (None, 280, 280, 64):conv2d_1
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 280, 280, 64):batch_normalization_1
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 280, 280, 64):activation_1
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 140, 140, 64):max_pooling2d
-DEBUG:artifice:layer:(None, 140, 140, 64) -> (None, 140, 140, 64):dropout
-DEBUG:artifice:layer:(None, 140, 140, 64) -> (None, 138, 138, 64):conv2d_2
-DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 138, 138, 64):batch_normalization_2
-DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 138, 138, 64):activation_2
-DEBUG:artifice:layer:(None, 138, 138, 64) -> (None, 136, 136, 64):conv2d_3
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 136, 136, 64):batch_normalization_3
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 136, 136, 64):activation_3
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 68, 68, 64):max_pooling2d_1
-DEBUG:artifice:layer:(None, 68, 68, 64) -> (None, 68, 68, 64):dropout_1
-DEBUG:artifice:layer:(None, 68, 68, 64) -> (None, 66, 66, 128):conv2d_4
-DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 66, 66, 128):batch_normalization_4
-DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 66, 66, 128):activation_4
-DEBUG:artifice:layer:(None, 66, 66, 128) -> (None, 64, 64, 128):conv2d_5
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 64, 64, 128):batch_normalization_5
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 64, 64, 128):activation_5
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 32, 32, 128):max_pooling2d_2
-DEBUG:artifice:layer:(None, 32, 32, 128) -> (None, 32, 32, 128):dropout_2
-DEBUG:artifice:layer:(None, 32, 32, 128) -> (None, 30, 30, 128):conv2d_6
-DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 30, 30, 128):batch_normalization_6
-DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 30, 30, 128):activation_6
-DEBUG:artifice:layer:(None, 30, 30, 128) -> (None, 28, 28, 128):conv2d_7
-DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 28, 28, 128):batch_normalization_7
-DEBUG:artifice:layer:(None, 64, 64, 128) -> (None, 56, 56, 128):crop
-DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 28, 28, 128):activation_7
-DEBUG:artifice:layer:(None, 56, 56, 128) -> (None, 56, 56, 128):dropout_3
-DEBUG:artifice:layer:(None, 28, 28, 128) -> (None, 56, 56, 128):conv2d_transpose
-DEBUG:artifice:layer:[(None, 56, 56, 128), (None, 56, 56, 128)] -> (None, 56, 56, 256):concatenate
-DEBUG:artifice:layer:(None, 56, 56, 256) -> (None, 54, 54, 128):conv2d_8
-DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 54, 54, 128):batch_normalization_8
-DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 54, 54, 128):activation_8
-DEBUG:artifice:layer:(None, 54, 54, 128) -> (None, 52, 52, 128):conv2d_9
-DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 52, 52, 128):batch_normalization_9
-DEBUG:artifice:layer:(None, 136, 136, 64) -> (None, 104, 104, 64):crop_1
-DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 52, 52, 128):activation_9
-DEBUG:artifice:layer:(None, 104, 104, 64) -> (None, 104, 104, 64):dropout_4
-DEBUG:artifice:layer:(None, 52, 52, 128) -> (None, 104, 104, 64):conv2d_transpose_1
-DEBUG:artifice:layer:[(None, 104, 104, 64), (None, 104, 104, 64)] -> (None, 104, 104, 128):concatenate_1
-DEBUG:artifice:layer:(None, 104, 104, 128) -> (None, 102, 102, 64):conv2d_10
-DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 102, 102, 64):batch_normalization_10
-DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 102, 102, 64):activation_10
-DEBUG:artifice:layer:(None, 102, 102, 64) -> (None, 100, 100, 64):conv2d_11
-DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 100, 100, 64):batch_normalization_11
-DEBUG:artifice:layer:(None, 280, 280, 64) -> (None, 200, 200, 64):crop_2
-DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 100, 100, 64):activation_11
-DEBUG:artifice:layer:(None, 200, 200, 64) -> (None, 200, 200, 64):dropout_5
-DEBUG:artifice:layer:(None, 100, 100, 64) -> (None, 200, 200, 64):conv2d_transpose_2
-DEBUG:artifice:layer:[(None, 200, 200, 64), (None, 200, 200, 64)] -> (None, 200, 200, 128):concatenate_2
-DEBUG:artifice:layer:(None, 200, 200, 128) -> (None, 198, 198, 64):conv2d_12
-DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 198, 198, 64):batch_normalization_12
-DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 198, 198, 64):activation_12
-DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 196, 196, 64):conv2d_13
-DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):batch_normalization_13
-DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):activation_13
-DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 1):conv2d_14
-2019-04-25 13:23:37.479283: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-25 13:23:37.834601: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
-name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:09:00.0
-totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-25 13:23:37.834696: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 13:23:38.236429: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 13:23:38.236488: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 13:23:38.236506: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 13:23:38.236834: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
-INFO:artifice:restored model from models/coupled_spheres_augmented-active_subset100/hourglass/cp-0020.hdf5
-INFO:artifice:predicting round 0...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
-DEBUG:artifice:tiles: (1000, 196, 196, 1)
-DEBUG:artifice:tiles: (1000, 196, 196, 1), num_tiles: 1, batch_size: 4
-2019-04-25 13:24:29.735636: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 13:24:29.735702: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 13:24:29.735716: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 13:24:29.735725: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 13:24:29.735912: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
-INFO:artifice:initialized iterator, starting accumulation...
-INFO:artifice:finished accumulation
-INFO:artifice:saved detections to models/coupled_spheres_augmented-active_subset100/coupled_spheres_tethered/detections.npy
-INFO:artifice:saved predicted_fields to models/coupled_spheres_augmented-active_subset100/coupled_spheres_tethered/predicted_fields.npy
-INFO:artifice:average error: 0.62
-INFO:artifice:error std: 3.68
-INFO:artifice:minimum error: 0.02
-INFO:artifice:maximum error: 164.77
 INFO:artifice:Namespace(batch_size=[4], command='detect', cores=[-1], data_root=['data/waltzing_spheres'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/coupled_spheres_augmented-active_subset100'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[0, 0, 2401], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
 INFO:artifice:model: model
 DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 284, 284, 1):input_1
@@ -248,27 +62,27 @@ DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 196, 196, 64):conv2d_13
 DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):batch_normalization_13
 DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):activation_13
 DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 1):conv2d_14
-2019-04-25 13:24:41.988948: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-25 13:24:42.392361: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+2019-04-25 21:54:34.839414: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-25 21:54:35.352329: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:09:00.0
+pciBusID: 0000:08:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-25 13:24:42.392477: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 13:24:42.867263: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 13:24:42.867357: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 13:24:42.867372: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 13:24:42.867703: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-25 21:54:35.352453: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-25 21:54:35.824914: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-25 21:54:35.825002: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-25 21:54:35.825016: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-25 21:54:35.825356: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:restored model from models/coupled_spheres_augmented-active_subset100/hourglass/cp-0020.hdf5
 INFO:artifice:predicting round 0...
 DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(4, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(4, 196, 196, 1) dtype=float32>)
 DEBUG:artifice:predict: {np.sum(np.isnan(out))} nan values
 DEBUG:artifice:tiles: (2404, 196, 196, 1)
 DEBUG:artifice:tiles: (2404, 196, 196, 1), num_tiles: 1, batch_size: 4
-2019-04-25 13:26:44.424926: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-25 13:26:44.425031: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-25 13:26:44.425044: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-25 13:26:44.425053: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-25 13:26:44.425307: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-25 21:56:33.603382: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-25 21:56:33.603468: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-25 21:56:33.603481: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-25 21:56:33.603490: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-25 21:56:33.603710: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
 INFO:artifice:saved detections to models/coupled_spheres_augmented-active_subset100/waltzing_spheres/detections.npy
