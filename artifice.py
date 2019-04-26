@@ -11,6 +11,7 @@ from glob import glob
 import argparse
 import json
 import numpy as np
+from skimage.draw import circle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -397,7 +398,7 @@ def cmd_visualize(art):
   logger.info(f"error std: {errors.std():.02f}")
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
-  
+
   # visualize the color map of errors
   vis.plot_errors(labels, errors, art.image_shape, log=True)
   if art.show:
@@ -407,18 +408,22 @@ def cmd_visualize(art):
     logger.info(f"saved error map to {art.regional_errors_path}")
 
   # visualize the losses at each point
-  losses = np.zeros(fields.shape[0])
+  losses = np.zeros((fields.shape[0], art.num_objects))
   for i in range(fields.shape[0]):
     if i % 100 == 0:
-      logger.info(f"calculating loss at {i}/{fields.shape[0]}")
-    losses[i] = np.square(fields[i] - test_set.to_numpy_field(labels[i])).mean()
+      logger.info(f"calculating object-wise loss at {i}/{fields.shape[0]}")
+    for j in range(labels.shape[1]):
+      true_field = test_set.to_numpy_field(labels[i])
+      pred_field = fields[i]
+      rr, cc = circle(labels[i,j,1], labels[i,j,2], 20., shape=art.image_shape[:2])
+      losses[i,j] = np.square(pred_field[rr,cc] - true_field[rr,cc]).mean()
   vis.plot_errors(labels, losses, art.image_shape)
   if art.show:
     plt.show()
   else:
     plt.savefig(art.regional_errors_path)
     logger.info(f"saved losses map to {art.regional_losses_path}")
-    
+
   # get_next = test_set.dataset.make_one_shot_iterator().get_next()
   # writer = vid.MP4Writer(art.detections_video_path)
   # logger.info(f"writing detections to video...")

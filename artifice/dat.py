@@ -231,7 +231,7 @@ class Data(object):
     # kind of required arguments
     self.size = kwargs.get('size', 0)
     self.image_shape = kwargs.get('image_shape', None) # TODO: gather with acc
-    assert(len(self.image_shape) == 3)
+    assert len(self.image_shape) == 3
 
     self.num_objects = kwargs.get('num_objects', 2)
     self.tile_shape = kwargs.get('tile_shape', [32, 32, 1])
@@ -241,7 +241,7 @@ class Data(object):
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
     self.num_shuffle = kwargs.get('num_shuffle', self.size // self.batch_size)
     self._kwargs = kwargs
-    
+
     if issubclass(type(data), Data):
       self._dataset = data._dataset
     elif issubclass(type(data), tf.data.Dataset):
