@@ -525,7 +525,7 @@ class Experiment:
 
     # Add noise
     if self.noisify:
-      peak = 10000             # TODO: make fps dependent.
+      peak = 5000             # TODO: make fps dependent.
       image = np.random.poisson(image.astype(np.float64) / 255. * peak)
       image = (image / peak * 255.).astype(np.uint8)
       
