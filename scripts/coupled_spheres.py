@@ -17,8 +17,8 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 1 # 400                   # 12000 frames, at 30fps
-tether = True                  # Tether the (large) ball to center.
+seconds = 400                  # 12000 frames, at 30fps
+tether = False                  # Tether the (large) ball to center.
 
 # dataset parameters
 root = "data/harper_spheres{}/".format(
