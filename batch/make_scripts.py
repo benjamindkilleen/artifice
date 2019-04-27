@@ -101,7 +101,8 @@ num_active_epochs = 10
 which_epochs = [20]
 modes = ['full', 'random', 'active',
          'augmented-full', 'augmented-random', 'augmented-active']
-datas = ['coupled_spheres', 'coupled_spheres_tethered']
+datas = ['obfuscated_spheres_tethered', 'coupled_spheres',
+         'coupled_spheres_tethered']
 subset_sizes = [10, 100]
 
 for t in itertools.product(which_epochs, modes, datas, subset_sizes):

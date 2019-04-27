@@ -17,11 +17,11 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 400                   # 12000 frames, at 30fps
+seconds = 1 # 400                   # 12000 frames, at 30fps
 tether = True                  # Tether the (large) ball to center.
 
 # dataset parameters
-root = "data/coupled_spheres{}/".format(
+root = "data/harper_spheres{}/".format(
   "_tethered" if tether else "") # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
@@ -89,7 +89,7 @@ def spring(l):
 
 # attractor:
 attractor_relaxed = 0
-attractor_k = 10.
+attractor_k = 50.
 def attractor(l):
   """Return a spring-like force as a function of mag_l
 
@@ -217,7 +217,6 @@ def argsf2(fn):
 def main():
   # helpers
   color = lambda col : vapory.Texture(vapory.Pigment('color', col))
-  texture = lambda text : vapory.Texture(text)
   
   # initial state, in SI units
   global initial, current
@@ -228,15 +227,15 @@ def main():
   initial['v2'] = np.array([vx2, vy2]) / 100.
 
   # Calculate initial acceleration with equations of motion
-  initial['a1'], initial['a2'] = calculate_acceleration(initial['x1'],
-                                                        initial['x2'])
+  initial['a1'], initial['a2'] = calculate_acceleration(
+    initial['x1'], initial['x2'])
 
   current = initial.copy()
 
   # Begin setup
-  s1 = experiment.ExperimentSphere(argsf1, texture('PinkAlabaster'),
+  s1 = experiment.ExperimentSphere(argsf1, vapory.Texture('White_Wood'),
                                    semantic_label=1)
-  s2 = experiment.ExperimentSphere(argsf2, texture('PinkAlabaster'),
+  s2 = experiment.ExperimentSphere(argsf2, vapory.Texture('White_Wood'),
                                    semantic_label=2)
 
   # experiment
@@ -247,11 +246,15 @@ def main():
                               fps=fps, mode='L')
   exp.add_object(vapory.LightSource([0, 5*image_shape[0], 0],
                                     'color', [1,1,1]))
-  exp.add_object(vapory.LightSource([5*image_shape[0], 0, 0],
+  exp.add_object(vapory.LightSource([5*image_shape[0], 0, -2*image_shape[0]],
                                     'color', [1,1,1]))
 
   # Background
-  exp.add_object(vapory.Plane([0,0,1], max(r1, r2), texture('Blue_Sky')))
+  # TODO: make this an actually interesting experiment with a background image.
+  exp.add_object(vapory.Plane(
+    [0,0,1], 10*max(r1, r2), vapory.Texture(
+      vapory.Pigment(vapory.ImageMap('png', '"scripts/images/harper.png"')),
+      'scale', '300', 'translate', [image_shape[0] // 2, 2*image_shape[1] // 3, 0])))
 
   if do_walls:
     global walls
@@ -264,8 +267,8 @@ def main():
   exp.add_object(s2)
 
   if debug:
-    image, annotation = exp.render_scene(0)
-    plt.imshow(image[:,:,0], cmap='gray')
+    (image, _) , _ = exp.render_scene(0)
+    plt.imshow(np.squeeze(image), cmap='gray')
     plt.show()
   else:
     exp.run()

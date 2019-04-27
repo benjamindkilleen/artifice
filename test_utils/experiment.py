@@ -505,7 +505,7 @@ class Experiment:
     """Renders a single scene, applying the various perturbations on each
     object/light source in the Experiment.
 
-    Returns: an (example, annotation) pair.
+    :returns: `(example, annotation)` pair.
 
     TODO:
     Call the make_targets() function, implemented by subclasses, that uses
