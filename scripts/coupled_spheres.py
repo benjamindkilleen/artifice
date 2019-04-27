@@ -39,7 +39,7 @@ m1 = 1               # mass (kg)
 x1 = 50              # initial x position (cm)
 y1 = 0               # initial y position
 vx1 = -20            # initial x velocity (cm/s)
-vy1 = 20             # initial y velocity
+vy1 = 40             # initial y velocity
 
 # ball 2
 r2 = 15
@@ -258,9 +258,11 @@ def main():
 
   if do_walls:
     global walls
+    border = min(r1, r2)
     walls = np.zeros(4)         # top, left, bottom, right
-    walls[:2] = exp.unproject_to_image_plane((0, 0))[:2]
-    walls[2:] = exp.unproject_to_image_plane(image_shape)[:2]
+    walls[:2] = exp.unproject_to_image_plane((border, border))[:2]
+    walls[2:] = exp.unproject_to_image_plane(
+      (image_shape[0] - border, image_shape[1] - border))[:2]
     walls /= 100.               # convert to meters
 
   exp.add_object(s1)
