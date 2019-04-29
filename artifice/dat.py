@@ -30,8 +30,8 @@ def proto_from_image(image):
   """Create a tf example proto from an image.
 
   :param image: single numpy array
-  :returns: 
-  :rtype: 
+  :returns:
+  :rtype:
 
   """
   image = img.as_float(image)
@@ -107,7 +107,7 @@ def example_from_proto(proto):
 def proto_from_scene(scene):
   """Creates a tf example from the scene, which contains an (image,label) example
 
-  :param scene: 
+  :param scene:
 
   """
   example, annotation = scene
@@ -183,10 +183,10 @@ def save_dataset(record_name, dataset,
 
   :param record_name: filename to save to
   :param dataset: tf.data.Dataset to save
-  :param proto_from_example: 
-  :param num_parallel_calls: 
-  :returns: 
-  :rtype: 
+  :param proto_from_example:
+  :param num_parallel_calls:
+  :returns:
+  :rtype:
 
   """
   next_example = dataset.make_one_shot_iterator().get_next()
@@ -207,7 +207,7 @@ def save_dataset(record_name, dataset,
   writer.close()
   logger.info(f"wrote {i} examples")
 
-  
+
 class Data(object):
   """Wrapper around tf.data.Dataset of examples.
 
@@ -220,7 +220,7 @@ class Data(object):
   """
 
   eps = 0.001
-  
+
   def __init__(self, data, **kwargs):
     """args:
     :param data: a tf.data.Dataset OR tfrecord file name(s) OR another Data
@@ -268,7 +268,7 @@ class Data(object):
   @staticmethod
   def encode_entry(*args):
     return proto_from_example(*args)
-    
+
   def save(self, record_name):
     """Save the dataset to record_name."""
     save_dataset(record_name, self.dataset,
@@ -283,7 +283,7 @@ class Data(object):
 
     :param entry: tuple of tensors
     :returns: tuple of numpy arrays
-    :rtype: 
+    :rtype:
 
     """
     assert tf.executing_eagerly()
@@ -301,7 +301,7 @@ class Data(object):
     :rtype: [Data]
 
     """
-    
+
     datas = []
     for i, n in enumerate(splits):
       dataset = self.dataset.skip(sum(splits[:i])).take(n)
@@ -311,7 +311,7 @@ class Data(object):
         datas.append(None)
       else:
         datas.append(types[i](dataset, **self._kwargs))
-      
+
     return datas
 
   def skip(self, count):
@@ -337,7 +337,7 @@ class Data(object):
       return tf.data.Dataset.from_tensors((idx, entry)).repeat(s[idx])
     return dataset.flat_map(map_func)
 
-  
+
   def sample(self, sampling):
     """Draw a sampling from the dataset, returning a new dataset of the same type.
 
@@ -353,7 +353,7 @@ class Data(object):
     kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
     return type(self)(dataset, **kwargs)
-  
+
   def accumulate(self, accumulator):
     """Runs the accumulators across the dataset.
 
@@ -401,7 +401,7 @@ class Data(object):
     logger.info("finished accumulation")
     for k, acc in accumulators.items():
       aggregates[k] = acc(None, aggregates[k])
-    
+
     if type(accumulator) == dict:
       return aggregates
     else:
@@ -416,7 +416,7 @@ class Data(object):
     image, label = entry
     labels.append(label)
     return labels
-    
+
   def accumulate_labels(self):
     return self.accumulate(self.label_accumulator)
 
@@ -425,7 +425,7 @@ class Data(object):
     if self._labels is None:
       self._labels = self.accumulate_labels()
     return self._labels
-      
+
   @property
   def dataset(self):
     return self._dataset
@@ -447,9 +447,9 @@ class Data(object):
   def to_numpy_field(self, label):
     """Create a distance annotation with numpy `label`.
 
-    :param label: numpy 
-    :returns: 
-    :rtype: 
+    :param label: numpy
+    :returns:
+    :rtype:
 
     """
     positions = label[:,1:3].astype(np.float32)
@@ -465,7 +465,7 @@ class Data(object):
     flat_field = np.where(distances < thresh, flat_field, 0.)
     field = np.reshape(flat_field, self.image_shape)
     return field
-    
+
   def to_field(self, label):
     """Create a tensor distance annotation with tensor `label`.
 
@@ -476,11 +476,11 @@ class Data(object):
 
     """
     labels = tform.ensure_batched_labels(label)
-    
+
     # (batch_size, num_objects, 2)
-    positions = tf.cast(labels[:,:,1:3], tf.float32) 
+    positions = tf.cast(labels[:,:,1:3], tf.float32)
     # TODO: fix position to INF for objects not present
-    
+
     # indices: (M*N, 2)
     indices = np.array([np.array([i,j])
                         for i in range(self.image_shape[0])
@@ -495,13 +495,15 @@ class Data(object):
 
     # distances: (batch_size, M*N, num_objects)
     distances = tf.reduce_min(tf.norm(indices - positions, axis=3), axis=2)
-    
+
     # take inverse distance
     eps = tf.constant(self.eps)
     flat_field = tf.square(tf.reciprocal(distances + eps))
 
     # zero the inverse distances outside of threshold
-    thresh = tf.constant(self.distance_threshold, tf.float32, flat_field.shape)
+    # logger.debug(f"distance_threshold: {self.distance_threshold}")
+    # logger.debug(f"flat_field: {flat_field.shape}, {flat_field}")
+    thresh = tf.constant(self.distance_threshold, tf.float32)
     zeros = tf.zeros_like(flat_field)
     flat_field = tf.where(distances < thresh, flat_field, zeros)
     field = tf.reshape(flat_field, [-1,] + self.image_shape)
@@ -525,7 +527,7 @@ class Data(object):
     label[:coords.shape[0],1:3] = coords
     label[:coords.shape[0],0] = np.arange(coords.shape[0])
     return label
-  
+
   def fielded(self, training=False):
     def map_func(image, label):
       return image, self.to_field(label)
@@ -563,7 +565,7 @@ class Data(object):
           field_tiles.append(fields[
             b, i:i + self.tile_shape[0],
             j:j + self.tile_shape[1]])
-          
+
     out = tf.stack(image_tiles), tf.stack(field_tiles)
     logger.debug(f"tiled: {out}")
     return out
@@ -581,21 +583,21 @@ class Data(object):
   @property
   def eval_input(self):
     return self.postprocess(self.tiled(training=False), training=False)
-  
+
   def untile_single(self, tiles):
     """Untile from `self.num_tiles` numpy tiles, corresponding to single image.
 
     Does not support batch-ordered inputs
-    
+
     :param tiles: iterable of `self.num_tiles` numpy tiles each with
-    `tile_shape`. 
+    `tile_shape`.
     :returns: an image reconstructed from `tiles`
     :rtype: ndarray
 
     """
     if self.num_tiles == 1:
       return tiles[0]
-    
+
     image = np.empty(self.image_shape, dtype=np.float32)
     next_tile = iter(tiles)
     for i in range(0, self.image_shape[0], self.tile_shape[0]):
@@ -645,7 +647,7 @@ class UnlabeledData(Data):
 
     """
     super().__init__(*args, **kwargs)
-    self.background = kwargs.get('background')    
+    self.background = kwargs.get('background')
 
     accumulators = {}
 
@@ -675,13 +677,13 @@ class UnlabeledData(Data):
                         output_type):
     """Helper function to generalize sample_and_{blank}
 
-    :param sampling: 
-    :param oracle: 
-    :param record_name: 
+    :param sampling:
+    :param oracle:
+    :param record_name:
     :param query_name: name of oracle function to use
     :param output_type: class of output
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     query_function = getattr(oracle, query_name)
@@ -708,8 +710,8 @@ class UnlabeledData(Data):
     kwargs = self._kwargs.copy()
     kwargs['size'] = np.sum(sampling)
     return output_type(record_name, **kwargs)
-    
-  
+
+
   def sample_and_label(self, sampling, oracle, record_name):
     """Draw a sampling from the dataset and label each example, and save.
 
@@ -719,7 +721,7 @@ class UnlabeledData(Data):
     :returns: new AugmentationData object with scenes for the sampled points
     """
     return self._sample_and_query(sampling, oracle, record_name, 'label', Data)
-  
+
   def sample_and_annotate(self, sampling, oracle, record_name):
     """Draw a sampling from the dataset and annotate each example, and save
 
@@ -730,7 +732,7 @@ class UnlabeledData(Data):
     """
     return self._sample_and_query(sampling, oracle, record_name, 'annotate',
                                   AugmentationData)
-    
+
   @staticmethod
   def mode_background_accumulator(image, agg):
     """Approximate a running mode of the images.
@@ -742,7 +744,7 @@ class UnlabeledData(Data):
     :param image: either None (last call), or numpy image, ndim == 3
     :param agg: either None (first call), or the histogram of image values
     :returns: new agg or the background ()
-    :rtype: 
+    :rtype:
 
     """
     if agg is None:
@@ -762,8 +764,8 @@ class UnlabeledData(Data):
         for k in range(image.shape[2]):
           agg[i,j,k,idx[i,j,k]] += 1
     return agg
-    
-      
+
+
 class AugmentationData(Data):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -772,7 +774,7 @@ class AugmentationData(Data):
     accumulators = {}
     if self.background is None:
       accumulators['background'] = AugmentationData.mean_background_accumulator
-      
+
     aggregates = self.accumulate(accumulators)
     for k,v in aggregates.items():
       setattr(self, k, v)
@@ -784,19 +786,19 @@ class AugmentationData(Data):
   @staticmethod
   def encode_entry(*args):
     return proto_from_scene(*args)
-      
+
   def as_numpy(self, entry):
     """Convert `entry` to corresponding tuple of numpy arrys.
 
     :param entry: tuple of tensors
     :returns: tuple of numpy arrays
-    :rtype: 
+    :rtype:
 
     """
     assert tf.executing_eagerly()
     (image, label), annotation = entry
     return (np.array(image), np.array(label)), np.array(annotation)
-  
+
   def valid(self, label):
     """Determine whether a prospective label is valid.
 
@@ -818,7 +820,7 @@ class AugmentationData(Data):
 
     :returns: `(n, num_objects, 4)` array of object labels, each containing
     `[obj_id, x, y, theta]`
-    :rtype: 
+    :rtype:
 
     """
     label = np.ones(self.label_shape, dtype=np.float32)
@@ -833,7 +835,7 @@ class AugmentationData(Data):
 
     :returns: `(batch_size, num_objects, 4)` array of object labels, each containing
     `[obj_id, x, y, theta]`
-    :rtype: 
+    :rtype:
 
     """
     def gen():
@@ -847,7 +849,7 @@ class AugmentationData(Data):
           if invalid_count % 10 == 0:
             logger.warning(f"drew {invalid_count} invalid examples")
     return gen
-  
+
   def augment(self, dataset):
     """Generate the desired labels and then map them over the batched set.
 
@@ -867,9 +869,9 @@ class AugmentationData(Data):
       return tform.transform_objects(image, label, annotation, new_label,
                                      num_objects=self.num_objects,
                                      background=background)
-    
+
     return zip_set.map(map_func, self.num_parallel_calls)
-      
+
   def preprocess(self, dataset, training=True):
     """Call the augment function.
 
@@ -879,7 +881,7 @@ class AugmentationData(Data):
     """
     dataset = dataset.repeat(-1).batch(self.batch_size)
     return self.augment(dataset)
-  
+
   @staticmethod
   def mean_background_accumulator(scene, agg):
     """Take a running average of the pixels where no objects exist.
@@ -927,12 +929,12 @@ class AugmentationData(Data):
 
 def match_detections(detections, labels):
   """Resolve the `detections` with `labels`, matching object ids/order.
-  
+
   :param detections: `(N, num_objects, >3)` array of detections
   :param labels: `(N, num_objects, >3)` array of labels
   :returns: re-ordered detections, same shape
-  :rtype: 
-  
+  :rtype:
+
   """
   matched_detections = np.empty_like(detections)
   for i in range(detections.shape[0]):

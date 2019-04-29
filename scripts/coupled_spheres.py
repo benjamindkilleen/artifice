@@ -84,7 +84,7 @@ def spring(l):
     lower_boundary = 0.1 / np.square(l - l_min) # coefficient may require tuning.
   else:
     lower_boundary = 10000      # Shouldn't happen, if above tuned correctly
-  
+
   return -k * (l - l_relaxed) + lower_boundary
 
 # attractor:
@@ -187,7 +187,7 @@ def step(n=1):
     logger.debug("position:{},{}".format(current['x1'], current['x2']))
     n -= 1
 
-    
+
 global step_cnt
 step_cnt = 0
 def update_to_step(t):
@@ -217,7 +217,7 @@ def argsf2(fn):
 def main():
   # helpers
   color = lambda col : vapory.Texture(vapory.Pigment('color', col))
-  
+
   # initial state, in SI units
   global initial, current
   initial = {}

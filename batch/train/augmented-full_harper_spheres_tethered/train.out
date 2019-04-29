@@ -1,0 +1,82 @@
+Starting training...
+Epoch 1/20
+
+Epoch 00001: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0001.hdf5
+ - 1169s - loss: 27.1991 - mean_absolute_error: 0.0389 - val_loss: 37.3750 - val_mean_absolute_error: 0.0066
+Epoch 2/20
+
+Epoch 00002: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0002.hdf5
+ - 1137s - loss: 409.3038 - mean_absolute_error: 0.0088 - val_loss: 37.3747 - val_mean_absolute_error: 0.0056
+Epoch 3/20
+
+Epoch 00003: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0003.hdf5
+ - 1136s - loss: 42.6897 - mean_absolute_error: 0.0079 - val_loss: 37.3742 - val_mean_absolute_error: 0.0060
+Epoch 4/20
+
+Epoch 00004: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0004.hdf5
+ - 1138s - loss: 271.3932 - mean_absolute_error: 0.0081 - val_loss: 37.3740 - val_mean_absolute_error: 0.0059
+Epoch 5/20
+
+Epoch 00005: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0005.hdf5
+ - 1138s - loss: 53.8047 - mean_absolute_error: 0.0085 - val_loss: 37.3742 - val_mean_absolute_error: 0.0063
+Epoch 6/20
+
+Epoch 00006: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0006.hdf5
+ - 1138s - loss: 857.3719 - mean_absolute_error: 0.0093 - val_loss: 37.3725 - val_mean_absolute_error: 0.0062
+Epoch 7/20
+
+Epoch 00007: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0007.hdf5
+ - 1156s - loss: 35.9125 - mean_absolute_error: 0.0092 - val_loss: 37.3731 - val_mean_absolute_error: 0.0082
+Epoch 8/20
+
+Epoch 00008: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0008.hdf5
+ - 1172s - loss: 22.8175 - mean_absolute_error: 0.0094 - val_loss: 37.3694 - val_mean_absolute_error: 0.0085
+Epoch 9/20
+
+Epoch 00009: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0009.hdf5
+ - 1143s - loss: 225.2923 - mean_absolute_error: 0.0111 - val_loss: 37.3617 - val_mean_absolute_error: 0.0081
+Epoch 10/20
+
+Epoch 00010: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0010.hdf5
+ - 1160s - loss: 53.7130 - mean_absolute_error: 0.0122 - val_loss: 37.3546 - val_mean_absolute_error: 0.0103
+Epoch 11/20
+
+Epoch 00011: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0011.hdf5
+ - 1162s - loss: 74.0685 - mean_absolute_error: 0.0128 - val_loss: 37.3528 - val_mean_absolute_error: 0.0099
+Epoch 12/20
+
+Epoch 00012: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0012.hdf5
+ - 1160s - loss: 57.4533 - mean_absolute_error: 0.0134 - val_loss: 37.3489 - val_mean_absolute_error: 0.0119
+Epoch 13/20
+
+Epoch 00013: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0013.hdf5
+ - 1159s - loss: 8.9305 - mean_absolute_error: 0.0118 - val_loss: 37.3458 - val_mean_absolute_error: 0.0105
+Epoch 14/20
+
+Epoch 00014: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0014.hdf5
+ - 1159s - loss: 705.3902 - mean_absolute_error: 0.0132 - val_loss: 37.3495 - val_mean_absolute_error: 0.0120
+Epoch 15/20
+
+Epoch 00015: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0015.hdf5
+ - 1160s - loss: 37.6442 - mean_absolute_error: 0.0129 - val_loss: 37.3468 - val_mean_absolute_error: 0.0119
+Epoch 16/20
+
+Epoch 00016: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0016.hdf5
+ - 1142s - loss: 40.3928 - mean_absolute_error: 0.0139 - val_loss: 37.3491 - val_mean_absolute_error: 0.0151
+Epoch 17/20
+
+Epoch 00017: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0017.hdf5
+ - 1162s - loss: 109.9219 - mean_absolute_error: 0.0132 - val_loss: 37.3480 - val_mean_absolute_error: 0.0126
+Epoch 18/20
+
+Epoch 00018: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0018.hdf5
+ - 1160s - loss: 8.3752 - mean_absolute_error: 0.0129 - val_loss: 37.3376 - val_mean_absolute_error: 0.0148
+Epoch 19/20
+
+Epoch 00019: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0019.hdf5
+ - 1161s - loss: 11.3842 - mean_absolute_error: 0.0139 - val_loss: 37.3403 - val_mean_absolute_error: 0.0129
+Epoch 20/20
+
+Epoch 00020: saving model to models/harper_spheres_tethered_augmented-full/hourglass/cp-0020.hdf5
+ - 1161s - loss: 314.4420 - mean_absolute_error: 0.0142 - val_loss: 37.3355 - val_mean_absolute_error: 0.0144
+Finished.

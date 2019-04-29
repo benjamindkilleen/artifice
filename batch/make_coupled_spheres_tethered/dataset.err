@@ -1,5 +1,5 @@
-INFO:experiment:writing images to data/coupled_spheres_tethered/images/
-INFO:experiment:writing video to data/coupled_spheres_tethered/data.mp4
+INFO:experiment:writing images to data/harper_spheres_tethered/images/
+INFO:experiment:writing video to data/harper_spheres_tethered/data.mp4
 INFO:experiment:Rendering scene 0 of 12000...
 INFO:experiment:Rendering scene 1 of 12000...
 INFO:experiment:Rendering scene 2 of 12000...
@@ -12002,8 +12002,8 @@ INFO:experiment:Rendering scene 11998 of 12000...
 INFO:experiment:Rendering scene 11999 of 12000...
 INFO:experiment:Finished writing images.
 INFO:experiment:Finished writing video.
-INFO:artifice:<run 'convert'>
-INFO:artifice:writing unlabeled set to 'data/coupled_spheres_tethered/unlabeled_set.tfrecord'...
+INFO:artifice:Namespace(batch_size=[4], command='convert', cores=[-1], data_root=['data/harper_spheres_tethered'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[196, 196, 1], keras_verbose=[1], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/coupled_spheres'], num_candidates=[1000], num_objects=[2], output=['show'], overwrite=False, query_size=[1], show=False, splits=[10000, 1000, 1000], subset_size=[10], tile_shape=[196, 196, 1], verbose=[1])
+INFO:artifice:writing unlabeled set to 'data/harper_spheres_tethered/unlabeled_set.tfrecord'...
 INFO:artifice:writing 0 / 10000
 INFO:artifice:writing 100 / 10000
 INFO:artifice:writing 200 / 10000
@@ -12106,7 +12106,7 @@ INFO:artifice:writing 9800 / 10000
 INFO:artifice:writing 9900 / 10000
 INFO:artifice:finished
 INFO:artifice:wrote 10000 unlabeled images
-INFO:artifice:writing validation set to 'data/coupled_spheres_tethered/validation_set.tfrecord'...
+INFO:artifice:writing validation set to 'data/harper_spheres_tethered/validation_set.tfrecord'...
 INFO:artifice:writing 0 / 1000
 INFO:artifice:writing 100 / 1000
 INFO:artifice:writing 200 / 1000
@@ -12119,7 +12119,7 @@ INFO:artifice:writing 800 / 1000
 INFO:artifice:writing 900 / 1000
 INFO:artifice:finished
 INFO:artifice:wrote 1000 validation examples
-INFO:artifice:writing test set to 'data/coupled_spheres_tethered/test_set.tfrecord'...
+INFO:artifice:writing test set to 'data/harper_spheres_tethered/test_set.tfrecord'...
 INFO:artifice:writing 0 / 1000
 INFO:artifice:writing 100 / 1000
 INFO:artifice:writing 200 / 1000

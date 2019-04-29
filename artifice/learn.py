@@ -100,11 +100,13 @@ class ActiveLearner(Detector):
 
     """
     detection = data.from_field(field)
-    other_field = data.to_numpy_field(detection)
-    diff = other_field - field
-    sqr = np.square(diff)
-    uncertainty = sqr.mean()
-    return uncertainty
+    indices = np.floor(detection[:,1:3]).astype(np.int64)
+    return - np.sum(field[indices[:,0], indices[:,1], 0])
+    # other_field = data.to_numpy_field(detection)
+    # diff = other_field - field
+    # sqr = np.square(diff)
+    # uncertainty = sqr.mean()
+    # return uncertainty
 
   def choose_query(self, unlabeled_set):
     """Run inference on the unlabeled set, choose `query_size` images for

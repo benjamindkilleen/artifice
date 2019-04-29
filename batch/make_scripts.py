@@ -79,15 +79,22 @@ subset_size={subset_size}
 #        --verbose 2 --keras-verbose 2
 # echo "Finished."
 
-echo "Starting waltzing_spheres..."
-python artifice.py {cmd} --mode $mode -i data/waltzing_spheres \\
-       -m models/${{data}}_${{mode}}{subset_addon} \\
-       --splits 0 0 2401 \\
-       --verbose 2 --keras-verbose 2
-echo "Finished."
+# echo "Starting waltzing_spheres..."
+# python artifice.py {cmd} --mode $mode -i data/waltzing_spheres \\
+#        -m models/${{data}}_${{mode}}{subset_addon} \\
+#        --splits 0 0 2401 \\
+#        --verbose 2 --keras-verbose 2
+# echo "Finished."
 
-echo "Starting shadowed_right_spheres..."
-python artifice.py {cmd} --mode $mode -i data/shadowed_right_spheres \\
+# echo "Starting shadowed_right_spheres..."
+# python artifice.py {cmd} --mode $mode -i data/shadowed_right_spheres \\
+#        -m models/${{data}}_${{mode}}{subset_addon} \\
+#        --splits 0 0 2401 \\
+#        --verbose 2 --keras-verbose 2
+# echo "Finished."
+
+echo "Starting harper_waltzing_spheres..."
+python artifice.py {cmd} --mode $mode -i data/harper_waltzing_spheres \\
        -m models/${{data}}_${{mode}}{subset_addon} \\
        --splits 0 0 2401 \\
        --verbose 2 --keras-verbose 2
@@ -101,7 +108,7 @@ num_active_epochs = 10
 which_epochs = [20]
 modes = ['full', 'random', 'active',
          'augmented-full', 'augmented-random', 'augmented-active']
-datas = ['obfuscated_spheres_tethered', 'coupled_spheres',
+datas = ['harper_spheres', 'harper_spheres_tethered', 'coupled_spheres',
          'coupled_spheres_tethered']
 subset_sizes = [10, 100]
 

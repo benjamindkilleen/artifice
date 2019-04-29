@@ -18,13 +18,13 @@ logger = logging.getLogger('experiment')
 debug = False
 
 # dataset parameters
-root = "data/shadowed_right_spheres/"  # root dir for fname
-fps = 30                         # frame rate of the video
-frame_step = 1/float(fps)        # time per frame (DERIVED)
-separation = 4                   # separation between cell-centered samples
-output_formats = {'png', 'mp4'}  # output formats
-image_shape = (196, 196)         # image shape
-num_classes = 3                  # including background
+root = "data/harper_waltzing_spheres/"  # root dir for fname
+fps = 30                                # frame rate of the video
+frame_step = 1/float(fps)               # time per frame (DERIVED)
+separation = 4                  # separation between cell-centered samples
+output_formats = {'png', 'mp4'} # output formats
+image_shape = (196, 196)        # image shape
+num_classes = 3                 # including background
 num_rows = image_shape[0] // separation
 num_cols = image_shape[1] // separation
 N = num_rows * num_cols
@@ -35,7 +35,7 @@ r1 = 5                          # radius (cm)
 
 # ball 2
 r2 = 15
-big_sphere_offset = -image_shape[0] // 2 # N//2
+big_sphere_offset = N // 2
 
 #################### CONFIGURABLE OPTIONS ABOVE ####################
 
@@ -77,9 +77,9 @@ def main():
   texture = lambda text : vapory.Texture(text)
   
   # Begin setup
-  s1 = experiment.ExperimentSphere(argsf1, texture('PinkAlabaster'),
+  s1 = experiment.ExperimentSphere(argsf1, texture('White_Wood'),
                                    semantic_label=1)
-  s2 = experiment.ExperimentSphere(argsf2, texture('PinkAlabaster'),
+  s2 = experiment.ExperimentSphere(argsf2, texture('White_Wood'),
                                    semantic_label=2)
 
   # experiment
@@ -94,13 +94,18 @@ def main():
   exp.add_object(vapory.LightSource([5*image_shape[0], 0, 0],
                                     'color', [1,1,1]))
 
+
   # Background
-  exp.add_object(vapory.Plane([0,0,1], max(r1, r2), texture('Blue_Sky')))
+  exp.add_object(vapory.Plane(
+    [0,0,1], 10*max(r1, r2), vapory.Texture(
+      vapory.Pigment(vapory.ImageMap('png', '"scripts/images/harper.png"')),
+      'scale', '300', 'translate', [image_shape[0] // 2, 2*image_shape[1] // 3, 0])))
+  
   exp.add_object(s1)
   exp.add_object(s2)
   
   if debug:
-    image, annotation = exp.render_scene(0)
+    (image, _) , _ = exp.render_scene(0)
     plt.imshow(image[:,:,0], cmap='gray')
     plt.show()
   else:

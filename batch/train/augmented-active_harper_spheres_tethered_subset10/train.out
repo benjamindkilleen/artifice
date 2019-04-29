@@ -1,0 +1,82 @@
+Starting training...
+Epoch 1/1
+
+Epoch 00001: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0001.hdf5
+ - 1167s - loss: 54.8935 - mean_absolute_error: 0.0478 - val_loss: 37.3757 - val_mean_absolute_error: 0.0068
+Epoch 2/2
+
+Epoch 00002: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0002.hdf5
+ - 1122s - loss: 64.4635 - mean_absolute_error: 0.0090 - val_loss: 37.3750 - val_mean_absolute_error: 0.0062
+Epoch 3/3
+
+Epoch 00003: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0003.hdf5
+ - 1121s - loss: 30.4664 - mean_absolute_error: 0.0085 - val_loss: 37.3746 - val_mean_absolute_error: 0.0064
+Epoch 4/4
+
+Epoch 00004: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0004.hdf5
+ - 1137s - loss: 19.0032 - mean_absolute_error: 0.0085 - val_loss: 37.3747 - val_mean_absolute_error: 0.0072
+Epoch 5/5
+
+Epoch 00005: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0005.hdf5
+ - 1123s - loss: 305.8211 - mean_absolute_error: 0.0095 - val_loss: 37.3734 - val_mean_absolute_error: 0.0065
+Epoch 6/6
+
+Epoch 00006: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0006.hdf5
+ - 1148s - loss: 99.1691 - mean_absolute_error: 0.0086 - val_loss: 37.3728 - val_mean_absolute_error: 0.0064
+Epoch 7/7
+
+Epoch 00007: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0007.hdf5
+ - 1157s - loss: 16.4948 - mean_absolute_error: 0.0091 - val_loss: 37.3707 - val_mean_absolute_error: 0.0075
+Epoch 8/8
+
+Epoch 00008: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0008.hdf5
+ - 1148s - loss: 77.6648 - mean_absolute_error: 0.0102 - val_loss: 37.3660 - val_mean_absolute_error: 0.0089
+Epoch 9/9
+
+Epoch 00009: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0009.hdf5
+ - 1119s - loss: 30.3689 - mean_absolute_error: 0.0103 - val_loss: 37.3610 - val_mean_absolute_error: 0.0075
+Epoch 10/10
+
+Epoch 00010: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0010.hdf5
+ - 1119s - loss: 395.7909 - mean_absolute_error: 0.0115 - val_loss: 37.3577 - val_mean_absolute_error: 0.0080
+Epoch 11/20
+
+Epoch 00011: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0011.hdf5
+ - 1119s - loss: 43.5568 - mean_absolute_error: 0.0112 - val_loss: 37.3517 - val_mean_absolute_error: 0.0089
+Epoch 12/20
+
+Epoch 00012: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0012.hdf5
+ - 1097s - loss: 196.0601 - mean_absolute_error: 0.0115 - val_loss: 37.3502 - val_mean_absolute_error: 0.0087
+Epoch 13/20
+
+Epoch 00013: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0013.hdf5
+ - 1091s - loss: 206.7166 - mean_absolute_error: 0.0101 - val_loss: 37.3466 - val_mean_absolute_error: 0.0094
+Epoch 14/20
+
+Epoch 00014: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0014.hdf5
+ - 1091s - loss: 81.6997 - mean_absolute_error: 0.0103 - val_loss: 37.3434 - val_mean_absolute_error: 0.0101
+Epoch 15/20
+
+Epoch 00015: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0015.hdf5
+ - 1091s - loss: 33.4706 - mean_absolute_error: 0.0104 - val_loss: 37.3396 - val_mean_absolute_error: 0.0107
+Epoch 16/20
+
+Epoch 00016: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0016.hdf5
+ - 1100s - loss: 331.3374 - mean_absolute_error: 0.0123 - val_loss: 37.3371 - val_mean_absolute_error: 0.0149
+Epoch 17/20
+
+Epoch 00017: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0017.hdf5
+ - 1091s - loss: 51.4669 - mean_absolute_error: 0.0124 - val_loss: 37.3393 - val_mean_absolute_error: 0.0123
+Epoch 18/20
+
+Epoch 00018: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0018.hdf5
+ - 1090s - loss: 68.8257 - mean_absolute_error: 0.0123 - val_loss: 37.3389 - val_mean_absolute_error: 0.0099
+Epoch 19/20
+
+Epoch 00019: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0019.hdf5
+ - 1091s - loss: 1117.1809 - mean_absolute_error: 0.0141 - val_loss: 37.3346 - val_mean_absolute_error: 0.0135
+Epoch 20/20
+
+Epoch 00020: saving model to models/harper_spheres_tethered_augmented-active_subset10/hourglass/cp-0020.hdf5
+ - 1098s - loss: 28.0231 - mean_absolute_error: 0.0130 - val_loss: 37.3334 - val_mean_absolute_error: 0.0126
+Finished.
