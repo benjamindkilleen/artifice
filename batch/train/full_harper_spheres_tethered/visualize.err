@@ -5,16 +5,16 @@ WARNING:artifice:loading data before model
 WARNING:artifice:pad values may be incorrect
 WARNING:artifice:loading data before model
 WARNING:artifice:pad values may be incorrect
-2019-04-29 10:46:40.967445: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-04-29 10:46:41.190730: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+2019-04-29 12:19:29.514402: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-04-29 12:19:30.178316: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:09:00.0
+pciBusID: 0000:08:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-04-29 10:46:41.190807: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-29 10:46:41.574967: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-29 10:46:41.575062: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-29 10:46:41.575076: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-29 10:46:41.575443: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-04-29 12:19:30.178401: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-04-29 12:19:30.612970: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-04-29 12:19:30.613064: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-04-29 12:19:30.613077: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-04-29 12:19:30.613403: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
 INFO:artifice:average error: 5.29
@@ -48,38 +48,3 @@ INFO:artifice:calculating object-wise loss at 2200/2401
 INFO:artifice:calculating object-wise loss at 2300/2401
 INFO:artifice:calculating object-wise loss at 2400/2401
 INFO:artifice:saved losses map to models/harper_spheres_tethered_full/harper_waltzing_spheres/regional_losses.pdf
-INFO:artifice:writing detections to video...
-2019-04-29 10:51:51.209641: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-04-29 10:51:51.209698: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-04-29 10:51:51.211106: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-04-29 10:51:51.211118: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-04-29 10:51:51.211422: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
-INFO:artifice:0 / 2401
-INFO:artifice:ffmpeg -y -f rawvideo -vcodec rawvideo -s 2000x1000 -pix_fmt rgba -r 30 -i - -an -b 40000k -vcodec mpeg4 models/harper_spheres_tethered_full/harper_waltzing_spheres/detections.mp4
-INFO:artifice:saved example detection to models/harper_spheres_tethered_full/harper_waltzing_spheres/example_detection.pdf
-INFO:artifice:100 / 2401
-INFO:artifice:200 / 2401
-INFO:artifice:300 / 2401
-INFO:artifice:400 / 2401
-INFO:artifice:500 / 2401
-INFO:artifice:600 / 2401
-INFO:artifice:700 / 2401
-INFO:artifice:800 / 2401
-INFO:artifice:900 / 2401
-INFO:artifice:1000 / 2401
-INFO:artifice:1100 / 2401
-INFO:artifice:1200 / 2401
-INFO:artifice:1300 / 2401
-INFO:artifice:1400 / 2401
-INFO:artifice:1500 / 2401
-INFO:artifice:1600 / 2401
-INFO:artifice:1700 / 2401
-INFO:artifice:1800 / 2401
-INFO:artifice:1900 / 2401
-INFO:artifice:2000 / 2401
-INFO:artifice:2100 / 2401
-INFO:artifice:2200 / 2401
-INFO:artifice:2300 / 2401
-INFO:artifice:2400 / 2401
-INFO:artifice:finished
-INFO:artifice:wrote mp4 to models/harper_spheres_tethered_full/harper_waltzing_spheres/detections.mp4
