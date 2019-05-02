@@ -15,7 +15,7 @@ data/**/*.jpg
 data/**/*.npy
 data/particle_tracking
 !data/gyros/labels.npy
-!data/gyros/annotations/*.npy
+data/shadowed_right_spheres
 reports/grant
 reports/**/*.out
 reports/**/*.el

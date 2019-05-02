@@ -66,21 +66,22 @@ class GyroAnnotator(Annotator):
       np.stack((xs - obj_label[1], ys - obj_label[2]), axis=1), axis=1)
     r = np.median(distances) + 1.5
     return circle(obj_label[1], obj_label[2], r, shape=image.shape)
-
   
 def main():
   labels = np.load('data/gyros/labels.npy')
   image_paths = sorted(glob('data/gyros/images/*.png'))
   annotator = GyroAnnotator()
   for i, (image_path, label) in enumerate(zip(image_paths, labels)):
+    if i % 100 == 0:
+      print(f"{i} / {labels.shape[0]}")
     image = img.open_as_float(image_path)
     annotation = annotator(image, labels[0])
     np.save(f'data/gyros/annotations/{str(i).zfill(4)}.npy', annotation)
     # fig, axes = vis.plot_image(image, scale=80)
     # xs, ys = np.where(annotation)
-    # plt.plot(ys, xs, 'r,')
+    # plt.plot(ys, xs, 'r.')
+    # plt.show()
     # plt.savefig('docs/gyro_annotation.png')
-    break
 
 if __name__ == "__main__":
   main()
