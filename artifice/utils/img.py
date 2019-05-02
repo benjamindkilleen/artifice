@@ -9,6 +9,20 @@ import logging
 
 logger = logging.getLogger('artifice')
 
+def indices_from_regions(regions):
+  """Given an image-shaped annotation of regions, get indices of regions.
+
+  :param regions: 
+  :returns: `[(xs_0,ys_0),(xs_1,ys_1),...]` indices for each region
+  :rtype: list of two-tuples, each with a list of ints
+
+  """
+  num_classes = int(np.max(regions))
+  indices = []
+  for i in range(num_classes + 1):
+    indices.append(np.where(regions == i))
+  return indices
+
 def fill_negatives(image):
   """Fill the negative values in background with gaussian noise.
   

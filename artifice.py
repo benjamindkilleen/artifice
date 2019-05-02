@@ -64,6 +64,7 @@ class Artifice:
     self.show = args.show
     self.num_candidates = args.num_candidates[0]
     self.query_size = args.query_size[0]
+    self.regions_path = args.regions_path[0]
 
     # runtime configurations
     if self.verbose == 0:
@@ -524,7 +525,8 @@ def main():
                       help=docs.eager_help)
   parser.add_argument('--show', action='store_true',
                       help=docs.show_help)
-
+  parser.add_argument('--regions-path', '--regions', nargs=1,
+                      default=[None], help=docs.regions_help)
   args = parser.parse_args()
   art = Artifice(args)
   logger.info(art)

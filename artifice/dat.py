@@ -802,21 +802,19 @@ class AugmentationData(Data):
   def valid(self, label):
     """Determine whether a prospective label is valid.
 
-    For now, just checks if each object position is inside the shape.
-
+    Optional function (returns true by default) that may be used to verify
+    position.
+    
     :param label: the prospective label, numpy (num_objects, >=3)
     :returns: boolean
 
     """
-    positions = label[:,1:3]
-    present = label[:,0].astype(bool)
-    indices = np.where(present, positions, np.zeros_like(positions))
-    positions_good = np.all(img.inside(indices, self.image_shape))
-    theta_good = True
-    return positions_good and theta_good
-
+    return True
+    
   def draw(self):
     """Draw a new point.
+
+    Subclasses may re-implement this method.
 
     :returns: `(n, num_objects, 4)` array of object labels, each containing
     `[obj_id, x, y, theta]`
@@ -944,3 +942,30 @@ def match_detections(detections, labels):
       matched_detections[i,j,0] = labels[i,j,0]
       matched_detections[i,j,1:3] = detections[i,col_ind[j],1:3]
   return matched_detections
+
+class RegionBasedUnlabeledData(UnlabeledData):
+  def __init__(self, *args, **kwargs):
+    """
+
+    :param regions: 
+    :returns: 
+    :rtype: 
+
+    """
+    super().__init__(self, *args, **kwargs)
+    self.regions = kwargs.get('regions', np.zeros(self.image_shape))
+    self.region_indices = img.indices_from_regions(self.regions)
+
+  def draw(self):
+    label = np.ones(self.label_shape, dtype=np.float32)
+    label[:,0] = np.arange(1,self.num_objects+1, dtype=np.float32)
+    for obj_id in range(1,self.num_objects+1):
+      xs, ys = self.region_indices[obj_id]
+      idx = np.random.randint(len(xs))
+      X = np.array([xs[idx], ys[idx]], dtype=np.float32)
+      label[:,1:3] = X + np.random.uniform(0,1, dtype=np.float32, size=2)
+    label[:,3] = np.random.uniform(0., 2*.np.pi, size=label.shape[0])
+    return label
+    
+      
+
