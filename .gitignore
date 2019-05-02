@@ -25,3 +25,4 @@ models/**/waltzing_spheres/*.mp4
 models/**/*.mp4
 reports/
 thesis/
+**.xcf
