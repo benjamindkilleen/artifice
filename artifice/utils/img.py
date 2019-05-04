@@ -6,10 +6,11 @@ from PIL import Image
 from skimage import transform
 import scipy
 import logging
+import matplotlib.pyplot as plt
 
 logger = logging.getLogger('artifice')
 
-def indices_from_regions(regions):
+def indices_from_regions(regions, num_objects):
   """Given an image-shaped annotation of regions, get indices of regions.
 
   :param regions: 
@@ -17,9 +18,9 @@ def indices_from_regions(regions):
   :rtype: list of two-tuples, each with a list of ints
 
   """
-  num_classes = int(np.max(regions))
+  regions = np.squeeze(regions)
   indices = []
-  for i in range(num_classes + 1):
+  for i in range(num_objects + 1):
     indices.append(np.where(regions == i))
   return indices
 
@@ -118,6 +119,7 @@ def as_float(image, atleast_3d=True):
   else:
     return image
 
+  
 def open_as_float(image_path):
   return as_float(open_as_array(image_path), atleast_3d=False)
 

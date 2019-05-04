@@ -52,6 +52,7 @@ def image_from_proto(proto):
       'image': tf.FixedLenFeature([], tf.string),
       'image_shape': tf.FixedLenFeature([3], tf.int64)
     })
+
   image = tf.decode_raw(features['image'], tf.float32)
   image = tf.reshape(image, features['image_shape'])
   return image
@@ -114,7 +115,7 @@ def proto_from_scene(scene):
   image, label = example
   image = img.as_float(image)
   label = label.astype(np.float32)
-  annotation = annotation.astype(np.float32)
+  annotation = np.atleast_3d(annotation.astype(np.float32))
 
   image_string = image.tostring()
   image_shape = np.array(image.shape, dtype=np.int64)
@@ -165,6 +166,10 @@ def scene_from_proto(proto):
   label = tf.reshape(label, features['label_shape'],
                      name='reshape_label_proto')
 
+  logger.debug(f"image: {image.shape}")
+  logger.debug(f"label: {label.shape}")
+  logger.debug(f"annotation: {annotation.shape}")
+  
   return (image, label), annotation
 
 
@@ -385,14 +390,12 @@ class Data(object):
         for k, acc in accumulators.items():
           aggregates[k] = acc(self.as_numpy(entry), aggregates[k])
     else:
-      iterator = self.dataset.make_initializable_iterator()
-      next_item = iterator.get_next()
+      next_entry = self.dataset.make_one_shot_iterator().get_next()
       with tf.Session() as sess:
-        sess.run(iterator.initializer)
         logger.info("initialized iterator, starting accumulation...")
         while True:
           try:
-            entry = sess.run(next_item)
+            entry = sess.run(next_entry)
             for k, acc in accumulators.items():
               aggregates[k] = acc(entry, aggregates[k])
           except tf.errors.OutOfRangeError:
@@ -693,7 +696,8 @@ class UnlabeledData(Data):
     if tf.executing_eagerly():
       for idx, image in dataset:
         entry = query_function(image, idx)
-        entry = (np.array(scene[0][0]), np.array(scene[0][1])), np.array(scene[1])
+        # TODO: depends on scenes being parsed
+        entry = (np.array(entry[0][0]), np.array(entry[0][1])), np.array(entry[1])
         writer.write(output_type.encode_entry(entry))
     else:
       get_next = dataset.make_one_shot_iterator().get_next()
@@ -944,28 +948,25 @@ def match_detections(detections, labels):
   return matched_detections
 
 class RegionBasedUnlabeledData(UnlabeledData):
+  def sample_and_annotate(self, sampling, oracle, record_name):
+    return self._sample_and_query(sampling, oracle, record_name, 'annotate',
+                                  RegionBasedAugmentationData)
+
+class RegionBasedAugmentationData(AugmentationData):
   def __init__(self, *args, **kwargs):
-    """
-
-    :param regions: 
-    :returns: 
-    :rtype: 
-
-    """
-    super().__init__(self, *args, **kwargs)
+    super().__init__(*args, **kwargs)
     self.regions = kwargs.get('regions', np.zeros(self.image_shape))
-    self.region_indices = img.indices_from_regions(self.regions)
+    self.region_indices = img.indices_from_regions(self.regions, self.num_objects)
 
   def draw(self):
     label = np.ones(self.label_shape, dtype=np.float32)
     label[:,0] = np.arange(1,self.num_objects+1, dtype=np.float32)
     for obj_id in range(1,self.num_objects+1):
       xs, ys = self.region_indices[obj_id]
-      idx = np.random.randint(len(xs))
+      if len(xs) == 0:
+        raise RuntimeError(f"object '{obj_id}' has no region")
+      idx = np.random.randint(0, len(xs))
       X = np.array([xs[idx], ys[idx]], dtype=np.float32)
-      label[:,1:3] = X + np.random.uniform(0,1, dtype=np.float32, size=2)
-    label[:,3] = np.random.uniform(0., 2*.np.pi, size=label.shape[0])
+      label[:,1:3] = X + np.random.uniform(0, 1, size=2)
+    label[:,3] = np.random.uniform(0., 2.*np.pi, size=label.shape[0])
     return label
-    
-      
-

@@ -139,6 +139,7 @@ class Artifice:
                  self.annotated_subset_dir,
                  self.labeled_subset_dir]:
       if not exists(path):
+        logger.info(f"creating '{path}'")
         os.makedirs(path)
 
 
@@ -180,11 +181,19 @@ class Artifice:
             'num_objects' : self.num_objects}
 
   def load_unlabeled(self):
-    return dat.UnlabeledData(
-      self.unlabeled_set_path,
-      size=self.unlabeled_size,
-      **self.dat_kwargs)
-
+    if self.regions_path is not None:
+      regions = np.load(self.regions_path)
+      return dat.RegionBasedUnlabeledData(
+        self.unlabeled_set_path,
+        size=self.unlabeled_size,
+        regions=regions,
+        **self.dat_kwargs)
+    else:
+      return dat.UnlabeledData(
+        self.unlabeled_set_path,
+        size=self.unlabeled_size,
+        **self.dat_kwargs)
+  
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
     unlabeled_set = self.load_unlabeled()
@@ -202,8 +211,18 @@ class Artifice:
     return dat.Data(self.labeled_set_path, size=self.labeled_size, **self.dat_kwargs)
 
   def load_annotated(self):
-    return dat.AugmentationData(self.annotated_set_path, size=self.annotated_size,
-                                **self.dat_kwargs)
+    if self.regions_path is not None:
+      regions = np.load(self.regions_path)
+      return dat.RegionBasedAugmentationData(
+        self.annotated_set_path,
+        size=self.annotated_size,
+        regions=regions,
+        **self.dat_kwargs)
+    else:
+      return dat.AugmentationData(
+        self.annotated_set_path,
+        size=self.annotated_size,
+        **self.dat_kwargs)
 
   def load_labeled_subset(self):
     if not exists(self.labeled_subset_path) or self.overwrite:
@@ -321,9 +340,10 @@ def cmd_train(art):
   unlabeled_set, validation_set, test_set = art.load_data()
   kwargs = {'epochs' : art.epochs,
             'steps_per_epoch' : art.train_steps,
-            'validation_data' : validation_set.eval_input,
-            'validation_steps' : art.validation_steps,
             'verbose' : art.keras_verbose}
+  if art.validation_size > 0:
+    kwargs.update({'validation_data' : validation_set.eval_input,
+                   'validation_steps' : art.validation_steps})
 
   if art.mode == 'full':
     # run "traditional" training on the full, labeled dataset
@@ -408,41 +428,43 @@ def cmd_visualize(art):
     plt.savefig(art.regional_errors_path)
     logger.info(f"saved error map to {art.regional_errors_path}")
 
-  # visualize the losses at each point
-  losses = np.zeros((fields.shape[0], art.num_objects))
-  for i in range(fields.shape[0]):
-    if i % 100 == 0:
-      logger.info(f"calculating object-wise loss at {i}/{fields.shape[0]}")
-    for j in range(labels.shape[1]):
-      true_field = test_set.to_numpy_field(labels[i])
-      pred_field = fields[i]
-      rr, cc = circle(labels[i,j,1], labels[i,j,2], 20., shape=art.image_shape[:2])
-      losses[i,j] = np.square(pred_field[rr,cc] - true_field[rr,cc]).mean()
-  vis.plot_errors(labels, losses, art.image_shape)
-  if art.show:
-    plt.show()
-  else:
-    plt.savefig(art.regional_losses_path)
-    logger.info(f"saved losses map to {art.regional_losses_path}")
+  # # visualize the losses at each point
+  # losses = np.zeros((fields.shape[0], art.num_objects))
+  # for i in range(fields.shape[0]):
+  #   if i % 100 == 0:
+  #     logger.info(f"calculating object-wise loss at {i}/{fields.shape[0]}")
+  #   for j in range(labels.shape[1]):
+  #     true_field = test_set.to_numpy_field(labels[i])
+  #     pred_field = fields[i]
+  #     rr, cc = circle(labels[i,j,1], labels[i,j,2], 20., shape=art.image_shape[:2])
+  #     losses[i,j] = np.square(pred_field[rr,cc] - true_field[rr,cc]).mean()
+  # vis.plot_errors(labels, losses, art.image_shape)
+  # if art.show:
+  #   plt.show()
+  # else:
+  #   plt.savefig(art.regional_losses_path)
+  #   logger.info(f"saved losses map to {art.regional_losses_path}")
 
-  # get_next = test_set.dataset.make_one_shot_iterator().get_next()
-  # writer = vid.MP4Writer(art.detections_video_path)
-  # logger.info(f"writing detections to video...")
-  # with tf.Session() as sess:
-  #   for i, detection in enumerate(detections):
-  #     if i % 100 == 0:
-  #       logger.info(f"{i} / {detections.shape[0]}")
-  #     image, label = sess.run(get_next)
-  #     fig, _ = vis.plot_detection(label, detection, image, fields[i])
-  #     if i == 0:
-  #       writer.write_fig(fig, close=False)
-  #       plt.savefig(art.example_detection_path)
-  #       logger.info(f"saved example detection to {art.example_detection_path}")
-  #     else:
-  #       writer.write_fig(fig)
-  # writer.close()
-  # logger.info(f"finished")
-  # logger.info(f"wrote mp4 to {art.detections_video_path}")
+  # TODO: plot the field values at each point
+
+  get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  writer = vid.MP4Writer(art.detections_video_path)
+  logger.info(f"writing detections to video...")
+  with tf.Session() as sess:
+    for i, detection in enumerate(detections):
+      if i % 100 == 0:
+        logger.info(f"{i} / {detections.shape[0]}")
+      image, label = sess.run(get_next)
+      fig, _ = vis.plot_detection(label, detection, image, fields[i])
+      if i == 0:
+        writer.write_fig(fig, close=False)
+        plt.savefig(art.example_detection_path)
+        logger.info(f"saved example detection to {art.example_detection_path}")
+      else:
+        writer.write_fig(fig)
+  writer.close()
+  logger.info(f"finished")
+  logger.info(f"wrote mp4 to {art.detections_video_path}")
 
 def cmd_analyze(art):
   """Analayze the detections for a spring constant."""
