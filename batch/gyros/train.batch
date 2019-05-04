@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#SBATCH --job-name=augmented-active
+#SBATCH --output=/project2/glk/artifice/batch/gyros/train.out
+#SBATCH --error=/project2/glk/artifice/batch/gyros/train.err
+#SBATCH -p gpu2
+#SBATCH --gres=gpu:1
+#SBATCH --time=24:00:00
+#SBATCH --account=pi-glk
+#SBATCH --mem-per-cpu=32000
+
+
+module unload python
+module load ffmpeg
+module load cuda/9.0
+module load Anaconda3/2018.12
+source activate tf-gpu-1.12.0
+module load povray/3.7
+
+cd /project2/glk/artifice
+
+epochs=20
+mode=augmented-active
+data=gyros
+subset_size=100 # ignored if mode is 'full'
+query_size=10   # ignored if mode is 'full'
+epoch_size=1000
+batch_size=1
+num_objects=54
+
+echo "Starting training..."
+python artifice.py train --mode $mode -i data/$data \
+       --epoch-size $epoch_size --batch-size $batch_size \
+       --overwrite -e $epochs --image-shape 600 800 1 \
+       --splits 8542 0 300 --regions data/gyros/regions.npy \
+       -m models/${data}_${mode}_subset${subset_size} \
+       --subset-size $subset_size --query-size $query_size \
+       --num-objects $num_objects \
+       --verbose 2 --keras-verbose 2
+echo "Finished."
+
