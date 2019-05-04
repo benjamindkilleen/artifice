@@ -138,7 +138,8 @@ class ActiveLearner(Detector):
     logger.info(f"chose query {query} with uncertainties {uncertainties}")
     return query
 
-  def fit(self, unlabeled_set, subset_dir, epochs=1, augment=True, **kwargs):
+  def fit(self, unlabeled_set, subset_dir, epochs=1, augment=True,
+          initial_epoch=0, **kwargs):
     """Fit using an active learning approach to the unlabeled data.
 
     TODO: use already annotated examples, if they exist.
@@ -146,18 +147,17 @@ class ActiveLearner(Detector):
 
     :param unlabeled_set: a dat.Data object with an `annotate()` method.
     :param subset_dir: place to store subsets
+    :param epoch: initial epoch
     :param epochs: number of epochs to run
-    :param augment:
+    :param augment: 
     :returns: history object returned by fit instances
-    :rtype:
+    :rtype: 
 
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
     history = {'queries' : []}
-
-    for epoch in range(epochs):
-      if epoch*self.query_size >= self.subset_size:
-        break
+    
+    while epoch < epochs and epoch*self.query_size < self.subset_size:
       logger.info(f"Epoch {epoch}/{epochs}")
       if epoch == 0:
         sampling[0] = 1

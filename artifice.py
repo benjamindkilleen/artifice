@@ -65,7 +65,8 @@ class Artifice:
     self.num_candidates = args.num_candidates[0]
     self.query_size = args.query_size[0]
     self.regions_path = args.regions_path[0]
-
+    self.initial_epoch = args.initial_epoch[0]
+    
     # runtime configurations
     if self.verbose == 0:
       logger.setLevel(logging.WARNING)
@@ -340,7 +341,8 @@ def cmd_train(art):
   unlabeled_set, validation_set, test_set = art.load_data()
   kwargs = {'epochs' : art.epochs,
             'steps_per_epoch' : art.train_steps,
-            'verbose' : art.keras_verbose}
+            'verbose' : art.keras_verbose,
+            'initial_epoch' : art.initial_epoch}
   if art.validation_size > 0:
     kwargs.update({'validation_data' : validation_set.eval_input,
                    'validation_steps' : art.validation_steps})
@@ -549,6 +551,9 @@ def main():
                       help=docs.show_help)
   parser.add_argument('--regions-path', '--regions', nargs=1,
                       default=[None], help=docs.regions_help)
+  parser.add_argument('--initial-epoch', nargs=1,
+                      default=[0], type=int,
+                      help=docs.initial_epoch_help) # todo: get from ckpt
   args = parser.parse_args()
   art = Artifice(args)
   logger.info(art)

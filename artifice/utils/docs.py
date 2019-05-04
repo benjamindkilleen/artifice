@@ -60,3 +60,5 @@ show_help = """Show plots rather than save them."""
 mode_help = """Training mode."""
 
 regions_help = """Regions numpy file path."""
+
+initial_epoch_help = """Initial epoch."""
