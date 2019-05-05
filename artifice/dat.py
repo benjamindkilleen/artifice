@@ -961,12 +961,13 @@ class RegionBasedAugmentationData(AugmentationData):
   def draw(self):
     label = np.ones(self.label_shape, dtype=np.float32)
     label[:,0] = np.arange(1,self.num_objects+1, dtype=np.float32)
-    for obj_id in range(1,self.num_objects+1):
+    for i in range(self.num_objects):
+      obj_id = i + 1
       xs, ys = self.region_indices[obj_id]
       if len(xs) == 0:
         raise RuntimeError(f"object '{obj_id}' has no region")
       idx = np.random.randint(0, len(xs))
       X = np.array([xs[idx], ys[idx]], dtype=np.float32)
-      label[:,1:3] = X + np.random.uniform(0, 1, size=2)
+      label[i,1:3] = X + np.random.uniform(0, 1, size=2)
     label[:,3] = np.random.uniform(0., 2.*np.pi, size=label.shape[0])
     return label

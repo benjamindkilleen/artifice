@@ -156,7 +156,10 @@ class ActiveLearner(Detector):
     """
     sampling = np.zeros(unlabeled_set.size, np.int64)
     history = {'queries' : []}
-    
+    epoch = initial_epoch
+
+    # TODO: make it so each sampling is saved to its own tfrecord, then
+    # combined, since Datasets can be drawn from multiple tfrecords.
     while epoch < epochs and epoch*self.query_size < self.subset_size:
       logger.info(f"Epoch {epoch}/{epochs}")
       if epoch == 0:
@@ -177,6 +180,7 @@ class ActiveLearner(Detector):
                             epochs=epoch+1, initial_epoch=epoch, **kwargs)
       for k,v in hist.items():
         history[k] = history.get(k, []) + v
+      epoch += 1
 
     if epoch < epochs:
       hist = self.model.fit(subset.training_input, epochs=epochs,
