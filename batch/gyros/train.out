@@ -3,3 +3,7 @@ Epoch 1/1
 
 Epoch 00001: saving model to models/gyros_augmented-active_subset100/hourglass/cp-0001.hdf5
  - 14178s - loss: 652.7315 - mean_absolute_error: 0.0699
+Epoch 2/2
+
+Epoch 00002: saving model to models/gyros_augmented-active_subset100/hourglass/cp-0002.hdf5
+ - 14322s - loss: 967.0130 - mean_absolute_error: 0.0208

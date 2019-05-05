@@ -427,7 +427,14 @@ def cmd_detect(art):
   logger.info(f"error std: {errors.std():.02f}")
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
+  for i in range(errors.shape[1]):
+    logger.info(f"object {i}:")
+    logger.info(f"  average error: {errors[:,i].mean():.02f}")
+    logger.info(f"  error std: {errors[:,i].std():.02f}")
+    logger.info(f"  minimum error: {errors[:,i].min():.02f}")
+    logger.info(f"  maximum error: {errors[:,i].max():.02f}")
 
+    
 def cmd_visualize(art):
   unlabeled_set, validation_set, test_set = art.load_data()
   labels = test_set.labels
@@ -438,6 +445,12 @@ def cmd_visualize(art):
   logger.info(f"error std: {errors.std():.02f}")
   logger.info(f"minimum error: {errors.min():.02f}")
   logger.info(f"maximum error: {errors.max():.02f}")
+  for i in range(errors.shape[1]):
+    logger.info(f"object {i}:")
+    logger.info(f"  average error: {errors[:,i].mean():.02f}")
+    logger.info(f"  error std: {errors[:,i].std():.02f}")
+    logger.info(f"  minimum error: {errors[:,i].min():.02f}")
+    logger.info(f"  maximum error: {errors[:,i].max():.02f}")
 
   # visualize the color map of errors
   vis.plot_errors(labels, errors, art.image_shape)
