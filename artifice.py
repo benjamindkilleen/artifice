@@ -150,8 +150,7 @@ class Artifice:
   @property
   def pad(self):
     if self._pad is None:
-      logger.warning(f"loading data before model")
-      logger.warning(f"pad values may be incorrect")
+      logger.warning(f"pad: loading data before model")
       return 0
     else:
       return self._pad
@@ -475,13 +474,17 @@ def cmd_visualize(art):
       if i % 100 == 0:
         logger.info(f"{i} / {detections.shape[0]}")
       image, label = sess.run(get_next)
-      fig, _ = vis.plot_detection(label, detection, image, fields[i])
+      # fig, _ = vis.plot_detection(label, detection, image, fields[i])
+      frame = vis.frame_detection(label, detection, image, fields[i])
       if i == 0:
-        writer.write_fig(fig, close=False)
-        plt.savefig(art.example_detection_path)
+        # writer.write_fig(fig, close=False)
+        # plt.savefig(art.example_detection_path)
+        img.save(art.example_detection_path, frame)
         logger.info(f"saved example detection to {art.example_detection_path}")
-      else:
-        writer.write_fig(fig)
+      # else:
+      #   writer.write_fig(fig)
+      writer.write(frame)
+        
   writer.close()
   logger.info(f"finished")
   logger.info(f"wrote mp4 to {art.detections_video_path}")

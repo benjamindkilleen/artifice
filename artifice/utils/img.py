@@ -3,12 +3,58 @@
 
 import numpy as np
 from PIL import Image
-from skimage import transform
+from skimage import draw, transform
 import scipy
 import logging
 import matplotlib.pyplot as plt
 
 logger = logging.getLogger('artifice')
+
+def draw_x(image, x, y, size=12, channel=0):
+  """Draw a x at the x,y location with `size`
+
+  :param image: image to draw on, at least 3 channels, float valued in [0,1)
+  :param x: x position
+  :param y: y position
+  :param size: marker diameter in pixels, default 12
+  :param channel: which channel(s) to draw in. Default (0) makes a red x
+  :returns: 
+  :rtype: 
+
+  """
+  h = int(size / (2*np.sqrt(2)))
+  i = int(x)
+  j = int(y)
+  rr, cc, val = draw.line_aa(i-h, j-h, i+h, j+h)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  rr, cc, val = draw.line_aa(i-h, j+h, i+h, j-h)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  return image
+
+def draw_t(image, x, y, size=12, channel=1):
+  """Draw a x at the x,y location with `size`
+
+  :param image: image to draw on, at least 3 channels, float valued in [0,1)
+  :param x: x position
+  :param y: y position
+  :param size: marker diameter in pixels, default 12
+  :param channel: which channel(s) to draw in. Default (1) makes a green x
+  :returns: 
+  :rtype: 
+
+  """
+  h = size // 2
+  i = int(np.floor(x))
+  j = int(np.floor(y))
+  rr, cc, val = draw.line_aa(i-h, j, i+h, j)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  rr, cc, val = draw.line_aa(i, j-h, i, j+h)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  return image
 
 def indices_from_regions(regions, num_objects):
   """Given an image-shaped annotation of regions, get indices of regions.
@@ -39,33 +85,35 @@ def fill_negatives(image):
   image[indices] = np.random.normal(mean, std, size=image[indices].shape)
   return image
 
-def inside(indices, shape):
+def inside(xs, ys, shape):
   """Returns a boolean array for which indices are inside shape.
-  
-  :param indices: 2D array of indices. Fast axis must have same dimension as shape.
+
+  :param xs: numpy arrays
+  :param ys: numpy arrays
   :param shape: image shape to compare against, using first two dimensions
   :returns: 1-D boolean array
-  
-  """
-  
-  over = np.logical_and(indices[0] >= 0, indices[1] >= 0)
-  under = np.logical_and(indices[0] < shape[0],
-                         indices[1] < shape[1])
 
+  """
+  over = np.logical_and(xs >= 0, ys >= 0)
+  under = np.logical_and(xs < shape[0], ys < shape[1])
   return np.logical_and(over, under)
 
-
-def get_inside(indices, shape):
+def get_inside(xs, ys, shape, vals=None):
   """Get the indices that are inside image's shape.
 
-  :param indices: 2D array of indices. Fast axis must have same dimension as shape.
+  :param xs: x indices
+  :param ys: y indices
   :param shape: image shape to compare with
   :returns: a subset of indices.
 
   """
-  which = inside(indices, shape)
-  return indices[0][which], indices[1][which]
-
+  xs = np.array(xs)
+  ys = np.array(ys)
+  which = inside(xs, ys, shape)
+  if vals is None:
+    return xs[which], ys[which]
+  else:
+    return xs[which], ys[which], vals[which]
 
 def grayscale(image):
   """Convert an n-channel, 3D image to grayscale.
@@ -90,6 +138,25 @@ def grayscale(image):
     return (image * W).mean(axis=2).reshape(*out_shape).astype(np.uint8)
   else:
     return image.mean(axis=2).reshape(*out_shape).astype(np.uint8)
+
+def rgb(image):
+  """Convert grayscale image to rgb.
+
+  :param image: 
+  :returns: 
+  :rtype: 
+
+  """
+  image = np.squeeze(image)
+  if image.ndim == 2:
+    return np.stack((image, image, image), axis=-1)
+  elif image.ndim == 3 and image.shape[2] > 3:
+    return image[:,:,:3]
+  elif image.ndim == 3 and image.shape[2] == 3:
+    return image.copy()
+  else:
+    raise RuntimeError(f"couldn't handle image shape {image.shape}")
+
 
 def open_as_array(fname):
   im = Image.open(fname)
@@ -126,6 +193,8 @@ def open_as_float(image_path):
 
 def save(fname, image):
   """Save the array image to png in fname."""
+  if image.dtype in [np.float32, np.float64]:
+    image = np.uint8(255*image)
   im = Image.fromarray(image)
   im.save(fname)
 

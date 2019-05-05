@@ -9,6 +9,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
+from artifice.utils import img
 
 logger = logging.getLogger('artifice')
 
@@ -52,7 +53,36 @@ def plot_detection(label, detection, *images, n=1):
   fig.suptitle('Object Detection')
   return fig, axes
 
+def frame_detection(label, detection, *images, n=1):
+  """Plot the detections onto the images, without matplotlib.
+
+  Allows for multiple images to be plotted, but by default only plots the
+  detection onto the first one.
+
+  :param label: 
+  :param detection: 
+  :param *images: one or more numpy images, each with the same vertical dimension
+  :param n: how many of `images` to plot onto.
+  :returns: resulting frame, as an array
+
+  """
+  if len(images) == 0:
+    raise RuntimeError("Pass in one or more images")
+
+  frame = np.zeros((images[0].shape[0],0,3), images[0].dtype)
+  for i, image in enumerate(images):
+    image = img.rgb(image)
+    if i < n:
+      for x, y in label[:,1:3]:
+        img.draw_t(image, x, y)
+      for x, y in detection[:,1:3]:
+        img.draw_x(image, x, y)
+    frame = np.concatenate((frame, image), axis=1)
+  return frame
+  
+
 def plot_labels(labels, image_shape):
+  
   fig, axes = plt.subplots(1, labels.shape[1])
   for i in range(labels.shape[1]):
     axes[i].hist2d(labels[:,i,2], labels[:,i,1],
