@@ -187,10 +187,19 @@ def as_float(image, atleast_3d=True):
     return image
 
 def as_uint(image):
-  if image.dtype in [np.float32, np.float64]:
-    image = (255*image).astype(np.uint8)
-  elif image.dtype in [np.uint8, np.int32, np.int64]:
-    image = image.astype(np.uint8)
+  """Scale to uint8, clipping values outside the valid range.
+
+  :param image: 
+  :returns: 
+  :rtype: 
+
+  """
+  if image.dtype == np.uint8:
+    return image
+  elif image.dtype in [np.float32, np.float64]:
+    image = (255*np.clip(image, 0, 1.0)).astype(np.uint8)
+  elif image.dtype in [np.int32, np.int64]:
+    image = np.clip(image, 0, 255).astype(np.uint8)
   else:
     raise ValueError(f"image dtype '{image.dtype}' not allowed")
   return image
