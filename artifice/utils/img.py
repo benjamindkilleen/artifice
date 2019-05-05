@@ -186,15 +186,22 @@ def as_float(image, atleast_3d=True):
   else:
     return image
 
-  
+def as_uint(image):
+  if image.dtype in [np.float32, np.float64]:
+    image = (255*image).astype(np.uint8)
+  elif image.dtype in [np.uint8, np.int32, np.int64]:
+    image = image.astype(np.uint8)
+  else:
+    raise ValueError(f"image dtype '{image.dtype}' not allowed")
+  return image
+
 def open_as_float(image_path):
   return as_float(open_as_array(image_path), atleast_3d=False)
 
 
 def save(fname, image):
   """Save the array image to png in fname."""
-  if image.dtype in [np.float32, np.float64]:
-    image = np.uint8(255*image)
+  image = as_uint(image)
   im = Image.fromarray(image)
   im.save(fname)
 

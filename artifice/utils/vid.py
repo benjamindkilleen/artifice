@@ -5,6 +5,7 @@ import subprocess as sp
 import logging
 import os
 import matplotlib.pyplot as plt
+from artifice.utils import img
 
 logger = logging.getLogger('artifice')
 
@@ -67,7 +68,7 @@ class MP4Writer:
   def write(self, frame):
     if self.shape is None:
       self.open(frame.shape)
-    frame = frame.astype(np.uint8)
+    frame = img.as_uint(frame)
     if frame.shape[2] == 3:
       frame = np.insert(frame, 3, np.zeros((frame.shape[:2])), axis=2)
     self.proc.stdin.write(frame.tobytes())
