@@ -336,6 +336,24 @@ def cmd_convert(art):
   logger.info(f"wrote {i+1} test examples")
 
 
+def cmd_augment(art):
+  """Run augmentation of the train_set. 
+  If `art.show`, then show the new examples, otherwise, save the augmented
+  train_set.
+  """
+  annotated_set = art.load_annotated()
+  get_next = annotated_set.training_input.make_one_shot_iterator().get_next()
+  with tf.Session() as sess:
+    while True:
+      images, fields = sess.run(get_next)
+      for image, field in zip(images, fields):
+        vis.plot_image(image, field)
+        if art.show:
+          plt.show()
+        else:
+          plt.close()
+          raise RuntimeError("Use --show")
+  
 def cmd_train(art):
   model = art.load_model()
   unlabeled_set, validation_set, test_set = art.load_data()
@@ -560,6 +578,8 @@ def main():
 
   if art.command == 'convert':
     cmd_convert(art)
+  elif art.command == 'augment':
+    cmd_augment(art)
   elif art.command == 'train':
     cmd_train(art)
   elif art.command == 'predict':
