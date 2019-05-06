@@ -483,35 +483,35 @@ def cmd_visualize(art):
   for i in range(peaks.shape[0]):
     for j in range(peaks.shape[1]):
       peaks[i,j] = fields[i,indices[i,j,0],indices[i,j,1]]
-  vis.plot_errors(labels, peaks, art.image_shape)
-  plt.title("Detection Peak Values")
+  fig, _ = vis.plot_errors(labels, peaks, art.image_shape, cmap='gray', vmax=10.)
+  fig.suptitle("Detection Peak Values")
   if art.show:
     plt.show()
   else:
     plt.savefig(art.regional_peaks_path)
     logger.info(f"saved peaks map to {art.regional_peaks_path}")
 
-  get_next = test_set.dataset.make_one_shot_iterator().get_next()
-  writer = vid.MP4Writer(art.detections_video_path)
-  logger.info(f"writing detections to video...")
-  with tf.Session() as sess:
-    for i, detection in enumerate(detections):
-      if i % 100 == 0:
-        logger.info(f"{i} / {detections.shape[0]}")
-      image, label = sess.run(get_next)
-      # fig, _ = vis.plot_detection(label, detection, image, fields[i])
-      frame = vis.frame_detection(label, detection, image, fields[i])
-      if i == 0:
-        # writer.write_fig(fig, close=False)
-        # plt.savefig(art.example_detection_path)
-        img.save(art.example_detection_path, frame)
-        logger.info(f"saved example detection to {art.example_detection_path}")
-      # else:
-      #   writer.write_fig(fig)
-      writer.write(frame)
-  writer.close()
-  logger.info(f"finished")
-  logger.info(f"wrote mp4 to {art.detections_video_path}")
+  # get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  # writer = vid.MP4Writer(art.detections_video_path)
+  # logger.info(f"writing detections to video...")
+  # with tf.Session() as sess:
+  #   for i, detection in enumerate(detections):
+  #     if i % 100 == 0:
+  #       logger.info(f"{i} / {detections.shape[0]}")
+  #     image, label = sess.run(get_next)
+  #     # fig, _ = vis.plot_detection(label, detection, image, fields[i])
+  #     frame = vis.frame_detection(label, detection, image, fields[i])
+  #     if i == 0:
+  #       # writer.write_fig(fig, close=False)
+  #       # plt.savefig(art.example_detection_path)
+  #       img.save(art.example_detection_path, frame)
+  #       logger.info(f"saved example detection to {art.example_detection_path}")
+  #     # else:
+  #     #   writer.write_fig(fig)
+  #     writer.write(frame)
+  # writer.close()
+  # logger.info(f"finished")
+  # logger.info(f"wrote mp4 to {art.detections_video_path}")
 
 def cmd_analyze(art):
   """Analayze the detections for a spring constant."""
