@@ -538,3 +538,4 @@ DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, 284, 284, 1) dtype=float3
 INFO:artifice:Epoch 5/20
 INFO:artifice:predicting round 0...
 DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
+slurmstepd-midway2-gpu02: error: *** JOB 60119586 ON midway2-gpu02 CANCELLED AT 2019-05-06T09:21:30 DUE TO TIME LIMIT ***

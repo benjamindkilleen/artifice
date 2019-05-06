@@ -132,6 +132,7 @@ class Artifice:
     self.detections_video_path = join(self.model_data_root, 'detections.mp4')
     self.example_detection_path = join(self.model_data_root, 'example_detection.pdf')
     self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
+    self.regional_peaks_path = join(self.model_data_root, 'regional_peaks.pdf')
     self.regional_losses_path = join(self.model_data_root, 'regional_losses.pdf')
 
     # ensure directories exist
@@ -477,7 +478,18 @@ def cmd_visualize(art):
   #   plt.savefig(art.regional_losses_path)
   #   logger.info(f"saved losses map to {art.regional_losses_path}")
 
-  # TODO: plot the field values at each point
+  indices = np.floor(detections[:,:,1:3]).astype(np.int64)
+  peaks = np.zeros_like(errors)
+  for i in range(peaks.shape[0]):
+    for j in range(peaks.shape[1]):
+      peaks[i,j] = fields[i,indices[i,j,0],indices[i,j,1]]
+  vis.plot_errors(labels, peaks, art.image_shape)
+  plt.title("Detection Peak Values")
+  if art.show:
+    plt.show()
+  else:
+    plt.savefig(art.regional_peaks_path)
+    logger.info(f"saved peaks map to {art.regional_peaks_path}")
 
   get_next = test_set.dataset.make_one_shot_iterator().get_next()
   writer = vid.MP4Writer(art.detections_video_path)
@@ -497,7 +509,6 @@ def cmd_visualize(art):
       # else:
       #   writer.write_fig(fig)
       writer.write(frame)
-        
   writer.close()
   logger.info(f"finished")
   logger.info(f"wrote mp4 to {art.detections_video_path}")
