@@ -130,7 +130,7 @@ class Artifice:
     self.predicted_fields_path = join(self.model_data_root, 'predicted_fields.npy')
     self.model_detections_path = join(self.model_data_root, 'detections.npy')
     self.detections_video_path = join(self.model_data_root, 'detections.mp4')
-    self.example_detection_path = join(self.model_data_root, 'example_detection.pdf')
+    self.example_detection_path = join(self.model_data_root, 'example_detection.png')
     self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
     self.regional_peaks_path = join(self.model_data_root, 'regional_peaks.pdf')
     self.regional_losses_path = join(self.model_data_root, 'regional_losses.pdf')
@@ -272,6 +272,12 @@ class Artifice:
     with open(self.history_path, 'w') as f:
       f.write(json.dumps(history))
 
+  def load_history(self):
+    with open(self.history_path, 'r') as f:
+      hist = json.loads(f.read())
+    return hist
+      
+
 def cmd_convert(art):
   """Standardize input data."""
   labels = np.load(art.labels_path)
@@ -361,9 +367,14 @@ def cmd_train(art):
             'steps_per_epoch' : art.train_steps,
             'verbose' : art.keras_verbose,
             'initial_epoch' : art.initial_epoch}
+  
   if art.validation_size > 0:
     kwargs.update({'validation_data' : validation_set.eval_input,
                    'validation_steps' : art.validation_steps})
+  if 'active' in art.mode:
+    kwargs['previous_history'] = art.load_history()
+    kwargs['history_path'] = art.history_path
+    learner = art.load_learner(model)
 
   if art.mode == 'full':
     # run "traditional" training on the full, labeled dataset
@@ -377,7 +388,6 @@ def cmd_train(art):
 
   elif art.mode == 'active':
     # Label a small, actively selected subset of the data during training
-    learner = art.load_learner(model)
     hist = learner.fit(unlabeled_set, art.labeled_subset_dir, **kwargs)
 
   elif art.mode == 'augmented-full':
@@ -392,7 +402,6 @@ def cmd_train(art):
 
   elif art.mode == 'augmented-active':
     # actively select examples and augment
-    learner = art.load_learner(model)
     hist = learner.fit(unlabeled_set, art.annotated_subset_dir, **kwargs)
   else:
     raise RuntimeError(f"no such mode: '{art.mode}'")
@@ -491,27 +500,22 @@ def cmd_visualize(art):
     plt.savefig(art.regional_peaks_path)
     logger.info(f"saved peaks map to {art.regional_peaks_path}")
 
-  # get_next = test_set.dataset.make_one_shot_iterator().get_next()
-  # writer = vid.MP4Writer(art.detections_video_path)
-  # logger.info(f"writing detections to video...")
-  # with tf.Session() as sess:
-  #   for i, detection in enumerate(detections):
-  #     if i % 100 == 0:
-  #       logger.info(f"{i} / {detections.shape[0]}")
-  #     image, label = sess.run(get_next)
-  #     # fig, _ = vis.plot_detection(label, detection, image, fields[i])
-  #     frame = vis.frame_detection(label, detection, image, fields[i])
-  #     if i == 0:
-  #       # writer.write_fig(fig, close=False)
-  #       # plt.savefig(art.example_detection_path)
-  #       img.save(art.example_detection_path, frame)
-  #       logger.info(f"saved example detection to {art.example_detection_path}")
-  #     # else:
-  #     #   writer.write_fig(fig)
-  #     writer.write(frame)
-  # writer.close()
-  # logger.info(f"finished")
-  # logger.info(f"wrote mp4 to {art.detections_video_path}")
+  get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  writer = vid.MP4Writer(art.detections_video_path)
+  logger.info(f"writing detections to video...")
+  with tf.Session() as sess:
+    for i, detection in enumerate(detections):
+      if i % 100 == 0:
+        logger.info(f"{i} / {detections.shape[0]}")
+      image, label = sess.run(get_next)
+      frame = vis.frame_detection(label, detection, image, fields[i])
+      if i == 0:
+        img.save(art.example_detection_path, frame)
+        logger.info(f"saved example detection to {art.example_detection_path}")
+      writer.write(frame)
+  writer.close()
+  logger.info(f"finished")
+  logger.info(f"wrote mp4 to {art.detections_video_path}")
 
 def cmd_analyze(art):
   """Analayze the detections for a spring constant."""

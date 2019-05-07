@@ -4,10 +4,9 @@
 
 from os.path import join
 import logging
+import json
 import numpy as np
-import matplotlib.pyplot as plt
 from artifice import dat
-from artifice.utils import vis
 
 
 logger = logging.getLogger('artifice')
@@ -139,7 +138,7 @@ class ActiveLearner(Detector):
     return query
 
   def fit(self, unlabeled_set, subset_dir, epochs=1, augment=True,
-          initial_epoch=0, **kwargs):
+          initial_epoch=0, previous_history=None, history_path=None, **kwargs):
     """Fit using an active learning approach to the unlabeled data.
 
     TODO: use already annotated examples, if they exist.
@@ -147,9 +146,11 @@ class ActiveLearner(Detector):
 
     :param unlabeled_set: a dat.Data object with an `annotate()` method.
     :param subset_dir: place to store subsets
-    :param epoch: initial epoch
     :param epochs: number of epochs to run
     :param augment: 
+    :param initial_epoch: 
+    :param previous_history: previous history dictionary
+    :param history_path: path to save histories to every epoch
     :returns: history object returned by fit instances
     :rtype: 
 
@@ -157,6 +158,13 @@ class ActiveLearner(Detector):
     sampling = np.zeros(unlabeled_set.size, np.int64)
     history = {'queries' : []}
     epoch = initial_epoch
+    if initial_epoch > 0 and previous_history is not None:
+      logger.info(f"recovering previous queries...")
+      for i in range(initial_epoch):
+        query = previous_history['queries'][i]
+        history['queries'].append(query)
+        sampling[query] += 1
+        logger.info(f"recovered {query}")
 
     # TODO: make it so each sampling is saved to its own tfrecord, then
     # combined, since Datasets can be drawn from multiple tfrecords.
@@ -180,6 +188,10 @@ class ActiveLearner(Detector):
                             epochs=epoch+1, initial_epoch=epoch, **kwargs)
       for k,v in hist.items():
         history[k] = history.get(k, []) + v
+      if history_path is not None:
+        with open(history_path, 'w') as f:
+          f.write(json.dumps(history))
+        logger.info(f"epoch {epoch} history saved to {history_path}")
       epoch += 1
 
     if epoch < epochs:

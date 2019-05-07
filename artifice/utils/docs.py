@@ -61,4 +61,4 @@ mode_help = """Training mode."""
 
 regions_help = """Regions numpy file path."""
 
-initial_epoch_help = """Initial epoch."""
+initial_epoch_help = """Initial epoch, starting at 0."""
