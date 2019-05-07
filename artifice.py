@@ -11,7 +11,6 @@ from glob import glob
 import argparse
 import json
 import numpy as np
-from skimage.draw import circle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -133,7 +132,6 @@ class Artifice:
     self.example_detection_path = join(self.model_data_root, 'example_detection.png')
     self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
     self.regional_peaks_path = join(self.model_data_root, 'regional_peaks.pdf')
-    self.regional_losses_path = join(self.model_data_root, 'regional_losses.pdf')
 
     # ensure directories exist
     for path in [self.data_root, self.model_root,
@@ -469,23 +467,6 @@ def cmd_visualize(art):
   else:
     plt.savefig(art.regional_errors_path)
     logger.info(f"saved error map to {art.regional_errors_path}")
-
-  # # visualize the losses at each point
-  # losses = np.zeros((fields.shape[0], art.num_objects))
-  # for i in range(fields.shape[0]):
-  #   if i % 100 == 0:
-  #     logger.info(f"calculating object-wise loss at {i}/{fields.shape[0]}")
-  #   for j in range(labels.shape[1]):
-  #     true_field = test_set.to_numpy_field(labels[i])
-  #     pred_field = fields[i]
-  #     rr, cc = circle(labels[i,j,1], labels[i,j,2], 20., shape=art.image_shape[:2])
-  #     losses[i,j] = np.square(pred_field[rr,cc] - true_field[rr,cc]).mean()
-  # vis.plot_errors(labels, losses, art.image_shape)
-  # if art.show:
-  #   plt.show()
-  # else:
-  #   plt.savefig(art.regional_losses_path)
-  #   logger.info(f"saved losses map to {art.regional_losses_path}")
 
   indices = np.floor(detections[:,:,1:3]).astype(np.int64)
   peaks = np.zeros_like(errors)
