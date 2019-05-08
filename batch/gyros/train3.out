@@ -1,0 +1,9 @@
+Starting training...
+Epoch 9/9
+
+Epoch 00009: saving model to models/gyros_augmented-active_subset100/hourglass/cp-0009.hdf5
+ - 15558s - loss: 1026.0100 - mean_absolute_error: 0.0142
+Epoch 10/10
+
+Epoch 00010: saving model to models/gyros_augmented-active_subset100/hourglass/cp-0010.hdf5
+ - 15108s - loss: 1604.8870 - mean_absolute_error: 0.0141

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=augmented-active
-#SBATCH --output=/project2/glk/artifice/batch/gyros/train2.out
-#SBATCH --error=/project2/glk/artifice/batch/gyros/train2.err
+#SBATCH --output=/project2/glk/artifice/batch/gyros/train3.out
+#SBATCH --error=/project2/glk/artifice/batch/gyros/train3.err
 #SBATCH -p gpu2
 #SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00
@@ -19,7 +19,7 @@ module load povray/3.7
 
 cd /project2/glk/artifice
 
-initial_epoch=4
+initial_epoch=8
 epochs=20
 mode=augmented-active
 data=gyros
