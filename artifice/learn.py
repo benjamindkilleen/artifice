@@ -194,6 +194,14 @@ class ActiveLearner(Detector):
         logger.info(f"epoch {epoch} history saved to {history_path}")
       epoch += 1
 
+    if initial_epoch*self.query_size < self.subset_size:
+      if augment:
+        subset = unlabeled_set.sample_and_annotate(
+          sampling, self.oracle, subset_path)
+      else:
+        subset = unlabeled_set.sample_and_label(
+          sampling, self.oracle, subset_path)
+    
     if epoch < epochs:
       hist = self.model.fit(subset.training_input, epochs=epochs,
                             initial_epoch=epoch, **kwargs)
