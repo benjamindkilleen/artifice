@@ -953,9 +953,12 @@ class RegionBasedUnlabeledData(UnlabeledData):
                                   RegionBasedAugmentationData)
 
 class RegionBasedAugmentationData(AugmentationData):
+  """Assume that each object is confined to a separate region."""
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.regions = kwargs.get('regions', np.zeros(self.image_shape))
+    self.regions = kwargs.get('regions')
+    if self.regions is None:
+      raise RuntimeError("RegionBasedAugmentationData requires regions.")
     self.region_indices = img.indices_from_regions(self.regions, self.num_objects)
 
   def draw(self):
@@ -971,3 +974,24 @@ class RegionBasedAugmentationData(AugmentationData):
       label[i,1:3] = X + np.random.uniform(0, 1, size=2)
     label[:,3] = np.random.uniform(0., 2.*np.pi, size=label.shape[0])
     return label
+
+  def from_field(self, field):
+    """Recreate the position label associated with field.
+
+    Uses the regions information to select the strongest peak in each region.
+
+    :param field: field array, numpy
+    :returns: estimated position label `(num_objects, 3)`
+
+    """
+    label = np.zeros((self.num_objects, 3), np.float32)
+    coords = peak_local_max(np.squeeze(field), min_distance=self.distance_threshold / 2,
+                            exclude_border=False,
+                            indices=True,
+                            labels=self.regions,
+                            num_peaks_per_label=1)
+    label[:coords.shape[0],1:3] = coords
+    label[:coords.shape[0],0] = np.arange(coords.shape[0])
+    return label
+
+  
