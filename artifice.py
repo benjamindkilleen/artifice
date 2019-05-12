@@ -350,13 +350,15 @@ def cmd_augment(art):
   with tf.Session() as sess:
     while True:
       images, fields = sess.run(get_next)
-      for image, field in zip(images, fields):
-        vis.plot_image(image, field)
-        if art.show:
-          plt.show()
-        else:
-          plt.close()
-          raise RuntimeError("Use --show")
+      img.save('docs/augmented_spheres.png')
+      break
+      # for image, field in zip(images, fields):
+      #   vis.plot_image(image, field)
+      #   if art.show:
+      #     plt.show()
+      #   else:
+      #     plt.close()
+      #     raise RuntimeError("Use --show")
   
 def cmd_train(art):
   model = art.load_model()
