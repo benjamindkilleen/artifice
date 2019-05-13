@@ -86,6 +86,9 @@ class Artifice:
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
 
+    # regions
+    self.regions = None if self.regions_path is None else np.load(self.regions_path)
+
     # original input format paths
     self.labels_path = join(self.data_root, 'labels.npy')
     self.annotations_dir = join(self.data_root, 'annotations')
@@ -177,22 +180,21 @@ class Artifice:
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.cores,
             'pad' : self.pad,
-            'num_objects' : self.num_objects}
-
+            'num_objects' : self.num_objects,
+            'regions' : self.regions}
+  
   def load_unlabeled(self):
     if self.regions_path is not None:
-      regions = np.load(self.regions_path)
       return dat.RegionBasedUnlabeledData(
         self.unlabeled_set_path,
         size=self.unlabeled_size,
-        regions=regions,
         **self.dat_kwargs)
     else:
       return dat.UnlabeledData(
         self.unlabeled_set_path,
         size=self.unlabeled_size,
         **self.dat_kwargs)
-  
+    
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
     unlabeled_set = self.load_unlabeled()
@@ -211,11 +213,9 @@ class Artifice:
 
   def load_annotated(self):
     if self.regions_path is not None:
-      regions = np.load(self.regions_path)
       return dat.RegionBasedAugmentationData(
         self.annotated_set_path,
         size=self.annotated_size,
-        regions=regions,
         **self.dat_kwargs)
     else:
       return dat.AugmentationData(
