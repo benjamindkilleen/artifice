@@ -86,6 +86,9 @@ class Artifice:
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
 
+    # regions
+    self.regions = None if self.regions_path is None else np.load(self.regions_path)
+
     # original input format paths
     self.labels_path = join(self.data_root, 'labels.npy')
     self.annotations_dir = join(self.data_root, 'annotations')
@@ -177,22 +180,21 @@ class Artifice:
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.cores,
             'pad' : self.pad,
-            'num_objects' : self.num_objects}
-
+            'num_objects' : self.num_objects,
+            'regions' : self.regions}
+  
   def load_unlabeled(self):
     if self.regions_path is not None:
-      regions = np.load(self.regions_path)
       return dat.RegionBasedUnlabeledData(
         self.unlabeled_set_path,
         size=self.unlabeled_size,
-        regions=regions,
         **self.dat_kwargs)
     else:
       return dat.UnlabeledData(
         self.unlabeled_set_path,
         size=self.unlabeled_size,
         **self.dat_kwargs)
-  
+    
   def load_data(self):
     """Load the unlabeled, annotated, validation, and test sets."""
     unlabeled_set = self.load_unlabeled()
@@ -211,11 +213,9 @@ class Artifice:
 
   def load_annotated(self):
     if self.regions_path is not None:
-      regions = np.load(self.regions_path)
       return dat.RegionBasedAugmentationData(
         self.annotated_set_path,
         size=self.annotated_size,
-        regions=regions,
         **self.dat_kwargs)
     else:
       return dat.AugmentationData(
@@ -463,11 +463,11 @@ def cmd_visualize(art):
     logger.info(f"  maximum error: {errors[:,i].max():.02f}")
 
   # visualize the color map of errors
-  vis.plot_errors(labels, errors, art.image_shape)
+  vis.plot_errors(labels, errors, art.image_shape, vmax=5)
   if art.show:
     plt.show()
   else:
-    plt.savefig(art.regional_errors_path)
+    plt.savefig(art.regional_errors_path, transparent=True, pad_inches=0)
     logger.info(f"saved error map to {art.regional_errors_path}")
 
   indices = np.floor(detections[:,:,1:3]).astype(np.int64)
@@ -480,25 +480,25 @@ def cmd_visualize(art):
   if art.show:
     plt.show()
   else:
-    plt.savefig(art.regional_peaks_path)
+    plt.savefig(art.regional_peaks_path, transparent=True, pad_inches=0)
     logger.info(f"saved peaks map to {art.regional_peaks_path}")
 
-  get_next = test_set.dataset.make_one_shot_iterator().get_next()
-  writer = vid.MP4Writer(art.detections_video_path)
-  logger.info(f"writing detections to video...")
-  with tf.Session() as sess:
-    for i, detection in enumerate(detections):
-      if i % 100 == 0:
-        logger.info(f"{i} / {detections.shape[0]}")
-      image, label = sess.run(get_next)
-      frame = vis.frame_detection(label, detection, image, fields[i])
-      if i == 0:
-        img.save(art.example_detection_path, frame)
-        logger.info(f"saved example detection to {art.example_detection_path}")
-      writer.write(frame)
-  writer.close()
-  logger.info(f"finished")
-  logger.info(f"wrote mp4 to {art.detections_video_path}")
+  # get_next = test_set.dataset.make_one_shot_iterator().get_next()
+  # writer = vid.MP4Writer(art.detections_video_path)
+  # logger.info(f"writing detections to video...")
+  # with tf.Session() as sess:
+  #   for i, detection in enumerate(detections):
+  #     if i % 100 == 0:
+  #       logger.info(f"{i} / {detections.shape[0]}")
+  #     image, label = sess.run(get_next)
+  #     frame = vis.frame_detection(label, detection, image, fields[i])
+  #     if i == 0:
+  #       img.save(art.example_detection_path, frame)
+  #       logger.info(f"saved example detection to {art.example_detection_path}")
+  #     writer.write(frame)
+  # writer.close()
+  # logger.info(f"finished")
+  # logger.info(f"wrote mp4 to {art.detections_video_path}")
 
 def cmd_analyze(art):
   """Analayze the detections for a spring constant."""

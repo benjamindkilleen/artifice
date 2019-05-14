@@ -245,6 +245,7 @@ class Data(object):
     self.batch_size = kwargs.get('batch_size', 1) # in multiples of num_tiles
     self.num_parallel_calls = kwargs.get('num_parallel_calls')
     self.num_shuffle = kwargs.get('num_shuffle', self.size // self.batch_size)
+    self.regions = kwargs.get('regions')
     self._kwargs = kwargs
 
     if issubclass(type(data), Data):
@@ -523,13 +524,22 @@ class Data(object):
 
     """
     label = np.zeros((self.num_objects, 3), np.float32)
-    coords = peak_local_max(
-      np.squeeze(field), min_distance=self.distance_threshold,
-      num_peaks=self.num_objects,
-      exclude_border=False)
+    if self.regions is None:
+      coords = peak_local_max(
+        np.squeeze(field), min_distance=self.distance_threshold,
+        num_peaks=self.num_objects,
+        exclude_border=False)
+    else:
+      coords = peak_local_max(
+        np.squeeze(field), min_distance=self.distance_threshold / 2,
+        exclude_border=False,
+        indices=True,
+        labels=self.regions,
+        num_peaks_per_label=1)
     label[:coords.shape[0],1:3] = coords
     label[:coords.shape[0],0] = np.arange(coords.shape[0])
     return label
+
 
   def fielded(self, training=False):
     def map_func(image, label):
@@ -947,6 +957,7 @@ def match_detections(detections, labels):
       matched_detections[i,j,1:3] = detections[i,col_ind[j],1:3]
   return matched_detections
 
+# TODO: unify region based classes using multiple inheritance
 class RegionBasedUnlabeledData(UnlabeledData):
   def sample_and_annotate(self, sampling, oracle, record_name):
     return self._sample_and_query(sampling, oracle, record_name, 'annotate',
@@ -956,7 +967,6 @@ class RegionBasedAugmentationData(AugmentationData):
   """Assume that each object is confined to a separate region."""
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.regions = kwargs.get('regions')
     if self.regions is None:
       raise RuntimeError("RegionBasedAugmentationData requires regions.")
     self.region_indices = img.indices_from_regions(self.regions, self.num_objects)
@@ -975,23 +985,5 @@ class RegionBasedAugmentationData(AugmentationData):
     label[:,3] = np.random.uniform(0., 2.*np.pi, size=label.shape[0])
     return label
 
-  def from_field(self, field):
-    """Recreate the position label associated with field.
-
-    Uses the regions information to select the strongest peak in each region.
-
-    :param field: field array, numpy
-    :returns: estimated position label `(num_objects, 3)`
-
-    """
-    label = np.zeros((self.num_objects, 3), np.float32)
-    coords = peak_local_max(np.squeeze(field), min_distance=self.distance_threshold / 2,
-                            exclude_border=False,
-                            indices=True,
-                            labels=self.regions,
-                            num_peaks_per_label=1)
-    label[:coords.shape[0],1:3] = coords
-    label[:coords.shape[0],0] = np.arange(coords.shape[0])
-    return label
 
   

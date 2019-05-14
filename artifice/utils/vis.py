@@ -110,8 +110,9 @@ def plot_errors(labels, errors, image_shape, power=False,
       norm=mpl.colors.PowerNorm(0.3) if power else mpl.colors.Normalize())
     axes[i].set_ylim(image_shape[0],0)
     axes[i].set_aspect('equal')
-    axes[i].set_title(f"Object '{int(labels[0,i,0])}'")
-  plt.colorbar(im, ax=axes, orientation="horizontal")
+    axes[i].set_title(f"Object {int(labels[0,i,0])}")
+    axes[i].axis('off')
+  # plt.colorbar(im, ax=axes, orientation="horizontal")
   return fig, axes
 
 
