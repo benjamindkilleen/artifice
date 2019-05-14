@@ -530,6 +530,7 @@ class Data(object):
         num_peaks=self.num_objects,
         exclude_border=False)
     else:
+      logger.debug("peak_local_max using regions info")
       coords = peak_local_max(
         np.squeeze(field), min_distance=self.distance_threshold / 2,
         exclude_border=False,
