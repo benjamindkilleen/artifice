@@ -2,16 +2,16 @@ INFO:artifice:Namespace(batch_size=[4], command='visualize', cores=[-1], data_ro
 WARNING:artifice:pad: loading data before model
 WARNING:artifice:pad: loading data before model
 WARNING:artifice:pad: loading data before model
-2019-05-14 08:37:47.712278: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-05-14 08:37:48.186888: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+2019-05-14 08:59:59.006528: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-05-14 08:59:59.548551: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:09:00.0
+pciBusID: 0000:89:00.0
 totalMemory: 11.17GiB freeMemory: 11.10GiB
-2019-05-14 08:37:48.186978: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-05-14 08:37:53.910003: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-05-14 08:37:53.910088: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-05-14 08:37:53.910103: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-05-14 08:37:53.910558: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+2019-05-14 08:59:59.548660: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-05-14 08:59:59.987666: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-05-14 08:59:59.987743: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-05-14 08:59:59.987758: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-05-14 08:59:59.988239: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
 INFO:artifice:initialized iterator, starting accumulation...
 INFO:artifice:finished accumulation
 INFO:artifice:average error: 6.68
