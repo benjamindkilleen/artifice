@@ -350,7 +350,8 @@ def cmd_augment(art):
   with tf.Session() as sess:
     while True:
       images, fields = sess.run(get_next)
-      img.save('docs/augmented_spheres.png')
+      img.save('docs/augmented_spheres.png', images[0])
+      img.save('docs/augmented_spheres_proxy.png', fields[0])
       break
       # for image, field in zip(images, fields):
       #   vis.plot_image(image, field)

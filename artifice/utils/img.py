@@ -210,7 +210,7 @@ def open_as_float(image_path):
 
 def save(fname, image):
   """Save the array image to png in fname."""
-  image = as_uint(image)
+  image = np.squeeze(as_uint(image))
   im = Image.fromarray(image)
   im.save(fname)
 
