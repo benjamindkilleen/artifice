@@ -347,8 +347,8 @@ def cmd_proxy(art):
   with tf.Session() as sess:
     while True:
       images, fields = sess.run(get_next)
-      img.save('docs/gyros_tile.png', images[0])
-      img.save('docs/gyros_tile_proxy.png', fields[0])
+      img.save('docs/gyros_tile.png', images[5])
+      img.save('docs/gyros_tile_proxy.png', fields[5])
       break
   
 def cmd_augment(art):
@@ -356,7 +356,6 @@ def cmd_augment(art):
   If `art.show`, then show the new examples, otherwise, save the augmented
   train_set.
   """
-  _ = art.load_model()
   annotated_set = art.load_annotated()
   get_next = annotated_set.training_input.make_one_shot_iterator().get_next()
   with tf.Session() as sess:
