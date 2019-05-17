@@ -340,6 +340,16 @@ def cmd_convert(art):
   logger.info(f"wrote {i+1} test examples")
 
 
+def cmd_proxy(art):
+  _, _, test_set = art.load_data()
+  get_next = test_set.eval_input.make_one_shot_iterator().get_next()
+  with tf.Session() as sess:
+    while True:
+      images, fields = sess.run(get_next)
+      img.save('docs/gyros_tile.png', images[0])
+      img.save('docs/gyros_tile_proxy.png', fields[0])
+      break
+  
 def cmd_augment(art):
   """Run augmentation of the train_set. 
   If `art.show`, then show the new examples, otherwise, save the augmented
@@ -595,6 +605,8 @@ def main():
     cmd_convert(art)
   elif art.command == 'augment':
     cmd_augment(art)
+  elif art.command == 'proxy':
+    cmd_proxy(art)
   elif art.command == 'train':
     cmd_train(art)
   elif art.command == 'predict':
