@@ -1,0 +1,29 @@
+#!/bin/bash
+
+#SBATCH --job-name=detect-full
+#SBATCH --output=/project2/glk/artifice/batch/detect_full/detect_full.out
+#SBATCH --error=/project2/glk/artifice/batch/detect_full/detect_full.err
+#SBATCH -p gpu2
+#SBATCH --gres=gpu:1
+#SBATCH --time=01:00:00
+#SBATCH --account=pi-glk
+#SBATCH --mem-per-cpu=64000
+
+
+module unload python
+module load ffmpeg
+module load cuda/9.0
+module load Anaconda3/2018.12
+source activate tf-gpu-1.12.0
+module load povray/3.7
+
+cd /project2/glk/artifice
+
+echo "Starting full detection..."
+python artifice.py detect-full -i data/gyros -m models/gyros_augmented-active_subset100/ \
+       --image-shape 600 800 1 --splits 0 0 8842 \
+       --num-objects 54 --batch-size 1 \
+       --verbose 2 --keras-verbose 2
+
+echo "Finished."
+

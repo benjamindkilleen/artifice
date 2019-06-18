@@ -275,16 +275,23 @@ class HourglassModel(FunctionalModel):
         yield field
         n += 1
 
-  def detect(self, data):
+  def detect(self, data, save_fields=True, steps=None):
     """Detect objects in the reassembled fields.
 
     :param data: dat.Data set
+    :param save_fields: save the fields. If True, return fields with detections.
+    :param steps: number of steps to do at once. Default is None.
     :returns: matched_detections, predicted fields
 
     """
     detections = np.zeros((data.size, data.num_objects, 3), np.float32)
-    fields = np.zeros([data.size] + data.image_shape, np.float32)
-    for i, field in enumerate(self.full_predict(data)):
-      fields[i] = field
+    if save_fields:
+      fields = np.zeros([data.size] + data.image_shape, np.float32)
+    for i, field in enumerate(self.full_predict(data, steps=steps)):
+      if save_fields:
+        fields[i] = field
       detections[i] = data.from_field(field)
-    return dat.match_detections(detections, data.labels), fields
+    if save_fields:
+      return dat.match_detections(detections, data.labels), fields
+    else:
+      return dat.match_detections(detections, data.labels), None

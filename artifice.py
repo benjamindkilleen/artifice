@@ -131,6 +131,7 @@ class Artifice:
     # model-data dependent paths, i.e. figures and predictions
     self.predicted_fields_path = join(self.model_data_root, 'predicted_fields.npy')
     self.model_detections_path = join(self.model_data_root, 'detections.npy')
+    self.full_detections_path = join(self.model_data_root, 'full_detections.npy')
     self.detections_video_path = join(self.model_data_root, 'detections.mp4')
     self.example_detection_path = join(self.model_data_root, 'example_detection.png')
     self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
@@ -434,6 +435,14 @@ def cmd_predict(art):
 def cmd_evaluate(art):
   pass
 
+def cmd_detect_full(art):
+  """Run detection on the entire unlabeled dataset."""
+  model = art.load_model()
+  _, _, test_set = art.load_data()
+  detections, _ = model.detect(test_set, steps=300, save_fields=False)
+  np.save(art.model_detections_path, detections)
+  logger.info(f"saved detections to {art.full_detections_path}")
+  
 def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""
   model = art.load_model()
@@ -614,6 +623,8 @@ def main():
     cmd_predict(art)
   elif art.command == 'detect':
     cmd_detect(art)
+  elif art.command == 'detect-full':
+    cmd_detect_full(art)
   elif art.command == 'visualize':
     cmd_visualize(art)
   elif art.command == 'analyze':
