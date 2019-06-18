@@ -644,3 +644,11 @@ good as labeled.
   threshold to ensure no GT is too far away from a real object.
 * Sample the remaining 75% of points from background regions, greater than
   DIST_THRESH from any object.
+  
+Details for coding:
+* The stored data needs to include:
+  * Image
+  * List of object labels, as before. That's it?
+* So we can take the predictions from the trained network. Totally.
+
+New repo: `probal`.
