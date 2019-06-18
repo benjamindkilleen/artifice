@@ -626,3 +626,21 @@ labeled set back to twelve, and see how it does.
 
 Notably, the "learned" stratgy has a lower maximum error, but the std isn't as
 good as labeled.
+
+### June 18, 2019: Summer Thoughts
+
+* Probing or Point of Interest (PoI) network emulates Fast R-CNN by taking in a
+  series of predictions for objects that all rely on the same feature vector.
+* Then, after making a feature map for the entire image, feeds that feature map
+  into K regression nets that output a D-dim tuple for however many
+  outputs. 
+* Other outputs don't matter, as long as they can be learned regressively (in
+  range [0,1]), but we need to output the likelihood of detection (really a
+  classification, between 0 and 1 one hot), predicted position, and other info.
+* Training consists of taking random PoIs around known objects (in the gyro or
+  other data).
+* Following Girshik (Fast R-CNN), take 25% of PoIs from around known objects,
+  with a gaussian distribution, with prob 1 and the true offset. Set a distance
+  threshold to ensure no GT is too far away from a real object.
+* Sample the remaining 75% of points from background regions, greater than
+  DIST_THRESH from any object.
