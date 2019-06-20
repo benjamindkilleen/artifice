@@ -33,9 +33,6 @@ class Artifice:
   def __init__(self, args):
     """Process the input args.
 
-    Only absolutely essential copying/processing is stored here. Any dependent
-    attributes should be created as @property functions.
-
     :param args: parsed args from ArgParse
 
     """

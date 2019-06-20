@@ -4,9 +4,7 @@
 import numpy as np
 from PIL import Image
 from skimage import draw, transform
-import scipy
 import logging
-import matplotlib.pyplot as plt
 
 logger = logging.getLogger('artifice')
 
@@ -88,8 +86,8 @@ def fill_negatives(image):
 def inside(xs, ys, shape):
   """Returns a boolean array for which indices are inside shape.
 
-  :param xs: numpy arrays
-  :param ys: numpy arrays
+  :param xs: numpy array of indices
+  :param ys: numpy array of indices
   :param shape: image shape to compare against, using first two dimensions
   :returns: 1-D boolean array
 

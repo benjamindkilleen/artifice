@@ -43,7 +43,6 @@ def proto_from_image(image):
   example = tf.train.Example(features=features)
   return example.SerializeToString()
 
-
 def image_from_proto(proto):
   """Parse `proto` into tensor `image`."""
   features = tf.parse_single_example(
