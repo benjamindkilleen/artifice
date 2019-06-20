@@ -436,9 +436,14 @@ def cmd_detect_full(art):
   """Run detection on the entire unlabeled dataset."""
   model = art.load_model()
   _, _, test_set = art.load_data()
-  detections, _ = model.detect(test_set, steps=300, save_fields=False)
+  detections, _ = model.detect(test_set, steps=500, save_fields=False)
   np.save(art.model_detections_path, detections)
   logger.info(f"saved detections to {art.full_detections_path}")
+  labels = tf.data.Dataset.from_tensor_slices(detections)
+  images = test_set.dataset.map(lambda t : t[0])
+  tf.data.Dataset.zip((images, labels))
+  dat.save_dataset(f"data/gyros_full/gyros_{art.splits[0]}-{art.splits[0] + art.splits[2]}.tfrecord")
+  logger.info(f"saved tfrecord")
   
 def cmd_detect(art):
   """Run detection and show some images with true/predicted positions."""

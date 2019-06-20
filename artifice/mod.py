@@ -131,7 +131,7 @@ class Model():
   def predict(self, *args, **kwargs):
     out = self.model.predict(*args, **kwargs)
     out[np.logical_not(np.isfinite(out))] = 0.
-    logger.debug("predict: {np.sum(np.isnan(out))} nan values")
+    logger.debug(f"predict: {np.sum(np.isnan(out))} nan values")
     return out
 
   def evaluate(self, *args, **kwargs):
