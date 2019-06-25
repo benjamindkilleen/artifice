@@ -14,9 +14,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from artifice import dat, mod, learn, oracles
-from artifice.utils import docs, img, vis, vid
-from test_utils import springs
+from artifice import dat, mod, learn, oracles, docs, img, vis, vid
 
 
 logger = logging.getLogger('artifice')
@@ -27,59 +25,89 @@ logger.addHandler(handler)
 
 logger.debug(f"Use Python{3.6} or higher.")
 
+def _set_verbosity(verbose):
+  if verbose == 0:
+    logger.setLevel(logging.WARNING)
+  elif verbose == 1:
+    logger.setLevel(logging.INFO)
+  else:
+    logger.setLevel(logging.DEBUG)
+
+def _set_eager(eager):
+  if eager:
+    tf.enable_eager_execution()
+
+def _set_show(show):
+  if not show:
+    mpl.use('Agg')
+    plt.ioff()
+
+def _ensure_dirs_exist(dirs):
+  for path in dirs:
+    if not exists(path):
+      logger.info(f"creating '{path}'")
+      os.makedirs(path)
+
 
 class Artifice:
   """Bag of state for each run of `artifice`."""
-  def __init__(self, args):
-    """Process the input args.
+  def __init__(self, command=[], mode='default', data_root='data/default',
+               model_root='models/default', overwrite=False,
+               image_shape=[100,100,1], tile_shape=[100,100,1], data_size=5000,
+               test_size=500, epoch_size=10000, batch_size=4, num_objects=4,
+               initial_epoch=0, epochs=1, learning_rate=0.1,
+               num_parallel_calls=-1, verbose=1, keras_verbose=2, eager=True,
+               show=False):
+    # 
+    self.commands = commands
+    self.mode = mod
 
-    :param args: parsed args from ArgParse
+    # file settings
+    self.data_root = data_root
+    self.model_root = model_root
+    self.overwrite = overwrite
 
-    """
+    # data sizes
+    self.image_shape = image_shape
+    self.tile_shape = tile_shape
+    self.data_size = data_size
+    self.test_size = test_size
+    self.epoch_size = epoch_size
+    self.batch_size = batch_size
+    self.num_objects = num_objects
 
-    # copy arguments
-    self.args = args
-    self.command = args.command
-    self.mode = args.mode[0]
-    self.data_root = args.data_root[0]
-    self.model_root = args.model_root[0]
-    self.verbose = args.verbose[0]
-    self.keras_verbose = args.keras_verbose[0]
-    self.overwrite = args.overwrite
-    self.image_shape = args.image_shape
-    self.tile_shape = args.tile_shape
-    self.epochs = args.epochs[0]
-    self.batch_size = args.batch_size[0]
-    self.learning_rate = args.learning_rate[0]
-    self.subset_size = args.subset_size[0]
-    self.epoch_size = args.epoch_size[0]
-    self.num_objects = args.num_objects[0]
-    self.splits = args.splits
-    self.cores = args.cores[0] if args.cores[0] > 0 else os.cpu_count()
-    self.eager = args.eager
-    self.show = args.show
-    self.num_candidates = args.num_candidates[0]
-    self.query_size = args.query_size[0]
-    self.regions_path = args.regions_path[0]
-    self.initial_epoch = args.initial_epoch[0]
+    # hyperparameters
+    self.initial_epoch = 0
+    self.epochs = 1
+    self.learning_rate = learning_rate
+    self.num_parallel_calls = num_parallel_calls
+    self.verbose = verbose
+    self.keras_verbose = keras_verbose
+    self.eager = eager
+    self.show = show
+
+    # globals
+    _set_verbosity(self.verbose)
+    _set_eager(self.eager)
+    _set_show(self.show)
+    self._set_num_parallel_calls()
+
+    # derived sizes/shapes
+    self.input_tile_shape
+
+    # ensure directories exist
+    _ensure_dirs_exist([self.data_root, self.model_root])
     
-    # runtime configurations
-    if self.verbose == 0:
-      logger.setLevel(logging.WARNING)
-    elif self.verbose == 1:
-      logger.setLevel(logging.INFO)
-    else:
-      logger.setLevel(logging.DEBUG)
-
-    if self.eager:
-      tf.enable_eager_execution()
-
-    if not self.show:
-      mpl.use('Agg')
-      plt.ioff()
+    for path in [self.data_root, self.model_root,
+                 self.model_data_root,
+                 self.annotated_subset_dir,
+                 self.labeled_subset_dir]:
+      if not exists(path):
+        logger.info(f"creating '{path}'")
+        os.makedirs(path)
 
     # relating to tiling
-    self._pad = None
+    
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
 
@@ -134,26 +162,19 @@ class Artifice:
     self.regional_errors_path = join(self.model_data_root, 'regional_errors.pdf')
     self.regional_peaks_path = join(self.model_data_root, 'regional_peaks.pdf')
 
-    # ensure directories exist
-    for path in [self.data_root, self.model_root,
-                 self.model_data_root,
-                 self.annotated_subset_dir,
-                 self.labeled_subset_dir]:
-      if not exists(path):
-        logger.info(f"creating '{path}'")
-        os.makedirs(path)
-
-
   def __str__(self):
-    return self.args.__str__()
+    return "todo: make artifice string to represent all this info"
 
-  @property
-  def pad(self):
-    if self._pad is None:
-      logger.warning(f"pad: loading data before model")
-      return 0
-    else:
-      return self._pad
+  def __call__(self):
+    for command in self.commands:
+      if (command[0] == '_' or not hasattr(self, command) or
+          not callable(getattr(self, command))):
+        raise RuntimError(f"bad command: {command}")
+      getattr(self, command)()
+  
+  def _set_cores(self):
+    if self.cores <= 0:
+      self.cores = os.cpu_count()
 
   @property
   def image_paths(self):
@@ -518,116 +539,83 @@ def cmd_visualize(art):
   logger.info(f"finished")
   logger.info(f"wrote mp4 to {art.detections_video_path}")
 
-def cmd_analyze(art):
-  """Analayze the detections for a spring constant."""
-  labels = np.load(art.labels_path)
-  ls = springs.find_constant(labels)
-  plt.plot(ls, 'b.')
-  if art.show:
-    plt.show()
-  else:
-    plt.close()
-
-  vis.plot_labels(labels, art.image_shape)
-  if art.show:
-    plt.show()
-  else:
-    plt.close() # savefig(art.labels_hist_path)
-
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
-  parser.add_argument('command', help=docs.command_help)
+  parser.add_argument('commands', nargs='+', help=docs.commands)
   parser.add_argument('--mode', nargs=1, default=['augmented-active'],
-                      help=docs.mode_help)
+                      help=docs.mode)
+
+  # file settings
   parser.add_argument('--data-root', '--input', '-i', nargs=1,
-                      default=['data/coupled_spheres'],
-                      help=docs.data_dir_help)
-  parser.add_argument('--output', '-o', nargs=1,
-                      default=['show'],
-                      help=docs.output_help)
+                      default=['data/default'],
+                      help=docs.data_root)
   parser.add_argument('--model-root', '--model-dir', '-m', nargs=1,
-                      default=['models/coupled_spheres'],
-                      help=docs.model_dir_help)
+                      default=['models/default'],
+                      help=docs.model_root)
   parser.add_argument('--overwrite', '-f', action='store_true',
-                      help=docs.overwrite_help)
+                      help=docs.overwrite)
+
+  # sizes relating to data
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3,
-                      type=int, default=[196,196,1],
-                      help=docs.image_shape_help)
-  parser.add_argument('--tile-shape', nargs=3,
-                      type=int, default=[196,196,1],
-                      help=docs.tile_shape_help)
-  parser.add_argument('--epochs', '-e', nargs=1,
-                      default=[1], type=int,
-                      help=docs.epochs_help)
-  parser.add_argument('--splits', nargs=3,
-                      default=[10000,1000,1000],
-                      type=int,
-                      help=docs.splits_help)
-  parser.add_argument('--batch-size', '-b', nargs=1,
-                      default=[4], type=int,
-                      help=docs.batch_size_help)
-  parser.add_argument('--learning-rate', '-l', nargs=1,
-                      default=[0.1], type=float,
-                      help=docs.learning_rate_help)
-  parser.add_argument('--subset-size', nargs=1, default=[10], type=int,
-                      help=docs.subset_size_help)
-  parser.add_argument('--num-candidates', nargs=1,
-                      default=[1000], type=int,
-                      help=docs.num_candidates_help)
-  parser.add_argument('--query-size', nargs=1,
-                      default=[1], type=int,
-                      help=docs.query_size_help)
+                      type=int, default=[100,100,1],
+                      help=docs.image_shape)
+  parser.add_argument('--data-size', '-N', nargs=1,
+                      default=[3000], type=int,
+                      help=docs.data_size)
+  parser.add_argumnet('--test-size', '-T', nargs=1,
+                      default=[0], type=int,
+                      help=docs.test_size)
   parser.add_argument('--epoch-size', '--num-examples', '-n', nargs=1,
                       default=[10000], type=int,
-                      help=docs.epoch_size_help)
+                      help=docs.epoch_size)
+  parser.add_argument('--batch-size', '-b', nargs=1,
+                      default=[4], type=int,
+                      help=docs.batch_size)
   parser.add_argument('--num-objects', nargs=1,
                       default=[2], type=int,
-                      help=docs.num_objects_help)
-  parser.add_argument('--l2-reg', nargs=1,
-                      default=[0.0001], type=float,
-                      help=docs.l2_reg_help)
-  parser.add_argument('--cores', '--num-parallel-calls', nargs=1,
-                      default=[-1], type=int,
-                      help=docs.cores_help)
-  parser.add_argument('--verbose', '-v', nargs=1,
-                      default=[1], type=int,
-                      help=docs.verbose_help)
-  parser.add_argument('--keras-verbose', nargs=1,
-                      default=[1], type=int,
-                      help=docs.keras_verbose_help)
-  parser.add_argument('--eager', action='store_true',
-                      help=docs.eager_help)
-  parser.add_argument('--show', action='store_true',
-                      help=docs.show_help)
-  parser.add_argument('--regions-path', '--regions', nargs=1,
-                      default=[None], help=docs.regions_help)
+                      help=docs.num_objects)
+  
+  # model hyperparameters
+  parser.add_argument('--base-shape', nargs='1',
+                      default=[32], type=int,
+                      help=docs.level_filters)
+  parser.add_argument('--level-filters', nargs='+',
+                      default=[32,64,128], type=int,
+                      help=docs.level_filters)
+  parser.add_argument('--level-depth', nargs='+',
+                      default=[2], type=int,
+                      help=docs.level_depth)
+  parser.add_argumnet('--dropout', nargs=1,
+                      default=[0.5], type=float,
+                      help=docs.dropout)
   parser.add_argument('--initial-epoch', nargs=1,
                       default=[0], type=int,
-                      help=docs.initial_epoch_help) # todo: get from ckpt
+                      help=docs.initial_epoch) # todo: get from ckpt
+  parser.add_argument('--epochs', '-e', nargs=1,
+                      default=[1], type=int,
+                      help=docs.epochs)
+  parser.add_argument('--learning-rate', '-l', nargs=1,
+                      default=[0.1], type=float,
+                      help=docs.learning_rate)
+
+  # runtime settings
+  parser.add_argument('--num-parallel-calls', '--cores', nargs=1,
+                      default=[-1], type=int,
+                      help=docs.cores)
+  parser.add_argument('--verbose', '-v', nargs=1,
+                      default=[2], type=int,
+                      help=docs.verbose)
+  parser.add_argument('--keras-verbose', nargs=1,
+                      default=[1], type=int,
+                      help=docs.keras_verbose)
+  parser.add_argument('--patient', action='store_false',
+                      help=docs.patient)
+  parser.add_argument('--show', action='store_true',
+                      help=docs.show)
   args = parser.parse_args()
   art = Artifice(args)
-  logger.info(art)
+  art()
 
-  if art.command == 'convert':
-    cmd_convert(art)
-  elif art.command == 'augment':
-    cmd_augment(art)
-  elif art.command == 'proxy':
-    cmd_proxy(art)
-  elif art.command == 'train':
-    cmd_train(art)
-  elif art.command == 'predict':
-    cmd_predict(art)
-  elif art.command == 'detect':
-    cmd_detect(art)
-  elif art.command == 'detect-full':
-    cmd_detect_full(art)
-  elif art.command == 'visualize':
-    cmd_visualize(art)
-  elif art.command == 'analyze':
-    cmd_analyze(art)
-  else:
-    logger.error(f"No command '{args.command}'.")
-
+  
 if __name__ == "__main__":
   main()

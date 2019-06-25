@@ -3,6 +3,12 @@ artifice and test_utils.
 
 Data class for feeding data into models, possibly with augmentation.
 
+We expect labels to be of the form:
+|-------|-------|--------------------------------------|
+| x pos | y pos |        object pose parameters        |
+|-------|-------|--------------------------------------|
+
+
 """
 
 import logging
@@ -11,218 +17,430 @@ from skimage.feature import peak_local_max
 from scipy.spatial.distance import cdist
 from scipy.optimize import linear_sum_assignment
 import tensorflow as tf
-from artifice import tform
-from artifice.utils import img
+from artifice import tform, img
 
 
 logger = logging.getLogger('artifice')
 
+
 def _bytes_feature(value):
-  # Helper function for writing a string to a tfrecord
+  """Returns a bytes_list from a string / byte."""
   return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
+def _float_feature(value):
+  """Returns a float_list from a float / double."""
+  return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
+
 def _int64_feature(value):
-  # Helper function for writing an array to a tfrecord
-  return tf.train.Feature(int64_list=tf.train.Int64List(value=value))
+  """Returns an int64_list from a bool / enum / int / uint."""
+  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
+def _serialize_feature(feature):
+  example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
+  return example_proto.SerializeToString()
 
-def proto_from_image(image):
-  """Create a tf example proto from an image.
-
-  :param image: single numpy array
-  :returns:
-  :rtype:
-
-  """
+def _proto_from_image(image):
   image = img.as_float(image)
-  image_string = image.tostring()
-  image_shape = np.array(image.shape, dtype=np.int64)
-  feature = {"image" : _bytes_feature(image_string),
-             "image_shape" : _int64_feature(image_shape)}
-  features = tf.train.Features(feature=feature)
-  example = tf.train.Example(features=features)
-  return example.SerializeToString()
+  feature = {'image' : _bytes_feature(image.tostring()),
+             'image_dim0' : _int64_feature(image.shape[0]),
+             'image_dim1' : _int64_feature(image.shape[1]),
+             'image_dim2' : _int64_feature(image.shape[2])}
+  return _serialize_feature(feature)
 
-def image_from_proto(proto):
-  """Parse `proto` into tensor `image`."""
-  features = tf.parse_single_example(
-    proto,
-    features={
-      'image': tf.FixedLenFeature([], tf.string),
-      'image_shape': tf.FixedLenFeature([3], tf.int64)
-    })
-
+def _image_from_proto(proto):
+  feature_description = {
+    'image' : tf.FixedLenFeature([], tf.string),
+    'image_dim0' : tf.FixedLenFeature([], tf.int64),
+    'image_dim1' : tf.FixedLenFeature([], tf.int64),
+    'image_dim2' : tf.FixedLenFeature([], tf.int64)}
+  features = tf.parse_single_example(proto, feature_description)
   image = tf.decode_raw(features['image'], tf.float32)
-  image = tf.reshape(image, features['image_shape'])
-  return image
+  return tf.reshape(image, (features['image_dim0'],
+                            features['image_dim1'],
+                            features['image_dim2']))
 
-
-def proto_from_example(example):
-  """Creates a tf example proto from an (image, label) pair.
-
-  :param example: (image, label) pair
-  :returns: proto string
-  :rtype: str
-
-  """
+def _proto_from_example(example):
   image, label = example
   image = img.as_float(image)
   label = label.astype(np.float32)
-  image_string = image.tostring()
-  image_shape = np.array(image.shape, dtype=np.int64)
-  label_string = label.tostring()
-  label_shape = np.array(label.shape, dtype=np.int64)
-  feature = {"image" : _bytes_feature(image_string),
-             "image_shape" : _int64_feature(image_shape),
-             "label" : _bytes_feature(label_string),
-             "label_shape" : _int64_feature(label_shape)}
-  features = tf.train.Features(feature=feature)
-  example = tf.train.Example(features=features)
-  return example.SerializeToString()
+  feature = {'image' : _bytes_feature(image.tostring()),
+             'image_dim0' : _int64_feature(image.shape[0]),
+             'image_dim1' : _int64_feature(image.shape[1]),
+             'image_dim2' : _int64_feature(image.shape[2]),
+             'label' : _bytes_feature(label.tostring()),
+             'label_dim0' : _int64_feature(label.shape[0]),
+             'label_dim1' : _int64_feature(label.shape[1])}
+  return _serialize_feature(feature)
 
-def example_from_proto(proto):
-  """Parse `proto` into tensors `(image, label)`.
-
-  """
-  features = tf.parse_single_example(
-    proto,
-    features={
-      'image': tf.FixedLenFeature([], tf.string),
-      'image_shape': tf.FixedLenFeature([3], tf.int64),
-      'label' : tf.FixedLenFeature([], tf.string),
-      'label_shape' : tf.FixedLenFeature([2], tf.int64)
-    })
-
-  # decode strings
+def _example_from_proto(proto):
+  feature_description = {
+    'image' : tf.FixedLenFeature([], tf.string),
+    'image_dim0' : tf.FixedLenFeature([], tf.int64),
+    'image_dim1' : tf.FixedLenFeature([], tf.int64),
+    'image_dim2' : tf.FixedLenFeature([], tf.int64),
+    'label' : tf.FixedLenFeature([], tf.string),
+    'label_dim0' : tf.FixedLenFeature([], tf.int64),
+    'label_dim1' : tf.FixedLenFeature([], tf.int64)}
+  features = tf.parse_single_example(proto, feature_description)
   image = tf.decode_raw(features['image'], tf.float32)
-  image = tf.reshape(image, features['image_shape'])
-
+  image = tf.reshape(image, (features['image_dim0'],
+                             features['image_dim1'],
+                             features['image_dim2']))
   label = tf.decode_raw(features['label'], tf.float32)
-  label = tf.reshape(label, features['label_shape'],
-                     name='reshape_label_proto')
+  label = tf.reshape(label, (features['label_dim0'], features['label_dim1']))
+  return image, label
 
-  return (image, label)
+def load_dataset(record_name, parse_function, num_parallel_calls=None):
+  """Load a tfrecord dataset.
 
-
-def proto_from_scene(scene):
-  """Creates a tf example from the scene, which contains an (image,label) example
-
-  :param scene:
+  :param record_name: File name(s) to load.
+  :param parse_function: function to parse each entry.
+  :param num_parallel_calls: passed to map.
+  :returns: 
+  :rtype: 
 
   """
-  example, annotation = scene
-  image, label = example
-  image = img.as_float(image)
-  label = label.astype(np.float32)
-  annotation = np.atleast_3d(annotation.astype(np.float32))
-
-  image_string = image.tostring()
-  image_shape = np.array(image.shape, dtype=np.int64)
-
-  annotation_string = annotation.tostring()
-  annotation_shape = np.array(annotation.shape, dtype=np.int64)
-
-  label_string = label.tostring()
-  label_shape = np.array(label.shape, dtype=np.int64)
-
-  feature = {"image" : _bytes_feature(image_string),
-             "image_shape" : _int64_feature(image_shape),
-             "annotation" : _bytes_feature(annotation_string),
-             "annotation_shape" : _int64_feature(annotation_shape),
-             "label" : _bytes_feature(label_string),
-             "label_shape" : _int64_feature(label_shape)}
-
-  features = tf.train.Features(feature=feature)
-  example = tf.train.Example(features=features)
-  return example.SerializeToString()
-
-
-def scene_from_proto(proto):
-  """Parse `proto` into tensors `(image, label), annotation`.
-
-  """
-  features = tf.parse_single_example(
-    proto,
-    # Defaults are not specified since both keys are required.
-    features={
-      'image': tf.FixedLenFeature([], tf.string),
-      'image_shape': tf.FixedLenFeature([3], tf.int64),
-      'annotation': tf.FixedLenFeature([], tf.string),
-      'annotation_shape': tf.FixedLenFeature([3], tf.int64),
-      'label' : tf.FixedLenFeature([], tf.string),
-      'label_shape' : tf.FixedLenFeature([2], tf.int64)
-    })
-
-  # decode strings
-  image = tf.decode_raw(features['image'], tf.float32)
-  image = tf.reshape(image, features['image_shape'])
-
-  annotation = tf.decode_raw(features['annotation'], tf.float32)
-  annotation = tf.reshape(annotation, features['annotation_shape'],
-                          name='reshape_annotation_proto')
-
-  label = tf.decode_raw(features['label'], tf.float32)
-  label = tf.reshape(label, features['label_shape'],
-                     name='reshape_label_proto')
-
-  logger.debug(f"image: {image.shape}")
-  logger.debug(f"label: {label.shape}")
-  logger.debug(f"annotation: {annotation.shape}")
-  
-  return (image, label), annotation
-
-
-def load_dataset(record_name,
-                 parse_entry=example_from_proto,
-                 num_parallel_calls=None):
-  """Load the record_name as a tf.data.Dataset"""
   dataset = tf.data.TFRecordDataset(record_name)
   return dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
 
 
-def save_dataset(record_name, dataset,
-                 encode_entry=proto_from_example,
+def save_dataset(record_name, dataset, serialize_function=None,
                  num_parallel_calls=None):
-  """Save the dataset in tfrecord format
+  """Write a tf.data.Dataset to a file.
 
-  :param record_name: filename to save to
-  :param dataset: tf.data.Dataset to save
-  :param proto_from_example:
+  :param record_name:
+  :param dataset:
+  :param serialize_function: function to serialize examples. If None, assumes
+  dataset already serialized.
   :param num_parallel_calls:
   :returns:
   :rtype:
 
   """
-  next_example = dataset.make_one_shot_iterator().get_next()
+  if serialize_function is not None:
+    dataset = dataset.map(serialize_function, num_parallel_calls)
+  writer = tf.data.experimental.TFRecordWriter(record_name)
+  write_op = writer.write(dataset)
+  if not tf.executing_eagerly():
+    with tf.Session() as sess:
+      sess.run(write_op)
 
-  logger.info(f"writing dataset to {record_name}...")
-  writer = tf.python_io.TFRecordWriter(record_name)
-  with tf.Session() as sess:
-    i = 0
-    while True:
-      try:
-        example = sess.run(next_example)
-        writer.write(encode_entry(example))
-      except tf.errors.OutOfRangeError:
-        break
-      i += 1
+class ArtificeData(object):
+  """Abstract class for data wrappers in artifice, which are distinguished by the
+  type of examples they hold (unlabeled images, (image, label) pairs (examples),
+  etc.).
 
-
-  writer.close()
-  logger.info(f"wrote {i} examples")
-
-
-class Data(object):
-  """Wrapper around tf.data.Dataset of examples.
-
-  Chiefly useful for feeding into models in various forms. Different properties
-  should be created for each kind of feed.
-
-  Subclasses of the Data object should be created for different types of
-  datasets. The self._dataset object should never be altered.
+  Subclasses should implement the parse_function(), serialize_function(), and
+  process() functions to complete.
 
   """
+  def __init__(self, dataset, size, image_shape, input_tile_shape=[32,32],
+               output_tile_shape=[32,32], batch_size=4, num_parallel_calls=None,
+               num_shuffle=10000, label_dim=2, **kwargs):
+    """Initialize the data, loading it if necessary..
 
+    kwargs is there only to allow extraneous keyword arguments. It is not used.
+
+    :param dataset: 
+    :param size: 
+    :param image_shape: 
+    :param input_tile_shape: 
+    :param output_tile_shape: 
+    :param batch_size: 
+    :param num_parallel_calls: 
+    :param num_shuffle: 
+    :returns: 
+    :rtype: 
+
+    """
+    # inherent
+    self.size = size            # size of an epoch.
+    self.image_shape = image_shape
+    assert len(self.image_shape) == 3
+    self.input_tile_shape = input_tile_shape
+    self.output_tile_shape = output_tile_shape
+    self.batch_size = batch_size
+    self.num_parallel_calls = num_parallel_calls
+    self.num_shuffle = num_shuffle
+    self.label_dim = label_dim
+
+    if issubclass(type(dataset), tf.data.Dataset):
+      self.dataset = dataset
+    elif issubclass(type(dataset), ArtificeData):
+      self.dataset = dataset.dataset
+    elif type(dataset) in [str, list, tuple]:
+      self.dataset = load_dataset(dataset, self.parse_function,
+                                  num_parallel_calls=self.num_parallel_calls)
+    else:
+      raise ValueError("unexpected dataset type")
+
+    # derived
+    self.num_tiles = int(
+      np.ceil(self.image_shape[0] / self.output_tile_shape[0]) *
+      np.ceil(self.image_shape[1] / self.output_tile_shape[1]))
+    self.prefetch_buffer_size = self.batch_size
+    
+  @staticmethod
+  def parse_function(proto):
+    raise NotImplementedError("subclass should implement")
+
+  @staticmethod
+  def serialize_function(entry):
+    raise NotImplementedError("subclass should implement")
+  
+  def __len__(self):
+    return self.size
+
+  def __iter__(self):
+    return self.dataset.__iter__()
+  
+  def save(self, record_name):
+    """Save the dataset to record_name."""
+    save_dataset(record_name, self.dataset,
+                 serialize_function=self.serialize_function,
+                 num_parallel_calls=self.num_parallel_calls)
+
+  def preprocess(self, dataset, training=False):
+    """Perform preprocessing steps on dataset.
+
+    Usually just repeats the dataset. Shouldn't change the nesting of tensors at
+    all.
+
+    """
+    return dataset.repeat(-1)
+
+  def process(self, dataset, training=False):
+    """Process the data into tensors ready for input.
+    
+    The full data processing pipeline is:
+
+    * repeat dataset (in preprocess)
+    * augment (if applicable)
+    * convert to proxy
+    * tile
+    * shuffle (in postprocess)
+    * batch (in postprocess)
+
+    :param dataset: 
+    :param training: if this is for trainign
+    :returns: 
+    :rtype: 
+
+    """
+    raise NotImplementedError("subclasses should implement")
+
+  def postprocess(self, dataset, training=False):
+    dataset = dataset.batch(self.batch_size, drop_remainder=True)
+    if training:
+      dataset = dataset.shuffle(self.num_shuffle)
+    return dataset.prefetch(self.prefetch_buffer_size)
+
+  @property
+  def training_input(self):
+    preprocessed = self.preprocess(self.dataset, training=True)
+    processed = self.process(preprocessed, training=True)
+    return self.postprocess(processed, training=True)
+
+  @property
+  def evaluation_input(self):
+    preprocessed = self.preprocess(self.dataset, training=False)
+    processed = self.process(preprocessed, training=False)
+    return self.postprocess(processed, training=False)
+
+  def skip(self, n):
+    """Wrapper around tf.data.Dataset.skip."""
+    dataset = self.dataset.repeat(-1).skip(n)
+    return type(self)(dataset, n, self.image_shape, **vars(self))
+
+  def take(self, n):
+    dataset = self.dataset.repeat(-1).skip(n)
+    return type(self)(dataset, n, self.image_shape, **vars(self))
+
+  def split(self, splits):
+    """Split the dataset into different sets.
+
+    Pass in the number of examples for each split. Returns a new Data object
+    with datasets of the corresponding number of examples.
+
+    :param splits: iterable of sizes to take
+    :returns: list of Data objects with datasets of the corresponding sizes.
+    :rtype: [Data]
+
+    """
+    datas = []
+    for i, n in enumerate(splits):
+      dataset = self.dataset.repeat(-1).skip(sum(splits[:i])).take(n)
+      datas.append(type(self)(dataset, n, self.image_shape))
+    return datas
+
+  def _sample(self, sampling):
+    """Given a `sampling` of the dataset.
+
+    :param sampling: array or tensor of counts for each example. Typically a
+    boolean index array, but can specify duplicates for examples. Sampling must
+    be at least as large as the dataset.
+    :returns: tf dataset of sampled entries
+
+    """
+    s = tf.constant(sampling, dtype=tf.int64)
+    dataset = self.dataset.apply(tf.data.experimental.enumerate_dataset())
+    def map_func(idx, entry):
+      return tf.data.Dataset.from_tensors((idx, entry)).repeat(s[idx])
+    return dataset.flat_map(map_func)
+
+  def sample(self, sampling):
+    """Sample a dataset with an index array.
+
+    :param sampling: numpy sampling array.
+    :returns:
+    :rtype:
+
+    """
+    dataset = self._sample(sampling)
+    dataset = dataset.map(lambda idx, entry : entry,
+                          num_parallel_calls=self.num_parallel_calls)
+    return type(self)(dataset, np.sum(sampling), self.image_shape, **vars(self))
+
+  def accumulate(self, accumulator, take=None):
+    """Runs the accumulators across the dataset.
+
+    An accumulator function should take a `entry` and an `aggregate` object. On
+    the first call, `aggregate` will be None. Afterward, each accumulator will
+    be passed the output from its previous call as `aggregate`, as well as the
+    next entry in the data as 'entry'. On the final call, `entry` will be None,
+    allowing for post-processing.
+
+    If executing eagerly, uses the existing session.
+
+    :param accumulator: an accumulator function OR a dictionary mapping names to
+      accumulator functions
+    :param take: accumulate over at most `take` examples. None (default) or 0
+      accumulates over the whole dataset.
+    :returns: aggregate from `accumulator` OR a dictionary of aggregates with
+      the same keys as `accumulators`.
+    :rtype: dict
+
+    """
+    if type(accumulator) == dict:
+      accumulators = accumulator
+    else:
+      accumulators = {0 : accumulator}
+    aggregates = dict.fromkeys(accumulators.keys())
+
+    if tf.executing_eagerly():
+      for i, entry in enumerate(self.dataset):
+        if i == take:
+          break
+        for k, acc in accumulators.items():
+          aggregates[k] = acc(self.as_numpy(entry), aggregates[k])
+    else:
+      next_entry = self.dataset.make_one_shot_iterator().get_next()
+      with tf.Session() as sess:
+        logger.info("initialized iterator, starting accumulation...")
+        for i in itertools.count():
+          if i == take:
+            break
+          try:
+            entry = sess.run(next_entry)
+            for k, acc in accumulators.items():
+              aggregates[k] = acc(entry, aggregates[k])
+          except tf.errors.OutOfRangeError:
+            break
+
+    logger.info("finished accumulation")
+    for k, acc in accumulators.items():
+      aggregates[k] = acc(None, aggregates[k])
+
+    if type(accumulator) == dict:
+      return aggregates
+    else:
+      return aggregates[0]
+
+class UnlabeledData(ArtificeData):
+  pass
+    
+class LabeledData(ArtificeData):
+
+  
+
+  def proxy(self, dataset):
+    """Add proxies to the dataset.
+
+    Uses the image shapes from the map, rather than the self variables.
+
+    """
+    def map_func(image, label):
+      # problem, what if num_objects=0 for this tile?
+      positions = tf.cast(label[:, 1:3], tf.float32)
+
+      # indices: (H*W, 2)
+      indices = tf.constant(np.array(
+        [np.array([i,j]) for i in range(image.shape[0])
+         for j in range(image.shape[1])], dtype=np.float32), tf.float32)
+
+      # indices: (M*N, 1, 2), positions: (1, num_objects, 2)
+      indices = tf.expand_dims(indices, axis=1)
+      positions = tf.expand_dims(positions, axis=0)
+
+      # distances: (M*N, num_objects)
+      distances = tf.reduce_min(tf.norm(indices - positions, axis=-1), axis=-1)
+
+      # proxy function: 1 / (d^2 + 1)
+      flat = tf.reciprocal(tf.square(distance) + tf.constant(1, tf.float32))
+      proxy = tf.reshape(flat, image.shape[:2])
+
+      # problem: don't know how many objects are in each of the tiles, don't
+      # know how to match which pixel in the final annotation to its
+      # object. But we do want to do tiling before augmentation? Augmentation
+      # would go between tiling and proxies, I think. Or maybe it would still go
+      # before tiling. But shuffling can go after both? Problem with shuffling
+      # tiles is that you may not have objects in every tile? But that's fine.
+      return None
+      
+    return dataset.map(map_func, self.num_parallel_calls)
+
+  def tile(self, dataset):
+    """Tile the dataset. Adjust labels accordingly.
+
+    """
+    diff0 = self.input_tile_shape[0] - self.output_tile_shape[0]
+    diff1 = self.input_tile_shape[1] - self.output_tile_shape[1]
+    rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
+    rem1 = self.image_shape[1] - (self.image_shape[1] % self.output_tile_shape[1])
+    pad_top = int(np.floor(diff0 / 2))
+    pad_bottom = int(np.ceil(diff0 / 2)) + rem0
+    pad_left = int(np.floor(diff1 / 2))
+    pad_right = int(np.ceil(diff1 / 2)) + rem1
+    def map_func(image, proxy):
+      images = tf.pad(image,
+                      [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]],
+                      'CONSTANT')
+      tiles = []
+      proxies = []
+      for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
+        for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
+          tiles.append(image[i:i + self.input_tile_shape[0],
+                             j:j + self.input_tile_shape[1]])
+          proxies.append(proxy[i:i + self.input_tile_shape[0],
+                               j:j + self.input_tile_shape[1]])
+          # indices = tf.where(tf.logical_and(
+          #   tf.logical_and(labels[:,0] >= i + pad_top,
+          #                  labels[:,0] < i + pad_top + self.output_tile_shape[0]),
+          #   tf.logical_and(labels[:,1] >= j + pad_left,
+          #                  labels[:,1] < j + pad_left + self.output_tile_shape[1])))
+          tile_labels.append(labels[b,indices])
+      return tf.stack(tiles), tf.stack(tile_labels)
+    return dataset.map(map_func, self.num_parallel_calls)
+    
+  # todo: construct the proxies, not just for distance but also extraneous
+  # labels, from the tiled images/labels. This needs a distance threshold to say
+  # how far away pixels should include the pose info? Or maybe just have the
+  # pose at exactly the pixel containing the object, and weight only those
+  # pixels as significant.
+
+  # todo: strip the rest of this file for valuables, get rid of it.
+    
+class Data(object):
   eps = 0.001
 
   def __init__(self, data, **kwargs):
@@ -502,7 +720,7 @@ class Data(object):
     # take inverse distance
     eps = tf.constant(self.eps)
     flat_field = tf.square(tf.reciprocal(distances + eps))
-
+ 
     # zero the inverse distances outside of threshold
     # logger.debug(f"distance_threshold: {self.distance_threshold}")
     # logger.debug(f"flat_field: {flat_field.shape}, {flat_field}")
@@ -539,7 +757,6 @@ class Data(object):
     label[:coords.shape[0],1:3] = coords
     label[:coords.shape[0],0] = np.arange(coords.shape[0])
     return label
-
 
   def fielded(self, training=False):
     def map_func(image, label):

@@ -2,7 +2,7 @@
 connecting the two."""
 
 import numpy as np
-from artifice.utils import vis
+from artifice import vis
 
 
 def find_constant(labels, tethered=[]):
