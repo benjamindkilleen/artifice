@@ -5,7 +5,7 @@
 #SBATCH --error=/project2/glk/artifice/batch/detect_full/detect_full.err
 #SBATCH -p gpu2
 #SBATCH --gres=gpu:1
-#SBATCH --time=01:00:00
+#SBATCH --time=24:00:00
 #SBATCH --account=pi-glk
 #SBATCH --mem-per-cpu=64000
 
@@ -20,10 +20,29 @@ module load povray/3.7
 cd /project2/glk/artifice
 
 echo "Starting full detection..."
+# 1. 
 python artifice.py detect-full -i data/gyros -m models/gyros_augmented-active_subset100/ \
-       --image-shape 600 800 1 --splits 0 0 8842 \
+       --image-shape 600 800 1 --splits 0 0 500 \
        --num-objects 54 --batch-size 1 \
        --verbose 2 --keras-verbose 2
+
+# 2.
+# python artifice.py detect-full -i data/gyros -m models/gyros_augmented-active_subset100/ \
+#        --image-shape 600 800 1 --splits 4000 0 4000 \
+#        --num-objects 54 --batch-size 1 \
+#        --verbose 2 --keras-verbose 2
+
+# 3.
+# python artifice.py detect-full -i data/gyros -m models/gyros_augmented-active_subset100/ \
+#        --image-shape 600 800 1 --splits 8000 0 842 \
+#        --num-objects 54 --batch-size 1 \
+#        --verbose 2 --keras-verbose 2
+
+# original (takes too long)
+# python artifice.py detect-full -i data/gyros -m models/gyros_augmented-active_subset100/ \
+#        --image-shape 600 800 1 --splits 0 0 8842 \
+#        --num-objects 54 --batch-size 1 \
+#        --verbose 2 --keras-verbose 2
 
 echo "Finished."
 

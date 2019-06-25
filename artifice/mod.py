@@ -130,9 +130,6 @@ class Model():
   def predict(self, *args, **kwargs):
     return self.model.predict(*args, **kwargs)
 
-  def evaluate(self, *args, **kwargs):
-    return self.model.evaluate(*args, **kwargs)
-
   def save(self, filename=None, overwrite=True):
     if filename is None:
       filename = self.checkpoint_path
