@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from artifice import dat, mod, learn, docs, img, vis, conversions
+from artifice import dat, mod, learn, docs, img, conversions
 
 
 logger = logging.getLogger('artifice')
