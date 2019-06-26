@@ -52,7 +52,7 @@ def _ensure_dirs_exist(dirs):
 class Artifice:
   """Bag of state for each run of `artifice`."""
   def __init__(self, command=[], mode='default', data_root='data/default',
-               model_root='models/default', overwrite=False,
+               model_root='models/default', overwrite=False, cache_dir='data/.cache',
                image_shape=[100,100,1], tile_shape=[100,100,1], data_size=5000,
                test_size=500, epoch_size=10000, batch_size=4, num_objects=4,
                initial_epoch=0, epochs=1, learning_rate=0.1,
@@ -66,6 +66,7 @@ class Artifice:
     self.data_root = data_root
     self.model_root = model_root
     self.overwrite = overwrite
+    self.cache_dir = cache_dir
 
     # data sizes
     self.image_shape = image_shape
@@ -96,21 +97,14 @@ class Artifice:
     self.input_tile_shape
 
     # ensure directories exist
-    _ensure_dirs_exist([self.data_root, self.model_root])
-    
-    for path in [self.data_root, self.model_root,
-                 self.model_data_root,
-                 self.annotated_subset_dir,
-                 self.labeled_subset_dir]:
-      if not exists(path):
-        logger.info(f"creating '{path}'")
-        os.makedirs(path)
+    _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir])
 
     # relating to tiling
-    
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
 
+    # todo: the rest of this obviously, incorporating new, streamlined dataset pipeline.
+    
     # regions
     self.regions = None if self.regions_path is None else np.load(self.regions_path)
 
@@ -559,6 +553,10 @@ def main():
                       help=docs.model_root)
   parser.add_argument('--overwrite', '-f', action='store_true',
                       help=docs.overwrite)
+  parser.add_argument('--cache-dir', nargs=1,
+                      default=['data/.cache'],
+                      help=docs.cache_dir)
+  
 
   # sizes relating to data
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3,
