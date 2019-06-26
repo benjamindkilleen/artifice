@@ -1,0 +1,3 @@
+[submodule "artifice/mp4writer"]
+	path = artifice/mp4writer
+	url = https://github.com/bendkill/mp4writer

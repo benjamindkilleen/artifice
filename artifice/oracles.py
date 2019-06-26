@@ -4,9 +4,9 @@ a dataset).
 Simplest case given the full array of labels and lsit of annotation filenames,
 which it can index into and retrieve.
 
+TODO: equip to run in separate process.
+
 """
-
-
 
 import numpy as np
 import tensorflow as tf

@@ -627,7 +627,7 @@ labeled set back to twelve, and see how it does.
 Notably, the "learned" stratgy has a lower maximum error, but the std isn't as
 good as labeled.
 
-### June 18, 2019: Summer Thoughts
+## June 18, 2019: Summer Thoughts
 
 * Probing or Point of Interest (PoI) network emulates Fast R-CNN by taking in a
   series of predictions for objects that all rely on the same feature vector.
@@ -652,3 +652,23 @@ Details for coding:
 * So we can take the predictions from the trained network. Totally.
 
 New repo: `probal`.
+
+## June 24, 2019: Reworking Artifice
+
+Ideas in Artifice can be built on, code as well. Big ideas:
+* Separate thread for querying. Make continuous queries and update the data that
+  networks learn from. Can simulate human queries with a simple delay.
+  * Got rid of query size.
+  * Got rid of num-candidates.
+  * This makes the querying process TOTALLY separate from training. All training
+    has to do is reload data from the data-dir every epoch, since more examples
+    may exist in the annotated set. Doesn't even have to know the size of the
+    annotated set? Just the epoch size.
+  * Got rid of subset size. May have to put it back.
+* Instead of `splits` as the way to divide data, we now have `data-size`, which
+  is the size of all the data, and `test-size` which designates how many
+  examples to withhold for testing. This is because most applications won't be
+  doing testing. They'll just care about 
+* Make the default hourglass net 3 layers deep, not 4.
+
+
