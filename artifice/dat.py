@@ -235,9 +235,11 @@ class ArtificeData(object):
   def evaluation_input(self):
     return self.get_input(False)
 
-  # TODO: redo skiup, take, split, accumulate from git, now that we are strictly
+  
+  
+  # TODO: redo skip, take, split, accumulate from git, now that we are strictly
   # requiring stored datasets rather than crazy pipelines. Or possibly they are
-  # now obsolete/infeasible?
+  # now obsolete/infeasible? Do as necessary.
   
 class UnlabeledData(ArtificeData):
   pass

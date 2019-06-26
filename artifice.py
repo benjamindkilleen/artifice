@@ -103,7 +103,7 @@ class Artifice:
     self.num_tiles = int(np.ceil(self.image_shape[0] / self.tile_shape[0]) *
                          np.ceil(self.image_shape[1] / self.tile_shape[1]))
 
-    # todo: the rest of this obviously, incorporating new, streamlined dataset pipeline.
+    # todo: the rest of this obviously, incorporating new, streamlined dataset pipeline
     
     # regions
     self.regions = None if self.regions_path is None else np.load(self.regions_path)
@@ -353,190 +353,6 @@ def cmd_convert(art):
   logger.info(f"wrote {i+1} test examples")
 
 
-def cmd_proxy(art):
-  _ = art.load_model()
-  _, _, test_set = art.load_data()
-  get_next = test_set.eval_input.make_one_shot_iterator().get_next()
-  with tf.Session() as sess:
-    while True:
-      images, fields = sess.run(get_next)
-      img.save('docs/gyros_tile.png', images[5])
-      img.save('docs/gyros_tile_proxy.png', fields[5])
-      break
-  
-def cmd_augment(art):
-  """Run augmentation of the train_set. 
-  If `art.show`, then show the new examples, otherwise, save the augmented
-  train_set.
-  """
-  annotated_set = art.load_annotated()
-  get_next = annotated_set.training_input.make_one_shot_iterator().get_next()
-  with tf.Session() as sess:
-    while True:
-      images, fields = sess.run(get_next)
-      img.save('docs/augmented_spheres.png', images[5])
-      img.save('docs/augmented_spheres_proxy.png', fields[5])
-      break
-      # for image, field in zip(images, fields):
-      #   vis.plot_image(image, field)
-      #   if art.show:
-      #     plt.show()
-      #   else:
-      #     plt.close()
-      #     raise RuntimeError("Use --show")
-  
-def cmd_train(art):
-  model = art.load_model()
-  unlabeled_set, validation_set, test_set = art.load_data()
-  kwargs = {'epochs' : art.epochs,
-            'steps_per_epoch' : art.train_steps,
-            'verbose' : art.keras_verbose,
-            'initial_epoch' : art.initial_epoch}
-  
-  if art.validation_size > 0:
-    kwargs.update({'validation_data' : validation_set.eval_input,
-                   'validation_steps' : art.validation_steps})
-  if 'active' in art.mode:
-    kwargs['previous_history'] = art.load_history()
-    kwargs['history_path'] = art.history_path
-    learner = art.load_learner(model)
-
-  if art.mode == 'full':
-    # run "traditional" training on the full, labeled dataset
-    labeled_set = art.load_labeled()
-    hist = model.fit(labeled_set.training_input, **kwargs)
-
-  elif art.mode == 'random':
-    # Label a small, random subset of the data, as a human might
-    labeled_subset = art.load_labeled_subset()
-    hist = model.fit(labeled_subset.training_input, **kwargs)
-
-  elif art.mode == 'active':
-    # Label a small, actively selected subset of the data during training
-    hist = learner.fit(unlabeled_set, art.labeled_subset_dir, **kwargs)
-
-  elif art.mode == 'augmented-full':
-    # run training with full dataset, augmented
-    annotated_set = art.load_annotated()
-    hist = model.fit(annotated_set.training_input, **kwargs)
-
-  elif art.mode == 'augmented-random':
-    # use a random set of original examples, augmented
-    annotated_set = art.load_annotated()
-    hist = model.fit(annotated_set.training_input, **kwargs)
-
-  elif art.mode == 'augmented-active':
-    # actively select examples and augment
-    hist = learner.fit(unlabeled_set, art.annotated_subset_dir, **kwargs)
-  else:
-    raise RuntimeError(f"no such mode: '{art.mode}'")
-
-  art.save_history(hist)
-
-
-def cmd_predict(art):
-  model = art.load_model()
-  unlabeled_set, validation_set, test_set = art.load_data()
-  predictions = model.full_predict(test_set, steps=1, verbose=art.keras_verbose)
-  if art.show and tf.executing_eagerly():
-    for i, (prediction, example) in enumerate(zip(predictions, test_set.fielded())):
-      image, field = example
-      vis.plot_image(image, field, prediction)
-      plt.show()
-
-def cmd_evaluate(art):
-  pass
-
-def cmd_detect_full(art):
-  """Run detection on the entire unlabeled dataset."""
-  model = art.load_model()
-  _, _, test_set = art.load_data()
-  detections, _ = model.detect(test_set, steps=500, save_fields=False)
-  np.save(art.model_detections_path, detections)
-  logger.info(f"saved detections to {art.full_detections_path}")
-  labels = tf.data.Dataset.from_tensor_slices(detections)
-  images = test_set.dataset.map(lambda t : t[0])
-  tf.data.Dataset.zip((images, labels))
-  dat.save_dataset(f"data/gyros_full/gyros_{art.splits[0]}-{art.splits[0] + art.splits[2]}.tfrecord")
-  logger.info(f"saved tfrecord")
-  
-def cmd_detect(art):
-  """Run detection and show some images with true/predicted positions."""
-  model = art.load_model()
-  unlabeled_set, validation_set, test_set = art.load_data()
-  detections, fields = model.detect(test_set)
-  np.save(art.model_detections_path, detections)
-  logger.info(f"saved detections to {art.model_detections_path}")
-  np.save(art.predicted_fields_path, fields)
-  logger.info(f"saved predicted_fields to {art.predicted_fields_path}")
-  labels = test_set.labels
-  errors = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
-  logger.info(f"average error: {errors.mean():.02f}")
-  logger.info(f"error std: {errors.std():.02f}")
-  logger.info(f"minimum error: {errors.min():.02f}")
-  logger.info(f"maximum error: {errors.max():.02f}")
-  for i in range(errors.shape[1]):
-    logger.info(f"object {i}:")
-    logger.info(f"  average error: {errors[:,i].mean():.02f}")
-    logger.info(f"  error std: {errors[:,i].std():.02f}")
-    logger.info(f"  minimum error: {errors[:,i].min():.02f}")
-    logger.info(f"  maximum error: {errors[:,i].max():.02f}")
-
-    
-def cmd_visualize(art):
-  unlabeled_set, validation_set, test_set = art.load_data()
-  labels = test_set.labels
-  detections = np.load(art.model_detections_path)
-  fields = np.load(art.predicted_fields_path)
-  errors = np.linalg.norm(detections[:,:,1:3] - labels[:,:,1:3], axis=2)
-  logger.info(f"average error: {errors.mean():.02f}")
-  logger.info(f"error std: {errors.std():.02f}")
-  logger.info(f"minimum error: {errors.min():.02f}")
-  logger.info(f"maximum error: {errors.max():.02f}")
-  for i in range(errors.shape[1]):
-    logger.info(f"object {i}:")
-    logger.info(f"  average error: {errors[:,i].mean():.02f}")
-    logger.info(f"  error std: {errors[:,i].std():.02f}")
-    logger.info(f"  minimum error: {errors[:,i].min():.02f}")
-    logger.info(f"  maximum error: {errors[:,i].max():.02f}")
-
-  # # visualize the color map of errors
-  # vis.plot_errors(labels, errors, art.image_shape, vmax=5)
-  # if art.show:
-  #   plt.show()
-  # else:
-  #   plt.savefig(art.regional_errors_path, transparent=True, pad_inches=0)
-  #   logger.info(f"saved error map to {art.regional_errors_path}")
-
-  # indices = np.floor(detections[:,:,1:3]).astype(np.int64)
-  # peaks = np.zeros_like(errors)
-  # for i in range(peaks.shape[0]):
-  #   for j in range(peaks.shape[1]):
-  #     peaks[i,j] = fields[i,indices[i,j,0],indices[i,j,1]]
-  # fig, _ = vis.plot_errors(labels, peaks, art.image_shape, cmap='gray', vmax=10.)
-  # fig.suptitle("Detection Peak Values")
-  # if art.show:
-  #   plt.show()
-  # else:
-  #   plt.savefig(art.regional_peaks_path, transparent=True, pad_inches=0)
-  #   logger.info(f"saved peaks map to {art.regional_peaks_path}")
-
-  get_next = test_set.dataset.make_one_shot_iterator().get_next()
-  writer = vid.MP4Writer(art.detections_video_path)
-  logger.info(f"writing detections to video...")
-  with tf.Session() as sess:
-    for i, detection in enumerate(detections):
-      if i % 100 == 0:
-        logger.info(f"{i} / {detections.shape[0]}")
-      image, label = sess.run(get_next)
-      frame = vis.frame_detection(label, detection, image, fields[i])
-      if i == 0:
-        img.save(art.example_detection_path, frame)
-        logger.info(f"saved example detection to {art.example_detection_path}")
-      writer.write(frame)
-  writer.close()
-  logger.info(f"finished")
-  logger.info(f"wrote mp4 to {art.detections_video_path}")
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -566,7 +382,7 @@ def main():
                       default=[3000], type=int,
                       help=docs.data_size)
   parser.add_argumnet('--test-size', '-T', nargs=1,
-                      default=[0], type=int,
+                      default=[100], type=int,
                       help=docs.test_size)
   parser.add_argument('--epoch-size', '--num-examples', '-n', nargs=1,
                       default=[10000], type=int,
@@ -617,6 +433,7 @@ def main():
                       help=docs.show)
   args = parser.parse_args()
   art = Artifice(args)
+  logger.info(art)
   art()
 
   
