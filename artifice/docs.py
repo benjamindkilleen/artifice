@@ -8,6 +8,9 @@ model_root = "todo"
 overwrite = "Overwrite existing models."
 cache_dir = "todo"
 
+# data conversion
+convert_mode = "todo"
+
 # data sizes
 image_shape = "Shape of the image as: HEIGHT WIDTH CHANNELS"
 base_shape = "todo"

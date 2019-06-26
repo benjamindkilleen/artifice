@@ -115,7 +115,7 @@ def save_dataset(record_name, dataset, serialize_function=None,
   :param dataset:
   :param serialize_function: function to serialize examples. If None, assumes
   dataset already serialized.
-  :param num_parallel_calls:
+  :param num_parallel_calls: only used if serialize_function is not None.
   :returns:
   :rtype:
 
@@ -168,6 +168,7 @@ class ArtificeData(object):
     self.num_shuffle = num_shuffle
 
     # derived
+    self.steps = int(self.size // self.batch_size)
     self.num_tiles = int(
       np.ceil(self.image_shape[0] / self.output_tile_shape[0]) *
       np.ceil(self.image_shape[1] / self.output_tile_shape[1]))
@@ -235,8 +236,6 @@ class ArtificeData(object):
   def evaluation_input(self):
     return self.get_input(False)
 
-  
-  
   # TODO: redo skip, take, split, accumulate from git, now that we are strictly
   # requiring stored datasets rather than crazy pipelines. Or possibly they are
   # now obsolete/infeasible? Do as necessary.
@@ -245,10 +244,13 @@ class UnlabeledData(ArtificeData):
   pass
 
 class LabeledData(ArtificeData):
-
   @staticmethod
   def serialize(example):
     return _proto_from_example(example)
+
+  @staticmethod
+  def parse(proto):
+    return _example_from_proto(proto)
   
   @staticmethod
   def make_proxy(image, label):
@@ -302,7 +304,7 @@ class LabeledData(ArtificeData):
 
   def process(self, dataset, training):
     def map_func(proto):
-      image, label = _example_from_proto(proto)
+      image, label = self.parse(proto)
       proxy = self.make_proxy(image, label)
       return self.tile_step(image, proxy) # returns a dataset, not a nested tensor
     return dataset.interleave(map_func, cycle_length=self.batch_size,
