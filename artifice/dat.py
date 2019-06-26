@@ -12,7 +12,6 @@ We expect labels to be of the form:
 """
 
 import os
-from time import strftime
 import logging
 import numpy as np
 import tensorflow as tf
@@ -36,7 +35,7 @@ def _serialize_feature(feature):
   example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
   return example_proto.SerializeToString()
 
-def _proto_from_image(image):
+def proto_from_image(image):
   image = img.as_float(image)
   feature = {'image' : _bytes_feature(image.tostring()),
              'image_dim0' : _int64_feature(image.shape[0]),
@@ -44,7 +43,7 @@ def _proto_from_image(image):
              'image_dim2' : _int64_feature(image.shape[2])}
   return _serialize_feature(feature)
 
-def _image_from_proto(proto):
+def image_from_proto(proto):
   feature_description = {
     'image' : tf.FixedLenFeature([], tf.string),
     'image_dim0' : tf.FixedLenFeature([], tf.int64),
@@ -52,11 +51,11 @@ def _image_from_proto(proto):
     'image_dim2' : tf.FixedLenFeature([], tf.int64)}
   features = tf.parse_single_example(proto, feature_description)
   image = tf.decode_raw(features['image'], tf.float32)
-  return tf.reshape(image, (features['image_dim0'],
+  return tf.reshape(image, [features['image_dim0'],
                             features['image_dim1'],
-                            features['image_dim2']))
+                            features['image_dim2']])
 
-def _proto_from_example(example):
+def proto_from_example(example):
   image, label = example
   image = img.as_float(image)
   label = label.astype(np.float32)
@@ -69,7 +68,7 @@ def _proto_from_example(example):
              'label_dim1' : _int64_feature(label.shape[1])}
   return _serialize_feature(feature)
 
-def _example_from_proto(proto):
+def example_from_proto(proto):
   feature_description = {
     'image' : tf.FixedLenFeature([], tf.string),
     'image_dim0' : tf.FixedLenFeature([], tf.int64),
@@ -84,10 +83,10 @@ def _example_from_proto(proto):
                              features['image_dim1'],
                              features['image_dim2']))
   label = tf.decode_raw(features['label'], tf.float32)
-  label = tf.reshape(label, (features['label_dim0'], features['label_dim1']))
+  label = tf.reshape(label, [features['label_dim0'], features['label_dim1']])
   return image, label
 
-def load_dataset(record_name, parse_function, num_parallel_calls=None):
+def load_dataset(record_name, parse, num_parallel_calls=None):
   """Load a tfrecord dataset.
 
   :param record_name: File name(s) to load.
@@ -98,24 +97,24 @@ def load_dataset(record_name, parse_function, num_parallel_calls=None):
 
   """
   dataset = tf.data.TFRecordDataset(record_name)
-  return dataset.map(parse_entry, num_parallel_calls=num_parallel_calls)
+  return dataset.map(parse, num_parallel_calls=num_parallel_calls)
 
 
-def save_dataset(record_name, dataset, serialize_function=None,
+def save_dataset(record_name, dataset, serialize=None,
                  num_parallel_calls=None):
   """Write a tf.data.Dataset to a file.
 
   :param record_name:
   :param dataset:
-  :param serialize_function: function to serialize examples. If None, assumes
+  :param serialize: function to serialize examples. If None, assumes
   dataset already serialized.
-  :param num_parallel_calls: only used if serialize_function is not None.
+  :param num_parallel_calls: only used if serialize() is not None.
   :returns:
   :rtype:
 
   """
-  if serialize_function is not None:
-    dataset = dataset.map(serialize_function, num_parallel_calls)
+  if serialize is not None:
+    dataset = dataset.map(serialize, num_parallel_calls)
   writer = tf.data.experimental.TFRecordWriter(record_name)
   write_op = writer.write(dataset)
   if not tf.executing_eagerly():
@@ -131,9 +130,9 @@ class ArtificeData(object):
   complete. Serialize is used for saving the dataset.
 
   """
-  def __init__(self, record_names, size, image_shape, input_tile_shape=[32,32],
-               output_tile_shape=[32,32], batch_size=4, num_parallel_calls=None,
-               num_shuffle=10000, **kwargs):
+  def __init__(self, record_names, *, size, image_shape, input_tile_shape,
+               output_tile_shape, batch_size=4, num_parallel_calls=None,
+               num_shuffle=10000, cache=False):
     """Initialize the data, loading it if necessary..
 
     kwargs is there only to allow extraneous keyword arguments. It is not used.
@@ -151,7 +150,7 @@ class ArtificeData(object):
 
     """
     # inherent
-    self.record_names = listwrap(record_names)
+    self.record_names = utils.listwrap(record_names)
     self.size = size            # size of an epoch.
     self.image_shape = image_shape
     assert len(self.image_shape) == 3
@@ -160,14 +159,13 @@ class ArtificeData(object):
     self.batch_size = batch_size
     self.num_parallel_calls = num_parallel_calls
     self.num_shuffle = num_shuffle
+    self.cache = cache
 
     # derived
     self.steps = int(self.size // self.batch_size)
     self.num_tiles = self.compute_num_tiles(self.image_shape, self.output_tile_shape)
     self.prefetch_buffer_size = self.batch_size
-    record_dir, record_basename = os.path.split(self.record_names[0])
-    self.cache_path = os.path.join(
-      record_dir, strftime(f".%Y-%m-%d_%H-%M-%S.{record_basename}.cache"))
+    self.cache_dir = os.path.join(os.path.dirname(self.record_names[0]), 'cache')
 
   @staticmethod
   def serialize(entry):
@@ -176,16 +174,12 @@ class ArtificeData(object):
   def __len__(self):
     return self.size
 
-  def __iter__(self):
-    return self.dataset.__iter__()
-
   def save(self, record_name):
     """Save the dataset to record_name."""
-    save_dataset(record_name, self.dataset,
-                 serialize_function=self.serialize,
+    save_dataset(record_name, self.dataset, serialize=self.serialize,
                  num_parallel_calls=self.num_parallel_calls)
 
-  def process(self, dataset, training=False):
+  def process(self, dataset, training):
     """Process the dataset of serialized examples into tensors ready for input.
 
     The full data processing pipeline is:
@@ -213,7 +207,10 @@ class ArtificeData(object):
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     if training:
       dataset = dataset.shuffle(self.num_shuffle)
-    return dataset.repeat(-1).prefetch(self.prefetch_buffer_size).cache(self.cache_path)
+    dataset = dataset.repeat(-1).prefetch(self.prefetch_buffer_size)
+    if self.cache:
+      dataset = dataset.cache(self.cache_dir)
+    return dataset
 
   def get_input(self, training):
     dataset = tf.data.TFRecordDataset(self.record_names)
@@ -230,56 +227,51 @@ class ArtificeData(object):
 
   @staticmethod
   def compute_num_tiles(image_shape, output_tile_shape):
-    logger.debug(f'image_shape: {image_shape}')
-    logger.debug(f'output_tile_shape: {output_tile_shape}')
-    
     return int(np.ceil(image_shape[0] / output_tile_shape[0])*
                np.ceil(image_shape[1] / output_tile_shape[1]))
-    
 
   # TODO: redo skip, take, split, accumulate from git, now that we are strictly
   # requiring stored datasets rather than crazy pipelines. Or possibly they are
   # now obsolete/infeasible? Do as necessary.
-  
-class UnlabeledData(ArtificeData):
-  pass
 
 class LabeledData(ArtificeData):
   @staticmethod
-  def serialize(example):
-    return _proto_from_example(example)
+  def serialize(entry):
+    return proto_from_example(entry)
 
   @staticmethod
   def parse(proto):
-    return _example_from_proto(proto)
-  
-  @staticmethod
-  def make_proxy(image, label):
+    return example_from_proto(proto)
+
+  def make_proxy(self, image, label):
     """Map function for converting an (image,label) pair to (image, proxy).
 
     Note that this operates on the untiled images, so label is expected to have
     shape `num_objects`.
+
     """
     positions = tf.cast(label[:, 1:3], tf.float32)
     indices = tf.constant(np.array( # [H*W,2]
-      [np.array([i,j]) for i in range(image.shape[0])
-       for j in range(image.shape[1])], dtype=np.float32), tf.float32)
+      [np.array([i,j]) for i in range(self.image_shape[0])
+       for j in range(self.image_shape[1])], dtype=np.float32), tf.float32)
     indices = tf.expand_dims(indices, axis=1)                # [H*W,1,2]
     positions = tf.expand_dims(positions, axis=0)            # [1,num_objects,2]
     object_distances = tf.norm(indices - positions, axis=-1) # [H*W,num_objects]
-    distances = tf.reduce_min(distances, axis=-1)  # [H*W,]
-    poses = label[:,2:]                            # [num_objects,pose_dim]
-    regions = tf.argmin(object_distances, axis=-1) # [H*W,]
-    pose_maps = tf.reshape(tf.gather_nd(poses, regions),
-                       [image.shape[0], image.shape[1], -1]) # [H,W,pose_dim]
 
-    # proxy function: 1 / (d^2 + 1)
-    flat = tf.reciprocal(tf.square(distance) + tf.constant(1, tf.float32))
-    proxy = tf.reshape(flat, [image.shape[0], image.shape[1], 1]) # [H,W,1]
-    return tf.concatenate([proxy, pose_maps], axis=-1, name='proxy_step')
+    # make pose_maps
+    pose = label[:,2:]                             # [num_objects,pose_dim]
+    regions = tf.expand_dims(tf.argmin(object_distances, axis=-1), axis=-1) # [H*W,1]
+    pose_maps = tf.reshape(
+      tf.gather_nd(pose, regions),
+      [self.image_shape[0], self.image_shape[1], -1]) # [H,W,pose_dim]
 
-  @property
-  def tile_step(self):
+    # make distance proxy function: 1 / (d^2 + 1)
+    distances = tf.reduce_min(object_distances, axis=-1)  # [H*W,]
+    flat = tf.reciprocal(tf.square(distances) + tf.constant(1, tf.float32))
+    proxy = tf.reshape(flat, [self.image_shape[0], self.image_shape[1], 1]) # [H,W,1]
+    return tf.concat([proxy, pose_maps], axis=-1, name='proxy_step')
+
+  def tile_step(self, image, proxy):
     diff0 = self.input_tile_shape[0] - self.output_tile_shape[0]
     diff1 = self.input_tile_shape[1] - self.output_tile_shape[1]
     rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
@@ -288,26 +280,28 @@ class LabeledData(ArtificeData):
     pad_bottom = int(np.ceil(diff0 / 2)) + rem0
     pad_left = int(np.floor(diff1 / 2))
     pad_right = int(np.ceil(diff1 / 2)) + rem1
-    def tile_func(image, proxy):
-      image = tf.pad(image,
-                     [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]],
-                     'CONSTANT')
-      tiles = []
-      proxies = []
-      for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
-        for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
-          tiles.append(image[i:i + self.input_tile_shape[0],
+    image = tf.pad(image,
+                   [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]],
+                   'CONSTANT')
+    tiles = []
+    proxies = []
+    for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
+      for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
+        tiles.append(image[i:i + self.input_tile_shape[0],
+                           j:j + self.input_tile_shape[1]])
+        proxies.append(proxy[i:i + self.input_tile_shape[0],
                              j:j + self.input_tile_shape[1]])
-          proxies.append(proxy[i:i + self.input_tile_shape[0],
-                               j:j + self.input_tile_shape[1]])
-      return tf.data.Dataset.from_tensor_slices((tiles, proxies))
-    return tile_func
+    return tf.data.Dataset.from_tensor_slices((tiles, proxies))
 
   def process(self, dataset, training):
     def map_func(proto):
       image, label = self.parse(proto)
       proxy = self.make_proxy(image, label)
       return self.tile_step(image, proxy) # returns a dataset, not a nested tensor
-    return dataset.interleave(map_func, cycle_length=self.batch_size,
+    return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.num_tiles,
                               num_parallel_calls=self.num_parallel_calls)
+
+
+class UnlabeledData(ArtificeData):
+  pass

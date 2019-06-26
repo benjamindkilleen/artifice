@@ -4,6 +4,7 @@
 
 """
 
+from time import time, asctime
 import os
 from os.path import join, exists
 import logging
@@ -12,7 +13,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from artifice import dat, mod, docs, conversions, utils
+from artifice import dat, mod, docs, vis, conversions, utils
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -47,35 +48,35 @@ def _ensure_dirs_exist(dirs):
 
 class Artifice:
   """Bag of state that controls a single `artifice` run.
-  
+
   All arguments are required keyword arguments, for the sake of
   correctness. Defaults are specified in the command-line defaults for this
   script. Run `python artifice.py -h` for more info.
-  
-  :param commands: 
-  :param mode: 
-  :param data_root: 
-  :param model_root: 
-  :param overwrite: 
-  :param convert_mode: 
-  :param image_shape: 
-  :param data_size: 
-  :param test_size: 
-  :param epoch_size: 
-  :param batch_size: 
-  :param num_objects: 
-  :param base_shape: 
-  :param level_filters: 
-  :param level_depth: 
-  :param dropout: 
-  :param initial_epoch: 
-  :param epochs: 
-  :param learning_rate: 
-  :param num_parallel_calls: 
-  :param verbose: 
-  :param keras_verbose: 
-  :param eager: 
-  :param show: 
+
+  :param commands:
+  :param mode:
+  :param data_root:
+  :param model_root:
+  :param overwrite:
+  :param convert_mode:
+  :param image_shape:
+  :param data_size:
+  :param test_size:
+  :param epoch_size:
+  :param batch_size:
+  :param num_objects:
+  :param base_shape:
+  :param level_filters:
+  :param level_depth:
+  :param dropout:
+  :param initial_epoch:
+  :param epochs:
+  :param learning_rate:
+  :param num_parallel_calls:
+  :param verbose:
+  :param keras_verbose:
+  :param eager:
+  :param show:
 
   # todo: copy the above from docs file
 
@@ -84,7 +85,7 @@ class Artifice:
                convert_mode, image_shape, data_size, test_size, epoch_size,
                batch_size, num_objects, base_shape, level_filters, level_depth,
                dropout, initial_epoch, epochs, learning_rate,
-               num_parallel_calls, verbose, keras_verbose, eager, show):
+               num_parallel_calls, verbose, keras_verbose, eager, show, cache):
     # main
     self.commands = commands
     self.mode = mode
@@ -113,11 +114,14 @@ class Artifice:
     self.initial_epoch = initial_epoch
     self.epochs = epochs
     self.learning_rate = learning_rate
+
+    # runtime settings
     self.num_parallel_calls = num_parallel_calls
     self.verbose = verbose
     self.keras_verbose = keras_verbose
     self.eager = eager
     self.show = show
+    self.cache = cache
 
     # globals
     _set_verbosity(self.verbose)
@@ -139,10 +143,13 @@ class Artifice:
     self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
 
     # ensure directories exist
-    _ensure_dirs_exist([self.data_root, self.model_root])
+    _ensure_dirs_exist([self.data_root, self.model_root,
+                        join(self.data_root, 'cache')])
 
   def __str__(self):
-    return "todo: make artifice string to represent all this info"
+    return f"""{asctime()}:
+num_parallel_calls: {self.num_parallel_calls}
+todo: other attributes"""
 
   def __call__(self):
     for command in self.commands:
@@ -155,9 +162,40 @@ class Artifice:
     if self.num_parallel_calls <= 0:
       self.num_parallel_calls = os.cpu_count()
 
+  @property
+  def _data_kwargs(self):
+    return {'size' : self.data_size,
+            'image_shape' : self.image_shape,
+            'input_tile_shape' : self.input_tile_shape,
+            'output_tile_shape' : self.output_tile_shape,
+            'batch_size' : self.batch_size,
+            'num_parallel_calls' : self.num_parallel_calls,
+            'num_shuffle' : min(self.data_size, 1000)}
+
+  def _load_labeled(self):
+    return dat.LabeledData(self.labeled_set_path, **self._data_kwargs)
+
   def convert(self):
     conversions.conversions[self.convert_mode](
       self.data_root, num_parallel_calls=self.num_parallel_calls)
+
+  def vis(self):
+    logger.debug(f"labeled_set: {self.labeled_set_path}")
+    labeled_set = self._load_labeled()
+    for i, (images, proxies) in enumerate(labeled_set.training_input):
+      if i == labeled_set.steps:
+        break
+      if i == 0:
+        t1 = time()
+      image, proxy = images[0], proxies[0]
+      logger.info(f"example {i}")
+      logger.info(f"  image: {image.shape}")
+      logger.info(f"  proxy: {proxy.shape}")
+      if self.show:
+        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
+        plt.show()
+    t2 = time()
+    logger.info(f"iterated over dataset in {t2 - t1} seconds")
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -185,7 +223,7 @@ def main():
                       type=int, default=[100,100,1],
                       help=docs.image_shape)
   parser.add_argument('--data-size', '-N', nargs=1,
-                      default=[3000], type=int,
+                      default=[2000], type=int,
                       help=docs.data_size)
   parser.add_argument('--test-size', '-T', nargs=1,
                       default=[100], type=int,
@@ -235,10 +273,12 @@ def main():
   parser.add_argument('--keras-verbose', nargs=1,
                       default=[1], type=int,
                       help=docs.keras_verbose)
-  parser.add_argument('--patient', action='store_false',
+  parser.add_argument('--patient', action='store_true',
                       help=docs.patient)
   parser.add_argument('--show', action='store_true',
                       help=docs.show)
+  parser.add_argument('--cache', action='store_true',
+                      help=docs.cache)
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, mode=args.mode[0],
@@ -254,7 +294,7 @@ def main():
                  learning_rate=args.learning_rate[0],
                  num_parallel_calls=args.num_parallel_calls[0],
                  verbose=args.verbose[0], keras_verbose=args.keras_verbose[0],
-                 eager=(not args.patient), show=args.show)
+                 eager=(not args.patient), show=args.show, cache=args.cache)
   logger.info(art)
   art()
 

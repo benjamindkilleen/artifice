@@ -8,7 +8,7 @@ trap cleanup err exit int term
 
 RNG=$1
 OUT=labels/$RNG.txt
-
+n
 N=4  # number of objects
 SZMIN=0.05  # range of sizes
 SZMAX=0.15
@@ -28,7 +28,4 @@ unu 2op + - 0.5 | unu 2op pow - 3 | # more smaller values HEY
 unu affine 0.125 - 3.375 $PMIN $PMAX -o parm; junk parm
 
 unu join -i xy size parm -a 0 -o $OUT
-
-
-
 

@@ -71,16 +71,14 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
                        f"number of labels ({len(label_paths)})")
   logger.info(f"writing {len(image_paths)} examples to "
               f"{join(data_root, record_name)}...")
-  dataset = tf.data.Dataset.from_tensor_slices((image_paths, label_paths))
-  def _read_and_serialize(image_path, label_path):
-    image = img.open_as_float(image_path)
-    label = _label_loaders[label_ext](label_path)
-    return dat._proto_from_example((image, label))
-  dataset = dataset.map(
-    lambda image_path, label_path : tuple(tf.py_function(
-      _read_and_serialize, [image_path, label_path], [tf.string])),
-    num_parallel_calls=num_parallel_calls)
-  dat.save_dataset(join(data_root, record_name), dataset)
+  with tf.python_io.TFRecordWriter(join(data_root, record_name)) as writer:
+    for i, (image_path, label_path) in enumerate(zip(image_paths, label_paths)):
+      if i % 100 == 0:
+        logger.info(f"writing example {i}/{len(image_paths)}")
+      image = img.open_as_float(image_path)
+      label = _label_loaders[label_ext](label_path)
+      proto = dat.proto_from_example((image, label))
+      writer.write(proto)
 
 def png_dir_and_txt_dir(data_root, num_parallel_calls=None):
   """Convert from a directory of image files and dir of label files.

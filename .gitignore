@@ -26,6 +26,7 @@ batch/train/**/*.batch
 models/**/*.npy
 models/**/waltzing_spheres/*.mp4
 models/**/*.mp4
+**/cache/
 !models/gyros*/**/detections.mp4
 reports/
 thesis/

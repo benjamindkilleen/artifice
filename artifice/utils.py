@@ -8,7 +8,7 @@ def listwrap(val):
   :rtype: 
 
   """
-  if hasattr("__iter__"):
+  if not isinstance(val, str) and hasattr(val, "__iter__"):
     return list(val)
   return [val]
 
@@ -22,7 +22,7 @@ def listify(val, length):
   :raises: RuntimeError if 1 < len(val) != length
 
   """
-  if hasattr(val, '__iter__'):
+  if not isinstance(val, str) and hasattr(val, '__iter__'):
     val = list(val)
     if len(val) == 1:
       return val * length
