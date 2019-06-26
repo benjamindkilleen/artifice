@@ -16,15 +16,9 @@ from time import strftime
 import logging
 import numpy as np
 import tensorflow as tf
-from artifice import tform, img
-
+from artifice import img, utils
 
 logger = logging.getLogger('artifice')
-
-def listwrap(val):
-  if hasattr("__iter__"):
-    return list(val)
-  return [val]
 
 def _bytes_feature(value):
   """Returns a bytes_list from a string / byte."""
@@ -169,9 +163,7 @@ class ArtificeData(object):
 
     # derived
     self.steps = int(self.size // self.batch_size)
-    self.num_tiles = int(
-      np.ceil(self.image_shape[0] / self.output_tile_shape[0]) *
-      np.ceil(self.image_shape[1] / self.output_tile_shape[1]))
+    self.num_tiles = self.compute_num_tiles(self.image_shape, self.output_tile_shape)
     self.prefetch_buffer_size = self.batch_size
     record_dir, record_basename = os.path.split(self.record_names[0])
     self.cache_path = os.path.join(
@@ -236,6 +228,15 @@ class ArtificeData(object):
   def evaluation_input(self):
     return self.get_input(False)
 
+  @staticmethod
+  def compute_num_tiles(image_shape, output_tile_shape):
+    logger.debug(f'image_shape: {image_shape}')
+    logger.debug(f'output_tile_shape: {output_tile_shape}')
+    
+    return int(np.ceil(image_shape[0] / output_tile_shape[0])*
+               np.ceil(image_shape[1] / output_tile_shape[1]))
+    
+
   # TODO: redo skip, take, split, accumulate from git, now that we are strictly
   # requiring stored datasets rather than crazy pipelines. Or possibly they are
   # now obsolete/infeasible? Do as necessary.
@@ -288,9 +289,9 @@ class LabeledData(ArtificeData):
     pad_left = int(np.floor(diff1 / 2))
     pad_right = int(np.ceil(diff1 / 2)) + rem1
     def tile_func(image, proxy):
-      images = tf.pad(image,
-                      [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]],
-                      'CONSTANT')
+      image = tf.pad(image,
+                     [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]],
+                     'CONSTANT')
       tiles = []
       proxies = []
       for i in range(0, self.image_shape[0], self.output_tile_shape[0]):

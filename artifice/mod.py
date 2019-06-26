@@ -7,14 +7,9 @@ import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
-from artifice import lay, dat
+from artifice import lay, dat, utils
 
 logger = logging.getLogger('artifice')
-
-def listify(val, length):
-  if hasattr(val, '__iter__'):
-    return list(val)
-  return [val] * length
 
 def conv(inputs, filters, kernel_shape=(3,3),
          activation='relu', padding='valid', norm=True):
@@ -146,38 +141,47 @@ class ProxyUNet(Model):
 
     :param base_shape: the height/width of the output of the first layer in the lower
     level. This determines input and output tile shapes. Can be a tuple,
-    specifying different height/width.
+    specifying different height/width, or a single integer.
     :param level_filters: number of filters at each level (top to bottom).
     :param level_depth: number of layers per level
     :param dropout: dropout to use for concatenations
 
     """
-    self.shape = listify(shape, 2)
+    self.base_shape = utils.listify(base_shape, 2)
     self.level_filters = level_filters
     self.level_depth = level_depth
     self.dropout = dropout
     self.input_tile_shape = self.compute_input_tile_shape(
-      shape, len(self.levels), self.level_depth)
+      base_shape, len(self.level_filters), self.level_depth)
     self.output_tile_shape = self.compute_input_tile_shape(
-      shape, len(self.levels), self.level_depth)
-    super().__init__(input_shape, **kwargs)
+      base_shape, len(self.level_filters), self.level_depth)
+    super().__init__(keras.layers.Input(self.input_tile_shape), **kwargs)
   
   @staticmethod
-  def compute_input_tile_shape(shape, num_levels, level_depth):
-    shape = np.array(listify(shape, 2))
+  def compute_input_tile_shape(base_shape, num_levels, level_depth):
+    """Compute the shape of the input tiles.
+
+    :param base_shape: shape of the output of the first layer in the
+    lower level.
+    :param num_levels: number of levels
+    :param level_depth: layers per level (per side)
+    :returns: shape of the input tiles
+
+    """
+    tile_shape = np.array(base_shape)
     for _ in range(num_levels - 1):
-      shape *= 2
-      shape += 2*level_depth
-    return list(shape)
+      tile_shape *= 2
+      tile_shape += 2*level_depth
+    return list(tile_shape)
       
   @staticmethod
-  def compute_output_tile_shape(shape, num_levels, level_depth):
-    shape = np.array(listify(shape, 2))
-    shape -= 2*level_depth
+  def compute_output_tile_shape(base_shape, num_levels, level_depth):
+    tile_shape = np.array(base_shape)
+    tile_shape -= 2*level_depth
     for _ in range(num_levels - 1):
-      shape *= 2
-      shape -= 2*level_depth
-    return list(shape)
+      tile_shape *= 2
+      tile_shape -= 2*level_depth
+    return list(tile_shape)
 
   def compile(self):
     self.model.compile(optimizer=keras.optimizers.Adadelta(self.learning_rate),
@@ -201,57 +205,10 @@ class ProxyUNet(Model):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
 
-    # Todo: make a new layer with a different kernel for each pixel? Seems
+    # todo: consider: make a new layer with a different kernel for each pixel? Seems
     # dubious. Would require excessive augmentation.
     inputs = conv(inputs, 1, kernel_shape=(1,1), activation=None,
                   padding='same', norm=False)
     return inputs
 
-  def full_predict(self, data, steps=None, verbose=1):
-    """Yield reassembled fields from the data.
-
-    Requires batch_size to be a multiple of num_tiles
-
-    :param data: dat.Data object
-    :param steps: number of image batches to do at once
-    :param verbose:
-    :returns:
-    :rtype:
-
-    """
-    if steps is None:
-      steps = int(np.ceil(data.size / data.batch_size))
-    round_size = steps*data.batch_size
-    rounds = int(np.ceil(data.size / round_size))
-    n = 0
-    for r in range(rounds):
-      logger.info(f"predicting round {r}...")
-      tiles = self.predict(data.eval_input.skip(r*round_size),
-                           steps=steps, verbose=verbose)
-      logger.debug(f"tiles: {tiles.shape}")
-      for field in data.untile(tiles):
-        if n >= data.size:
-          break
-        yield field
-        n += 1
-
-  def detect(self, data, save_fields=True, steps=None):
-    """Detect objects in the reassembled fields.
-
-    :param data: dat.Data set
-    :param save_fields: save the fields. If True, return fields with detections.
-    :param steps: number of steps to do at once. Default is None.
-    :returns: matched_detections, predicted fields
-
-    """
-    detections = np.zeros((data.size, data.num_objects, 3), np.float32)
-    if save_fields:
-      fields = np.zeros([data.size] + data.image_shape, np.float32)
-    for i, field in enumerate(self.full_predict(data, steps=steps)):
-      if save_fields:
-        fields[i] = field
-      detections[i] = data.from_field(field)
-    if save_fields:
-      return dat.match_detections(detections, data.labels), fields
-    else:
-      return dat.match_detections(detections, data.labels), None
+  # todo: rewrite full_predict and detect from git.

@@ -6,7 +6,6 @@ mode = "Training mode for augmentation."
 data_root = "todo"
 model_root = "todo"
 overwrite = "Overwrite existing models."
-cache_dir = "todo"
 
 # data conversion
 convert_mode = "todo"
@@ -31,9 +30,8 @@ epochs = """Number of training epochs. Default is 1."""
 learning_rate = """Learning rate."""
 
 # runtime settings
-cores = "Threadpool size. Default (-1) uses number of available cores."
+num_parallel_calls = "Threadpool size. Default (-1) uses number of available cores."
 verbose = "Artifice verbosity. Default is 2 (debug level)."
 keras_verbose = "Keras verbosity. Default is 1 (progress bars)."
 patient = "Disable eager execution."
 show = "Show plots rather than save them."
-

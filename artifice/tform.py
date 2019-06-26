@@ -1,10 +1,12 @@
-"""Transformation utils, used to build up augmentations."""
+"""Transformation utils, used to build up augmentations.
 
-from artifice.utils import img, vis
-import tensorflow as tf
+NOT IN USE
+todo: update
+
+"""
+
 import logging
-from scipy.ndimage import interpolation
-import numpy as np
+import tensorflow as tf
 
 logger = logging.getLogger('artifice')
 

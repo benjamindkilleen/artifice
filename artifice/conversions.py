@@ -9,23 +9,26 @@ data_root/labeled_set.tfrecord or data_root/unlabeled_set.tfrecord.
 
 """
 
-from os.path import join, splitext, basename, splitext
+from os.path import join, splitext
 from glob import glob
-import numpy as npn
+import logging
+import numpy as np
 import tensorflow as tf
 from artifice import img, dat
 
+logger = logging.getLogger('artifice')
+
 def _get_paths(dirpath, ext):
   paths = sorted(glob(join(dirpath, f'*.{ext}')))
-  if len(paths) == 0:
+  if not paths:
     raise FileNotFoundError("no '.{ext}' files in {dirpath}")
-  return image_paths
+  return paths
 
 def _load_single_labels(labels_path):
   """Load labels from a single file."""
   ext = splitext(labels_path)[1]
   raise NotImplementedError
-  
+
 def _image_dir_and_label_file(data_root, record_name='labeled_set.tfrecord',
                               image_dirname='images', image_ext='png',
                               labels_filename='labels.npy'):
@@ -52,13 +55,13 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
                              num_parallel_calls=None):
   """Performs the conversion when labels in corresponding files.
 
-  :param data_root: 
-  :param image_dirname: 
-  :param image_ext: 
-  :param label_dirname: 
-  :param label_ext: 
-  :returns: 
-  :rtype: 
+  :param data_root:
+  :param image_dirname:
+  :param image_ext:
+  :param label_dirname:
+  :param label_ext:
+  :returns:
+  :rtype:
 
   """
   image_paths = _get_paths(join(data_root, image_dirname), image_ext)
@@ -66,6 +69,8 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
   if len(image_paths) != len(label_paths):
     raise RuntimeError(f"number of images ({len(image_paths)}) != "
                        f"number of labels ({len(label_paths)})")
+  logger.info(f"writing {len(image_paths)} examples to "
+              f"{join(data_root, record_name)}...")
   dataset = tf.data.Dataset.from_tensor_slices((image_paths, label_paths))
   def _read_and_serialize(image_path, label_path):
     image = img.open_as_float(image_path)
@@ -122,4 +127,3 @@ conversions = [png_dir_and_txt_dir,
                png_dir_and_txt_file,
                png_dir_and_npy_dir,
                png_dir_and_npy_file]
-

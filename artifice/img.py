@@ -1,10 +1,10 @@
 """Util functions for manipulating images in artifice.
 """
 
+import logging
 import numpy as np
 from PIL import Image
-from skimage import draw, transform
-import logging
+from skimage import draw
 
 logger = logging.getLogger('artifice')
 
