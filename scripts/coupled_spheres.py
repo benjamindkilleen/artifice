@@ -17,19 +17,18 @@ logger = logging.getLogger('experiment')
 
 # Main parameters
 debug = False
-seconds = 400                  # 12000 frames, at 30fps
-tether = False                  # Tether the (large) ball to center.
+seconds = 100                   # 3000 frames, at 30fps. Take 2000 for training?
+tether = True                   # Tether the (large) ball to center.
 
 # dataset parameters
-root = "data/harper_spheres{}/".format(
-  "_tethered" if tether else "") # root dir for fname
+root = "/project2/glk/killeen/probal/data/harper_spheres/" # root dir for fname
 fps = 30                         # frame rate of the video
 frame_step = 1/float(fps)        # time per frame (DERIVED)
 steps_per_frame = 1              # number of simulated time steps per frame
 time_step = steps_per_frame * frame_step # delta t for simulation
 N = int(fps * seconds)                   # number of frames (DERIVED)
 output_formats = {'png', 'mp4'}          # output formats
-image_shape = (196, 196)                 # image shape
+image_shape = (256, 256)                 # image shape
 num_classes = 3                          # including background
 
 # Configure initial parameters. 1 povray unit = 1 cm
@@ -42,7 +41,7 @@ vx1 = -20            # initial x velocity (cm/s)
 vy1 = 40             # initial y velocity
 
 # ball 2
-r2 = 15
+r2 = 5
 m2 = 27
 x2 = 0
 y2 = 0

@@ -10,7 +10,7 @@
 module unload python
 module load ffmpeg
 module load Anaconda3/2018.12
-source activate tf-cpu-1.12.0
+source activate tf-cpu-1.13.1
 module load povray/3.7
 
 data=harper
@@ -20,5 +20,6 @@ cd /project2/glk/artifice
 echo "Starting experiment generation..."
 python scripts/coupled_spheres.py
 echo "Converting to tfrecord"
-python artifice.py convert -i data/${data}_spheres_tethered
+python artifice.py convert -i ../killeen/probal/data/harper_spheres \
+       --splits 3000 0 0
 echo "Finished."

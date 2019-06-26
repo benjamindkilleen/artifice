@@ -1,4 +1,4 @@
-INFO:artifice:Namespace(batch_size=[1], command='detect-full', cores=[-1], data_root=['data/gyros'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[600, 800, 1], initial_epoch=[0], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/gyros_augmented-active_subset100/'], num_candidates=[1000], num_objects=[54], output=['show'], overwrite=False, query_size=[1], regions_path=[None], show=False, splits=[0, 0, 8842], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
+INFO:artifice:Namespace(batch_size=[1], command='detect-full', cores=[-1], data_root=['data/gyros'], eager=False, epoch_size=[10000], epochs=[1], image_shape=[600, 800, 1], initial_epoch=[0], keras_verbose=[2], l2_reg=[0.0001], learning_rate=[0.1], mode=['augmented-active'], model_root=['models/gyros_augmented-active_subset100/'], num_candidates=[1000], num_objects=[54], output=['show'], overwrite=False, query_size=[1], regions_path=[None], show=False, splits=[0, 0, 1000], subset_size=[10], tile_shape=[196, 196, 1], verbose=[2])
 INFO:artifice:model: model
 DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 284, 284, 1):input_1
 DEBUG:artifice:layer:(None, 284, 284, 1) -> (None, 282, 282, 64):conv2d
@@ -62,92 +62,38 @@ DEBUG:artifice:layer:(None, 198, 198, 64) -> (None, 196, 196, 64):conv2d_13
 DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):batch_normalization_13
 DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 64):activation_13
 DEBUG:artifice:layer:(None, 196, 196, 64) -> (None, 196, 196, 1):conv2d_14
-2019-06-19 09:10:21.213550: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-06-19 09:10:21.359105: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
+2019-06-21 13:23:16.293829: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-06-21 13:23:16.542688: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1432] Found device 0 with properties: 
 name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
 pciBusID: 0000:08:00.0
-totalMemory: 11.17GiB freeMemory: 11.11GiB
-2019-06-19 09:10:21.359199: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
-2019-06-19 09:10:32.087256: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-06-19 09:10:32.087348: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
-2019-06-19 09:10:32.087367: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
-2019-06-19 09:10:32.087732: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10761 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2019-06-21 13:23:16.542791: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-06-21 13:23:26.853822: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-06-21 13:23:26.855874: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-06-21 13:23:26.855940: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-06-21 13:23:26.856438: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
 INFO:artifice:restored model from models/gyros_augmented-active_subset100/hourglass/cp-0013.hdf5
+2019-06-21 13:23:28.131943: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1511] Adding visible gpu devices: 0
+2019-06-21 13:23:28.132012: I tensorflow/core/common_runtime/gpu/gpu_device.cc:982] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-06-21 13:23:28.132026: I tensorflow/core/common_runtime/gpu/gpu_device.cc:988]      0 
+2019-06-21 13:23:28.132033: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1001] 0:   N 
+2019-06-21 13:23:28.132159: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10758 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:08:00.0, compute capability: 3.7)
+INFO:artifice:initialized iterator, starting accumulation...
+INFO:artifice:finished accumulation
 INFO:artifice:predicting round 0...
 DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
 DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 1...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 2...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 3...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 4...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 5...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 6...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 7...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 8...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 9...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 10...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 11...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 12...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 13...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 14...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-DEBUG:artifice:predict: 0 nan values
-DEBUG:artifice:tiles: (6000, 196, 196, 1)
-DEBUG:artifice:tiles: (6000, 196, 196, 1), num_tiles: 20, batch_size: 1
-INFO:artifice:predicting round 15...
-DEBUG:artifice:tiled: (<tf.Tensor 'stack:0' shape=(20, ?, ?, ?) dtype=float32>, <tf.Tensor 'stack_1:0' shape=(20, 196, 196, 1) dtype=float32>)
-slurmstepd-midway2-gpu05: error: *** JOB 60967629 ON midway2-gpu05 CANCELLED AT 2019-06-20T09:09:24 DUE TO TIME LIMIT ***
+DEBUG:artifice:tiles: (20000, 196, 196, 1)
+DEBUG:artifice:tiles: (20000, 196, 196, 1), num_tiles: 20, batch_size: 1
+Traceback (most recent call last):
+  File "artifice.py", line 642, in <module>
+    main()
+  File "artifice.py", line 633, in main
+    cmd_detect_full(art)
+  File "artifice.py", line 442, in cmd_detect_full
+    detections, _ = model.detect(test_set, save_fields=False)
+  File "/project2/glk/artifice/artifice/mod.py", line 298, in detect
+    return dat.match_detections(detections, labels), None
+  File "/project2/glk/artifice/artifice/dat.py", line 953, in match_detections
+    distances = cdist(detections[i,:,1:3], labels[i,:,1:3])
+IndexError: index 300 is out of bounds for axis 0 with size 300
