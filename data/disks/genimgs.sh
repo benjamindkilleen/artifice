@@ -25,7 +25,8 @@ QMAX=1.2
 echo "-1 1 -1 1" |
 unu reshape -s 2 2 |
 unu resample -s $SX $SY -k tent -c node -o x; junk x
-unu swap -i x -a 0 1 | unu flip -a 1 -o y; junk y
+# no longer flipping y, to clarify world-index space conversion
+unu swap -i x -a 0 1 -o y; junk y
 
 unu 2op x x 0 -o tmp; junk tmp
 
@@ -48,3 +49,8 @@ junk xp
 
 unu 2op nrand tmp $NOISE -s $RNG |
 unu quantize -b 8 -min $QMIN -max $QMAX -o $OUT
+
+# HACKY post-process:
+# change the position label from [-1,1] to [0,SX-1]
+unu crop  -i labels/$PFX.txt -min 0 0 -max 1 M | unu affine -1 - 1 0 $[$SX-1] |
+unu inset -i labels/$PFX.txt -min 0 0 -s - -o labels/$PFX.txt
