@@ -16,6 +16,6 @@ for I in $(seq $N); do
     echo $I/$N
     II=$(printf %04d $[$I+1000])
     ./genobjs.sh $II
-    ./genimgs.sh $II
+    ./genimg.sh $II
 done
 
