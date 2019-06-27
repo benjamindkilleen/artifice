@@ -19,6 +19,7 @@ batch_size = "Batch size."
 subset_size = "Number of examples to annotate."
 epoch_size = "Number of artificial examples per training epoch."
 num_objects = "Maximum number of objects."
+pose_dim = "todo"
 
 # model hyperparameters
 base_size = "Height/width of the output of the first layer of the lower level."

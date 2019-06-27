@@ -218,6 +218,10 @@ class ArtificeData(object):
     return self.postprocess(dataset, training)
 
   @property
+  def dataset(self):
+    return load_dataset(self.record_names, self.parse, self.num_parallel_calls)
+  
+  @property
   def training_input(self):
     return self.get_input(True)
 
@@ -250,7 +254,7 @@ class LabeledData(ArtificeData):
     shape `num_objects`.
 
     """
-    positions = tf.cast(label[:, 1:3], tf.float32)
+    positions = tf.cast(label[:, :2], tf.float32)
     indices = tf.constant(np.array( # [H*W,2]
       [np.array([i,j]) for i in range(self.image_shape[0])
        for j in range(self.image_shape[1])], dtype=np.float32), tf.float32)

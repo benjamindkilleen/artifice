@@ -3,6 +3,8 @@
 
 import os
 import logging
+import json
+import time
 import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
@@ -10,6 +12,15 @@ from tensorflow import keras
 from artifice import lay, dat, utils
 
 logger = logging.getLogger('artifice')
+
+def crop(inputs, shape):
+  logger.debug(f"crop inputs: {inputs.shape}")
+  h, w = int(shape[1]), int(shape[2])
+  y = (int(inputs.shape[1]) - h) // 2
+  x = (int(inputs.shape[2]) - w) // 2
+  logger.debug(f"{h,w,y,x}")
+  return inputs[:, y : y+h, x : x+w] # todo: figure out why this is being
+                                     # fucking difficult.
 
 def conv(inputs, filters, kernel_shape=(3,3),
          activation='relu', padding='valid', norm=True):
@@ -78,16 +89,16 @@ class Model():
     self.overwrite = overwrite
     self.model_dir = model_dir
     self.learning_rate = learning_rate
-    self.name = snakecase(self.__name__).lower()
-    self.checkpoint_path = os.path.join(self.model_dir, f"{self.name}.hdf5")
+    self.name = snakecase(type(self).__name__).lower()
+    self.model_path = os.path.join(self.model_dir, f"{self.name}.hdf5")
     self.history_path = os.path.join(self.model_dir, f"{self.name}_history.json")
 
     if not self.overwrite and os.path.exists(self.model_path):
-      self.model = keras.models.load_model(self.checkpoint_path)
+      self.model = keras.models.load_model(self.model_path)
     else:
       outputs = self.forward(inputs)
       self.model = keras.Model(inputs, outputs)
-      self.compile(self.model)
+      self.compile()
 
   def __str__(self):
     output = f"{self.name}:\n"
@@ -99,13 +110,13 @@ class Model():
   def forward(self, inputs):
     raise NotImplementedError("subclasses should implement")
 
-  def compile(self, model):
+  def compile(self):
     raise NotImplementedError("subclasses should implement")
 
   @property
   def callbacks(self):
-    return [callbacks.append(keras.callbacks.ModelCheckpoint(
-      self.checkpoint_path, verbose=1, save_weights_only=False, period=1))]
+    return [keras.callbacks.ModelCheckpoint(
+      self.model_path, verbose=1, save_weights_only=False, period=1)]
 
   def fit(self, *args, **kwargs):
     """Fits the model, saving it along the way and saving the training history
@@ -132,11 +143,8 @@ class Model():
                                    include_optimizer=True)
 
 class ProxyUNet(Model):
-  def __init__(self, base_shape=32,
-               level_filters=[32,64,128],
-               level_depth=2,
-               dropout=0.5,
-               **kwargs):
+  def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
+               level_depth=2, dropout=0.5, **kwargs):
     """Create an hourglass-shaped model for object detection.
 
     :param base_shape: the height/width of the output of the first layer in the lower
@@ -145,17 +153,21 @@ class ProxyUNet(Model):
     :param level_filters: number of filters at each level (top to bottom).
     :param level_depth: number of layers per level
     :param dropout: dropout to use for concatenations
+    :param num_channels: number of channels in the input
+    :param pose_dim:
 
     """
     self.base_shape = utils.listify(base_shape, 2)
     self.level_filters = level_filters
+    self.num_channels = num_channels
+    self.pose_dim = pose_dim
     self.level_depth = level_depth
     self.dropout = dropout
     self.input_tile_shape = self.compute_input_tile_shape(
       base_shape, len(self.level_filters), self.level_depth)
     self.output_tile_shape = self.compute_input_tile_shape(
       base_shape, len(self.level_filters), self.level_depth)
-    super().__init__(keras.layers.Input(self.input_tile_shape), **kwargs)
+    super().__init__(keras.layers.Input(self.input_tile_shape + [self.num_channels]), **kwargs)
   
   @staticmethod
   def compute_input_tile_shape(base_shape, num_levels, level_depth):
@@ -183,9 +195,19 @@ class ProxyUNet(Model):
       tile_shape -= 2*level_depth
     return list(tile_shape)
 
+  @staticmethod
+  def loss(proxy, prediction):
+    distance_term = tf.losses.mean_squared_error(proxy[:,:,:,0], prediction[:,:,:,0])
+    pose_term = tf.losses.mean_squared_error(proxy[:,:,:,1:], prediction[:,:,:,1:],
+                                             weights=proxy[:,:,:,:1])
+    return distance_term + pose_term
+  
   def compile(self):
-    self.model.compile(optimizer=keras.optimizers.Adadelta(self.learning_rate),
-                       loss='mse', metrics=['mae'])
+    if tf.executing_eagerly():
+      optimizer=tf.train.AdadeltaOptimizer(self.learning_rate)
+    else:
+      optimizer=keras.optimizers.Adadelta(self.learning_rate)
+    self.model.compile(optimizer=optimizer, loss=self.loss, metrics=['mae'])
 
   def forward(self, inputs):
     level_outputs = []
@@ -193,21 +215,21 @@ class ProxyUNet(Model):
     for i, filters in enumerate(self.level_filters):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      level_outputs.append(inputs)
       if i < len(self.level_filters) - 1:
-        inputs = keras.layers.MaxPool2D(inputs)
+        level_outputs.append(inputs)
+        inputs = keras.layers.MaxPool2D()(inputs)
 
-    for level_output, filters in reversed(zip(level_outputs, self.level_filters)):
-      transposed = conv_transpose(inputs, filters)
-      cropped = crop(level_output, inputs.shape)
-      dropped = keras.layers.Dropout(self.dropout)
-      inputs = keras.layers.concatenate(dropped, transposed)
+    level_outputs = reversed(level_outputs)
+    for i, filters in enumerate(reversed(self.level_filters[:-1])):
+      inputs = conv_transpose(inputs, filters)
+      cropped = crop(next(level_outputs), inputs.shape)
+      logger.debug(f"cropped: {cropped.shape}")
+      dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
+      inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
 
-    # todo: consider: make a new layer with a different kernel for each pixel? Seems
-    # dubious. Would require excessive augmentation.
-    inputs = conv(inputs, 1, kernel_shape=(1,1), activation=None,
+    inputs = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
                   padding='same', norm=False)
     return inputs
 

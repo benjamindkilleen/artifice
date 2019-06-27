@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from artifice import dat, mod, docs, vis, conversions, utils
+from artifice import dat, mod, docs, vis, conversions, utils, img
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -83,8 +83,8 @@ class Artifice:
   """
   def __init__(self, *, commands, mode, data_root, model_root, overwrite,
                convert_mode, image_shape, data_size, test_size, epoch_size,
-               batch_size, num_objects, base_shape, level_filters, level_depth,
-               dropout, initial_epoch, epochs, learning_rate,
+               batch_size, num_objects, pose_dim, base_shape, level_filters,
+               level_depth, dropout, initial_epoch, epochs, learning_rate,
                num_parallel_calls, verbose, keras_verbose, eager, show, cache):
     # main
     self.commands = commands
@@ -103,6 +103,7 @@ class Artifice:
     self.epoch_size = epoch_size
     self.batch_size = batch_size
     self.num_objects = num_objects
+    self.pose_dim = pose_dim
 
     # model architecture
     self.base_shape = utils.listify(base_shape, 2)
@@ -171,9 +172,17 @@ todo: other attributes"""
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.num_parallel_calls,
             'num_shuffle' : min(self.data_size, 1000)}
-
   def _load_labeled(self):
     return dat.LabeledData(self.labeled_set_path, **self._data_kwargs)
+
+  def _load_model(self):
+    return mod.ProxyUNet(base_shape=self.base_shape,
+                         level_filters=self.level_filters,
+                         num_channels=self.image_shape[2],
+                         pose_dim=self.pose_dim, level_depth=self.level_depth,
+                         dropout=self.dropout, model_dir=self.model_root,
+                         learning_rate=self.learning_rate,
+                         overwrite=self.overwrite)
 
   def convert(self):
     conversions.conversions[self.convert_mode](
@@ -182,20 +191,29 @@ todo: other attributes"""
   def vis(self):
     logger.debug(f"labeled_set: {self.labeled_set_path}")
     labeled_set = self._load_labeled()
-    for i, (images, proxies) in enumerate(labeled_set.training_input):
-      if i == labeled_set.steps:
-        break
-      if i == 0:
-        t1 = time()
+    # for image, label in labeled_set.dataset:
+    #   label = label.numpy()
+    #   pimage = img.rgb(image.numpy())
+    #   logger.info(f"label:\n{label}")
+    #   if self.show:
+    #     pimage = img.draw_xs(pimage, label[:,0], label[:,1], size=3)
+    #     vis.plot_image(image, pimage)
+    #     plt.show()
+    for images, proxies in labeled_set.training_input:
       image, proxy = images[0], proxies[0]
-      logger.info(f"example {i}")
       logger.info(f"  image: {image.shape}")
       logger.info(f"  proxy: {proxy.shape}")
       if self.show:
-        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
+        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2],
+                       cmap=['gray', 'gray', 'hsv', 'hsv'])
         plt.show()
-    t2 = time()
-    logger.info(f"iterated over dataset in {t2 - t1} seconds")
+
+  def train(self):
+    labeled_set = self._load_labeled()
+    model = self._load_model()
+    model.fit(labeled_set.training_input, steps_per_epoch=labeled_set.steps,
+              epochs=self.epochs, initial_epoch=self.initial_epoch,
+              verbose=self.keras_verbose)
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -237,6 +255,9 @@ def main():
   parser.add_argument('--num-objects', '-n', nargs=1,
                       default=[4], type=int,
                       help=docs.num_objects)
+  parser.add_argument('--pose-dim', '-p', nargs=1,
+                      default=[2], type=int,
+                      help=docs.pose_dim)
 
   # model architecture
   parser.add_argument('--base-shape', nargs='+',
@@ -282,12 +303,12 @@ def main():
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, mode=args.mode[0],
-                 convert_mode=args.convert_mode[0],
-                 data_root=args.data_root[0], model_root=args.model_root[0],
-                 overwrite=args.overwrite, image_shape=args.image_shape,
-                 data_size=args.data_size[0], test_size=args.test_size[0],
-                 epoch_size=args.epoch_size[0], batch_size=args.batch_size[0],
-                 num_objects=args.num_objects[0], base_shape=args.base_shape,
+                 convert_mode=args.convert_mode[0], data_root=args.data_root[0],
+                 model_root=args.model_root[0], overwrite=args.overwrite,
+                 image_shape=args.image_shape, data_size=args.data_size[0],
+                 test_size=args.test_size[0], epoch_size=args.epoch_size[0],
+                 batch_size=args.batch_size[0], num_objects=args.num_objects[0],
+                 pose_dim=args.pose_dim[0], base_shape=args.base_shape,
                  level_filters=args.level_filters,
                  level_depth=args.level_depth[0], dropout=args.dropout[0],
                  initial_epoch=args.initial_epoch[0], epochs=args.epochs[0],

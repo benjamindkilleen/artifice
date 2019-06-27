@@ -54,6 +54,16 @@ def draw_t(image, x, y, size=12, channel=1):
   image[rr,cc,channel] = val
   return image
 
+def draw_xs(image, xs, ys, **kwargs):
+  for x,y in zip(xs, ys):
+    image = draw_x(image, x, y, **kwargs)
+  return image
+
+def draw_ts(image, xs, ys, **kwargs):
+  for x,y in zip(xs, ys):
+    image = draw_t(image, x, y, **kwargs)
+  return image
+
 def indices_from_regions(regions, num_objects):
   """Given an image-shaped annotation of regions, get indices of regions.
 

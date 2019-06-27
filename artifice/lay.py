@@ -21,5 +21,5 @@ class Crop(keras.layers.Layer):
       inputs, offset_height, offset_width,
       self.shape[1], self.shape[2])
 
-  def compute_output_shape(self, input_shape):
+  def compute_output_shape(self, _):
     return self.shape
