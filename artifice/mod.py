@@ -14,13 +14,16 @@ from artifice import lay, dat, utils
 logger = logging.getLogger('artifice')
 
 def crop(inputs, shape):
-  logger.debug(f"crop inputs: {inputs.shape}")
-  h, w = int(shape[1]), int(shape[2])
-  y = (int(inputs.shape[1]) - h) // 2
-  x = (int(inputs.shape[2]) - w) // 2
-  logger.debug(f"{h,w,y,x}")
-  return inputs[:, y : y+h, x : x+w] # todo: figure out why this is being
-                                     # fucking difficult.
+  top_crop = int(np.floor(int(inputs.shape[1] - shape[1]) / 2))
+  bottom_crop = int(np.ceil(int(inputs.shape[1] - shape[1]) / 2))
+  left_crop = int(np.floor(int(inputs.shape[2] - shape[2]) / 2))
+  right_crop = int(np.ceil(int(inputs.shape[2] - shape[2]) / 2))
+  outputs =  keras.layers.Cropping2D(cropping=((top_crop, bottom_crop),
+                                               (left_crop, right_crop)),
+                                     input_shape=inputs.shape)(inputs)
+  logger.debug(f"inputs: {inputs.shape}")
+  logger.debug(f"outputs: {outputs.shape}")
+  return outputs
 
 def conv(inputs, filters, kernel_shape=(3,3),
          activation='relu', padding='valid', norm=True):
@@ -61,7 +64,7 @@ def conv_transpose(inputs, filters, activation='relu'):
   return inputs
 
 class Model():
-  """A wrapper around keras models. 
+  """A wrapper around keras models.
 
   If loading an existing model, this class is sufficient, since the save file
   will have the model topology and optimizer. Otherwise, a subclass should
@@ -74,12 +77,12 @@ class Model():
                overwrite=False):
     """Describe a model using keras' functional API.
 
-    Compiles model here, so all other instantiation should be finished. 
+    Compiles model here, so all other instantiation should be finished.
 
     :param inputs: tensor or list of tensors to input into the model (such as
     layers.Input)
     :param model_dir: directory to save the model. Default is cwd.
-    :param learning_rate: 
+    :param learning_rate:
     :param overwrite: prefer to create a new model rather than load an existing
     one in `model_dir`. Note that if a subclass uses overwrite=False, then the
     loaded architecture may differ from the stated architecture in the subclass,
@@ -91,14 +94,16 @@ class Model():
     self.learning_rate = learning_rate
     self.name = snakecase(type(self).__name__).lower()
     self.model_path = os.path.join(self.model_dir, f"{self.name}.hdf5")
+    self.checkpoint_path = os.path.join(self.model_dir, f"{self.name}_ckpt.hdf5")
     self.history_path = os.path.join(self.model_dir, f"{self.name}_history.json")
 
-    if not self.overwrite and os.path.exists(self.model_path):
-      self.model = keras.models.load_model(self.model_path)
-    else:
-      outputs = self.forward(inputs)
-      self.model = keras.Model(inputs, outputs)
-      self.compile()
+    outputs = self.forward(inputs)
+    self.model = keras.Model(inputs, outputs)
+    self.compile()
+
+    if os.path.exists(self.checkpoint_path) and not self.overwrite:
+      logger.info(f"loading_weights from {self.checkpoint_path}")
+      self.model.load_weights(self.checkpoint_path)
 
   def __str__(self):
     output = f"{self.name}:\n"
@@ -106,7 +111,7 @@ class Model():
       output += "layer:{} -> {}:{}\n".format(
         layer.input_shape, layer.output_shape, layer.name)
     return output
-      
+
   def forward(self, inputs):
     raise NotImplementedError("subclasses should implement")
 
@@ -116,21 +121,21 @@ class Model():
   @property
   def callbacks(self):
     return [keras.callbacks.ModelCheckpoint(
-      self.model_path, verbose=1, save_weights_only=False, period=1)]
+      self.checkpoint_path, verbose=1, save_weights_only=False)]
 
   def fit(self, *args, **kwargs):
     """Fits the model, saving it along the way and saving the training history
     at the end.
 
     :returns: history dictionary
-    :rtype: 
+    :rtype:
 
     """
     kwargs['callbacks'] = self.callbacks
     hist = self.model.fit(*args, **kwargs).history
-    with open(self.history_path, 'w+') as fp:
-      fp.write(f"{time.asctime()}:\n")
-      json.dump(hist, fp)
+    with open(self.history_path, 'w') as f:
+      f.write(json.dumps(utils.jsonable(hist)))
+    self.save()
     return hist
 
   def predict(self, *args, **kwargs):
@@ -138,9 +143,12 @@ class Model():
 
   def save(self, filename=None, overwrite=True):
     if filename is None:
-      filename = self.checkpoint_path
+      filename = self.model_path
     return keras.models.save_model(self.model, filename, overwrite=overwrite,
-                                   include_optimizer=True)
+                                   include_optimizer=False)
+  # todo: would like to have this be True, but custom loss function can't be
+  # found in keras library. Look into it during training. For now, we're fine
+  # with just weights in the checkpoint file.
 
 class ProxyUNet(Model):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
@@ -168,7 +176,7 @@ class ProxyUNet(Model):
     self.output_tile_shape = self.compute_input_tile_shape(
       base_shape, len(self.level_filters), self.level_depth)
     super().__init__(keras.layers.Input(self.input_tile_shape + [self.num_channels]), **kwargs)
-  
+
   @staticmethod
   def compute_input_tile_shape(base_shape, num_levels, level_depth):
     """Compute the shape of the input tiles.
@@ -185,7 +193,7 @@ class ProxyUNet(Model):
       tile_shape *= 2
       tile_shape += 2*level_depth
     return list(tile_shape)
-      
+
   @staticmethod
   def compute_output_tile_shape(base_shape, num_levels, level_depth):
     tile_shape = np.array(base_shape)
@@ -201,12 +209,12 @@ class ProxyUNet(Model):
     pose_term = tf.losses.mean_squared_error(proxy[:,:,:,1:], prediction[:,:,:,1:],
                                              weights=proxy[:,:,:,:1])
     return distance_term + pose_term
-  
+
   def compile(self):
     if tf.executing_eagerly():
-      optimizer=tf.train.AdadeltaOptimizer(self.learning_rate)
+      optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
     else:
-      optimizer=keras.optimizers.Adadelta(self.learning_rate)
+      optimizer = keras.optimizers.Adadelta(self.learning_rate)
     self.model.compile(optimizer=optimizer, loss=self.loss, metrics=['mae'])
 
   def forward(self, inputs):
@@ -223,7 +231,6 @@ class ProxyUNet(Model):
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
       inputs = conv_transpose(inputs, filters)
       cropped = crop(next(level_outputs), inputs.shape)
-      logger.debug(f"cropped: {cropped.shape}")
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
       inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):

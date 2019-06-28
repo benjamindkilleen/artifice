@@ -30,3 +30,14 @@ def listify(val, length):
       raise RuntimeError("mismatched length")
     return val
   return [val] * length
+
+def jsonable(hist):
+  """Make a history dictionary json-serializable.
+
+  :param hist: dictionary of lists of float-like numbers.
+
+  """
+  out = {}
+  for k,v in hist.items():
+    out[k] = list(map(float, v))
+  return out
