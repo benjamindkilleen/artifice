@@ -132,7 +132,7 @@ class ArtificeData(object):
   """
   def __init__(self, record_names, *, size, image_shape, input_tile_shape,
                output_tile_shape, batch_size=4, num_parallel_calls=None,
-               num_shuffle=10000, cache=False):
+               num_shuffle=10000, cache=False, **kwargs):
     """Initialize the data, loading it if necessary..
 
     kwargs is there only to allow extraneous keyword arguments. It is not used.
@@ -162,11 +162,17 @@ class ArtificeData(object):
     self.cache = cache
 
     # derived
-    self.steps = int(self.size // self.batch_size)
     self.num_tiles = self.compute_num_tiles(self.image_shape, self.output_tile_shape)
     self.prefetch_buffer_size = self.batch_size
     self.cache_dir = os.path.join(os.path.dirname(self.record_names[0]), 'cache')
 
+    # private:
+    self._preprocess_ops = []    # list of method names and args (as a tuple)
+
+  @property
+  def steps(self):
+    return int(self.size // self.batch_size)
+    
   @staticmethod
   def serialize(entry):
     raise NotImplementedError("subclass should implement")
@@ -179,6 +185,59 @@ class ArtificeData(object):
     save_dataset(record_name, self.dataset, serialize=self.serialize,
                  num_parallel_calls=self.num_parallel_calls)
 
+  def skip(self, n):
+    """Skip the first `n` examples from this dataset.
+
+    Note: modifies this ArtificeData object rather than creating a new one.
+
+    """
+    self.size -= n
+    self._preprocess_ops.append(('skip', [n]))
+    return self
+
+  def take(self, n):
+    """Take the first `n` examples from this dataset.
+
+    Note: modifies this ArtificeData object rather than creating a new one.
+
+    """
+    self.size = n
+    self._preprocess_ops.append(('take', [n]))
+    return 
+
+  def split(self, splits):
+    """Split the dataset into several sets with the sizes in `splits`.
+
+    :param splits: List of sizes.
+    :returns: list of new ArtificeData objects like this one, but with different
+    sizes.
+    :rtype: 
+
+    """
+    split_sets = []
+    for i, size in enumerate(splits):
+      split_set = type(this)(self.record_names, **vars(this))
+      split_set.skip(sum(splits[:i])).take(size)
+      split_sets.append(split_set)
+    return split_sets
+      
+    
+  def preprocess(self, dataset, training):
+    """Run on the just-loaded dataset (not even parsed). So should be limited to
+    operations like take, skip, etc. 
+
+    Generally shouldn't be overwritten.
+
+    :param dataset: the loaded (but not parsed) dataset
+    :param training: 
+    :returns: 
+    :rtype: 
+
+    """
+    for method, args in self._preprocess_ops:
+      dataset = getattr(dataset, method)(*args)
+    return dataset
+    
   def process(self, dataset, training):
     """Process the dataset of serialized examples into tensors ready for input.
 
@@ -214,6 +273,7 @@ class ArtificeData(object):
 
   def get_input(self, training):
     dataset = tf.data.TFRecordDataset(self.record_names)
+    dataset = self.preprocess(dataset, training)
     dataset = self.process(dataset, training)
     return self.postprocess(dataset, training)
 

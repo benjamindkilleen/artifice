@@ -175,6 +175,10 @@ todo: other attributes"""
   def _load_labeled(self):
     return dat.LabeledData(self.labeled_set_path, **self._data_kwargs)
 
+  def _load_split(self):
+    labeled_set = self._load_labeled()
+    return labeled_set.split([self.data_size - self.test_size, self.test_size])
+
   def _load_model(self):
     return mod.ProxyUNet(base_shape=self.base_shape,
                          level_filters=self.level_filters,
@@ -188,32 +192,16 @@ todo: other attributes"""
     conversions.conversions[self.convert_mode](
       self.data_root, num_parallel_calls=self.num_parallel_calls)
 
-  def vis(self):
-    logger.debug(f"labeled_set: {self.labeled_set_path}")
-    labeled_set = self._load_labeled()
-    # for image, label in labeled_set.dataset:
-    #   label = label.numpy()
-    #   pimage = img.rgb(image.numpy())
-    #   logger.info(f"label:\n{label}")
-    #   if self.show:
-    #     pimage = img.draw_xs(pimage, label[:,0], label[:,1], size=3)
-    #     vis.plot_image(image, pimage)
-    #     plt.show()
-    for images, proxies in labeled_set.training_input:
-      image, proxy = images[0], proxies[0]
-      logger.info(f"  image: {image.shape}")
-      logger.info(f"  proxy: {proxy.shape}")
-      if self.show:
-        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2],
-                       cmap=['gray', 'gray', 'hsv', 'hsv'])
-        plt.show()
-
   def train(self):
     labeled_set = self._load_labeled()
     model = self._load_model()
     model.fit(labeled_set.training_input, steps_per_epoch=labeled_set.steps,
               epochs=self.epochs, initial_epoch=self.initial_epoch,
               verbose=self.keras_verbose)
+
+  def detect(self):
+    train_set, test_set = self._load_split()
+    
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
