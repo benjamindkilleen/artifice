@@ -185,59 +185,6 @@ class ArtificeData(object):
     """Save the dataset to record_name."""
     save_dataset(record_name, self.dataset, serialize=self.serialize,
                  num_parallel_calls=self.num_parallel_calls)
-
-  def skip(self, n):
-    """Skip the first `n` examples from this dataset.
-
-    Note: modifies this ArtificeData object rather than creating a new one.
-
-    """
-    self.size -= n
-    self._preprocess_ops.append(('skip', [n]))
-    return self
-
-  def take(self, n):
-    """Take the first `n` examples from this dataset.
-
-    Note: modifies this ArtificeData object rather than creating a new one.
-
-    """
-    self.size = n
-    self._preprocess_ops.append(('take', [n]))
-    return 
-
-  def split(self, splits):
-    """Split the dataset into several sets with the sizes in `splits`.
-
-    :param splits: List of sizes.
-    :returns: list of new ArtificeData objects like this one, but with different
-    sizes.
-    :rtype: 
-
-    """
-    split_sets = []
-    for i, size in enumerate(splits):
-      split_set = type(this)(self.record_names, **vars(this))
-      split_set.skip(sum(splits[:i])).take(size)
-      split_sets.append(split_set)
-    return split_sets
-      
-    
-  def preprocess(self, dataset, training):
-    """Run on the just-loaded dataset (not even parsed). So should be limited to
-    operations like take, skip, etc. 
-
-    Generally shouldn't be overwritten.
-
-    :param dataset: the loaded (but not parsed) dataset
-    :param training: 
-    :returns: 
-    :rtype: 
-
-    """
-    for method, args in self._preprocess_ops:
-      dataset = getattr(dataset, method)(*args)
-    return dataset
     
   def process(self, dataset, training):
     """Process the dataset of serialized examples into tensors ready for input.
@@ -274,7 +221,6 @@ class ArtificeData(object):
 
   def get_input(self, training):
     dataset = tf.data.TFRecordDataset(self.record_names)
-    dataset = self.preprocess(dataset, training)
     dataset = self.process(dataset, training)
     return self.postprocess(dataset, training)
 
