@@ -1,44 +1,18 @@
-Traceback (most recent call last):
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow.py", line 58, in <module>
-    from tensorflow.python.pywrap_tensorflow_internal import *
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow_internal.py", line 28, in <module>
-    _pywrap_tensorflow_internal = swig_import_helper()
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow_internal.py", line 24, in swig_import_helper
-    _mod = imp.load_module('_pywrap_tensorflow_internal', fp, pathname, description)
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/imp.py", line 242, in load_module
-    return load_dynamic(name, filename, file)
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/imp.py", line 342, in load_dynamic
-    return _load(spec)
-ImportError: libcuda.so.1: cannot open shared object file: No such file or directory
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "artifice.py", line 15, in <module>
-    import tensorflow as tf
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/__init__.py", line 24, in <module>
-    from tensorflow.python import pywrap_tensorflow  # pylint: disable=unused-import
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/__init__.py", line 49, in <module>
-    from tensorflow.python import pywrap_tensorflow
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow.py", line 74, in <module>
-    raise ImportError(msg)
-ImportError: Traceback (most recent call last):
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow.py", line 58, in <module>
-    from tensorflow.python.pywrap_tensorflow_internal import *
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow_internal.py", line 28, in <module>
-    _pywrap_tensorflow_internal = swig_import_helper()
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/pywrap_tensorflow_internal.py", line 24, in swig_import_helper
-    _mod = imp.load_module('_pywrap_tensorflow_internal', fp, pathname, description)
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/imp.py", line 242, in load_module
-    return load_dynamic(name, filename, file)
-  File "/software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/imp.py", line 342, in load_dynamic
-    return _load(spec)
-ImportError: libcuda.so.1: cannot open shared object file: No such file or directory
-
-
-Failed to load the native TensorFlow runtime.
-
-See https://www.tensorflow.org/install/errors
-
-for some common reasons and solutions.  Include the entire stack trace
-above this error message when asking for help.
+INFO:artifice:Fri Jun 28 15:31:15 2019:
+num_parallel_calls: 40
+todo: other attributes
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-cpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:435: colocate_with (from tensorflow.python.framework.ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Colocations handled automatically by placer.
+DEBUG:artifice:inputs: (?, 64, 64, 64)
+DEBUG:artifice:outputs: (?, 56, 56, 64)
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-cpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/keras/layers/core.py:143: calling dropout (from tensorflow.python.ops.nn_ops) with keep_prob is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`.
+DEBUG:artifice:inputs: (?, 136, 136, 32)
+DEBUG:artifice:outputs: (?, 104, 104, 32)
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-cpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/losses/losses_impl.py:667: to_float (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.cast instead.
+2019-06-28 15:31:16.682909: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: AVX512F
+2019-06-28 15:31:16.685841: I tensorflow/core/common_runtime/process_util.cc:71] Creating new thread pool with default inter op setting: 2. Tune using inter_op_parallelism_threads for best performance.

@@ -123,22 +123,30 @@ class Model():
     return [keras.callbacks.ModelCheckpoint(
       self.checkpoint_path, verbose=1, save_weights_only=False)]
 
-  def fit(self, *args, **kwargs):
+  def train(self, art_data, **kwargs):
     """Fits the model, saving it along the way and saving the training history
-    at the end.
 
+    :param art_set: ArtificeData 
     :returns: history dictionary
-    :rtype:
+    :rtype: 
 
     """
-    kwargs['callbacks'] = self.callbacks
-    hist = self.model.fit(*args, **kwargs).history
+    kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
+    hist = self.model.fit(art_data.training_input,
+                          steps_per_epoch=art_data.steps_per_epoch, **kwargs).history
     with open(self.history_path, 'w') as f:
       f.write(json.dumps(utils.jsonable(hist)))
     self.save()
     return hist
 
   def predict(self, *args, **kwargs):
+    """Run prediction, reassembling tiles, with the ArtificeData object.
+
+    :returns: 
+    :rtype: 
+
+    """
+    
     return self.model.predict(*args, **kwargs)
 
   def save(self, filename=None, overwrite=True):

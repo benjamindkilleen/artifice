@@ -65,6 +65,7 @@ class Artifice:
   :param epoch_size:
   :param batch_size:
   :param num_objects:
+  :param pose_dim:
   :param base_shape:
   :param level_filters:
   :param level_depth:
@@ -77,6 +78,9 @@ class Artifice:
   :param keras_verbose:
   :param eager:
   :param show:
+  :param cache:
+  :returns:
+  :rtype:
 
   # todo: copy the above from docs file
 
@@ -211,9 +215,8 @@ todo: other attributes"""
   def train(self):
     labeled_set = self._load_labeled()
     model = self._load_model()
-    model.fit(labeled_set.training_input, steps_per_epoch=labeled_set.steps,
-              epochs=self.epochs, initial_epoch=self.initial_epoch,
-              verbose=self.keras_verbose)
+    model.train(labeled_set, epochs=self.epochs,
+                initial_epoch=self.initial_epoch, verbose=keras_verbose)
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)

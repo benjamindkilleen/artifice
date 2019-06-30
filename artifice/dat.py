@@ -162,7 +162,7 @@ class ArtificeData(object):
     self.cache = cache
 
     # derived
-    self.steps = int(self.size // self.batch_size)
+    self.steps_per_epoch = int(self.size // self.batch_size)
     self.num_tiles = self.compute_num_tiles(self.image_shape, self.output_tile_shape)
     self.prefetch_buffer_size = self.batch_size
     self.cache_dir = os.path.join(os.path.dirname(self.record_names[0]), 'cache')
