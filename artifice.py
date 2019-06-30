@@ -179,6 +179,10 @@ todo: other attributes"""
   def _load_labeled(self):
     return dat.LabeledData(self.labeled_set_path, **self._data_kwargs)
 
+  def _load_split(self):
+    labeled_set = self._load_labeled()
+    return labeled_set.split([self.data_size - self.test_size, self.test_size])
+
   def _load_model(self):
     return mod.ProxyUNet(base_shape=self.base_shape,
                          level_filters=self.level_filters,
@@ -192,31 +196,27 @@ todo: other attributes"""
     conversions.conversions[self.convert_mode](
       self.data_root, num_parallel_calls=self.num_parallel_calls)
 
-  def vis(self):
-    logger.debug(f"labeled_set: {self.labeled_set_path}")
-    labeled_set = self._load_labeled()
-    # for image, label in labeled_set.dataset:
-    #   label = label.numpy()
-    #   pimage = img.rgb(image.numpy())
-    #   logger.info(f"label:\n{label}")
-    #   if self.show:
-    #     pimage = img.draw_xs(pimage, label[:,0], label[:,1], size=3)
-    #     vis.plot_image(image, pimage)
-    #     plt.show()
-    for images, proxies in labeled_set.training_input:
-      image, proxy = images[0], proxies[0]
-      logger.info(f"  image: {image.shape}")
-      logger.info(f"  proxy: {proxy.shape}")
-      if self.show:
-        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2],
-                       cmap=['gray', 'gray', 'hsv', 'hsv'])
-        plt.show()
-
   def train(self):
     labeled_set = self._load_labeled()
     model = self._load_model()
     model.train(labeled_set, epochs=self.epochs,
                 initial_epoch=self.initial_epoch, verbose=keras_verbose)
+
+  def test(self):
+    train_set, test_set = self._load_split() # todo: determine if this split
+    # style is the way to go. Better to store test set separately?
+
+    # but sometimes we want to run on the whole dataset, not just the test set,
+    # so we don't want to get trapped in the paradigm where we only evaluate on
+    # the test set. Splitting lets us do this, since we could specify a test set
+    # the same size as the data, thereby running on all of it?
+
+    # If we store separately, though, we have the advantage of being able to add
+    # to the labeled set by globbing "labeled_*.tfrecord". Really, we only want
+    # to evaluate on the unlabeled data, which can just stay as is in one file,
+    # since it's never used for training, and we can include a command for
+    # running on it. Maybe? Needs more thought.
+    
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
