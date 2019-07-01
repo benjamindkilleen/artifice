@@ -202,20 +202,12 @@ todo: other attributes"""
                 initial_epoch=self.initial_epoch, verbose=keras_verbose)
 
   def test(self):
-    train_set, test_set = self._load_split() # todo: determine if this split
-    # style is the way to go. Better to store test set separately?
+    test_set = self._load_test()
+    model = self._load_model()
+    predictions = predict() # 
+    
 
-    # but sometimes we want to run on the whole dataset, not just the test set,
-    # so we don't want to get trapped in the paradigm where we only evaluate on
-    # the test set. Splitting lets us do this, since we could specify a test set
-    # the same size as the data, thereby running on all of it?
-
-    # If we store separately, though, we have the advantage of being able to add
-    # to the labeled set by globbing "labeled_*.tfrecord". Really, we only want
-    # to evaluate on the unlabeled data, which can just stay as is in one file,
-    # since it's never used for training, and we can include a command for
-    # running on it. Maybe? Needs more thought.
-
+    
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('commands', nargs='+', help=docs.commands)

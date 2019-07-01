@@ -175,6 +175,11 @@ class ArtificeData(object):
     return int(self.size // self.batch_size)
 
   @staticmethod
+  def compute_num_tiles(image_shape, output_tile_shape):
+    return int(np.ceil(image_shape[0] / output_tile_shape[0])*
+               np.ceil(image_shape[1] / output_tile_shape[1]))
+
+  @staticmethod
   def serialize(entry):
     raise NotImplementedError("subclass should implement")
 
@@ -231,19 +236,10 @@ class ArtificeData(object):
   @property
   def training_input(self):
     return self.get_input(True)
-
+  
   @property
   def evaluation_input(self):
     return self.get_input(False)
-
-  @staticmethod
-  def compute_num_tiles(image_shape, output_tile_shape):
-    return int(np.ceil(image_shape[0] / output_tile_shape[0])*
-               np.ceil(image_shape[1] / output_tile_shape[1]))
-
-  # TODO: redo skip, take, split, accumulate from git, now that we are strictly
-  # requiring stored datasets rather than crazy pipelines. Or possibly they are
-  # now obsolete/infeasible? Do as necessary.
 
 class LabeledData(ArtificeData):
   @staticmethod
@@ -282,7 +278,7 @@ class LabeledData(ArtificeData):
     proxy = tf.reshape(flat, [self.image_shape[0], self.image_shape[1], 1]) # [H,W,1]
     return tf.concat([proxy, pose_maps], axis=-1, name='proxy_step')
 
-  def tile_step(self, image, proxy):
+  def compute_padding(self):
     diff0 = self.input_tile_shape[0] - self.output_tile_shape[0]
     diff1 = self.input_tile_shape[1] - self.output_tile_shape[1]
     rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
@@ -291,28 +287,51 @@ class LabeledData(ArtificeData):
     pad_bottom = int(np.ceil(diff0 / 2)) + rem0
     pad_left = int(np.floor(diff1 / 2))
     pad_right = int(np.ceil(diff1 / 2)) + rem1
-    image = tf.pad(image,
-                   [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]],
-                   'CONSTANT')
+    return [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]]
+  
+  def tile_image_proxy(self, image, proxy):
+    padding = self.compute_padding()
+    image = tf.pad(image, padding, 'CONSTANT')
+    proxy = tf.pad(proxy, padding, 'CONSTANT')
     tiles = []
     proxies = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         tiles.append(image[i:i + self.input_tile_shape[0],
                            j:j + self.input_tile_shape[1]])
-        proxies.append(proxy[i:i + self.input_tile_shape[0],
-                             j:j + self.input_tile_shape[1]])
+        proxies.append(proxy[i:i + self.output_tile_shape[0],
+                             j:j + self.output_tile_shape[1]])
     return tf.data.Dataset.from_tensor_slices((tiles, proxies))
 
+  def tile_image_label(self, image, label):
+    pad_top = int(np.floor(diff0 / 2))
+    pad_left = int(np.floor(diff1 / 2))
+    image = tf.pad(image, self.padding, 'CONSTANT')
+    tiles = []
+    tile_labels = []
+    for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
+      for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
+        tiles.append(image[i:i + self.input_tile_shape[0],
+                           j:j + self.input_tile_shape[1]])
+        indices = tf.where(tf.logical_and(
+          tf.logical_and(labels[:,0] >= i + pad_top,
+                         labels[:,0] < i + pad_top + self.output_tile_shape[0]),
+          tf.logical_and(labels[:,1] >= j + pad_left,
+                         labels[:,1] < j + pad_left + self.output_tile_shape[1])))
+        tile_labels.append(labels[indices])
+    return tf.data.Dataset.from_tensor_slices((tiles, tile_labels))
+  
   def process(self, dataset, training):
     def map_func(proto):
       image, label = self.parse(proto)
+      if not training:
+        return self.tile_image_label(image, label)
       proxy = self.make_proxy(image, label)
-      return self.tile_step(image, proxy) # returns a dataset, not a nested tensor
+      # returns a dataset, not a nested tensor
+      return self.tile_image_proxy(image, proxy)
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.num_tiles,
                               num_parallel_calls=self.num_parallel_calls)
-
 
 class UnlabeledData(ArtificeData):
   pass

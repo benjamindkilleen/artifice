@@ -74,7 +74,7 @@ class Model():
 
   """
   def __init__(self, inputs, model_dir='.', learning_rate=0.1,
-               overwrite=False):
+               overwrite=False, expect_checkpoint=False):
     """Describe a model using keras' functional API.
 
     Compiles model here, so all other instantiation should be finished.
@@ -104,6 +104,8 @@ class Model():
     if os.path.exists(self.checkpoint_path) and not self.overwrite:
       logger.info(f"loading_weights from {self.checkpoint_path}")
       self.model.load_weights(self.checkpoint_path)
+    else if expect_checkpoint:
+      logger.warning(f"no checkpoing found at {self.checkpoint_path}")
 
   def __str__(self):
     output = f"{self.name}:\n"
@@ -123,6 +125,15 @@ class Model():
     return [keras.callbacks.ModelCheckpoint(
       self.checkpoint_path, verbose=1, save_weights_only=False)]
 
+  def save(self, filename=None, overwrite=True):
+    if filename is None:
+      filename = self.model_path
+    return keras.models.save_model(self.model, filename, overwrite=overwrite,
+                                   include_optimizer=False)
+  # todo: would like to have this be True, but custom loss function can't be
+  # found in keras library. Look into it during training. For now, we're fine
+  # with just weights in the checkpoint file.
+
   def train(self, art_data, **kwargs):
     """Fits the model, saving it along the way and saving the training history
 
@@ -138,25 +149,41 @@ class Model():
       f.write(json.dumps(utils.jsonable(hist)))
     self.save()
     return hist
-
-  def predict(self, *args, **kwargs):
+  
+  def predict(self, art_data, **kwargs):
     """Run prediction, reassembling tiles, with the ArtificeData object.
 
-    :returns: 
-    :rtype: 
+    Returns an iterator over the predictions. This is necessary for very large
+    test sets, which we will use.
+
+    :param art_data: ArtificeData object
+    :returns: `(num_examples, num_objects, 1 + pose_dim)` predictions
+    :rtype: iterator over numpy array
 
     """
+
+    if tf.executing_eagerly():
+      proxies = []
+      for tiles, labels in art_data.evaluation_inputs:
+        proxies = self.model.predict_on_batch(tiles)
+        # so, a couple things. The way this is currently set up, we can evaluate
+        # the accuracy on tiles pretty easily, getting relative positions is
+        # fine. And obviously this is also fine for pose dimensions, since
+        # they're unrelated to position. But the problem is getting absolute
+        # position from each tile. Have to know where tile is in image.
+
+        # Other option, get out num_tiles proxies and then reassemble them in a
+        # batch-like operation. This seems the most doable/necessary.
+          
+        
+        
+    else:
+      raise NotImplementedError
     
     return self.model.predict(*args, **kwargs)
 
-  def save(self, filename=None, overwrite=True):
-    if filename is None:
-      filename = self.model_path
-    return keras.models.save_model(self.model, filename, overwrite=overwrite,
-                                   include_optimizer=False)
-  # todo: would like to have this be True, but custom loss function can't be
-  # found in keras library. Look into it during training. For now, we're fine
-  # with just weights in the checkpoint file.
+  # todo: generator_predict that uses predict_on_batch to produce predictions
+  # one at a time.
 
 class ProxyUNet(Model):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
