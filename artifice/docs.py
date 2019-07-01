@@ -13,7 +13,7 @@ convert_mode = "todo"
 # data sizes
 image_shape = "Shape of the image as: HEIGHT WIDTH CHANNELS"
 base_shape = "todo"
-data_size = "Total number of total examples."
+data_size = "Number of examples per training epoch."
 test_size = "Number of examples withheld for testing."
 batch_size = "Batch size."
 subset_size = "Number of examples to annotate."

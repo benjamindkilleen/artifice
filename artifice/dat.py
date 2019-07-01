@@ -173,7 +173,7 @@ class ArtificeData(object):
   @property
   def steps(self):
     return int(self.size // self.batch_size)
-    
+
   @staticmethod
   def serialize(entry):
     raise NotImplementedError("subclass should implement")
@@ -185,7 +185,7 @@ class ArtificeData(object):
     """Save the dataset to record_name."""
     save_dataset(record_name, self.dataset, serialize=self.serialize,
                  num_parallel_calls=self.num_parallel_calls)
-    
+
   def process(self, dataset, training):
     """Process the dataset of serialized examples into tensors ready for input.
 
@@ -227,7 +227,7 @@ class ArtificeData(object):
   @property
   def dataset(self):
     return load_dataset(self.record_names, self.parse, self.num_parallel_calls)
-  
+
   @property
   def training_input(self):
     return self.get_input(True)

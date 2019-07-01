@@ -160,7 +160,7 @@ todo: other attributes"""
     for command in self.commands:
       if (command[0] == '_' or not hasattr(self, command) or
           not callable(getattr(self, command))):
-        raise RuntimError(f"bad command: {command}")
+        raise RuntimeError(f"bad command: {command}")
       getattr(self, command)()
 
   def _set_num_parallel_calls(self):
@@ -169,19 +169,18 @@ todo: other attributes"""
 
   @property
   def _data_kwargs(self):
-    return {'size' : self.data_size,
-            'image_shape' : self.image_shape,
+    return {'image_shape' : self.image_shape,
             'input_tile_shape' : self.input_tile_shape,
             'output_tile_shape' : self.output_tile_shape,
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.num_parallel_calls,
             'num_shuffle' : min(self.data_size, 1000)}
   def _load_labeled(self):
-    return dat.LabeledData(self.labeled_set_path, **self._data_kwargs)
-
-  def _load_split(self):
-    labeled_set = self._load_labeled()
-    return labeled_set.split([self.data_size - self.test_size, self.test_size])
+    return dat.LabeledData(self.labeled_set_path, size=self.data_size,
+                           **self._data_kwargs)
+  def _load_test(self):
+    return dat.LabeledData(self.test_set_path, size=self.test_size,
+                           **self._data_kwargs)
 
   def _load_model(self):
     return mod.ProxyUNet(base_shape=self.base_shape,
@@ -194,7 +193,7 @@ todo: other attributes"""
 
   def convert(self):
     conversions.conversions[self.convert_mode](
-      self.data_root, num_parallel_calls=self.num_parallel_calls)
+      self.data_root, test_size=self.test_size)
 
   def train(self):
     labeled_set = self._load_labeled()
@@ -216,7 +215,6 @@ todo: other attributes"""
     # to evaluate on the unlabeled data, which can just stay as is in one file,
     # since it's never used for training, and we can include a command for
     # running on it. Maybe? Needs more thought.
-    
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -244,7 +242,7 @@ def main():
                       type=int, default=[100,100,1],
                       help=docs.image_shape)
   parser.add_argument('--data-size', '-N', nargs=1,
-                      default=[2000], type=int,
+                      default=[1900], type=int,
                       help=docs.data_size)
   parser.add_argument('--test-size', '-T', nargs=1,
                       default=[100], type=int,
