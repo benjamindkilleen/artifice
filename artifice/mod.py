@@ -9,6 +9,7 @@ import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
+import matplotlib.pyplot as plt
 from artifice import lay, dat, utils, vis, img
 
 logger = logging.getLogger('artifice')
@@ -18,11 +19,9 @@ def crop(inputs, shape):
   bottom_crop = int(np.ceil(int(inputs.shape[1] - shape[1]) / 2))
   left_crop = int(np.floor(int(inputs.shape[2] - shape[2]) / 2))
   right_crop = int(np.ceil(int(inputs.shape[2] - shape[2]) / 2))
-  outputs =  keras.layers.Cropping2D(cropping=((top_crop, bottom_crop),
-                                               (left_crop, right_crop)),
-                                     input_shape=inputs.shape)(inputs)
-  logger.debug(f"inputs: {inputs.shape}")
-  logger.debug(f"outputs: {outputs.shape}")
+  outputs = keras.layers.Cropping2D(cropping=((top_crop, bottom_crop),
+                                              (left_crop, right_crop)),
+                                    input_shape=inputs.shape)(inputs)
   return outputs
 
 def conv(inputs, filters, kernel_shape=(3,3),
@@ -104,7 +103,7 @@ class Model():
     if os.path.exists(self.checkpoint_path) and not self.overwrite:
       logger.info(f"loading_weights from {self.checkpoint_path}")
       self.model.load_weights(self.checkpoint_path)
-    else if expect_checkpoint:
+    elif expect_checkpoint:
       logger.warning(f"no checkpoing found at {self.checkpoint_path}")
 
   def __str__(self):
@@ -146,12 +145,12 @@ class Model():
     hist = self.model.fit(art_data.training_input,
                           steps_per_epoch=art_data.steps_per_epoch, **kwargs).history
     with open(self.history_path, 'w') as f:
-      f.write(json.dumps(utils.jsonable(hist)))
+      f.write(json.dumps(utils.jsonable(hist))) # todo: add to existing history
     self.save()
     return hist
   
-  def predict(self, art_data, **kwargs):
-    """Run prediction, reassembling tiles, with the ArtificeData object.
+  def evaluate(self, art_data):
+    """Run evaluation, reassembling tiles, with the ArtificeData object.
 
     Returns an iterator over the predictions. This is necessary for very large
     test sets, which we will use.
@@ -161,20 +160,28 @@ class Model():
     :rtype: iterator over numpy array
 
     """
-
     if tf.executing_eagerly():
+      tiles = []
       proxies = []
       tile_labels = []
-      for i, (tiles, labels) in enumerate(art_data.evaluation_inputs):
-        tile_labels += list(labels)
-        proxies += list(self.model.predict_on_batch(tiles))
+      for batch_tiles, batch_labels in art_data.evaluation_input:
+        tiles += list(batch_tiles)
+        tile_labels += list(batch_labels)
+        proxies += list(self.model.predict_on_batch(batch_tiles))
         if len(proxies) >= art_data.num_tiles:
           label = tile_labels[0]
           proxy = art_data.untile(proxies[:art_data.num_tiles])
-          vis.plot_image(img.draw_x(img.rgb(proxy[:,:,0]), label[:,0],
-                                    label[:,1], size=1))
-          vis.plt.show()
+          image = art_data.untile(tiles[:art_data.num_tiles])
+          
+          logger.info("plotting prediction...")
+          vis.plot_image(image, img.draw_xs(img.rgb(proxy[:,:,0]), label[:,0],
+                                            label[:,1], size=1), vmin=0., vmax=1.)
+          plt.savefig("docs/proxy.png")
+          del tiles[:art_data.num_tiles]
+          del tile_labels[:art_data.num_tiles]
           del proxies[:art_data.num_tiles]
+          break
+          
         
         # so, a couple things. The way this is currently set up, we can evaluate
         # the accuracy on tiles pretty easily, getting relative positions is

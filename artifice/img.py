@@ -5,8 +5,12 @@ import logging
 import numpy as np
 from PIL import Image
 from skimage import draw
+from skimage.feature import peak_local_max
 
 logger = logging.getLogger('artifice')
+
+def detect_peaks(image, min_distance=2):
+  return peak_local_max(image, min_distance=min_distance, indices=True)
 
 def draw_x(image, x, y, size=12, channel=0):
   """Draw a x at the x,y location with `size`

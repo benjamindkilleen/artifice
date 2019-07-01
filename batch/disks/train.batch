@@ -3,27 +3,27 @@
 #SBATCH --job-name=disks
 #SBATCH --output=train.out
 #SBATCH --error=train.err
-#SBATCH --partition=gpu2
-#SBATCH --gres=gpu:1
+#SBATCH --partition=dali
 #SBATCH --time=24:00:00
 #SBATCH --account=pi-glk
 #SBATCH --mem-per-cpu=32000
 
 module unload python
 module load ffmpeg
-module load cuda/9.0
+# module load cuda/9.0
 module load Anaconda3/2018.12
 source activate tf-cpu-1.13.1
 
 cd /project2/glk/artifice
 
-epochs=20
+initial=60
+epochs=100
 data=disks
 
 echo "Starting training..."
 python artifice.py train -i data/$data \
-       --overwrite --patient -e $epochs \
-       --data-size 2000 --test-size 0 --batch-size 4 --num-objects 4 \
+       --patient -e $epochs --initial-epoch $initial \
+       --data-size 1900 --test-size 100 --batch-size 4 --num-objects 4 \
        -m models/${data} \
        --verbose 2 --keras-verbose 2
 echo "Finished."

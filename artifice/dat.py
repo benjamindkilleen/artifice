@@ -121,6 +121,34 @@ def save_dataset(record_name, dataset, serialize=None,
     with tf.Session() as sess:
       sess.run(write_op)
 
+def evaluate_proxy(label, proxy, distance_threshold=5):
+  """Evaluage the proxy against the label and return an array of absolute errors.
+
+  :param label:
+  :param proxy:
+  :param distance_threshold:
+  :returns:
+  :rtype:
+
+  """
+  # todo: make this function robust to num peaks detected, whether an object was
+  # actually found, etc. Can signify with -1,-1 position that object was not
+  # found. 
+  peaks = img.detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
+  error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
+  prediction = np.empty_like(label)
+  unused = np.ones(peaks.shape[0], np.bool)
+  for i in range(label.shape[0]):
+    pidx = np.argmin(np.linalg.norm(peaks[unused] - label[i:i+1, :2], axis=1))
+    unused[pidx] = False
+    peak = peaks[pidx]
+    
+    error[i, 0] = np.linalg.norm(peak - label[i, :2])
+    for j in range(1, label.shape[1]):
+      error[i, j] = abs(proxy[peak[0], peak[1], j+1] - label[i, j])
+  return prediction, error
+
+
 class ArtificeData(object):
   """Abstract class for data wrappers in artifice, which are distinguished by the
   type of examples they hold (unlabeled images, (image, label) pairs (examples),
@@ -198,7 +226,7 @@ class ArtificeData(object):
 
     :param tiles: `num_tiles` length list of 3D arrays or tiles.
     :returns: reconstructed image.
-    :rtype: 
+    :rtype:
 
     """
     if len(tiles) != self.num_tiles:
@@ -221,8 +249,6 @@ class ArtificeData(object):
         image[i:i + si, j:j + sj] = tiles[i][:si,:sj]
     return image
 
-  
-    
   def process(self, dataset, training):
     """Process the dataset of serialized examples into tensors ready for input.
 
@@ -271,11 +297,11 @@ class ArtificeData(object):
   @property
   def training_input(self):
     return self.get_input(True)
-  
+
   @property
   def evaluation_input(self):
     return self.get_input(False)
-  
+
 class LabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -323,7 +349,7 @@ class LabeledData(ArtificeData):
     pad_left = int(np.floor(diff1 / 2))
     pad_right = int(np.ceil(diff1 / 2)) + rem1
     return [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]]
-  
+
   def tile_image_proxy(self, image, proxy):
     padding = self.compute_padding()
     image = tf.pad(image, padding, 'CONSTANT')
@@ -339,21 +365,17 @@ class LabeledData(ArtificeData):
     return tf.data.Dataset.from_tensor_slices((tiles, proxies))
 
   def tile_image_label(self, image, label):
-    image = tf.pad(image, self.padding, 'CONSTANT')
+    """Tile the images, copy the full image label to each tile."""
+    image = tf.pad(image, self.compute_padding(), 'CONSTANT')
     tiles = []
     tile_labels = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         tiles.append(image[i:i + self.input_tile_shape[0],
                            j:j + self.input_tile_shape[1]])
-        indices = tf.where(tf.logical_and(
-          tf.logical_and(labels[:,0] >= i + pad_top,
-                         labels[:,0] < i + pad_top + self.output_tile_shape[0]),
-          tf.logical_and(labels[:,1] >= j + pad_left,
-                         labels[:,1] < j + pad_left + self.output_tile_shape[1])))
-        tile_labels.append(labels[indices])
+        tile_labels.append(tf.identity(label))
     return tf.data.Dataset.from_tensor_slices((tiles, tile_labels))
-  
+
   def process(self, dataset, training):
     def map_func(proto):
       image, label = self.parse(proto)

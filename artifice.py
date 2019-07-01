@@ -146,6 +146,7 @@ class Artifice:
     # standard model input data paths
     self.unlabeled_set_path = join(self.data_root, 'unlabeled_set.tfrecord')
     self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
+    self.test_set_path = join(self.data_root, 'test_set.tfrecord')
 
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root,
@@ -182,14 +183,15 @@ todo: other attributes"""
     return dat.LabeledData(self.test_set_path, size=self.test_size,
                            **self._data_kwargs)
 
-  def _load_model(self):
+  def _load_model(self, expect_checkpoint=False):
     return mod.ProxyUNet(base_shape=self.base_shape,
                          level_filters=self.level_filters,
                          num_channels=self.image_shape[2],
                          pose_dim=self.pose_dim, level_depth=self.level_depth,
                          dropout=self.dropout, model_dir=self.model_root,
                          learning_rate=self.learning_rate,
-                         overwrite=self.overwrite)
+                         overwrite=self.overwrite,
+                         expect_checkpoint=expect_checkpoint)
 
   def convert(self):
     conversions.conversions[self.convert_mode](
@@ -199,14 +201,13 @@ todo: other attributes"""
     labeled_set = self._load_labeled()
     model = self._load_model()
     model.train(labeled_set, epochs=self.epochs,
-                initial_epoch=self.initial_epoch, verbose=keras_verbose)
+                initial_epoch=self.initial_epoch,
+                verbose=self.keras_verbose)
 
-  def test(self):
+  def evaluate(self):
     test_set = self._load_test()
-    model = self._load_model()
-    predictions = predict() # 
-    
-
+    model = self._load_model(expect_checkpoint=True)
+    model.evaluate(test_set)
     
 def main():
   parser = argparse.ArgumentParser(description=docs.description)

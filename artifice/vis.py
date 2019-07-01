@@ -14,7 +14,7 @@ from artifice import img, utils
 logger = logging.getLogger('artifice')
 
 
-def plot_image(*images, columns=10, ticks=False, scale=20, cmap='gray'):
+def plot_image(*images, columns=10, ticks=False, scale=20, cmap='gray', **kwargs):
   cmaps = utils.listify(cmap, len(images)) 
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
@@ -22,7 +22,7 @@ def plot_image(*images, columns=10, ticks=False, scale=20, cmap='gray'):
                            figsize=(scale, scale*rows/columns))
   for i, image in enumerate(images):
     ax = axes[i // columns, i % columns]
-    im = ax.imshow(np.squeeze(image), cmap=cmaps[i])
+    im = ax.imshow(np.squeeze(image), cmap=cmaps[i], **kwargs)
   if not ticks:
     for ax in axes.ravel():
       ax.axis('off')

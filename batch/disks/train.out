@@ -1,82 +1,82 @@
 Starting training...
-Epoch 1/20
+Epoch 41/60
 
-Epoch 00001: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 308s - loss: 0.1259 - mean_absolute_error: 1.3205
-Epoch 2/20
+Epoch 00041: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 302s - loss: 0.0169 - mean_absolute_error: 0.7875
+Epoch 42/60
 
-Epoch 00002: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0329 - mean_absolute_error: 1.1610
-Epoch 3/20
+Epoch 00042: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 283s - loss: 0.0154 - mean_absolute_error: 0.7803
+Epoch 43/60
 
-Epoch 00003: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0243 - mean_absolute_error: 1.0262
-Epoch 4/20
+Epoch 00043: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0146 - mean_absolute_error: 0.7691
+Epoch 44/60
 
-Epoch 00004: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0163 - mean_absolute_error: 0.8858
-Epoch 5/20
+Epoch 00044: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0140 - mean_absolute_error: 0.7575
+Epoch 45/60
 
-Epoch 00005: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 298s - loss: 0.0125 - mean_absolute_error: 0.7683
-Epoch 6/20
+Epoch 00045: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 288s - loss: 0.0134 - mean_absolute_error: 0.7450
+Epoch 46/60
 
-Epoch 00006: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0103 - mean_absolute_error: 0.6892
-Epoch 7/20
+Epoch 00046: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 290s - loss: 0.0124 - mean_absolute_error: 0.7279
+Epoch 47/60
 
-Epoch 00007: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0087 - mean_absolute_error: 0.6359
-Epoch 8/20
+Epoch 00047: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0103 - mean_absolute_error: 0.6926
+Epoch 48/60
 
-Epoch 00008: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0076 - mean_absolute_error: 0.6016
-Epoch 9/20
+Epoch 00048: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 283s - loss: 0.0080 - mean_absolute_error: 0.6535
+Epoch 49/60
 
-Epoch 00009: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0070 - mean_absolute_error: 0.5794
-Epoch 10/20
+Epoch 00049: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 283s - loss: 0.0065 - mean_absolute_error: 0.6177
+Epoch 50/60
 
-Epoch 00010: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0065 - mean_absolute_error: 0.5645
-Epoch 11/20
+Epoch 00050: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0055 - mean_absolute_error: 0.5870
+Epoch 51/60
 
-Epoch 00011: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 300s - loss: 0.0062 - mean_absolute_error: 0.5546
-Epoch 12/20
+Epoch 00051: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 284s - loss: 0.0048 - mean_absolute_error: 0.5587
+Epoch 52/60
 
-Epoch 00012: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 295s - loss: 0.0059 - mean_absolute_error: 0.5474
-Epoch 13/20
+Epoch 00052: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 292s - loss: 0.0042 - mean_absolute_error: 0.5343
+Epoch 53/60
 
-Epoch 00013: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0057 - mean_absolute_error: 0.5415
-Epoch 14/20
+Epoch 00053: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0038 - mean_absolute_error: 0.5153
+Epoch 54/60
 
-Epoch 00014: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0056 - mean_absolute_error: 0.5366
-Epoch 15/20
+Epoch 00054: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0035 - mean_absolute_error: 0.5018
+Epoch 55/60
 
-Epoch 00015: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0054 - mean_absolute_error: 0.5332
-Epoch 16/20
+Epoch 00055: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0032 - mean_absolute_error: 0.4896
+Epoch 56/60
 
-Epoch 00016: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0053 - mean_absolute_error: 0.5303
-Epoch 17/20
+Epoch 00056: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0031 - mean_absolute_error: 0.4799
+Epoch 57/60
 
-Epoch 00017: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 306s - loss: 0.0052 - mean_absolute_error: 0.5276
-Epoch 18/20
+Epoch 00057: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 282s - loss: 0.0029 - mean_absolute_error: 0.4703
+Epoch 58/60
 
-Epoch 00018: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0051 - mean_absolute_error: 0.5251
-Epoch 19/20
+Epoch 00058: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 293s - loss: 0.0028 - mean_absolute_error: 0.4627
+Epoch 59/60
 
-Epoch 00019: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0050 - mean_absolute_error: 0.5234
-Epoch 20/20
+Epoch 00059: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0026 - mean_absolute_error: 0.4556
+Epoch 60/60
 
-Epoch 00020: saving model to models/disks/proxy_u_net_ckpt.hdf5
- - 294s - loss: 0.0049 - mean_absolute_error: 0.5212
+Epoch 00060: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 281s - loss: 0.0025 - mean_absolute_error: 0.4504
 Finished.
