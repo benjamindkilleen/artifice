@@ -208,6 +208,14 @@ todo: other attributes"""
     test_set = self._load_test()
     model = self._load_model(expect_checkpoint=True)
     model.evaluate(test_set)
+
+  def visualize(self):
+    test_set = self._load_test()
+    for images, proxies in test_set.training_input:
+      image = images[0]
+      proxy = proxies[0]
+      vis.plot_image(image, proxy[:,:,0])
+      plt.show()
     
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -235,7 +243,7 @@ def main():
                       type=int, default=[100,100,1],
                       help=docs.image_shape)
   parser.add_argument('--data-size', '-N', nargs=1,
-                      default=[1900], type=int,
+                      default=[2000], type=int,
                       help=docs.data_size)
   parser.add_argument('--test-size', '-T', nargs=1,
                       default=[100], type=int,

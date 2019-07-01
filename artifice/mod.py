@@ -172,11 +172,8 @@ class Model():
           label = tile_labels[0]
           proxy = art_data.untile(proxies[:art_data.num_tiles])
           image = art_data.untile(tiles[:art_data.num_tiles])
-          
-          logger.info("plotting prediction...")
-          vis.plot_image(image, img.draw_xs(img.rgb(proxy[:,:,0]), label[:,0],
-                                            label[:,1], size=1), vmin=0., vmax=1.)
-          plt.savefig("docs/proxy.png")
+          vis.plot_image(image, proxy[:,:,0])
+          plt.show()
           del tiles[:art_data.num_tiles]
           del tile_labels[:art_data.num_tiles]
           del proxies[:art_data.num_tiles]
@@ -249,9 +246,9 @@ class ProxyUNet(Model):
 
   @staticmethod
   def loss(proxy, prediction):
-    distance_term = tf.losses.mean_squared_error(proxy[:,:,:,0], prediction[:,:,:,0])
-    pose_term = tf.losses.mean_squared_error(proxy[:,:,:,1:], prediction[:,:,:,1:],
-                                             weights=proxy[:,:,:,:1])
+    distance_term = tf.losses.mean_squared_error(proxy[:, :, :, 0], prediction[:, :, :, 0])
+    pose_term = tf.losses.mean_squared_error(proxy[:, :, :, 1:], prediction[:, :, :, 1:],
+                                             weights=proxy[:, :, :, :1])
     return distance_term + pose_term
 
   def compile(self):

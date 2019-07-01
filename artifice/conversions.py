@@ -89,6 +89,10 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
     for image_path, label_path in zip(image_paths, label_paths):
       image = img.open_as_float(image_path)
       label = _label_loaders[label_ext](label_path)
+      # swap x,y for some reason
+      ys = label[:,0].copy()
+      label[:,0] = label[:,1]
+      label[:,1] = ys
       yield dat.proto_from_example((image, label))
   g = gen()
   _write_set(islice(g, test_size), join(data_root, record_name))

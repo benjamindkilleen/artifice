@@ -339,7 +339,8 @@ class LabeledData(ArtificeData):
     proxy = tf.reshape(flat, [self.image_shape[0], self.image_shape[1], 1]) # [H,W,1]
     return tf.concat([proxy, pose_maps], axis=-1, name='proxy_step')
 
-  def compute_padding(self):
+  @property
+  def image_padding(self):
     diff0 = self.input_tile_shape[0] - self.output_tile_shape[0]
     diff1 = self.input_tile_shape[1] - self.output_tile_shape[1]
     rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
@@ -350,10 +351,15 @@ class LabeledData(ArtificeData):
     pad_right = int(np.ceil(diff1 / 2)) + rem1
     return [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]]
 
+  @property
+  def proxy_padding(self):
+    rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
+    rem1 = self.image_shape[1] - (self.image_shape[1] % self.output_tile_shape[1])
+    return [[0, rem0], [0, rem1], [0,0]]
+  
   def tile_image_proxy(self, image, proxy):
-    padding = self.compute_padding()
-    image = tf.pad(image, padding, 'CONSTANT')
-    proxy = tf.pad(proxy, padding, 'CONSTANT')
+    image = tf.pad(image, self.image_padding, 'CONSTANT')
+    proxy = tf.pad(proxy, self.proxy_padding, 'CONSTANT')
     tiles = []
     proxies = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
@@ -366,7 +372,7 @@ class LabeledData(ArtificeData):
 
   def tile_image_label(self, image, label):
     """Tile the images, copy the full image label to each tile."""
-    image = tf.pad(image, self.compute_padding(), 'CONSTANT')
+    image = tf.pad(image, self.image_padding, 'CONSTANT')
     tiles = []
     tile_labels = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
@@ -383,6 +389,7 @@ class LabeledData(ArtificeData):
         return self.tile_image_label(image, label)
       proxy = self.make_proxy(image, label)
       # returns a dataset, not a nested tensor
+      # return tf.data.Dataset.from_tensors((image, proxy))
       return self.tile_image_proxy(image, proxy)
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.num_tiles,

@@ -16,14 +16,14 @@ source activate tf-cpu-1.13.1
 
 cd /project2/glk/artifice
 
-initial=60
+initial=0
 epochs=100
 data=disks
 
 echo "Starting training..."
 python artifice.py train -i data/$data \
-       --patient -e $epochs --initial-epoch $initial \
-       --data-size 1900 --test-size 100 --batch-size 4 --num-objects 4 \
+       --overwrite --patient -e $epochs --initial-epoch $initial \
+       --data-size 2000 --test-size 100 --batch-size 4 --num-objects 4 \
        -m models/${data} \
        --verbose 2 --keras-verbose 2
 echo "Finished."
