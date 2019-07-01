@@ -191,6 +191,38 @@ class ArtificeData(object):
     save_dataset(record_name, self.dataset, serialize=self.serialize,
                  num_parallel_calls=self.num_parallel_calls)
 
+  def untile(self, tiles):
+    """Untile num_tiles tiles into a single "image".
+
+    `tiles` must contain the correct number of tiles.
+
+    :param tiles: `num_tiles` length list of 3D arrays or tiles.
+    :returns: reconstructed image.
+    :rtype: 
+
+    """
+    if len(tiles) != self.num_tiles:
+      raise RuntimeError("Ensure tiles is same length as num_tiles.")
+    if self.num_tiles == 1:
+      return tiles[0]
+
+    image = np.empty(self.image_shape, dtype=np.float32)
+    tiles = list(tiles)
+    for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
+      if i + self.output_tile_shape[0] < self.image_shape[0]:
+        si = self.output_tile_shape[0]
+      else:
+        si = self.image_shape[0] % self.tile_shape[0]
+      for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
+        if j + self.output_tile_shape[1] < self.image_shape[1]:
+          sj = self.output_tile_shape[1]
+        else:
+          sj = self.image_shape[1] % self.output_tile_shape[1]
+        image[i:i + si, j:j + sj] = tiles[i][:si,:sj]
+    return image
+
+  
+    
   def process(self, dataset, training):
     """Process the dataset of serialized examples into tensors ready for input.
 
@@ -206,6 +238,9 @@ class ArtificeData(object):
     process() performs the first four of these functions, and it should do so
     in a single call to map() or interleave(), for efficiency's
     sake. postprocess takes care of the last 3.
+
+    If training is False, then return tiles paired with (possibly duplicated)
+    labels for the corresponding full images.
 
     :param dataset:
     :param training: if this is for trainign
@@ -240,7 +275,7 @@ class ArtificeData(object):
   @property
   def evaluation_input(self):
     return self.get_input(False)
-
+  
 class LabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -304,8 +339,6 @@ class LabeledData(ArtificeData):
     return tf.data.Dataset.from_tensor_slices((tiles, proxies))
 
   def tile_image_label(self, image, label):
-    pad_top = int(np.floor(diff0 / 2))
-    pad_left = int(np.floor(diff1 / 2))
     image = tf.pad(image, self.padding, 'CONSTANT')
     tiles = []
     tile_labels = []

@@ -9,7 +9,7 @@ import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
-from artifice import lay, dat, utils
+from artifice import lay, dat, utils, vis, img
 
 logger = logging.getLogger('artifice')
 
@@ -164,8 +164,18 @@ class Model():
 
     if tf.executing_eagerly():
       proxies = []
-      for tiles, labels in art_data.evaluation_inputs:
-        proxies = self.model.predict_on_batch(tiles)
+      tile_labels = []
+      for i, (tiles, labels) in enumerate(art_data.evaluation_inputs):
+        tile_labels += list(labels)
+        proxies += list(self.model.predict_on_batch(tiles))
+        if len(proxies) >= art_data.num_tiles:
+          label = tile_labels[0]
+          proxy = art_data.untile(proxies[:art_data.num_tiles])
+          vis.plot_image(img.draw_x(img.rgb(proxy[:,:,0]), label[:,0],
+                                    label[:,1], size=1))
+          vis.plt.show()
+          del proxies[:art_data.num_tiles]
+        
         # so, a couple things. The way this is currently set up, we can evaluate
         # the accuracy on tiles pretty easily, getting relative positions is
         # fine. And obviously this is also fine for pose dimensions, since
@@ -174,17 +184,9 @@ class Model():
 
         # Other option, get out num_tiles proxies and then reassemble them in a
         # batch-like operation. This seems the most doable/necessary.
-          
-        
-        
     else:
       raise NotImplementedError
     
-    return self.model.predict(*args, **kwargs)
-
-  # todo: generator_predict that uses predict_on_batch to produce predictions
-  # one at a time.
-
 class ProxyUNet(Model):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
                level_depth=2, dropout=0.5, **kwargs):
