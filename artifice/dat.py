@@ -396,7 +396,7 @@ def evaluate_proxy(label, proxy, distance_threshold=5):
     peak = peaks[pidx].copy()
     peaks[pidx] = np.inf
     error[i, 0] = np.linalg.norm(peak - label[i, :2])
-    for j in range(1, label.shape[1]):
-      error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j+1] - label[i, j])
+    for j in range(1, error.shape[1]):
+      error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j+1] - label[i, j+1])
   return error, num_failed
 
