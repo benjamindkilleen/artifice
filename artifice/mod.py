@@ -166,7 +166,9 @@ class Model():
       tile_labels = []
       errors = []
       total_num_failed = 0
-      for batch_tiles, batch_labels in art_data.evaluation_input:
+      for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input):
+        if i % 10 == 0:
+          logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
         tiles += list(batch_tiles)
         tile_labels += list(batch_labels)
         proxies += list(self.model.predict_on_batch(batch_tiles))
