@@ -389,7 +389,6 @@ class LabeledData(ArtificeData):
         return self.tile_image_label(image, label)
       proxy = self.make_proxy(image, label)
       # returns a dataset, not a nested tensor
-      # return tf.data.Dataset.from_tensors((image, proxy))
       return self.tile_image_proxy(image, proxy)
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.num_tiles,
