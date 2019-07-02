@@ -164,6 +164,8 @@ class Model():
       tiles = []
       proxies = []
       tile_labels = []
+      errors = []
+      total_num_failed = 0
       for batch_tiles, batch_labels in art_data.evaluation_input:
         tiles += list(batch_tiles)
         tile_labels += list(batch_labels)
@@ -172,24 +174,18 @@ class Model():
           label = tile_labels[0]
           proxy = art_data.untile(proxies[:art_data.num_tiles])
           image = art_data.untile(tiles[:art_data.num_tiles])
-          vis.plot_image(image, proxy[:,:,0])
-          plt.show()
+          error, num_failed = dat.evaluate_proxy(label, proxy)
+          total_num_failed += num_failed
+          logger.debug(f"error: {error}")
+          errors.append(error)
           del tiles[:art_data.num_tiles]
           del tile_labels[:art_data.num_tiles]
           del proxies[:art_data.num_tiles]
-          break
-          
-        
-        # so, a couple things. The way this is currently set up, we can evaluate
-        # the accuracy on tiles pretty easily, getting relative positions is
-        # fine. And obviously this is also fine for pose dimensions, since
-        # they're unrelated to position. But the problem is getting absolute
-        # position from each tile. Have to know where tile is in image.
-
-        # Other option, get out num_tiles proxies and then reassemble them in a
-        # batch-like operation. This seems the most doable/necessary.
+      avg_error = np.array(errors).mean(axis=[0,1])
     else:
       raise NotImplementedError
+
+    return avg_error, total_num_failed
     
 class ProxyUNet(Model):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,

@@ -121,34 +121,6 @@ def save_dataset(record_name, dataset, serialize=None,
     with tf.Session() as sess:
       sess.run(write_op)
 
-def evaluate_proxy(label, proxy, distance_threshold=5):
-  """Evaluage the proxy against the label and return an array of absolute errors.
-
-  :param label:
-  :param proxy:
-  :param distance_threshold:
-  :returns:
-  :rtype:
-
-  """
-  # todo: make this function robust to num peaks detected, whether an object was
-  # actually found, etc. Can signify with -1,-1 position that object was not
-  # found. 
-  peaks = img.detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
-  error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
-  prediction = np.empty_like(label)
-  unused = np.ones(peaks.shape[0], np.bool)
-  for i in range(label.shape[0]):
-    pidx = np.argmin(np.linalg.norm(peaks[unused] - label[i:i+1, :2], axis=1))
-    unused[pidx] = False
-    peak = peaks[pidx]
-    
-    error[i, 0] = np.linalg.norm(peak - label[i, :2])
-    for j in range(1, label.shape[1]):
-      error[i, j] = abs(proxy[peak[0], peak[1], j+1] - label[i, j])
-  return prediction, error
-
-
 class ArtificeData(object):
   """Abstract class for data wrappers in artifice, which are distinguished by the
   type of examples they hold (unlabeled images, (image, label) pairs (examples),
@@ -396,3 +368,35 @@ class LabeledData(ArtificeData):
 
 class UnlabeledData(ArtificeData):
   pass
+
+
+def evaluate_proxy(label, proxy, distance_threshold=5):
+  """Evaluage the proxy against the label and return an array of absolute errors.
+
+  :param label:
+  :param proxy:
+  :param distance_threshold:
+  :returns:
+  :rtype:
+
+  """
+  # todo: make this function robust to num peaks detected, whether an object was
+  # actually found, etc. Can signify with -1,-1 position that object was not
+  # found. 
+  peaks = img.detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
+  error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
+  num_failed = 0
+  for i in range(label.shape[0]):
+    distances = np.linalg.norm(peaks - label[i:i+1, :2], axis=1)
+    if np.min(distances) >= distance_threshold:
+      num_failed += 1
+      error[i] = 0
+      continue
+    pidx = np.argmin(distances)
+    peak = peaks[pidx].copy()
+    peaks[pidx] = np.inf
+    error[i, 0] = np.linalg.norm(peak - label[i, :2])
+    for j in range(1, label.shape[1]):
+      error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j+1] - label[i, j])
+  return error, num_failed
+
