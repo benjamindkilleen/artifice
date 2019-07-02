@@ -17,6 +17,7 @@ import numpy as np
 import tensorflow as tf
 from artifice import img, utils
 
+
 logger = logging.getLogger('artifice')
 
 def _bytes_feature(value):
@@ -230,7 +231,7 @@ class ArtificeData(object):
     * convert to proxy
     * tile
     * shuffle (if `training` is True)
-    * repeat
+    * repeat (it `training`)
     * batch
 
     process() performs the first four of these functions, and it should do so
@@ -370,8 +371,11 @@ class UnlabeledData(ArtificeData):
   pass
 
 
-def evaluate_proxy(label, proxy, distance_threshold=5):
+def evaluate_proxy(label, proxy, distance_threshold=10):
   """Evaluage the proxy against the label and return an array of absolute errors.
+
+  The error array has the same ordering as objects in the label. Negative values
+  indicate that object was not detected.
 
   :param label:
   :param proxy:
@@ -380,9 +384,6 @@ def evaluate_proxy(label, proxy, distance_threshold=5):
   :rtype:
 
   """
-  # todo: make this function robust to num peaks detected, whether an object was
-  # actually found, etc. Can signify with -1,-1 position that object was not
-  # found. 
   peaks = img.detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
   error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
   num_failed = 0
@@ -390,13 +391,13 @@ def evaluate_proxy(label, proxy, distance_threshold=5):
     distances = np.linalg.norm(peaks - label[i:i+1, :2], axis=1)
     if np.min(distances) >= distance_threshold:
       num_failed += 1
-      error[i] = 0
+      error[i] = -1
       continue
     pidx = np.argmin(distances)
     peak = peaks[pidx].copy()
     peaks[pidx] = np.inf
     error[i, 0] = np.linalg.norm(peak - label[i, :2])
     for j in range(1, error.shape[1]):
-      error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j+1] - label[i, j+1])
+      error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j] - label[i, j+1])
   return error, num_failed
 

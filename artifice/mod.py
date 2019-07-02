@@ -9,8 +9,7 @@ import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
-import matplotlib.pyplot as plt
-from artifice import lay, dat, utils, vis, img
+from artifice import lay, dat, utils, img
 
 logger = logging.getLogger('artifice')
 
@@ -161,7 +160,6 @@ class Model():
 
     """
     if tf.executing_eagerly():
-      tiles = []
       proxies = []
       tile_labels = []
       errors = []
@@ -169,25 +167,23 @@ class Model():
       for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input):
         if i % 10 == 0:
           logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
-        tiles += list(batch_tiles)
         tile_labels += list(batch_labels)
         proxies += list(self.model.predict_on_batch(batch_tiles))
-        if len(proxies) >= art_data.num_tiles:
+        while len(proxies) >= art_data.num_tiles:
           label = tile_labels[0]
           proxy = art_data.untile(proxies[:art_data.num_tiles])
-          image = art_data.untile(tiles[:art_data.num_tiles])
           error, num_failed = dat.evaluate_proxy(label, proxy)
           total_num_failed += num_failed
-          logger.debug(f"error: {error}")
-          errors.append(error)
-          del tiles[:art_data.num_tiles]
+          errors += list(error[error[:, 0] >= 0])
           del tile_labels[:art_data.num_tiles]
           del proxies[:art_data.num_tiles]
-      avg_error = np.array(errors).mean(axis=[0,1])
+        if len(errors) >= art_data.size: # todo: figure out why necessary
+          break
+      errors = np.array(errors)
     else:
       raise NotImplementedError
 
-    return avg_error, total_num_failed
+    return errors, total_num_failed
     
 class ProxyUNet(Model):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,

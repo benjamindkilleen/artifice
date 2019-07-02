@@ -207,12 +207,18 @@ todo: other attributes"""
   def evaluate(self):
     test_set = self._load_test()
     model = self._load_model(expect_checkpoint=True)
-    error, num_failed = model.evaluate(test_set)
-    num_detected = self.test_size - num_failed
-    logger.info(f"{num_detected} / {self.test_size * self.num_objects} objects"
-                f"detected.")
-    logger.info(f"avg (euclidean) detection error: {error[0]}")
-    logger.info(f"avg (absolute) pose error: {error[1:]}")
+    errors, num_failed = model.evaluate(test_set)
+    avg_error = errors.mean(axis=0)
+    total_num_objects = self.test_size * self.num_objects
+    num_detected = total_num_objects - num_failed
+    logger.info(f"objects detected: {num_detected} / "
+                f"{total_num_objects}")
+    logger.info(f"avg (euclidean) detection error: {avg_error[0]}")
+    logger.info(f"avg (absolute) pose error: {avg_error[1:]}")
+    logger.info("note: some objects may be occluded, making detection impossible")
+    logger.info(f"std: {errors.std(axis=0)}")
+    logger.info(f"min: {errors.min(axis=0)}")
+    logger.info(f"max: {errors.max(axis=0)}")
 
   def visualize(self):
     test_set = self._load_test()
