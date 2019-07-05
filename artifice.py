@@ -53,52 +53,58 @@ class Artifice:
   correctness. Defaults are specified in the command-line defaults for this
   script. Run `python artifice.py -h` for more info.
 
-  :param commands:
-  :param mode:
-  :param data_root:
-  :param model_root:
-  :param overwrite:
-  :param convert_mode:
-  :param image_shape:
-  :param data_size:
-  :param test_size:
-  :param epoch_size:
-  :param batch_size:
-  :param num_objects:
-  :param pose_dim:
-  :param base_shape:
-  :param level_filters:
-  :param level_depth:
-  :param dropout:
-  :param initial_epoch:
-  :param epochs:
-  :param learning_rate:
-  :param num_parallel_calls:
-  :param verbose:
-  :param keras_verbose:
-  :param eager:
-  :param show:
-  :param cache:
-  :returns:
-  :rtype:
+  :param commands: 
+  :param mode: 
+  :param data_root: 
+  :param model_root: 
+  :param overwrite: 
+  :param convert_mode: 
+  :param transformation: 
+  :param image_shape: 
+  :param data_size: 
+  :param test_size: 
+  :param batch_size: 
+  :param num_objects: 
+  :param pose_dim: 
+  :param base_shape: 
+  :param level_filters: 
+  :param level_depth: 
+  :param dropout: 
+  :param initial_epoch: 
+  :param epochs: 
+  :param learning_rate: 
+  :param num_parallel_calls: 
+  :param verbose: 
+  :param keras_verbose: 
+  :param eager: 
+  :param show: 
+  :param cache: 
+  :returns: 
+  :rtype: 
 
   # todo: copy the above from docs file
 
   """
-  def __init__(self, *, commands, mode, data_root, model_root, overwrite,
-               convert_mode, image_shape, data_size, test_size, epoch_size,
-               batch_size, num_objects, pose_dim, base_shape, level_filters,
-               level_depth, dropout, initial_epoch, epochs, learning_rate,
+  def __init__(self, *, commands, data_root, model_root, overwrite,
+               convert_mode, transformation, identity_prob, select_mode,
+               annotation_mode, image_shape, data_size, test_size, batch_size,
+               num_objects, pose_dim, base_shape, level_filters, level_depth,
+               dropout, initial_epoch, epochs, learning_rate,
                num_parallel_calls, verbose, keras_verbose, eager, show, cache):
     # main
     self.commands = commands
-    self.mode = mode
 
     # file settings
     self.data_root = data_root
     self.model_root = model_root
     self.overwrite = overwrite
-    self.convert_mode = convert_mode
+
+    # data modes
+    self.convert_modes = utils.listwrap(convert_mode)
+    self.transformation = transformation
+    self.identity_prob = identity_prob
+    self.select_mode = select_mode
+    self.annotation_mode = annotation_mode
 
     # data sizes
     self.image_shape = image_shape
@@ -143,14 +149,13 @@ class Artifice:
     self.num_tiles = dat.ArtificeData.compute_num_tiles(
       self.image_shape, self.output_tile_shape)
 
-    # standard model input data paths
-    self.unlabeled_set_path = join(self.data_root, 'unlabeled_set.tfrecord')
-    self.labeled_set_path = join(self.data_root, 'labeled_set.tfrecord')
-    self.test_set_path = join(self.data_root, 'test_set.tfrecord')
+    # derived model subdirs/paths
+    self.cache_dir = join(self.model_root, 'cache')
+    self.annotation_info_path = join(self.model_root, 'annotation_info.json')
 
     # ensure directories exist
-    _ensure_dirs_exist([self.data_root, self.model_root,
-                        join(self.data_root, 'cache')])
+    _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
+                        join(self.data_root, "annotated")]))
 
   def __str__(self):
     return f"""{asctime()}:
@@ -175,13 +180,21 @@ todo: other attributes"""
             'output_tile_shape' : self.output_tile_shape,
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.num_parallel_calls,
-            'num_shuffle' : min(self.data_size, 1000)}
+            'num_shuffle' : min(self.data_size, 1000),
+            'cache_dir' : self.cache_dir if self.cache else None}
   def _load_labeled(self):
-    return dat.LabeledData(self.labeled_set_path, size=self.data_size,
-                           **self._data_kwargs)
+    return dat.LabeledData(join(self.data_root, 'labeled_set.tfrecord'),
+                           size=self.data_size, **self._data_kwargs)
+  def _load_unlabeled(self):
+    return dat.UnlabeledData(join(self.data_root, 'unlabeled_set.tfrecord'),
+                             size=self.data_size, **self._data_kwargs)
+  def _load_annotated(self):
+    return dat.AnnotatedData(join(self.data_root, 'annotated'),
+                             transformation=tform.transformations[self.transformation],
+                             size=self.data_size, **self._data_kwargs)
   def _load_test(self):
-    return dat.LabeledData(self.test_set_path, size=self.test_size,
-                           **self._data_kwargs)
+    return dat.LabeledData(join(self.data_root, 'test_set.tfrecord'),
+                           size=self.test_size, **self._data_kwargs)
 
   def _load_model(self, expect_checkpoint=False):
     return mod.ProxyUNet(base_shape=self.base_shape,
@@ -193,9 +206,12 @@ todo: other attributes"""
                          overwrite=self.overwrite,
                          expect_checkpoint=expect_checkpoint)
 
+  #################### Methods implementing Commands ####################
+  
   def convert(self):
-    conversions.conversions[self.convert_mode](
-      self.data_root, test_size=self.test_size)
+    for mode in self.convert_modes:
+      conversions.conversions[mode](
+        self.data_root, test_size=self.test_size)
 
   def train(self):
     labeled_set = self._load_labeled()
@@ -227,12 +243,39 @@ todo: other attributes"""
       proxy = proxies[0]
       vis.plot_image(image, proxy[:,:,0])
       plt.show()
+
+  def select(self):
+    """Run selection using an active learning or other strategy. 
+
+    Note that this does not perform any labeling. It simply maintains a queue of
+    the indices for examples most recently desired for labeling. This queue
+    contains no repeats. The queue is saved to disk, and a file lock should be
+    created whenever it is altered, ensuring that the annotator does not make a
+    bad access.
+
+    """
+
+    pass
     
+    # todo: pick a selector, which could require data and a model or just the
+    # size of the data. Probably needs dataset to select from, in which case
+    # data_size should be 
+    
+  def annotate(self):
+    """Continually annotate new examples.
+
+    Continually access the selection queue, pop off the most recent, and
+    annotate it, either with a human annotator, or automatically using prepared
+    labels (and a sleep timer). Needs to keep a list of examples already
+    annotated, since they will be strewn throughout different files, as well as
+    respect the file lock on the queue.
+
+    """
+    pass
+
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('commands', nargs='+', help=docs.commands)
-  parser.add_argument('--mode', nargs=1, default=['augmented-active'],
-                      help=docs.mode)
 
   # file settings
   parser.add_argument('--data-root', '--input', '-i', nargs=1,
@@ -244,82 +287,70 @@ def main():
   parser.add_argument('--overwrite', '-f', action='store_true',
                       help=docs.overwrite)
 
-  # data conversion settings
-  parser.add_argument('--convert-mode', nargs=1,
-                      default=[0], type=int,
+  # data settings
+  parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
                       help=docs.convert_mode)
+  parser.add_argument('--transformation', '--augmentation', '-a', nargs=1,
+                      default=[None], type=int, help=docs.transformation)
+  parser.add_argument('--identity-prob', nargs=1, default=[0.01], type=float,
+                      help=docs.identity_prob)
+  parser.add_argument('--select-mode', '--select', nargs=1, default=['random'],
+                      help=docs.select_mode)
+  parser.add_argument('--annotation-mode', '--annotate', nargs=1,
+                      default=['prelabeled'], help=docs.annotation_mode)
 
   # sizes relating to data
-  parser.add_argument('--image-shape', '--shape', '-s', nargs=3,
-                      type=int, default=[100,100,1],
-                      help=docs.image_shape)
-  parser.add_argument('--data-size', '-N', nargs=1,
-                      default=[2000], type=int,
+  parser.add_argument('--image-shape', '--shape', '-s', nargs=3, type=int,
+                      default=[100,100,1], help=docs.image_shape)
+  parser.add_argument('--data-size', '-N', nargs=1, default=[2000], type=int,
                       help=docs.data_size)
-  parser.add_argument('--test-size', '-T', nargs=1,
-                      default=[100], type=int,
+  parser.add_argument('--test-size', '-T', nargs=1, default=[100], type=int,
                       help=docs.test_size)
-  parser.add_argument('--epoch-size', nargs=1,
-                      default=[10000], type=int,
-                      help=docs.epoch_size)
-  parser.add_argument('--batch-size', '-b', nargs=1,
-                      default=[4], type=int,
+  parser.add_argument('--batch-size', '-b', nargs=1, default=[4], type=int,
                       help=docs.batch_size)
-  parser.add_argument('--num-objects', '-n', nargs=1,
-                      default=[4], type=int,
+  parser.add_argument('--num-objects', '-n', nargs=1, default=[4], type=int,
                       help=docs.num_objects)
-  parser.add_argument('--pose-dim', '-p', nargs=1,
-                      default=[2], type=int,
+  parser.add_argument('--pose-dim', '-p', nargs=1, default=[2], type=int,
                       help=docs.pose_dim)
 
   # model architecture
-  parser.add_argument('--base-shape', nargs='+',
-                      default=[32], type=int,
+  parser.add_argument('--base-shape', nargs='+', default=[32], type=int,
                       help=docs.base_shape)
-  parser.add_argument('--level-filters', nargs='+',
-                      default=[32,64,128], type=int,
-                      help=docs.level_filters)
-  parser.add_argument('--level-depth', nargs='+',
-                      default=[2], type=int,
+  parser.add_argument('--level-filters', nargs='+', default=[32,64,128],
+                      type=int, help=docs.level_filters)
+  parser.add_argument('--level-depth', nargs='+', default=[2], type=int,
                       help=docs.level_depth)
 
   # model hyperparameters
-  parser.add_argument('--dropout', nargs=1,
-                      default=[0.5], type=float,
+  parser.add_argument('--dropout', nargs=1, default=[0.5], type=float,
                       help=docs.dropout)
-  parser.add_argument('--initial-epoch', nargs=1,
-                      default=[0], type=int,
+  parser.add_argument('--initial-epoch', nargs=1, default=[0], type=int,
                       help=docs.initial_epoch) # todo: get from ckpt
-  parser.add_argument('--epochs', '-e', nargs=1,
-                      default=[1], type=int,
+  parser.add_argument('--epochs', '-e', nargs=1, default=[1], type=int,
                       help=docs.epochs)
-  parser.add_argument('--learning-rate', '-l', nargs=1,
-                      default=[0.1], type=float,
-                      help=docs.learning_rate)
+  parser.add_argument('--learning-rate', '-l', nargs=1, default=[0.1],
+                      type=float, help=docs.learning_rate)
 
   # runtime settings
-  parser.add_argument('--num-parallel-calls', '--cores', nargs=1,
-                      default=[-1], type=int,
-                      help=docs.num_parallel_calls)
-  parser.add_argument('--verbose', '-v', nargs=1,
-                      default=[2], type=int,
+  parser.add_argument('--num-parallel-calls', '--cores', nargs=1, default=[-1],
+                      type=int, help=docs.num_parallel_calls)
+  parser.add_argument('--verbose', '-v', nargs=1, default=[2], type=int,
                       help=docs.verbose)
-  parser.add_argument('--keras-verbose', nargs=1,
-                      default=[1], type=int,
+  parser.add_argument('--keras-verbose', nargs=1, default=[1], type=int,
                       help=docs.keras_verbose)
-  parser.add_argument('--patient', action='store_true',
-                      help=docs.patient)
-  parser.add_argument('--show', action='store_true',
-                      help=docs.show)
-  parser.add_argument('--cache', action='store_true',
-                      help=docs.cache)
+  parser.add_argument('--patient', action='store_true', help=docs.patient)
+  parser.add_argument('--show', action='store_true', help=docs.show)
+  parser.add_argument('--cache', action='store_true', help=docs.cache)
 
   args = parser.parse_args()
-  art = Artifice(commands=args.commands, mode=args.mode[0],
-                 convert_mode=args.convert_mode[0], data_root=args.data_root[0],
-                 model_root=args.model_root[0], overwrite=args.overwrite,
-                 image_shape=args.image_shape, data_size=args.data_size[0],
-                 test_size=args.test_size[0], epoch_size=args.epoch_size[0],
+  art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
+                 transformation=args.transformation,
+                 identity_prob=args.identity_prob[0],
+                 select_mode=args.select_mode[0],
+                 annotation_mode=args.annotation_mode[0],
+                 data_root=args.data_root[0], model_root=args.model_root[0],
+                 overwrite=args.overwrite, image_shape=args.image_shape,
+                 data_size=args.data_size[0], test_size=args.test_size[0],
                  batch_size=args.batch_size[0], num_objects=args.num_objects[0],
                  pose_dim=args.pose_dim[0], base_shape=args.base_shape,
                  level_filters=args.level_filters,

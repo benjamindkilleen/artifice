@@ -671,4 +671,14 @@ Ideas in Artifice can be built on, code as well. Big ideas:
   doing testing. They'll just care about 
 * Make the default hourglass net 3 layers deep, not 4.
 
+## July 3, 2019: Annotator
+* Can make the unlabeled set, skipping test set as necessary of course.
+* Labeled set maker modified to take as many images as there exist labels for,
+  assuming the same ordering. Not doing anything to match filenames.
+* Put human labeled/annotated sets in directories, since there will necessarily
+  be a lot of these.
+* The annotator runs at the same time as the trainer.
+* model.train method 
+
+
 

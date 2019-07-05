@@ -9,6 +9,10 @@ overwrite = "Overwrite existing models."
 
 # data conversion
 convert_mode = "todo"
+transformation = "todo"
+identity_prob = "todo"
+select_mode = "todo"
+annotation_mode = "todo"
 
 # data sizes
 image_shape = "Shape of the image as: HEIGHT WIDTH CHANNELS"
@@ -17,7 +21,6 @@ data_size = "Number of examples per training epoch."
 test_size = "Number of examples withheld for testing."
 batch_size = "Batch size."
 subset_size = "Number of examples to annotate."
-epoch_size = "Number of artificial examples per training epoch."
 num_objects = "Maximum number of objects."
 pose_dim = "todo"
 

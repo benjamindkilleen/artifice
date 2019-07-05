@@ -81,9 +81,14 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
   """
   image_paths = _get_paths(join(data_root, image_dirname), image_ext)
   label_paths = _get_paths(join(data_root, label_dirname), label_ext)
-  if len(image_paths) != len(label_paths):
-    raise RuntimeError(f"number of images ({len(image_paths)}) != "
-                       f"number of labels ({len(label_paths)})")
+  if len(image_paths) > len(label_paths):
+    logger.warning(f"labeled_set: using the first {len(label_paths)} images "
+                   f"(for which labels exist)")
+    del image_paths[len(label_paths):]
+  elif len(image_paths) < len(label_paths):
+    logger.warning(f"labeled_set: using the first {len(image_paths)} labels "
+                   f"(for which images exist)")
+    del label_paths[len(image_paths):]
   assert len(image_paths) >= test_size
   def gen():
     for image_path, label_path in zip(image_paths, label_paths):
@@ -98,6 +103,33 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
   _write_set(islice(g, test_size), join(data_root, record_name))
   _write_set(islice(g, test_size, None), join(data_root, test_name))
 
+
+def _image_dir(data_root, record_name='labeled_set.tfrecord',
+               image_dirname='images', image_ext='png', test_size=0):
+  """Used to write an unlabeled set of just images.
+
+  test_size can be used to denote a number of examples to skip, in the sorted
+  list of path names. The actual test set is not created, however, as this
+  requires labels.
+
+  :param data_root: 
+  :param record_name: 
+  :param image_dirname: 
+  :param image_ext: 
+  :param test_size: 
+  :returns: 
+  :rtype: 
+
+  """
+  image_paths = _get_paths(join(data_root, image_dirname), image_ext)
+  assert len(image_paths) >= test_size
+  def gen():
+    for image_path, label_path in zip(image_paths, label_paths):
+      image = img.open_as_float(image_path)
+      yield dat.proto_from_image(image)
+  _write_set(islice(gen(), test_size), join(data_root, record_name))
+  
+  
 def png_dir_and_txt_dir(data_root, test_size=0):
   """Convert from a directory of image files and dir of label files.
 
@@ -138,8 +170,12 @@ def png_dir_and_npy_file(data_root, test_size=0):
   """
   raise NotImplementedError
 
+def png_dir(data_root, test_size=0):
+  _image_dir(data_root, image_ext='png', test_size=test_size)
+
 # list of all the conversion functions here.
-conversions = [png_dir_and_txt_dir,
-               png_dir_and_txt_file,
-               png_dir_and_npy_dir,
-               png_dir_and_npy_file]
+conversions = {0 : png_dir_and_txt_dir,
+               1 : png_dir_and_txt_file,
+               2 : png_dir_and_npy_dir,
+               3 : png_dir_and_npy_file,
+               4 : png_dir}
