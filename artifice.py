@@ -256,9 +256,12 @@ todo: other attributes"""
     bad access.
 
     """
-
-    pass
+    kwargs = 
+    selector = None
     
+    selector.None
+
+  
     # todo: pick a selector, which could require data and a model or just the
     # size of the data. Probably needs dataset to select from, in which case
     # data_size should be 
@@ -282,7 +285,7 @@ todo: other attributes"""
                                 **kwargs)
     else:
       raise NotImplementedError(f"{mode} annotation mode")
-    annotator()
+    annotator.run()
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)

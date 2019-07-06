@@ -25,20 +25,30 @@ class AnnotationInfo(SharedDict):
 
     """
     super().__init__(path)
+    self.acquire()
+    if self.get('annotated') is None:
+      self['annotated'] = set()
     if clear:
-      self.acquire()
-      self['selections'] = SortedList(key=lambda t : t[1])
-      self.release()
+      self['selections'] = dict()
+      self['sorted_selections'] = SortedList(key=lambda t : t[1])
+    self.release()
 
-  def insert(self, item):
+  def push(self, item):
     """Update sortec selections with (idx, priority) item (or items).
 
-    If idx already, present, removes it.
+    If item already present, updates it. No-op if idx already annotated.
 
     """
     items = utils.listwrap(item)
     self.acquire()
-    self['selections'].update(items)
+    for idx, priority in items:
+      if idx in self['annotated']:
+        continue
+      old_priority = self['selections'].get(idx)
+      if old_priority is not None:
+        self['ordered_selections'].remove((idx, old_priority))
+      self['selections'].update((idx, priority))
+      self['sorted_selections'].update((idx, priority))
     self.release()
     
   def pop(self):
@@ -48,8 +58,11 @@ class AnnotationInfo(SharedDict):
 
     """
     self.acquire()
+    if self['annotated'] is None:
+      self['annotated'] = set()
     if self['selections']:
-      idx, _ = self['selections'].popitem()
+      idx, _ = self['sorted_selections'].popitem()
+      del self['selections'][idx]
       self['annotated'].add(idx)
     else:
       idx = None
@@ -93,7 +106,7 @@ class Annotator:
     return os.path.join(self.annotated_dir, strftime(
       f"%Y%m%d%H%m%S_size-{self.record_size}.tfrecord"))
 
-  def __call__(self):
+  def run(self):
     while True:
       examples = []
       for _ in range(self.record_size):

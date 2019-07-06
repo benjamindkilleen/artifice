@@ -187,6 +187,7 @@ class ArtificeData(object):
   TRAINING = "TRAINING"         # `(image, proxy)` tensor tuple
   PREDICTION = "PREDICTION"     # single `image` tensor
   EVALUATION = "EVALUATION"     # `(image, label)` tensor tuple
+  ENUMERATED_PREDICTION = "ENUMERATED_PREDICTION"
   AUGMENTED_TRAINING = "AUGMENTED_TRAINING"
   AUGMENTED_PREDICTION = "AUGMENTED_PREDICTION"
   AUGMENTED_EVALUATION = "AUGMENTED_EVALUATION"
@@ -276,8 +277,10 @@ class ArtificeData(object):
     raise NotImplementedError("subclasses should implement")
 
   def postprocess(self, dataset, mode):
+    if "ENUMERATED" in mode:
+      dataset = dataset.enumerate()
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
-    if mode in [ArtificeData.TRAINING, ArtificeData.AUGMENTED_TRAINING]:
+    if "TRAINING" in mode:
       dataset = dataset.shuffle(self.num_shuffle)
     dataset = dataset.repeat(-1).prefetch(self.prefetch_buffer_size)
     if self.cache_dir is not None:
@@ -298,6 +301,9 @@ class ArtificeData(object):
   @property
   def evaluation_input(self):
     return self.get_input(ArtificeData.EVALUATION)
+  @property
+  def enumerated_prediction_input(self):
+    return self.get_input(ArtificeData.ENUMERATED_PREDICTION)
   @property
   def augmented_training_input(self):
     return self.get_input(ArtificeData.AUGMENTED_TRAINING)

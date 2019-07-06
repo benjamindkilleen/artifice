@@ -42,3 +42,21 @@ def jsonable(hist):
     out[k] = list(map(float, v))
   return out
 
+def atleast_4d(image):
+  """Expand a numpy array (typically an image) to 4d.
+
+  Inserts batch dim, then channel dim.
+
+  :param image: 
+  :returns: 
+  :rtype: 
+
+  """
+  if image.ndim >= 4:
+    return image
+  if image.ndim == 3:
+    return image[np.newaxis, :, :, :]
+  if image.ndim == 2:
+    return image[np.newaxis, :, :, np.newaxis]
+  if image.ndim == 1:
+    return image[np.newaxis, :, np.newaxis, np.newaxis]
