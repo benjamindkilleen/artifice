@@ -8,8 +8,8 @@ def listwrap(val):
   :rtype: 
 
   """
-  if not isinstance(val, str) and hasattr(val, "__iter__"):
-    return list(val)
+  if isinstance(val, list):
+    return val
   return [val]
 
 

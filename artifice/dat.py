@@ -90,20 +90,25 @@ def example_from_proto(proto):
   label = tf.reshape(label, [features['label_dim0'], features['label_dim1']])
   return image, label
 
-def proto_from_example(example):
-  image, label = example
+def proto_from_annotated_example(example):
+  image, label, annotation = example
   image = img.as_float(image)
   label = label.astype(np.float32)
+  annotation = img.as_float(annotation)
   feature = {'image' : _bytes_feature(image.tostring()),
              'image_dim0' : _int64_feature(image.shape[0]),
              'image_dim1' : _int64_feature(image.shape[1]),
              'image_dim2' : _int64_feature(image.shape[2]),
              'label' : _bytes_feature(label.tostring()),
              'label_dim0' : _int64_feature(label.shape[0]),
-             'label_dim1' : _int64_feature(label.shape[1])}
+             'label_dim1' : _int64_feature(label.shape[1]),
+             'annotation' : _bytes_feature(annotation.tostring()),
+             'annotation_dim0' : _int64_feature(annotation.shape[0]),
+             'annotation_dim1' : _int64_feature(annotation.shape[1]),
+             'annotation_dim2' : _int64_feature(annotation.shape[2])}
   return _serialize_feature(feature)
 
-def example_from_proto(proto):
+def annotated_example_from_proto(proto):
   feature_description = {
     'image' : tf.FixedLenFeature([], tf.string),
     'image_dim0' : tf.FixedLenFeature([], tf.int64),
@@ -111,7 +116,11 @@ def example_from_proto(proto):
     'image_dim2' : tf.FixedLenFeature([], tf.int64),
     'label' : tf.FixedLenFeature([], tf.string),
     'label_dim0' : tf.FixedLenFeature([], tf.int64),
-    'label_dim1' : tf.FixedLenFeature([], tf.int64)}
+    'label_dim1' : tf.FixedLenFeature([], tf.int64),
+    'annotation' : tf.FixedLenFeature([], tf.string),
+    'annotation_dim0' : tf.FixedLenFeature([], tf.int64),
+    'annotation_dim1' : tf.FixedLenFeature([], tf.int64),
+    'annotation_dim2' : tf.FixedLenFeature([], tf.int64)}
   features = tf.parse_single_example(proto, feature_description)
   image = tf.decode_raw(features['image'], tf.float32)
   image = tf.reshape(image, (features['image_dim0'],
@@ -119,7 +128,11 @@ def example_from_proto(proto):
                              features['image_dim2']))
   label = tf.decode_raw(features['label'], tf.float32)
   label = tf.reshape(label, [features['label_dim0'], features['label_dim1']])
-  return image, label
+  annotation = tf.decode_raw(features['annotation'], tf.float32)
+  annotation = tf.reshape(annotation, (features['annotation_dim0'],
+                                       features['annotation_dim1'],
+                                       features['annotation_dim2']))
+  return image, label, annotation
 
 #################### loading and saving tf datasets ####################
 
@@ -316,6 +329,14 @@ class ArtificeData(object):
     save_dataset(record_name, self.dataset, serialize=self.serialize,
                  num_parallel_calls=self.num_parallel_calls)
 
+  def get_entry(self, i):
+    """Get the i'th entry of the original dataset, in numpy form."""
+    if tf.executing_eagerly():
+      entry = next(self.dataset.skip(i).take(1))
+    else:
+      raise NotImplementedError
+    return entry
+    
   #################### Generic functions for proxies/tiling ####################
     
   def make_proxy(self, image, label):

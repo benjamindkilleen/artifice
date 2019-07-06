@@ -1,11 +1,12 @@
 
 from os.path import exists
-import json
-from filelock import Timeout, FileLock
+import pickle
+from filelock import FileLock
   
 class SharedDict(dict):
   """Maintain a dict. Doesn't allow reads or writes unless the dict is
-  acquired.
+  acquired. If path already exists, does not clear it unless clear() method is
+  called.
 
   """
   def __init__(self, path):
@@ -27,28 +28,26 @@ class SharedDict(dict):
 
   def _save(self):
     with open(self.path, 'w') as f:
-      f.write(json.dumps(self))
+      pickle.dump(self, f)
 
   def _load(self):
+    super().clear()
     with open(self.path, 'r') as f:
-      self.update(json.loads(f.read()))
+      self.update(pickle.load(f))
   
-  def acquire(self):
+  def acquire(self, *args, **kwargs):
     """Acquire this dictionary in order to modify it.
 
-    Loads the dictionary from the file and updates `self` with it, so if some
-    keys were deleted by another process, they will be reinserted when this
-    process closes. This should not be a problem, as most use-cases won't be
-    deleting keys, but something to be aware of.
-
     """
-    self.lock.acquire()
+    self.lock.acquire(*args, **kwargs)
     self._load()
     return self
 
-  def release(self):
+  def release(self, *args, **kwargs):
     """Release this dictionary, allowing other processes to acquire it.
 
     """
     self._save()
-    self.lock.release()
+    self.lock.release(*args, **kwargs)
+
+    

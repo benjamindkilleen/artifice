@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from artifice import dat, mod, docs, vis, conversions, utils, img
+from artifice import dat, mod, docs, vis, conversions, utils, img, ann
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -87,9 +87,9 @@ class Artifice:
   """
   def __init__(self, *, commands, data_root, model_root, overwrite,
                convert_mode, transformation, identity_prob, select_mode,
-               annotation_mode, image_shape, data_size, test_size, batch_size,
-               num_objects, pose_dim, base_shape, level_filters, level_depth,
-               dropout, initial_epoch, epochs, learning_rate,
+               annotation_mode, record_size, image_shape, data_size, test_size,
+               batch_size, num_objects, pose_dim, base_shape, level_filters,
+               level_depth, dropout, initial_epoch, epochs, learning_rate,
                num_parallel_calls, verbose, keras_verbose, eager, show, cache):
     # main
     self.commands = commands
@@ -114,6 +114,7 @@ class Artifice:
     self.batch_size = batch_size
     self.num_objects = num_objects
     self.pose_dim = pose_dim
+    self.record_size = record_size
 
     # model architecture
     self.base_shape = utils.listify(base_shape, 2)
@@ -151,11 +152,12 @@ class Artifice:
 
     # derived model subdirs/paths
     self.cache_dir = join(self.model_root, 'cache')
-    self.annotation_info_path = join(self.model_root, 'annotation_info.json')
+    self.annotation_info_path = join(self.model_root, 'annotation_info.pkl')
+    self.annotated_dir = join(self.data_root, 'annotated')
 
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
-                        join(self.data_root, "annotated")]))
+                        self.annotated_dir]))
 
   def __str__(self):
     return f"""{asctime()}:
@@ -189,7 +191,7 @@ todo: other attributes"""
     return dat.UnlabeledData(join(self.data_root, 'unlabeled_set.tfrecord'),
                              size=self.data_size, **self._data_kwargs)
   def _load_annotated(self):
-    return dat.AnnotatedData(join(self.data_root, 'annotated'),
+    return dat.AnnotatedData(self.annotated_dir,
                              transformation=tform.transformations[self.transformation],
                              size=self.data_size, **self._data_kwargs)
   def _load_test(self):
@@ -271,7 +273,16 @@ todo: other attributes"""
     respect the file lock on the queue.
 
     """
-    pass
+    kwargs = {'info_path' : self.annotation_info_path,
+              'annotated_dir' = self.annotated_dir,
+              'record_size' : self.record_size}
+    if mode == 'disks':
+      annotator = DiskAnnotator(self._load_labeled(),
+                                annotation_delay=self.annotation_delay,
+                                **kwargs)
+    else:
+      raise NotImplementedError(f"{mode} annotation mode")
+    annotator()
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -296,8 +307,14 @@ def main():
                       help=docs.identity_prob)
   parser.add_argument('--select-mode', '--select', nargs=1, default=['random'],
                       help=docs.select_mode)
+
+  # annotation settings
   parser.add_argument('--annotation-mode', '--annotate', nargs=1,
-                      default=['prelabeled'], help=docs.annotation_mode)
+                      default=['disks'], help=docs.annotation_mode)
+  parser.add_argument('--record-size', nargs=1, default=[10], type=int,
+                      help=docs.record_size)
+  parser.add_argument('--annotation-delay', nargs=1, default=[60], type=int,
+                      help=docs.record_size)
 
   # sizes relating to data
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3, type=int,
@@ -348,12 +365,12 @@ def main():
                  identity_prob=args.identity_prob[0],
                  select_mode=args.select_mode[0],
                  annotation_mode=args.annotation_mode[0],
-                 data_root=args.data_root[0], model_root=args.model_root[0],
-                 overwrite=args.overwrite, image_shape=args.image_shape,
-                 data_size=args.data_size[0], test_size=args.test_size[0],
-                 batch_size=args.batch_size[0], num_objects=args.num_objects[0],
-                 pose_dim=args.pose_dim[0], base_shape=args.base_shape,
-                 level_filters=args.level_filters,
+                 record_size=args.record_size[0], data_root=args.data_root[0],
+                 model_root=args.model_root[0], overwrite=args.overwrite,
+                 image_shape=args.image_shape, data_size=args.data_size[0],
+                 test_size=args.test_size[0], batch_size=args.batch_size[0],
+                 num_objects=args.num_objects[0], pose_dim=args.pose_dim[0],
+                 base_shape=args.base_shape, level_filters=args.level_filters,
                  level_depth=args.level_depth[0], dropout=args.dropout[0],
                  initial_epoch=args.initial_epoch[0], epochs=args.epochs[0],
                  learning_rate=args.learning_rate[0],
