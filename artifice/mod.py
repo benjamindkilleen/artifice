@@ -5,11 +5,12 @@ import os
 import logging
 import json
 import time
+import itertools
 import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
-from artifice import lay, dat, utils, img
+from artifice import dat, utils, img
 
 logger = logging.getLogger('artifice')
 
@@ -132,19 +133,51 @@ class Model():
   # found in keras library. Look into it during training. For now, we're fine
   # with just weights in the checkpoint file.
 
-  def train(self, art_data, **kwargs):
-    """Fits the model, saving it along the way and saving the training history
+  def fit(self, art_data, initial_epoch=0):
+    """Wrapper around model.fit that includes callbacks and history saving.
 
-    :param art_set: ArtificeData 
-    :returns: history dictionary
-    :rtype: 
+    Only loads the dataset once, then repeats it, so doesn't update with new
+    examples as they are labeled. Should be used with already assembled dataset.
+
+    :param art_data: ArtificeData object
+    :param initial_epoch: initial epoch
 
     """
     kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
     hist = self.model.fit(art_data.training_input,
-                          steps_per_epoch=art_data.steps_per_epoch, **kwargs).history
-    with open(self.history_path, 'w') as f:
-      f.write(json.dumps(utils.jsonable(hist))) # todo: add to existing history
+                          steps_per_epoch=art_data.steps_per_epoch,
+                          initial_epoch=initial_epoch,
+                          **kwargs).history
+    hist = utils.make_jsonable(hist)
+    if initial_epoch > 0 and os.path.exists(self.history_path):
+      old_hist = utils.json_load(self.history_path)
+      hist = utils.concat_dicts(old_hist, hist)
+    utils.json_save(self.history_path, hist)
+    self.save()                 # save the whole model (not just checkpoint weights)
+    return hist
+  
+  def train(self, art_data, initial_epoch=0, epochs=1, **kwargs):
+    """Fits the model, saving it along the way, with augmented data.
+
+    Saves the training history. Reloads the dataset every epoch, so if new
+    records exist, it will load them as well on the epoch.
+
+    :param art_set: ArtificeData 
+    :returns: history dictionary
+
+    """
+    kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
+    if initial_epoch > 0 and os.path.exists(self.history_path):
+      hist = utils.json_load(self.history_path)
+    epoch = initial_epoch
+    while epoch != epochs:
+      new_hist = self.model.fit(art_data.augmented_training_input,
+                                steps_per_epoch=art_data.steps_per_epoch,
+                                initial_epoch=epoch,
+                                epochs=epochs + 1,
+                                **kwargs).history
+      hist = utils.concat_dicts(hist, utils.make_jsonable(new_hist))
+    utils.json_save(self.history_path, hist)
     self.save()
     return hist
   

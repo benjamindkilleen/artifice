@@ -4,6 +4,7 @@
 
 import os
 from time import sleep, strftime
+import itertools
 from sortedcontainers import SortedList
 from skimage.draw import circle
 
@@ -107,7 +108,7 @@ class Annotator:
       f"%Y%m%d%H%m%S_size-{self.record_size}.tfrecord"))
 
   def run(self):
-    while True:
+    for i in itertools.count():
       examples = []
       for _ in range(self.record_size):
         idx = self.info.pop()
@@ -115,10 +116,13 @@ class Annotator:
           sleep(self.sleep_duration)
           idx = self.info.pop()
         entry = self.data_set.get_entry(idx)
+        logger.info(f"annotating example {idx}...")
         examples.append(self.annotate(entry))
       dataset = tf.data.Dataset.from_tensor_slices(examples)
-      dat.save_dataset(self._generate_record_name(), dataset,
+      record_name = self._generate_record_name()
+      dat.save_dataset(record_name, dataset,
                        serialize=dat.proto_from_annotated_example)
+      logger.info(f"saved {i}'th annotated set to {record_name}.")
       
   def annotate(self, entry):
     """Abstract method for annotating an example.
@@ -151,9 +155,8 @@ def SimulatedAnnotator(Annotator):
     self.annotation_delay = annotation_delay
     super().__init__(*args, **kwargs)
     assert issubclass(type(self.data_set), LabeledData)
-
     
-class DiskAnnotator(SimulatedAnnotator)
+class DiskAnnotator(SimulatedAnnotator):
   def annotate(self, entry):
     sleep(self.annotation_delay)
     image, label = entry[:2]

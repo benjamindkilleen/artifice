@@ -13,7 +13,16 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
-from artifice import dat, mod, docs, vis, conversions, utils, img, ann
+
+from artifice import dat
+from artifice import mod
+from artifice import docs
+from artifice import vis
+from artifice import conversions
+from artifice import utils
+from artifice import img
+from artifice import ann
+from artifice import prio
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -86,7 +95,7 @@ class Artifice:
 
   """
   def __init__(self, *, commands, data_root, model_root, overwrite,
-               convert_mode, transformation, identity_prob, select_mode,
+               convert_mode, transformation, identity_prob, priority_mode,
                annotation_mode, record_size, image_shape, data_size, test_size,
                batch_size, num_objects, pose_dim, base_shape, level_filters,
                level_depth, dropout, initial_epoch, epochs, learning_rate,
@@ -103,7 +112,7 @@ class Artifice:
     self.convert_modes = utils.listwrap(convert_mode)
     self.transformation = transformation
     self.identity_prob = identity_prob
-    self.select_mode = select_mode
+    self.priority_mode = priority_mode
     self.annotation_mode = annotation_mode
 
     # data sizes
@@ -157,7 +166,7 @@ class Artifice:
 
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
-                        self.annotated_dir]))
+                        self.annotated_dir])
 
   def __str__(self):
     return f"""{asctime()}:
@@ -215,10 +224,19 @@ todo: other attributes"""
       conversions.conversions[mode](
         self.data_root, test_size=self.test_size)
 
-  def train(self):
+  def fit(self):
+    """Fit the model using a labeled set."""
     labeled_set = self._load_labeled()
     model = self._load_model()
-    model.train(labeled_set, epochs=self.epochs,
+    model.fit(labeled_set, epochs=self.epochs,
+              initial_epoch=self.initial_epoch,
+              verbose=self.keras_verbose)
+      
+  def train(self):
+    """Train the model using augmented examples from the annotated set."""
+    annotated_set = self._load_annotated()
+    model = self._load_model()
+    model.train(annotated_set, epochs=self.epochs,
                 initial_epoch=self.initial_epoch,
                 verbose=self.keras_verbose)
 
@@ -246,8 +264,8 @@ todo: other attributes"""
       vis.plot_image(image, proxy[:,:,0])
       plt.show()
 
-  def select(self):
-    """Run selection using an active learning or other strategy. 
+  def prioritize(self):
+    """Prioritize images for annotation using an active learning or other strategy.
 
     Note that this does not perform any labeling. It simply maintains a queue of
     the indices for examples most recently desired for labeling. This queue
@@ -256,15 +274,12 @@ todo: other attributes"""
     bad access.
 
     """
-    kwargs = 
-    selector = None
-    
-    selector.None
-
-  
-    # todo: pick a selector, which could require data and a model or just the
-    # size of the data. Probably needs dataset to select from, in which case
-    # data_size should be 
+    kwargs = {'info_path' : self.annotation_info_path}
+    if self.priority_mode == 'random':
+      prioritizer = prio.RandomPrioritizer(self._load_unlabeled(), **kwargs)
+    else:
+      raise NotImplementedError(f"{self.priority_mode} priority mode")
+    prioritizer.run()
     
   def annotate(self):
     """Continually annotate new examples.
@@ -277,14 +292,14 @@ todo: other attributes"""
 
     """
     kwargs = {'info_path' : self.annotation_info_path,
-              'annotated_dir' = self.annotated_dir,
+              'annotated_dir' : self.annotated_dir,
               'record_size' : self.record_size}
-    if mode == 'disks':
+    if self.annotation_mode == 'disks':
       annotator = DiskAnnotator(self._load_labeled(),
                                 annotation_delay=self.annotation_delay,
                                 **kwargs)
     else:
-      raise NotImplementedError(f"{mode} annotation mode")
+      raise NotImplementedError(f"{self.annotation_mode} annotation mode")
     annotator.run()
 
 def main():
@@ -308,7 +323,7 @@ def main():
                       default=[None], type=int, help=docs.transformation)
   parser.add_argument('--identity-prob', nargs=1, default=[0.01], type=float,
                       help=docs.identity_prob)
-  parser.add_argument('--select-mode', '--select', nargs=1, default=['random'],
+  parser.add_argument('--priority-mode', '--priority', nargs=1, default=['random'],
                       help=docs.select_mode)
 
   # annotation settings
@@ -366,7 +381,7 @@ def main():
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
                  transformation=args.transformation,
                  identity_prob=args.identity_prob[0],
-                 select_mode=args.select_mode[0],
+                 priority_mode=args.priority_mode[0],
                  annotation_mode=args.annotation_mode[0],
                  record_size=args.record_size[0], data_root=args.data_root[0],
                  model_root=args.model_root[0], overwrite=args.overwrite,

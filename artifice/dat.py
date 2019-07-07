@@ -172,7 +172,7 @@ def save_dataset(record_name, dataset, serialize=None,
       sess.run(write_op)
 
 #################### ArtificeData classes ####################
-      
+
 class ArtificeData(object):
   """Abstract class for data wrappers in artifice, which are distinguished by the
   type of examples they hold (unlabeled images, (image, label) pairs (examples),

@@ -1,5 +1,7 @@
 """Generic utils."""
 
+import json
+
 def listwrap(val):
   """Wrap `val` as a list.
 
@@ -31,6 +33,23 @@ def listify(val, length):
     return val
   return [val] * length
 
+def concat_dicts(a, b):
+  """Concat the lists in b onto the lists in a.
+
+  Behavior is undefined for elements that are not lists.
+
+  :param a: 
+  :param b: 
+  :returns: 
+  :rtype: 
+
+  """
+  c = a.copy()
+  for k,v in b.items():
+    if type(v) is list and type(c.get(k)) is list:
+      c[k] += v
+  return c
+
 def jsonable(hist):
   """Make a history dictionary json-serializable.
 
@@ -41,6 +60,16 @@ def jsonable(hist):
   for k,v in hist.items():
     out[k] = list(map(float, v))
   return out
+
+def json_save(fname, obj):
+  """Opens json object stored at fname. Errors if file doesn't exist."""
+  with open(fname, 'w') as f:
+    f.write(json.dumps(obj))
+
+def json_load(fname):
+  with open(fname, 'r') as f:
+    obj = json.loads(r.read())
+  return obj
 
 def atleast_4d(image):
   """Expand a numpy array (typically an image) to 4d.
