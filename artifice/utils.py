@@ -41,18 +41,21 @@ def listify(val, length):
 def concat_dicts(a, b):
   """Concat the lists in b onto the lists in a.
 
-  Behavior is undefined for elements that are not lists.
+  If b has elements that a does not, includes them. Behavior is undefined for
+  elements that are not lists.
 
   :param a: 
   :param b: 
   :returns: 
-  :rtype: 
+  :rtype:
 
   """
   c = a.copy()
   for k,v in b.items():
     if type(v) is list and type(c.get(k)) is list:
       c[k] += v
+    else:
+      c[k] = v
   return c
 
 def jsonable(hist):

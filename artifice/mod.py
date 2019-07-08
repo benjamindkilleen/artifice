@@ -153,7 +153,7 @@ class ArtificeModel():
                           steps_per_epoch=art_data.steps_per_epoch,
                           initial_epoch=initial_epoch,
                           **kwargs).history
-    hist = utils.make_jsonable(hist)
+    hist = utils.jsonable(hist)
     if initial_epoch > 0 and os.path.exists(self.history_path):
       old_hist = utils.json_load(self.history_path)
       hist = utils.concat_dicts(old_hist, hist)
@@ -174,14 +174,16 @@ class ArtificeModel():
     kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
     if initial_epoch > 0 and os.path.exists(self.history_path):
       hist = utils.json_load(self.history_path)
+    else:
+      hist = {}
     epoch = initial_epoch
     while epoch != epochs:
       new_hist = self.model.fit(art_data.augmented_training_input,
                                 steps_per_epoch=art_data.steps_per_epoch,
                                 initial_epoch=epoch,
-                                epochs=epochs + 1,
+                                epochs=epoch + 1,
                                 **kwargs).history
-      hist = utils.concat_dicts(hist, utils.make_jsonable(new_hist))
+      hist = utils.concat_dicts(hist, utils.jsonable(new_hist))
     utils.json_save(self.history_path, hist)
     self.save()
     return hist

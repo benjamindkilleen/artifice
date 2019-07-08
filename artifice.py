@@ -238,7 +238,12 @@ todo: other attributes"""
 
   def augment(self):
     """Visualize the augmented training set."""
-    pass
+    annotated_set = self._load_annotated()
+    for images, proxies in annotated_set.augmented_training_input:
+      for image, proxy in zip(images, proxies):
+        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
+        logger.info(f"showing...")
+        plt.show()
     
   def train(self):
     """Train the model using augmented examples from the annotated set."""
@@ -326,8 +331,9 @@ todo: other attributes"""
     if self.deep:
       utils.rm(self.model_root)
     else:
+      # todo: remove cache files
       utils.rm(self.annotation_info_path)
-      utils.rm(self.annotation_info_path + '.lock')
+      utils.rm(self.annotation_info_path + '.lockfile')
       utils.rm(self.annotated_dir)
 
 def main():

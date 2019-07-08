@@ -680,5 +680,12 @@ Ideas in Artifice can be built on, code as well. Big ideas:
 * The annotator runs at the same time as the trainer.
 * model.train method 
 
+## July 8, 2019: Augmentation
 
-
+* Added a simple augmentation to randomly translate images. Without
+  augmentation, an epoch (2000 images) took 490s. After this simple augmentation
+  method, it took 588s, not including shuffle time. So not bad.
+* Computer isn't getting hot though, suggesting that augmentation is a serious
+  bottleneck.
+* Caching just doesn't work. Need to reach the end of the iterator before it
+  actually saves the cache, so that's a thing. Gotta figure that out.

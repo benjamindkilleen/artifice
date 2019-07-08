@@ -13,7 +13,7 @@ class SharedDict(dict):
     self.path = path
     if not exists(path):
       self._save()
-    self.lock = FileLock(self.path + ".lock")
+    self.lock = FileLock(self.path + ".lockfile")
 
   def _check_acquired(self):
     if not self.lock.is_locked:

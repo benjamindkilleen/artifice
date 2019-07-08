@@ -209,11 +209,11 @@ class DiskAnnotator(SimulatedAnnotator):
     image, label = entry[:2]
     annotation = -1 * np.ones((image.shape[0], image.shape[1], 1), np.float32)
     for i in range(label.shape[0]):
-      rr, cc = circle(label[i,0], label[i,1], 5, shape=image.shape[:2])
+      rr, cc = circle(label[i,0], label[i,1], 9, shape=image.shape[:2])
       xs = []
       ys = []
       for x,y in zip(rr,cc):
-        if image[x,y] >= 0.4:   # arbitrary threshold
+        if image[x,y] >= 0.2:   # arbitrary threshold
           xs.append(x)
           ys.append(y)
       annotation[xs,ys] = i

@@ -9,6 +9,13 @@ more standard dimensions to the label, in addition to position, to allow for )
 In each cases, background inpainting is done with random noise, with the same
 mean and variance as the original image.
 
+These will be wrapped in py_function, ensuring eager execution (fine since this
+is just preparing data). Each function should take a list of tensors [image,
+label, annotation] and return a [new_image, new_label] list.
+
+Because these are wrapped in py_function, things can be turned into numpy arrays
+and back.
+
 """
 
 import logging
@@ -16,16 +23,42 @@ import tensorflow as tf
 
 logger = logging.getLogger('artifice')
 
+def _swap(t):
+  return tf.gather(t, [1,0])
+
 def identity(image, label, annotation):
-  return image, label
+  return [image, label]
 
 def normal_translate(image, label, annotation):
   """Translate each object with a random offset, normal distributed."""
+  # image, label, annotation = args
 
   # num_objects array
-  offsets = tf.random.normal([tf.shape(label)[0], 2], mean=0, stddev=4.0,
-                             dtype=tf.float32)
-  raise NotImplementedError
+
+  image_std = tf.math.reduce_std(image)
+  image_mean = tf.reduce_mean(image)
+  new_image = tf.identity(image)
+  new_label = label.numpy()
+  for i in range(label.shape[0]):
+    obj_image = tf.identity(image)
+    mask = tf.cast(tf.equal(annotation, tf.constant(i, tf.float32)),
+                   tf.float32)
+    obj_mask = tf.identity(mask)
+
+    offset = tf.random.normal([2], mean=0, stddev=5, dtype=tf.float32)
+    new_label[i,:2] += offset.numpy()
+    obj_image = tf.contrib.image.translate(
+      obj_image, _swap(offset), interpolation='BILINEAR')
+    obj_mask = tf.contrib.image.translate(
+      obj_mask, _swap(offset), interpolation='NEAREST')
+
+    new_image = tf.where(tf.cast(mask, tf.bool),
+                         tf.random.normal(image.shape, mean=image_mean,
+                                          stddev=image_std,
+                                          dtype=tf.float32),
+                         new_image)
+    new_image = tf.where(tf.cast(obj_mask, tf.bool), obj_image, new_image)
+  return [new_image, tf.constant(new_label)]
 
 def uniform_rotate(image, label, annotation):
   """Rotate each object by a random angle from Unif(0,2pi)"""

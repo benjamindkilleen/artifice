@@ -294,6 +294,11 @@ class ArtificeData(object):
       dataset = dataset.shuffle(self.num_shuffle)
     dataset = dataset.repeat(-1).prefetch(self.prefetch_buffer_size)
     if self.cache_dir is not None:
+      # todo: this is not being done correctly. Basically, you can't repeat the
+      # dataset before you cache it. So if we want to cache every epoch, need to
+      # run the dataset out, basically, or repeat it once to the epoch size,
+      # then cache it, then forever.
+      # todo: figure out why cache files are going in model_root not cache_dir
       dataset = dataset.cache(self.cache_dir)
     return dataset
 
@@ -659,14 +664,14 @@ class AnnotatedData(LabeledData):
     """
     if self.transformation is None:
       return image, label
-    return self.transformation(image, label, annotation)
-    # return tf.case(             # todo: switch case or something like it
-    #   tf.cast(tf.less(tf.random.uniform([], 0, 1, tf.float32),
-    #                   tf.constant(self.identity_prob, tf.float32)),
-    #           tf.int64),
-    #   [(lambda : self.transformation(image, label, annotation)),
-    #    (lambda : (image, label))]
-    # )
+    def fn():
+      return tf.py_function(self.transformation,
+                            inp=[image, label, annotation],
+                            Tout=[tf.float32, tf.float32])
+    return tf.case(
+      {tf.greater(tf.random.uniform([], 0, 1, tf.float32),
+                  tf.constant(self.identity_prob, tf.float32)) : fn},
+      default=lambda : [image, label], exclusive=True)
 
 #################### Independant data processing functions ####################
 
