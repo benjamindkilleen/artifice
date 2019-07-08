@@ -62,7 +62,7 @@ def conv_transpose(inputs, filters, activation='relu'):
     activation=activation)(inputs)
   return inputs
 
-class Model():
+class ArtificeModel():
   """A wrapper around keras models.
 
   If loading an existing model, this class is sufficient, since the save file
@@ -73,7 +73,7 @@ class Model():
 
   """
   def __init__(self, inputs, model_dir='.', learning_rate=0.1,
-               overwrite=False, expect_checkpoint=False):
+               overwrite=False):
     """Describe a model using keras' functional API.
 
     Compiles model here, so all other instantiation should be finished.
@@ -100,11 +100,8 @@ class Model():
     self.model = keras.Model(inputs, outputs)
     self.compile()
 
-    if os.path.exists(self.checkpoint_path) and not self.overwrite:
-      logger.info(f"loading_weights from {self.checkpoint_path}")
-      self.model.load_weights(self.checkpoint_path)
-    elif expect_checkpoint:
-      logger.warning(f"no checkpoing found at {self.checkpoint_path}")
+    if not self.overwrite:
+      self.load_weights()
 
   def __str__(self):
     output = f"{self.name}:\n"
@@ -118,11 +115,19 @@ class Model():
 
   def compile(self):
     raise NotImplementedError("subclasses should implement")
-
+  
   @property
   def callbacks(self):
     return [keras.callbacks.ModelCheckpoint(
       self.checkpoint_path, verbose=1, save_weights_only=False)]
+  
+  def load_weights(self):
+    """Update the model weights from the chekpoint file."""
+    if os.path.exists(self.checkpoint_path):
+      self.model.load_weights(self.checkpoint_path)
+      logger.info(f"loaded model weights from {self.checkpoint_path}")
+    else:
+      logger.info(f"no checkpoint at {self.checkpoint_path}")
 
   def save(self, filename=None, overwrite=True):
     if filename is None:
@@ -217,8 +222,18 @@ class Model():
       raise NotImplementedError
 
     return errors, total_num_failed
+  
+  def uncertainty_on_batch(self, images):
+    """Estimate the model's uncertainty for each image.
+
+    :param images: a batch of images
+    :returns: "uncertainty" for each image. 
+    :rtype: 
+
+    """
+    raise NotImplementedError("uncertainty estimates not implemented")
     
-class ProxyUNet(Model):
+class ProxyUNet(ArtificeModel):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
                level_depth=2, dropout=0.5, **kwargs):
     """Create an hourglass-shaped model for object detection.
@@ -243,7 +258,8 @@ class ProxyUNet(Model):
       base_shape, len(self.level_filters), self.level_depth)
     self.output_tile_shape = self.compute_input_tile_shape(
       base_shape, len(self.level_filters), self.level_depth)
-    super().__init__(keras.layers.Input(self.input_tile_shape + [self.num_channels]), **kwargs)
+    super().__init__(keras.layers.Input(self.input_tile_shape +
+                                        [self.num_channels]), **kwargs)
 
   @staticmethod
   def compute_input_tile_shape(base_shape, num_levels, level_depth):
@@ -273,8 +289,10 @@ class ProxyUNet(Model):
 
   @staticmethod
   def loss(proxy, prediction):
-    distance_term = tf.losses.mean_squared_error(proxy[:, :, :, 0], prediction[:, :, :, 0])
-    pose_term = tf.losses.mean_squared_error(proxy[:, :, :, 1:], prediction[:, :, :, 1:],
+    distance_term = tf.losses.mean_squared_error(proxy[:, :, :, 0],
+                                                 prediction[:, :, :, 0])
+    pose_term = tf.losses.mean_squared_error(proxy[:, :, :, 1:],
+                                             prediction[:, :, :, 1:],
                                              weights=proxy[:, :, :, :1])
     return distance_term + pose_term
 
@@ -308,4 +326,23 @@ class ProxyUNet(Model):
                   padding='same', norm=False)
     return inputs
 
-  # todo: rewrite full_predict and detect from git.
+  def uncertainty_on_batch(self, images):
+    """Estimate the model's uncertainty for each image.
+
+    For ProxyUNet, there are a couple possible strategies. As a first
+    approximation, we can take the average peak value among detections.
+
+    :param images: a batch of images
+    :returns: "uncertainty" for each image (as a numpy array)
+    :rtype: 
+
+    """
+    predictions = self.model.predict_on_batch(images)
+    proxies = predictions[:,:,:,0]
+    confidences = np.empty(proxies.shape[0], np.float32)
+    for i, proxy in enumerate(proxies):
+      detections = dat.detect_peaks(proxy)
+      confidences[i] = np.mean([proxy[x,y] for x,y in detections])
+    return 1 - confidences
+    
+      

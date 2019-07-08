@@ -16,6 +16,8 @@ import logging
 from glob import glob
 import numpy as np
 import tensorflow as tf
+from skimage.feature import peak_local_max
+
 from artifice import img, utils
 
 
@@ -171,6 +173,14 @@ def save_dataset(record_name, dataset, serialize=None,
     with tf.Session() as sess:
       sess.run(write_op)
 
+def write_set(protos, record_path):
+  logger.info(f"writing {record_path}...")
+  with tf.python_io.TFRecordWriter(record_path) as writer:
+    for i, proto in enumerate(protos):
+      if i % 100 == 0:
+        logger.info(f"writing example {i}")
+      writer.write(proto)
+      
 #################### ArtificeData classes ####################
 
 class ArtificeData(object):
@@ -278,7 +288,7 @@ class ArtificeData(object):
 
   def postprocess(self, dataset, mode):
     if "ENUMERATED" in mode:
-      dataset = dataset.enumerate()
+      dataset = dataset.apply(tf.data.experimental.enumerate_dataset())
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     if "TRAINING" in mode:
       dataset = dataset.shuffle(self.num_shuffle)
@@ -338,10 +348,12 @@ class ArtificeData(object):
   def get_entry(self, i):
     """Get the i'th entry of the original dataset, in numpy form."""
     if tf.executing_eagerly():
-      entry = next(self.dataset.skip(i).take(1))
+      entry = next(iter(self.dataset.skip(i).take(1)))
     else:
       raise NotImplementedError
-    return entry
+    if issubclass(type(entry), tf.Tensor):
+      return entry.numpy()
+    return tuple(e.numpy() for e in entry)
     
   #################### Generic functions for proxies/tiling ####################
     
@@ -391,6 +403,7 @@ class ArtificeData(object):
     rem1 = self.image_shape[1] - (self.image_shape[1] % self.output_tile_shape[1])
     return [[0, rem0], [0, rem1], [0,0]]
 
+  # todo: determing whether to use tf.image.extract_image_patches instead
   def tile_image(self, image):
     image = tf.pad(image, self.image_padding, 'CONSTANT')
     tiles = []
@@ -513,7 +526,7 @@ class UnlabeledData(ArtificeData):
   def process(self, dataset, mode):
     def map_func(proto):
       image = self.parse(proto)
-      if mode == ArtificeData.PREDICTION:
+      if mode in [ArtificeData.PREDICTION, ArtificeData.ENUMERATED_PREDICTION]:
         return self.tile_image(image)
       raise ValueError(f"{mode} mode invalid for UnlabeledData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
@@ -544,7 +557,7 @@ class LabeledData(ArtificeData):
   def process(self, dataset, mode):
     def map_func(proto):
       image, label = self.parse(proto)
-      if mode == ArtificeData.PREDICTION:
+      if mode in [ArtificeData.PREDICTION, ArtificeData.ENUMERATED_PREDICTION]:
         return self.tile_image(image)
       if mode == ArtificeData.EVALUATION:
         return self.tile_image_label(image, label)
@@ -586,6 +599,7 @@ class AnnotatedData(LabeledData):
     """
     self.transformation = transformation
     self.identity_prob = identity_prob
+    super().__init__(*args, **kwargs)
   
   @staticmethod
   def serialize(entry):
@@ -613,7 +627,7 @@ class AnnotatedData(LabeledData):
       if mode == ArtificeData.AUGMENTED_EVALUATION:
         return self.tile_image_label(image, label)
       if mode == ArtificeData.AUGMENTED_TRAINING:
-        proxy = self.make_proxy(image, albel)
+        proxy = self.make_proxy(image, label)
         return self.tile_image_proxy(image, proxy)
       raise ValueError(f"{mode} mode invalid for AnnotatedData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
@@ -645,16 +659,29 @@ class AnnotatedData(LabeledData):
     """
     if self.transformation is None:
       return image, label
-    return tf.case(
-      tf.cast(tf.less(tf.random.uniform([], 0, 1, tf.float32),
-                      tf.constant(self.identity_prob, tf.float32)),
-              tf.int64),
-      [(lambda : self.transformation(image, label)),
-       (lambda : (image, label))]
-    )
+    return self.transformation(image, label, annotation)
+    # return tf.case(             # todo: switch case or something like it
+    #   tf.cast(tf.less(tf.random.uniform([], 0, 1, tf.float32),
+    #                   tf.constant(self.identity_prob, tf.float32)),
+    #           tf.int64),
+    #   [(lambda : self.transformation(image, label, annotation)),
+    #    (lambda : (image, label))]
+    # )
 
 #################### Independant data processing functions ####################
-  
+
+
+def detect_peaks(image, min_distance=2):
+  """Analyze the predicted distance proxy for detections.
+
+  :param image: image, or usually predicted distance proxy
+  :returns: detected peaks
+  :rtype: 
+
+  """
+  return peak_local_max(image, threshold_abs=0.1, min_distance=min_distance,
+                        indices=True, exclude_border=False)
+
 def evaluate_proxy(label, proxy, distance_threshold=10):
   """Evaluage the proxy against the label and return an array of absolute errors.
 
@@ -668,7 +695,7 @@ def evaluate_proxy(label, proxy, distance_threshold=10):
   :rtype:
 
   """
-  peaks = img.detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
+  peaks = detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
   error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
   num_failed = 0
   for i in range(label.shape[0]):

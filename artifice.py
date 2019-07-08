@@ -23,6 +23,7 @@ from artifice import utils
 from artifice import img
 from artifice import ann
 from artifice import prio
+from artifice import tform
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -94,12 +95,13 @@ class Artifice:
   # todo: copy the above from docs file
 
   """
-  def __init__(self, *, commands, data_root, model_root, overwrite,
+  def __init__(self, *, commands, data_root, model_root, overwrite, deep,
                convert_mode, transformation, identity_prob, priority_mode,
-               annotation_mode, record_size, image_shape, data_size, test_size,
-               batch_size, num_objects, pose_dim, base_shape, level_filters,
-               level_depth, dropout, initial_epoch, epochs, learning_rate,
-               num_parallel_calls, verbose, keras_verbose, eager, show, cache):
+               annotation_mode, record_size, annotation_delay, image_shape,
+               data_size, test_size, batch_size, num_objects, pose_dim,
+               base_shape, level_filters, level_depth, dropout, initial_epoch,
+               epochs, learning_rate, num_parallel_calls, verbose,
+               keras_verbose, eager, show, cache):
     # main
     self.commands = commands
 
@@ -107,23 +109,26 @@ class Artifice:
     self.data_root = data_root
     self.model_root = model_root
     self.overwrite = overwrite
+    self.deep = deep
 
-    # data modes
+    # data settings
     self.convert_modes = utils.listwrap(convert_mode)
     self.transformation = transformation
     self.identity_prob = identity_prob
     self.priority_mode = priority_mode
+
+    # annotation settings
     self.annotation_mode = annotation_mode
+    self.record_size = record_size
+    self.annotation_delay = annotation_delay    
 
     # data sizes
     self.image_shape = image_shape
     self.data_size = data_size
     self.test_size = test_size
-    self.epoch_size = epoch_size
     self.batch_size = batch_size
     self.num_objects = num_objects
     self.pose_dim = pose_dim
-    self.record_size = record_size
 
     # model architecture
     self.base_shape = utils.listify(base_shape, 2)
@@ -162,7 +167,7 @@ class Artifice:
     # derived model subdirs/paths
     self.cache_dir = join(self.model_root, 'cache')
     self.annotation_info_path = join(self.model_root, 'annotation_info.pkl')
-    self.annotated_dir = join(self.data_root, 'annotated')
+    self.annotated_dir = join(self.model_root, 'annotated') # model-dependent
 
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
@@ -207,15 +212,14 @@ todo: other attributes"""
     return dat.LabeledData(join(self.data_root, 'test_set.tfrecord'),
                            size=self.test_size, **self._data_kwargs)
 
-  def _load_model(self, expect_checkpoint=False):
+  def _load_model(self):
     return mod.ProxyUNet(base_shape=self.base_shape,
                          level_filters=self.level_filters,
                          num_channels=self.image_shape[2],
                          pose_dim=self.pose_dim, level_depth=self.level_depth,
                          dropout=self.dropout, model_dir=self.model_root,
                          learning_rate=self.learning_rate,
-                         overwrite=self.overwrite,
-                         expect_checkpoint=expect_checkpoint)
+                         overwrite=self.overwrite)
 
   #################### Methods implementing Commands ####################
   
@@ -231,7 +235,11 @@ todo: other attributes"""
     model.fit(labeled_set, epochs=self.epochs,
               initial_epoch=self.initial_epoch,
               verbose=self.keras_verbose)
-      
+
+  def augment(self):
+    """Visualize the augmented training set."""
+    pass
+    
   def train(self):
     """Train the model using augmented examples from the annotated set."""
     annotated_set = self._load_annotated()
@@ -242,7 +250,7 @@ todo: other attributes"""
 
   def evaluate(self):
     test_set = self._load_test()
-    model = self._load_model(expect_checkpoint=True)
+    model = self._load_model()
     errors, num_failed = model.evaluate(test_set)
     avg_error = errors.mean(axis=0)
     total_num_objects = self.test_size * self.num_objects
@@ -277,6 +285,9 @@ todo: other attributes"""
     kwargs = {'info_path' : self.annotation_info_path}
     if self.priority_mode == 'random':
       prioritizer = prio.RandomPrioritizer(self._load_unlabeled(), **kwargs)
+    elif self.priority_mode == 'uncertainty':
+      prioritizer = prio.ModelUncertaintyPrioritizer(
+        self._load_unlabeled(), model=self._load_model(), **kwargs)
     else:
       raise NotImplementedError(f"{self.priority_mode} priority mode")
     prioritizer.run()
@@ -295,12 +306,29 @@ todo: other attributes"""
               'annotated_dir' : self.annotated_dir,
               'record_size' : self.record_size}
     if self.annotation_mode == 'disks':
-      annotator = DiskAnnotator(self._load_labeled(),
-                                annotation_delay=self.annotation_delay,
-                                **kwargs)
+      annotator = ann.DiskAnnotator(self._load_labeled(),
+                                    annotation_delay=self.annotation_delay,
+                                    **kwargs)
     else:
       raise NotImplementedError(f"{self.annotation_mode} annotation mode")
     annotator.run()
+
+  def clean(self):
+    """Clean up the files associated with this model for a future run.
+    
+    Removes the annotation info file and lock, annotation records, and
+    cache. 
+
+    If --deep is specified, also removes the saved model and checkpoints. Does
+    not remove data.
+
+    """
+    if self.deep:
+      utils.rm(self.model_root)
+    else:
+      utils.rm(self.annotation_info_path)
+      utils.rm(self.annotation_info_path + '.lock')
+      utils.rm(self.annotated_dir)
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -315,12 +343,14 @@ def main():
                       help=docs.model_root)
   parser.add_argument('--overwrite', '-f', action='store_true',
                       help=docs.overwrite)
+  parser.add_argument('--deep', action='store_true',
+                      help=docs.deep)
 
   # data settings
   parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
                       help=docs.convert_mode)
   parser.add_argument('--transformation', '--augmentation', '-a', nargs=1,
-                      default=[None], type=int, help=docs.transformation)
+                      default=[0], type=int, help=docs.transformation)
   parser.add_argument('--identity-prob', nargs=1, default=[0.01], type=float,
                       help=docs.identity_prob)
   parser.add_argument('--priority-mode', '--priority', nargs=1, default=['random'],
@@ -331,8 +361,8 @@ def main():
                       default=['disks'], help=docs.annotation_mode)
   parser.add_argument('--record-size', nargs=1, default=[10], type=int,
                       help=docs.record_size)
-  parser.add_argument('--annotation-delay', nargs=1, default=[60], type=int,
-                      help=docs.record_size)
+  parser.add_argument('--annotation-delay', nargs=1, default=[60], type=float,
+                      help=docs.annotation_delay)
 
   # sizes relating to data
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3, type=int,
@@ -379,12 +409,14 @@ def main():
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
-                 transformation=args.transformation,
+                 transformation=args.transformation[0],
                  identity_prob=args.identity_prob[0],
                  priority_mode=args.priority_mode[0],
                  annotation_mode=args.annotation_mode[0],
-                 record_size=args.record_size[0], data_root=args.data_root[0],
-                 model_root=args.model_root[0], overwrite=args.overwrite,
+                 record_size=args.record_size[0],
+                 annotation_delay=args.annotation_delay[0],
+                 data_root=args.data_root[0], model_root=args.model_root[0],
+                 overwrite=args.overwrite, deep=args.deep,
                  image_shape=args.image_shape, data_size=args.data_size[0],
                  test_size=args.test_size[0], batch_size=args.batch_size[0],
                  num_objects=args.num_objects[0], pose_dim=args.pose_dim[0],

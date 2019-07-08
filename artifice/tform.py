@@ -23,10 +23,8 @@ def normal_translate(image, label, annotation):
   """Translate each object with a random offset, normal distributed."""
 
   # num_objects array
-
   offsets = tf.random.normal([tf.shape(label)[0], 2], mean=0, stddev=4.0,
                              dtype=tf.float32)
-  
   raise NotImplementedError
 
 def uniform_rotate(image, label, annotation):

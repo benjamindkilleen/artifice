@@ -1,6 +1,11 @@
 """Generic utils."""
 
+import os
 import json
+import shutil
+import logging
+
+logger = logging.getLogger('artifice')
 
 def listwrap(val):
   """Wrap `val` as a list.
@@ -89,3 +94,14 @@ def atleast_4d(image):
     return image[np.newaxis, :, :, np.newaxis]
   if image.ndim == 1:
     return image[np.newaxis, :, np.newaxis, np.newaxis]
+
+def rm(path):
+  if not os.path.exists(path):
+    return
+  if os.path.isfile(path):
+    os.remove(path)
+  elif os.path.isdir(path):
+    shutil.rmtree(path)
+  else:
+    raise RuntimeError(f"bad path: {path}")
+  logger.info(f"removed {path}.")

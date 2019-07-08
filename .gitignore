@@ -4,6 +4,7 @@ reports/spring_2018_report/**/*.png
 **__pycache__
 **.pyc
 **.tfrecord
+**.pkl
 **.log
 **.aux
 **.toc

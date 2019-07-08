@@ -33,14 +33,6 @@ def _load_single_labels(labels_path):
   ext = splitext(labels_path)[1]
   raise NotImplementedError
 
-def _write_set(protos, record_path):
-  logger.info(f"writing {record_path}...")
-  with tf.python_io.TFRecordWriter(record_path) as writer:
-    for i, proto in enumerate(protos):
-      if i % 100 == 0:
-        logger.info(f"writing example {i}")
-      writer.write(proto)
-
 def _image_dir_and_label_file(data_root, record_name='labeled_set.tfrecord',
                               image_dirname='images', image_ext='png',
                               labels_filename='labels.npy', test_size=0):
@@ -99,12 +91,11 @@ def _image_dir_and_label_dir(data_root, record_name='labeled_set.tfrecord',
       label[:,0] = label[:,1]
       label[:,1] = ys
       yield dat.proto_from_example((image, label))
-  g = gen()
-  _write_set(islice(g, test_size), join(data_root, record_name))
-  _write_set(islice(g, test_size, None), join(data_root, test_name))
+  dat.write_set(islice(gen(), test_size), join(data_root, test_name))
+  dat.write_set(islice(gen(), test_size, None), join(data_root, record_name))
 
 
-def _image_dir(data_root, record_name='labeled_set.tfrecord',
+def _image_dir(data_root, record_name='unlabeled_set.tfrecord',
                image_dirname='images', image_ext='png', test_size=0):
   """Used to write an unlabeled set of just images.
 
@@ -124,10 +115,10 @@ def _image_dir(data_root, record_name='labeled_set.tfrecord',
   image_paths = _get_paths(join(data_root, image_dirname), image_ext)
   assert len(image_paths) >= test_size
   def gen():
-    for image_path, label_path in zip(image_paths, label_paths):
+    for image_path in image_paths:
       image = img.open_as_float(image_path)
       yield dat.proto_from_image(image)
-  _write_set(islice(gen(), test_size), join(data_root, record_name))
+  dat.write_set(islice(gen(), test_size, None), join(data_root, record_name))
   
   
 def png_dir_and_txt_dir(data_root, test_size=0):

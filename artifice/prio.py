@@ -5,6 +5,7 @@
 from time import sleep
 import numpy as np
 import logging
+import tensorflow as tf
 
 from artifice import ann
 
@@ -13,7 +14,8 @@ logger = logging.getLogger('artifice')
 class Prioritizer:
   def __init__(self, data_set, *, info_path):
     self.data_set = data_set
-    self.info = ann.AnnotationInfo(info_path)
+    self.info = ann.AnnotationInfo(info_path, clear_priorities=True,
+                                   clear_limbo=False)
 
   def run(self):
     if tf.executing_eagerly():
@@ -48,5 +50,27 @@ class RandomPrioritizer(SimulatedPrioritizer):
   def prioritize(self, images):
     sleep(self.selection_delay)
     return np.random.uniform(0, 1, size=images.shape[0])
+
+class ModelUncertaintyPrioritizer(Prioritizer):
+  """Uses the `uncertainty_on_batch` method of ArtificeModel to prioritize each
+  image."""
   
-prioritizers = {0 : RandomPrioritizer}
+  def __init__(self, *args, model, load_freq=200, **kwargs):
+    """
+    :param model: model to use
+    :param load_freq: how frequently to load the weights
+    :returns: 
+    :rtype: 
+
+    """
+    self.model = model
+    self.load_freq = load_freq
+    self.count = 0
+    super().__init__(*args, **kwargs)
+
+  def prioritize(self, images):
+    if self.count % self.load_freq == 0:
+      self.model.load_weights()
+    self.count += 1
+    return self.model.uncertainty_on_batch(images)
+  

@@ -14,25 +14,26 @@ class SharedDict(dict):
     if not exists(path):
       self._save()
     self.lock = FileLock(self.path + ".lock")
-    super().__init__()
 
-  def __getitem__(self, key):
+  def _check_acquired(self):
     if not self.lock.is_locked:
       raise RuntimeError("SharedDict: call acquire() before accessing dict.")
+    
+  def __getitem__(self, key):
+    self._check_acquired()
     return super().__getitem__(key)
 
   def __setitem__(self, key, val):
-    if not self.lock.is_locked:
-      raise RuntimeError("SharedDict: call acquire() before accessing dict.")
+    self._check_acquired()
     return super().__setitem__(key, val)
 
   def _save(self):
-    with open(self.path, 'w') as f:
-      pickle.dump(self, f)
+    with open(self.path, 'wb') as f:
+      pickle.dump(super().copy(), f)
 
   def _load(self):
-    super().clear()
-    with open(self.path, 'r') as f:
+    self.clear()
+    with open(self.path, 'rb') as f:
       self.update(pickle.load(f))
   
   def acquire(self, *args, **kwargs):
@@ -41,7 +42,6 @@ class SharedDict(dict):
     """
     self.lock.acquire(*args, **kwargs)
     self._load()
-    return self
 
   def release(self, *args, **kwargs):
     """Release this dictionary, allowing other processes to acquire it.

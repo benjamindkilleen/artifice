@@ -3,73 +3,114 @@
 """
 
 import os
+import logging
 from time import sleep, strftime
 import itertools
+from operator import itemgetter
+import numpy as np
 from sortedcontainers import SortedList
 from skimage.draw import circle
+import tensorflow as tf
 
 from artifice.shared import SharedDict
 from artifice import dat, utils
 
+logger = logging.getLogger('artifice')
 
 class AnnotationInfo(SharedDict):
   """Maintain a sorted list or heap of (index, priority) pairs, as well as a
   list of annotated indices.
 
+  'priorities' and 'sorted_priorities' are (idx, priority) pairs guaranteed to
+  not have an annotation yet.
+
+  'limbo' is a set of indices which have been selected for annotation but don't
+  yet have an annotation. These cannot be added to priorities, but they cannot
+  belong to 'annotated' yet, in case the annotator is killed before it saves
+  their annotation. A new prioritizer should not clear limbo, but a new
+  annotator should.
+
+  'annotated' is a set of annotated indices. These are guaranteed to have
+  annotations.
+
+  Under this scheme, there may exist annotations for indices not yet added to
+  'annotated' (in case the annotator is killed just after it saves the
+  annotation but before it can move the indices out of limbo), but there will
+  never be an index in 'annotated' that does not have an annotation.
+
   """
   
-  def __init__(self, path, clear=False):
+  def __init__(self, path, *, clear_priorities, clear_limbo):
     """Create a new annotation info dict.
 
     :param path: path to save this dict.
-    :param clear: start with a fresh heap. 
+    :param clear_priorities: start with a fresh set of priorities. Typically,
+    will be True for the prioritizer, must be False for the Annotator.
+    :param clear_limbo: clear the limbo index set. Annotator should call with
+    clear_limbo=True. The Prioritizer should always set clear_limbo=False.
 
     """
     super().__init__(path)
     self.acquire()
     if self.get('annotated') is None:
       self['annotated'] = set()
-    if clear:
-      self['selections'] = dict()
-      self['sorted_selections'] = SortedList(key=lambda t : t[1])
+    if (clear_limbo or self.get('limbo') is None):
+      self['limbo'] = set()
+    if (clear_priorities or self.get('priorities') is None or
+        self.get('sorted_priorities') is None):
+      self['priorities'] = dict()
+      self['sorted_priorities'] = SortedList(key=itemgetter(1))
     self.release()
 
   def push(self, item):
-    """Update sortec selections with (idx, priority) item (or items).
+    """Update sortec priorities with (idx, priority) item (or items).
 
-    If item already present, updates it. No-op if idx already annotated.
+    If item already present, updates it. No-op if idx already in 'annotated' or
+    'limbo'.
 
     """
     items = utils.listwrap(item)
     self.acquire()
     for idx, priority in items:
-      if idx in self['annotated']:
+      if idx in self['annotated'] or idx in self['limbo']:
         continue
-      old_priority = self['selections'].get(idx)
+      old_priority = self['priorities'].get(idx)
       if old_priority is not None:
-        self['ordered_selections'].remove((idx, old_priority))
-      self['selections'].update((idx, priority))
-      self['sorted_selections'].update((idx, priority))
+        self['sorted_priorities'].remove((idx, old_priority))
+      self['priorities'][idx] = priority
+      self['sorted_priorities'].add((idx, priority))
     self.release()
     
   def pop(self):
-    """Pop an example idx off the stack and add it to the annotated list.
+    """Pop an example idx off the stack and add it to the 'limbo' set.
 
     :returns: the popped idx, or None if stack is empty
 
     """
     self.acquire()
-    if self['annotated'] is None:
-      self['annotated'] = set()
-    if self['selections']:
-      idx, _ = self['sorted_selections'].popitem()
-      del self['selections'][idx]
-      self['annotated'].add(idx)
+    if self['priorities']:
+      idx, _ = self['sorted_priorities'].pop()
+      del self['priorities'][idx]
+      self['limbo'].add(idx)
     else:
       idx = None
     self.release()
     return idx
 
+  def finalize(self, idx):
+    """Discard idx or idxs from 'limbo' and add to 'annotated'. 
+
+    Note that these need not be in limbo (could have multiple annotators, or
+    multiple prioritizers). Caller is responsible for making sure that all of
+    these indices have actually been annotated.
+
+    """
+    idxs = utils.listwrap(idx)
+    self.acquire()
+    for idx in idxs:
+      self['limbo'].discard(idx)
+      self['annotated'].add(idx)
+    self.release()
   
 class Annotator:
   """The annotator takes the examples off the annotation stack and annotates
@@ -99,9 +140,11 @@ class Annotator:
 
     """
     self.data_set = data_set
-    self.info = AnnotationInfo(info_path, clear=False)
+    self.info = AnnotationInfo(info_path, clear_priorities=False,
+                               clear_limbo=True)
     self.annotated_dir = annotated_dir
     self.record_size = record_size
+    self.sleep_duration = sleep_duration
 
   def _generate_record_name(self):
     return os.path.join(self.annotated_dir, strftime(
@@ -110,18 +153,21 @@ class Annotator:
   def run(self):
     for i in itertools.count():
       examples = []
+      idxs = []
       for _ in range(self.record_size):
         idx = self.info.pop()
         while idx is None:
+          logger.info("waiting {self.sleep_duration}s for more selections...")
           sleep(self.sleep_duration)
           idx = self.info.pop()
         entry = self.data_set.get_entry(idx)
         logger.info(f"annotating example {idx}...")
         examples.append(self.annotate(entry))
-      dataset = tf.data.Dataset.from_tensor_slices(examples)
+        idxs.append(idx)
       record_name = self._generate_record_name()
-      dat.save_dataset(record_name, dataset,
-                       serialize=dat.proto_from_annotated_example)
+      dat.write_set(map(dat.proto_from_annotated_example, examples),
+                    record_name)
+      self.info.finalize(idxs)
       logger.info(f"saved {i}'th annotated set to {record_name}.")
       
   def annotate(self, entry):
@@ -136,7 +182,7 @@ class Annotator:
     raise NotImplementedError("subclasses should implement")
 
   
-def SimulatedAnnotator(Annotator):
+class SimulatedAnnotator(Annotator):
   """Simulate a human annotator.
 
   Expects self.data_set to be a subclass of artifice LabeledData. Abstract
@@ -154,7 +200,8 @@ def SimulatedAnnotator(Annotator):
     """
     self.annotation_delay = annotation_delay
     super().__init__(*args, **kwargs)
-    assert issubclass(type(self.data_set), LabeledData)
+    assert issubclass(type(self.data_set), dat.LabeledData)
+
     
 class DiskAnnotator(SimulatedAnnotator):
   def annotate(self, entry):

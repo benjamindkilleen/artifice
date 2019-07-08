@@ -1,18 +1,22 @@
 description = "Artifice."
 commands = "Artifice command to run. Can be multiple."
-mode = "Training mode for augmentation."
 
 # file settings
 data_root = "todo"
 model_root = "todo"
 overwrite = "Overwrite existing models."
+deep = "todo"
 
-# data conversion
+# data settings
 convert_mode = "todo"
 transformation = "todo"
 identity_prob = "todo"
 select_mode = "todo"
+
+# annotation settings
 annotation_mode = "todo"
+record_size = "Number of examples to save in each annotated tfrecord."
+annotation_delay = "todo"
 
 # data sizes
 image_shape = "Shape of the image as: HEIGHT WIDTH CHANNELS"
@@ -23,7 +27,6 @@ batch_size = "Batch size."
 subset_size = "Number of examples to annotate."
 num_objects = "Maximum number of objects."
 pose_dim = "todo"
-record_size = "Number of examples to save in each annotated tfrecord."
 
 # model hyperparameters
 base_size = "Height/width of the output of the first layer of the lower level."
