@@ -26,10 +26,10 @@ logger = logging.getLogger('artifice')
 def _swap(t):
   return tf.gather(t, [1,0])
 
-def identity(image, label, annotation):
+def identity(image, label, annotation, background):
   return [image, label]
 
-def normal_translate(image, label, annotation):
+def normal_translate(image, label, annotation, background):
   """Translate each object with a random offset, normal distributed."""
   # image, label, annotation = args
 
@@ -52,33 +52,29 @@ def normal_translate(image, label, annotation):
     obj_mask = tf.contrib.image.translate(
       obj_mask, _swap(offset), interpolation='NEAREST')
 
-    new_image = tf.where(tf.cast(mask, tf.bool),
-                         tf.random.normal(image.shape, mean=image_mean,
-                                          stddev=image_std,
-                                          dtype=tf.float32),
-                         new_image)
+    new_image = tf.where(tf.cast(mask, tf.bool), background, new_image)
     new_image = tf.where(tf.cast(obj_mask, tf.bool), obj_image, new_image)
   return [new_image, tf.constant(new_label)]
 
-def uniform_rotate(image, label, annotation):
+def uniform_rotate(image, label, annotation, background):
   """Rotate each object by a random angle from Unif(0,2pi)"""
   raise NotImplementedError
 
-def normal_translate_uniform_rotate(image, label, annotation):
-  """Apply random translations and rotations, as above, together."""
-  raise NotImplementedError
-
-def normal_scale(image, label, annotation):
+def normal_scale(image, label, annotation, background):
   """Adjust the scale of each object, with scale factors from N(1,0.1)."""
   raise NotImplementedError
 
-def normal_translate_uniform_rotate_normal_scale(image, label, annotation):
+def combine_1_2(image, label, annotation, background):
+  """Apply random translations and rotations, as above, together."""
+  raise NotImplementedError
+
+def combine_1_2_3(image, label, annotation, background):
   """Do all three, potentially adjusting scale dimension of label."""
   raise NotImplementedError
 
 transformations = {0 : identity,
                    1 : normal_translate,
                    2 : uniform_rotate,
-                   3 : normal_translate_uniform_rotate,
                    4 : normal_scale,
-                   5 : normal_translate_uniform_rotate_normal_scale}
+                   3 : combine_1_2,
+                   5 : combine_1_2_3}

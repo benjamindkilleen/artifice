@@ -498,8 +498,7 @@ class ArtificeData(object):
     if tf.executing_eagerly():
       for entry in self.dataset:
         for k, acc in accumulators.items():
-          aggregates[k] = acc(entry.numpy(), aggregates[k]) # todo: .numpy()?
-          # if above doesn't work, use tf.nest.map_structure()
+          aggregates[k] = acc(tuple(t.numpy() for t in entry), aggregates[k])
     else:
       next_entry = self.dataset.make_one_shot_iterator().get_next()
       with tf.Session() as sess:
@@ -615,6 +614,8 @@ class AnnotatedData(LabeledData):
     return annotated_example_from_proto(proto)
   
   def process(self, dataset, mode):
+    if "AUGMENTED" in mode:
+      background = self.get_background()
     def map_func(proto):
       image, label, annotation = self.parse(proto)
       if mode == ArtificeData.PREDICTION:
@@ -626,7 +627,7 @@ class AnnotatedData(LabeledData):
         return self.tile_image_proxy(image, proxy)
 
       # remaining modes require augmentation
-      image, label = self.augment(image, label, annotation)
+      image, label = self.augment(image, label, annotation, background)
       if mode == ArtificeData.AUGMENTED_PREDICTION:
         return self.tile_image(image)
       if mode == ArtificeData.AUGMENTED_EVALUATION:
@@ -639,7 +640,7 @@ class AnnotatedData(LabeledData):
                               block_length=self.num_tiles,
                               num_parallel_calls=self.num_parallel_calls)
 
-  def augment(self, image, label, annotation):
+  def augment(self, image, label, annotation, background):
     """Augment an example using self.transformation.
 
     A transformation takes in an image, a label, and an annotation and returns
@@ -666,13 +667,52 @@ class AnnotatedData(LabeledData):
       return image, label
     def fn():
       return tf.py_function(self.transformation,
-                            inp=[image, label, annotation],
+                            inp=[image, label, annotation, background],
                             Tout=[tf.float32, tf.float32])
     return tf.case(
       {tf.greater(tf.random.uniform([], 0, 1, tf.float32),
                   tf.constant(self.identity_prob, tf.float32)) : fn},
       default=lambda : [image, label], exclusive=True)
 
+  @staticmethod
+  def mean_background_accumulator(entry, agg):
+    """Take a running average of the pixels where no objects exist.
+
+    Fills pixels with no values at the end of the accumulation with gaussian
+    noise.
+
+    """
+    if agg is None:
+      assert entry is not None
+      image = entry[0]
+      background = -np.ones_like(image, dtype=np.float32)
+      ns = np.zeros_like(background, dtype=np.int64)
+    else:
+      background, ns = agg
+
+    if entry is None:
+      return img.fill_negatives(background)
+
+    image = entry[0]
+    label = entry[1]
+    annotation = entry[2]
+
+    # Update the elements with a running average
+    bg_indices = np.atleast_3d(np.less(annotation[:,:,0], 0))
+    indices = np.logical_and(background >= 0, bg_indices)
+    ns[indices] += 1
+    background[indices] = (background[indices] +
+                           (image[indices] - background[indices]) / ns[indices])
+
+    # initialize the new background elements
+    indices = np.logical_and(background < 0, bg_indices)
+    background[indices] = image[indices]
+    ns[indices] += 1
+    return background, ns
+
+  def get_background(self):
+    return self.accumulate(self.mean_background_accumulator)
+  
 #################### Independant data processing functions ####################
 
 
