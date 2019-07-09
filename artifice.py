@@ -99,9 +99,9 @@ class Artifice:
                convert_mode, transformation, identity_prob, priority_mode,
                annotation_mode, record_size, annotation_delay, image_shape,
                data_size, test_size, batch_size, num_objects, pose_dim,
-               base_shape, level_filters, level_depth, dropout, initial_epoch,
-               epochs, learning_rate, num_parallel_calls, verbose,
-               keras_verbose, eager, show, cache):
+               num_shuffle, base_shape, level_filters, level_depth, dropout,
+               initial_epoch, epochs, learning_rate, num_parallel_calls,
+               verbose, keras_verbose, eager, show, cache):
     # main
     self.commands = commands
 
@@ -122,13 +122,14 @@ class Artifice:
     self.record_size = record_size
     self.annotation_delay = annotation_delay    
 
-    # data sizes
+    # data sizes/settings
     self.image_shape = image_shape
     self.data_size = data_size
     self.test_size = test_size
     self.batch_size = batch_size
     self.num_objects = num_objects
     self.pose_dim = pose_dim
+    self.num_shuffle = num_shuffle
 
     # model architecture
     self.base_shape = utils.listify(base_shape, 2)
@@ -196,7 +197,7 @@ todo: other attributes"""
             'output_tile_shape' : self.output_tile_shape,
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.num_parallel_calls,
-            'num_shuffle' : min(self.data_size, 1000),
+            'num_shuffle' : min(self.data_size, self.num_shuffle),
             'cache_dir' : self.cache_dir if self.cache else None}
   def _load_labeled(self):
     return dat.LabeledData(join(self.data_root, 'labeled_set.tfrecord'),
@@ -383,6 +384,8 @@ def main():
                       help=docs.num_objects)
   parser.add_argument('--pose-dim', '-p', nargs=1, default=[2], type=int,
                       help=docs.pose_dim)
+  parser.add_argument('--num-shuffle', nargs=1, default=[1000], type=int,
+                      help=docs.num_shuffle)
 
   # model architecture
   parser.add_argument('--base-shape', nargs='+', default=[32], type=int,
@@ -426,7 +429,8 @@ def main():
                  image_shape=args.image_shape, data_size=args.data_size[0],
                  test_size=args.test_size[0], batch_size=args.batch_size[0],
                  num_objects=args.num_objects[0], pose_dim=args.pose_dim[0],
-                 base_shape=args.base_shape, level_filters=args.level_filters,
+                 num_shuffle=args.num_shuffle[0], base_shape=args.base_shape,
+                 level_filters=args.level_filters,
                  level_depth=args.level_depth[0], dropout=args.dropout[0],
                  initial_epoch=args.initial_epoch[0], epochs=args.epochs[0],
                  learning_rate=args.learning_rate[0],

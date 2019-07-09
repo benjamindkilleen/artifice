@@ -6,24 +6,29 @@ corresponding label dimension (position) is known, but less so for other pose
 dimensions. Custom code may be written here to allow for this (or we may add
 more standard dimensions to the label, in addition to position, to allow for )
 
-In each cases, background inpainting is done with random noise, with the same
-mean and variance as the original image.
 
 These will be wrapped in py_function, ensuring eager execution (fine since this
-is just preparing data). Each function should take a list of tensors [image,
-label, annotation] and return a [new_image, new_label] list.
+is just preparing data). Each function should take `image, label, annotation,
+background` as arguments and return a [new_image, new_label] list.
 
 Because these are wrapped in py_function, things can be turned into numpy arrays
 and back.
 
+These transformations are applied to entire images, not patches, so
+interpolation should be limited to as small a region as possible.
+
 """
 
 import logging
+import numpy as np
 import tensorflow as tf
+
+import matplotlib.pyplot as plt
+from artifice import img, vis
 
 logger = logging.getLogger('artifice')
 
-def _swap(t):
+def swap(t):
   return tf.gather(t, [1,0])
 
 def identity(image, label, annotation, background):
@@ -31,30 +36,49 @@ def identity(image, label, annotation, background):
 
 def normal_translate(image, label, annotation, background):
   """Translate each object with a random offset, normal distributed."""
-  # image, label, annotation = args
-
-  # num_objects array
-
-  image_std = tf.math.reduce_std(image)
-  image_mean = tf.reduce_mean(image)
-  new_image = tf.identity(image)
+  # boilerplate code
+  new_image = image.numpy()
   new_label = label.numpy()
+  image = image.numpy()
+  annotation = annotation.numpy()
+  background = background.numpy()
   for i in range(label.shape[0]):
-    obj_image = tf.identity(image)
-    mask = tf.cast(tf.equal(annotation, tf.constant(i, tf.float32)),
-                   tf.float32)
-    obj_mask = tf.identity(mask)
+    mask = annotation == i
+    if not mask.any():
+      vis.plot_image(annotation)
+      plt.show()
+      logger.debug(f"no {i}'th object")
+      continue
+    top, bottom, left, right = img.compute_object_patch(mask)
+    image_patch = image[top:bottom, left:right].copy()
+    mask_patch = mask[top:bottom, left:right].copy()
 
-    offset = tf.random.normal([2], mean=0, stddev=5, dtype=tf.float32)
-    new_label[i,:2] += offset.numpy()
-    obj_image = tf.contrib.image.translate(
-      obj_image, _swap(offset), interpolation='BILINEAR')
-    obj_mask = tf.contrib.image.translate(
-      obj_mask, _swap(offset), interpolation='NEAREST')
+    # todo; figure out if this is worth it.
+    # replace the original object with background
+    new_image[top:bottom, left:right][mask_patch] = 0 # \
+      # background[top:bottom, left:right][mask_patch]
 
-    new_image = tf.where(tf.cast(mask, tf.bool), background, new_image)
-    new_image = tf.where(tf.cast(obj_mask, tf.bool), obj_image, new_image)
-  return [new_image, tf.constant(new_label)]
+    mask_patch = mask_patch.astype(np.float32)
+    
+    # the meat of the transformation, what's being done on each object
+    translation = np.random.normal(loc=0, scale=5, size=2).astype(np.float32)
+    new_label[i,:2] += translation
+    top = max(top + np.floor(translation[0]).astype(np.int64), 0)
+    bottom = min(bottom + np.floor(translation[0]).astype(np.int64), image.shape[0])
+    left = max(left + np.floor(translation[1]).astype(np.int64), 0)
+    right = min(right + np.floor(translation[1]).astype(np.int64), image.shape[1])
+    offset = swap(translation % 1)
+    image_patch = tf.contrib.image.translate(
+      image_patch, offset, interpolation='BILINEAR').numpy()
+    mask_patch = tf.contrib.image.translate(
+      mask_patch, offset, interpolation='NEAREST').numpy()
+    image_patch = image_patch[:bottom - top, :right - left]
+    mask_patch = mask_patch[:bottom - top, :right - left]
+
+    # insert the transformed object
+    mask_patch = mask_patch.astype(np.bool)
+    # new_image[top:bottom, left:right][mask_patch] = image_patch[mask_patch]
+  return [new_image, new_label]
 
 def uniform_rotate(image, label, annotation, background):
   """Rotate each object by a random angle from Unif(0,2pi)"""

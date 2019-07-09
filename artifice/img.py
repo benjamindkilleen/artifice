@@ -8,121 +8,8 @@ from skimage import draw
 
 logger = logging.getLogger('artifice')
 
-def draw_x(image, x, y, size=12, channel=0):
-  """Draw a x at the x,y location with `size`
-
-  :param image: image to draw on, at least 3 channels, float valued in [0,1)
-  :param x: x position
-  :param y: y position
-  :param size: marker diameter in pixels, default 12
-  :param channel: which channel(s) to draw in. Default (0) makes a red x
-  :returns: 
-  :rtype: 
-
-  """
-  h = int(size / (2*np.sqrt(2)))
-  i = int(x)
-  j = int(y)
-  rr, cc, val = draw.line_aa(i-h, j-h, i+h, j+h)
-  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
-  image[rr,cc,channel] = val
-  rr, cc, val = draw.line_aa(i-h, j+h, i+h, j-h)
-  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
-  image[rr,cc,channel] = val
-  return image
-
-def draw_t(image, x, y, size=12, channel=1):
-  """Draw a x at the x,y location with `size`
-
-  :param image: image to draw on, at least 3 channels, float valued in [0,1)
-  :param x: x position
-  :param y: y position
-  :param size: marker diameter in pixels, default 12
-  :param channel: which channel(s) to draw in. Default (1) makes a green x
-  :returns: 
-  :rtype: 
-
-  """
-  h = size // 2
-  i = int(np.floor(x))
-  j = int(np.floor(y))
-  rr, cc, val = draw.line_aa(i-h, j, i+h, j)
-  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
-  image[rr,cc,channel] = val
-  rr, cc, val = draw.line_aa(i, j-h, i, j+h)
-  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
-  image[rr,cc,channel] = val
-  return image
-
-def draw_xs(image, xs, ys, **kwargs):
-  for x,y in zip(xs, ys):
-    image = draw_x(image, x, y, **kwargs)
-  return image
-
-def draw_ts(image, xs, ys, **kwargs):
-  for x,y in zip(xs, ys):
-    image = draw_t(image, x, y, **kwargs)
-  return image
-
-def indices_from_regions(regions, num_objects):
-  """Given an image-shaped annotation of regions, get indices of regions.
-
-  :param regions: 
-  :returns: `[(xs_0,ys_0),(xs_1,ys_1),...]` indices for each region
-  :rtype: list of two-tuples, each with a list of ints
-
-  """
-  regions = np.squeeze(regions)
-  indices = []
-  for i in range(num_objects + 1):
-    indices.append(np.where(regions == i))
-  return indices
-
-def fill_negatives(image):
-  """Fill the negative values in background with gaussian noise.
+#################### basic image utilities ####################
   
-  :param image: a numpy array with negative values to fill
-  
-  """
-  image = image.copy()
-  indices = image >= 0
-  mean = image[indices].mean()
-  std = image[indices].std()
-  
-  indices = image < 0
-  image[indices] = np.random.normal(mean, std, size=image[indices].shape)
-  return image
-
-def inside(xs, ys, shape):
-  """Returns a boolean array for which indices are inside shape.
-
-  :param xs: numpy array of indices
-  :param ys: numpy array of indices
-  :param shape: image shape to compare against, using first two dimensions
-  :returns: 1-D boolean array
-
-  """
-  over = np.logical_and(xs >= 0, ys >= 0)
-  under = np.logical_and(xs < shape[0], ys < shape[1])
-  return np.logical_and(over, under)
-
-def get_inside(xs, ys, shape, vals=None):
-  """Get the indices that are inside image's shape.
-
-  :param xs: x indices
-  :param ys: y indices
-  :param shape: image shape to compare with
-  :returns: a subset of indices.
-
-  """
-  xs = np.array(xs)
-  ys = np.array(ys)
-  which = inside(xs, ys, shape)
-  if vals is None:
-    return xs[which], ys[which]
-  else:
-    return xs[which], ys[which], vals[which]
-
 def grayscale(image):
   """Convert an n-channel, 3D image to grayscale.
   
@@ -215,13 +102,161 @@ def as_uint(image):
 def open_as_float(image_path):
   return as_float(open_as_array(image_path), atleast_3d=False)
 
-
 def save(fname, image):
   """Save the array image to png in fname."""
   image = np.squeeze(as_uint(image))
   im = Image.fromarray(image)
   im.save(fname)
 
+#################### drawing functions ####################
 
+def draw_x(image, x, y, size=12, channel=0):
+  """Draw a x at the x,y location with `size`
 
+  :param image: image to draw on, at least 3 channels, float valued in [0,1)
+  :param x: x position
+  :param y: y position
+  :param size: marker diameter in pixels, default 12
+  :param channel: which channel(s) to draw in. Default (0) makes a red x
+  :returns: 
+  :rtype: 
 
+  """
+  h = int(size / (2*np.sqrt(2)))
+  i = int(x)
+  j = int(y)
+  rr, cc, val = draw.line_aa(i-h, j-h, i+h, j+h)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  rr, cc, val = draw.line_aa(i-h, j+h, i+h, j-h)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  return image
+
+def draw_t(image, x, y, size=12, channel=1):
+  """Draw a x at the x,y location with `size`
+
+  :param image: image to draw on, at least 3 channels, float valued in [0,1)
+  :param x: x position
+  :param y: y position
+  :param size: marker diameter in pixels, default 12
+  :param channel: which channel(s) to draw in. Default (1) makes a green x
+  :returns: 
+  :rtype: 
+
+  """
+  h = size // 2
+  i = int(np.floor(x))
+  j = int(np.floor(y))
+  rr, cc, val = draw.line_aa(i-h, j, i+h, j)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  rr, cc, val = draw.line_aa(i, j-h, i, j+h)
+  rr, cc, val = get_inside(rr, cc, image.shape, vals=val)
+  image[rr,cc,channel] = val
+  return image
+
+def draw_xs(image, xs, ys, **kwargs):
+  for x,y in zip(xs, ys):
+    image = draw_x(image, x, y, **kwargs)
+  return image
+
+def draw_ts(image, xs, ys, **kwargs):
+  for x,y in zip(xs, ys):
+    image = draw_t(image, x, y, **kwargs)
+  return image
+
+#################### manipulations on indices ####################
+
+def indices_from_regions(regions, num_objects):
+  """Given an image-shaped annotation of regions, get indices of regions.
+
+  :param regions: 
+  :returns: `[(xs_0,ys_0),(xs_1,ys_1),...]` indices for each region
+  :rtype: list of two-tuples, each with a list of ints
+
+  """
+  regions = np.squeeze(regions)
+  indices = []
+  for i in range(num_objects + 1):
+    indices.append(np.where(regions == i))
+  return indices
+
+def inside(xs, ys, shape):
+  """Returns a boolean array for which indices are inside shape.
+
+  :param xs: numpy array of indices
+  :param ys: numpy array of indices
+  :param shape: image shape to compare against, using first two dimensions
+  :returns: 1-D boolean array
+
+  """
+  over = np.logical_and(xs >= 0, ys >= 0)
+  under = np.logical_and(xs < shape[0], ys < shape[1])
+  return np.logical_and(over, under)
+
+def get_inside(xs, ys, shape, vals=None):
+  """Get the indices that are inside image's shape.
+
+  :param xs: x indices
+  :param ys: y indices
+  :param shape: image shape to compare with
+  :returns: a subset of indices.
+
+  """
+  xs = np.array(xs)
+  ys = np.array(ys)
+  which = inside(xs, ys, shape)
+  if vals is None:
+    return xs[which], ys[which]
+  else:
+    return xs[which], ys[which], vals[which]
+
+def fill_negatives(image):
+  """Fill the negative values in background with gaussian noise.
+  
+  :param image: a numpy array with negative values to fill
+  
+  """
+  image = image.copy()
+  indices = image >= 0
+  mean = image[indices].mean()
+  std = image[indices].std()
+  
+  indices = image < 0
+  image[indices] = np.random.normal(mean, std, size=image[indices].shape)
+  return image
+
+def compute_object_patch(mask, pad=True):
+  """Given a numpy mask, compute the smallest rectangular patch around it.
+
+  Note that upper coordinates are exclusive, so image[top:bottom, left:right]
+  will give the proper patch.
+
+  The patch will be padded such that the larger dimension 
+
+  :param mask: boolean array giving object location
+  :param pad: pad the patch until it is a square with each side the length of
+  the diagonal of the original patch.
+  :returns: the rectangular patch coordinates as [top, bottom, left, right]
+  :rtype: list
+
+  """
+  vertical = np.where(np.any(mask, axis=0))
+  horizontal = np.where(np.any(mask, axis=1))
+  top = np.min(vertical)
+  bottom = np.max(vertical) + 1
+  left = np.min(horizontal)
+  right = np.max(horizontal) + 1
+  if pad:
+    height = bottom - top
+    width = right - left
+    diagonal = np.sqrt(np.square(height) + np.square(width))
+    vertical_pad = int(np.ceil((diagonal - height + 1) / 2))
+    horizontal_pad = int(np.ceil((diagonal - width + 1) / 2))
+    top = max(0, top - vertical_pad)
+    bottom = min(mask.shape[0], bottom + vertical_pad)
+    left = max(0, left - horizontal_pad)
+    right = min(mask.shape[1], bottom + horizontal_pad)
+  return [top, bottom, left, right]
+  

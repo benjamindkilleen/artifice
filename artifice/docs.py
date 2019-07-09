@@ -27,6 +27,7 @@ batch_size = "Batch size."
 subset_size = "Number of examples to annotate."
 num_objects = "Maximum number of objects."
 pose_dim = "todo"
+num_shuffle = "todo"
 
 # model hyperparameters
 base_size = "Height/width of the output of the first layer of the lower level."

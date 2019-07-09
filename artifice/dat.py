@@ -484,6 +484,9 @@ class ArtificeData(object):
     next entry in the data as 'entry'. On the final call, `entry` will be None,
     allowing for post-processing.
 
+    If the accumulator returns None for aggregate, the accumulation is
+    terminated early.
+
     :param accumulator: an accumulator function OR a dictionary mapping names to
     accumulator functions
     :returns: aggregate from `accumulator` OR a dictionary of aggregates with
@@ -495,20 +498,21 @@ class ArtificeData(object):
     else:
       accumulators = {0 : accumulator}
     aggregates = dict.fromkeys(accumulators.keys())
+    finished = dict([(k,False) for k in accumulators.keys()])
     if tf.executing_eagerly():
       for entry in self.dataset:
+        if all(finished.values()):
+          break
         for k, acc in accumulators.items():
-          aggregates[k] = acc(tuple(t.numpy() for t in entry), aggregates[k])
+          if finished[k]:
+            continue
+          agg = acc(tuple(t.numpy() for t in entry), aggregates[k])
+          if agg is None:
+            finished[k] = True
+          else:
+            aggregates[k] = agg
     else:
-      next_entry = self.dataset.make_one_shot_iterator().get_next()
-      with tf.Session() as sess:
-        while True:
-          try:
-            entry = sess.run(next_entry)
-            for k, acc in accumulators.items():
-              aggregates[k] = acc(entry, aggregates[k])
-          except tf.errors.OutOfRangeError:
-            break
+      raise NotImplementedError
 
     logger.info("finished accumulation")
     for k, acc in accumulators.items():
@@ -710,8 +714,31 @@ class AnnotatedData(LabeledData):
     ns[indices] += 1
     return background, ns
 
+  @staticmethod
+  def greedy_background_accumulator(entry, background):
+    """Grabs te first non-object value for each pixel in the dataset.
+
+    Terminates accumulation when finished by returning None.
+    
+    """
+    if background is None:
+      assert entry is not None
+      image = entry[0]
+      background = -np.ones_like(image, dtype=np.float32)
+    if entry is None:
+      return img.fill_negatives(background)
+    image = entry[0]
+    annotation = entry[2]
+    unfilled = background < 0
+    if unfilled.sum() == 0:
+      return None
+    bg_indices = annotation[:,:,0:1] < 0
+    indices = np.logical_and(unfilled, bg_indices)
+    background[indices] = image[indices]
+    return background
+    
   def get_background(self):
-    return self.accumulate(self.mean_background_accumulator)
+    return self.accumulate(self.greedy_background_accumulator)
   
 #################### Independant data processing functions ####################
 
