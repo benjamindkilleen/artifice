@@ -228,35 +228,33 @@ def fill_negatives(image):
   return image
 
 def compute_object_patch(mask, pad=True):
-  """Given a numpy mask, compute the smallest rectangular patch around it.
+  """Given a numpy mask, compute the smallest square patch around it.
 
-  Note that upper coordinates are exclusive, so image[top:bottom, left:right]
-  will give the proper patch.
+  image[i:i+si, j:j+sj] will give the proper patch.
 
-  The patch will be padded such that the larger dimension 
+  If pad=True, patch may not be strictly square, since it could be clipped by
+  the mask shape.
 
   :param mask: boolean array giving object location
   :param pad: pad the patch until it is a square with each side the length of
   the diagonal of the original patch.
-  :returns: the rectangular patch coordinates as [top, bottom, left, right]
+  :returns: `[i, j, si, sj]` upper left coordinate of the patch, sizes
   :rtype: list
 
   """
   vertical = np.where(np.any(mask, axis=1))[0]
   horizontal = np.where(np.any(mask, axis=0))[0]
-  top = np.min(vertical)
-  bottom = np.max(vertical) + 1
-  left = np.min(horizontal)
-  right = np.max(horizontal) + 1
+  i = np.min(vertical)
+  j = np.min(horizontal)
+  size = max(np.max(vertical) - i, np.max(horizontal)) + 1
   if pad:
-    height = bottom - top
-    width = right - left
-    diagonal = np.sqrt(np.square(height) + np.square(width))
-    vertical_pad = int(np.ceil((diagonal - height + 1) / 2))
-    horizontal_pad = int(np.ceil((diagonal - width + 1) / 2))
-    top = max(0, top - vertical_pad)
-    bottom = min(mask.shape[0], bottom + vertical_pad)
-    left = max(0, left - horizontal_pad)
-    right = min(mask.shape[1], right + horizontal_pad)
-  return [top, bottom, left, right]
+    diagonal = size * np.sqrt(2)
+    padding = int(np.ceil((diagonal - size + 1) / 2))
+    i = max(0, i - padding)
+    j = max(0, j - padding)
+    si = min(size + padding, mask.shape[0] - i)
+    sj = min(size + padding, mask.shape[1] - j)
+  else:
+    si = sj = size
+  return [i, j, si, sj]
   

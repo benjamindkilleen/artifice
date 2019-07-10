@@ -689,3 +689,11 @@ Ideas in Artifice can be built on, code as well. Big ideas:
   bottleneck.
 * Caching just doesn't work. Need to reach the end of the iterator before it
   actually saves the cache, so that's a thing. Gotta figure that out.
+
+## July 10, 2019
+* Changing to just translating patches, training with an augmented set took
+  527s. This is a marginal improvement over 588s.
+* One problem with reloading the dataset every epoch like we're doing is having
+  to fill up the shuffle buffer. Is this worth it?
+* Could detect when the annotator is done, and then just call fit up till
+  epochs? That would be good.

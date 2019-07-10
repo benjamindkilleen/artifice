@@ -43,47 +43,58 @@ def normal_translate(image, label, annotation, background):
   background = background.numpy()
   new_image = image.copy()
   new_label = label.copy()
-  for i in range(label.shape[0]):
-    mask = annotation == i
+  for l in range(label.shape[0]):
+    mask = annotation == l
     if not mask.any():
-      logger.warning(f"no {i}'th object")
+      logger.warning(f"no {l}'th object")
       continue
-    top, bottom, left, right = img.compute_object_patch(mask)
-    image_patch = image[top:bottom, left:right].copy()
-    mask_patch = mask[top:bottom, left:right].copy()
+    i, j, si, sj = img.compute_object_patch(mask)
+    image_patch = image[i:i+si, j:j+sj].copy()
+    mask_patch = mask[i:i+si, j:j+sj].copy()
 
     # todo; figure out if this is worth it.
     # replace the original object with background
-    new_image[top:bottom, left:right][mask_patch] = \
-      background[top:bottom, left:right][mask_patch]
+    new_image[i:i+si, j:j+sj][mask_patch] = \
+      background[i:i+si, j:j+sj][mask_patch]
 
+    # get the translation, adjust the patch values
     mask_patch = mask_patch.astype(np.float32)
-    
-    # the meat of the transformation, what's being done on each object
     translation = np.random.normal(loc=0, scale=5, size=2).astype(np.float32)
-    new_label[i,:2] += translation
-    top = max(top + np.floor(translation[0]).astype(np.int64), 0)
-    bottom = min(bottom + np.floor(translation[0]).astype(np.int64), image.shape[0])
-    left = max(left + np.floor(translation[1]).astype(np.int64), 0)
-    right = min(right + np.floor(translation[1]).astype(np.int64), image.shape[1])
     offset = swap(translation % 1)
     image_patch = tf.contrib.image.translate(
       image_patch, offset, interpolation='BILINEAR').numpy()
     mask_patch = tf.contrib.image.translate(
       mask_patch, offset, interpolation='NEAREST').numpy()
-    image_patch = image_patch[:bottom - top, :right - left]
-    mask_patch = mask_patch[:bottom - top, :right - left]
 
-    # todo: we have a problem. Need to properly grab the patch on the side that
-    # stayed in frame
+    # adjust the coordinates of the patches, and their sizes
+    new_label[l,:2] += translation
+    i += int(np.floor(translation[0]))
+    j += int(np.floor(translation[1]))
+    if i + si < 0 or i >= mask.shape[0] or j + sj < 0 or j >= mask.shape[1]:
+      # patch got shifted entirely outside of the frame
+      continue
+    if i < 0:
+      si += i
+      i = 0
+      image_patch = image_patch[:si]
+      mask_patch = mask_patch[:si]
+    if i + si > mask.shape[0]:
+      si = mask.shape[0] - i
+      image_patch = image_patch[-si:]
+      mask_patch = mask_patch[-si:]
+    if j < 0:
+      sj += j
+      j = 0
+      image_patch = image_patch[:,:sj]
+      mask_patch = mask_patch[:,:sj]
+    if j + sj > mask.shape[1]:
+      sj = mask.shape[1] - j
+      image_patch = image_patch[:,-sj:]
+      mask_patch = mask_patch[:,-sj:]
 
-    # insert the transformed object
-    # logger.debug(f"top, bottom, left, right: {top, bottom, left, right}")
-    # logger.debug(f"mask_patch: {mask_patch.shape}")
-    
     mask_patch = mask_patch.astype(np.bool)
-    new_image[top:bottom, left:right][mask_patch] = image_patch[mask_patch]
-  # logger.debug(f"\n")
+    out = image_patch[mask_patch]
+    new_image[i:i+si, j:j+sj][mask_patch] = out
   return [new_image, new_label]
 
 def uniform_rotate(image, label, annotation, background):
