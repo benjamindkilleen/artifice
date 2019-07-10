@@ -37,17 +37,16 @@ def identity(image, label, annotation, background):
 def normal_translate(image, label, annotation, background):
   """Translate each object with a random offset, normal distributed."""
   # boilerplate code
-  new_image = image.numpy()
-  new_label = label.numpy()
   image = image.numpy()
+  label = label.numpy()
   annotation = annotation.numpy()
   background = background.numpy()
+  new_image = image.copy()
+  new_label = label.copy()
   for i in range(label.shape[0]):
     mask = annotation == i
     if not mask.any():
-      vis.plot_image(annotation)
-      plt.show()
-      logger.debug(f"no {i}'th object")
+      logger.warning(f"no {i}'th object")
       continue
     top, bottom, left, right = img.compute_object_patch(mask)
     image_patch = image[top:bottom, left:right].copy()
@@ -55,8 +54,8 @@ def normal_translate(image, label, annotation, background):
 
     # todo; figure out if this is worth it.
     # replace the original object with background
-    new_image[top:bottom, left:right][mask_patch] = 0 # \
-      # background[top:bottom, left:right][mask_patch]
+    new_image[top:bottom, left:right][mask_patch] = \
+      background[top:bottom, left:right][mask_patch]
 
     mask_patch = mask_patch.astype(np.float32)
     
@@ -75,9 +74,16 @@ def normal_translate(image, label, annotation, background):
     image_patch = image_patch[:bottom - top, :right - left]
     mask_patch = mask_patch[:bottom - top, :right - left]
 
+    # todo: we have a problem. Need to properly grab the patch on the side that
+    # stayed in frame
+
     # insert the transformed object
+    # logger.debug(f"top, bottom, left, right: {top, bottom, left, right}")
+    # logger.debug(f"mask_patch: {mask_patch.shape}")
+    
     mask_patch = mask_patch.astype(np.bool)
-    # new_image[top:bottom, left:right][mask_patch] = image_patch[mask_patch]
+    new_image[top:bottom, left:right][mask_patch] = image_patch[mask_patch]
+  # logger.debug(f"\n")
   return [new_image, new_label]
 
 def uniform_rotate(image, label, annotation, background):

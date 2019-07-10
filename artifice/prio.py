@@ -2,7 +2,7 @@
 
 """
 
-from time import sleep
+from time import sleep, time
 import numpy as np
 import logging
 import tensorflow as tf
@@ -17,13 +17,18 @@ class Prioritizer:
     self.info = ann.AnnotationInfo(info_path, clear_priorities=True,
                                    clear_limbo=False)
 
-  def run(self):
+  def run(self, seconds=-1):
+    """Run for at most `seconds`. If `seconds` is negative, run forever."""
+    start_time = time()
     if tf.executing_eagerly():
       for indices, images in self.data_set.enumerated_prediction_input:
         logger.info(f"evaluating priorities for {indices}...")
         priorities = list(self.prioritize(images))
         self.info.push(list(zip(list(indices), priorities)))
         logger.info(f"pushed {indices} with priorities {priorities}.")
+        if time() - start_time > seconds >= 0:
+          logger.info(f"finished after {seconds}s.")
+          break
     else:
       raise NotImplementedError("patient execution")
 

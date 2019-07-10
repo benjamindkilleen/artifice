@@ -101,7 +101,7 @@ class Artifice:
                data_size, test_size, batch_size, num_objects, pose_dim,
                num_shuffle, base_shape, level_filters, level_depth, dropout,
                initial_epoch, epochs, learning_rate, num_parallel_calls,
-               verbose, keras_verbose, eager, show, cache):
+               verbose, keras_verbose, eager, show, cache, seconds):
     # main
     self.commands = commands
 
@@ -149,7 +149,8 @@ class Artifice:
     self.eager = eager
     self.show = show
     self.cache = cache
-
+    self.seconds = seconds
+    
     # globals
     _set_verbosity(self.verbose)
     _set_eager(self.eager)
@@ -296,7 +297,7 @@ todo: other attributes"""
         self._load_unlabeled(), model=self._load_model(), **kwargs)
     else:
       raise NotImplementedError(f"{self.priority_mode} priority mode")
-    prioritizer.run()
+    prioritizer.run(seconds=self.seconds)
     
   def annotate(self):
     """Continually annotate new examples.
@@ -317,7 +318,7 @@ todo: other attributes"""
                                     **kwargs)
     else:
       raise NotImplementedError(f"{self.annotation_mode} annotation mode")
-    annotator.run()
+    annotator.run(seconds=self.seconds)
 
   def clean(self):
     """Clean up the files associated with this model for a future run.
@@ -415,6 +416,7 @@ def main():
   parser.add_argument('--patient', action='store_true', help=docs.patient)
   parser.add_argument('--show', action='store_true', help=docs.show)
   parser.add_argument('--cache', action='store_true', help=docs.cache)
+  parser.add_argument('--seconds', nargs=1, default=[-1], type=int, help=docs.seconds)
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
@@ -436,7 +438,8 @@ def main():
                  learning_rate=args.learning_rate[0],
                  num_parallel_calls=args.num_parallel_calls[0],
                  verbose=args.verbose[0], keras_verbose=args.keras_verbose[0],
-                 eager=(not args.patient), show=args.show, cache=args.cache)
+                 eager=(not args.patient), show=args.show, cache=args.cache,
+                 seconds=args.seconds[0])
   logger.info(art)
   art()
 

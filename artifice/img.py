@@ -242,8 +242,8 @@ def compute_object_patch(mask, pad=True):
   :rtype: list
 
   """
-  vertical = np.where(np.any(mask, axis=0))
-  horizontal = np.where(np.any(mask, axis=1))
+  vertical = np.where(np.any(mask, axis=1))[0]
+  horizontal = np.where(np.any(mask, axis=0))[0]
   top = np.min(vertical)
   bottom = np.max(vertical) + 1
   left = np.min(horizontal)
@@ -257,6 +257,6 @@ def compute_object_patch(mask, pad=True):
     top = max(0, top - vertical_pad)
     bottom = min(mask.shape[0], bottom + vertical_pad)
     left = max(0, left - horizontal_pad)
-    right = min(mask.shape[1], bottom + horizontal_pad)
+    right = min(mask.shape[1], right + horizontal_pad)
   return [top, bottom, left, right]
   

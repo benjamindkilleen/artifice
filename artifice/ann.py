@@ -4,7 +4,7 @@
 
 import os
 import logging
-from time import sleep, strftime
+from time import sleep, strftime, time
 import itertools
 from operator import itemgetter
 import numpy as np
@@ -150,7 +150,10 @@ class Annotator:
     return os.path.join(self.annotated_dir, strftime(
       f"%Y%m%d%H%m%S_size-{self.record_size}.tfrecord"))
 
-  def run(self):
+  def run(self, seconds=-1):
+    """Run for at most `seconds`. If `seconds` is negative, run forever."""
+    start_time = time()
+    
     for i in itertools.count():
       examples = []
       idxs = []
@@ -169,6 +172,9 @@ class Annotator:
                     record_name)
       self.info.finalize(idxs)
       logger.info(f"saved {i}'th annotated set to {record_name}.")
+      if time() - start_time > seconds >= 0:
+        logger.info(f"finished after {seconds}s.")
+        break
       
   def annotate(self, entry):
     """Abstract method for annotating an example.
@@ -213,7 +219,7 @@ class DiskAnnotator(SimulatedAnnotator):
       xs = []
       ys = []
       for x,y in zip(rr,cc):
-        if image[x,y] >= 0.2:   # arbitrary threshold
+        if image[x,y] >= 0.1:   # arbitrary threshold
           xs.append(x)
           ys.append(y)
       annotation[xs,ys] = i
