@@ -149,7 +149,7 @@ class ArtificeModel():
 
     """
     kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
-    hist = self.model.fit(art_data.training_input,
+    hist = self.model.fit(art_data.training_input(),
                           steps_per_epoch=art_data.steps_per_epoch,
                           initial_epoch=initial_epoch,
                           **kwargs).history
@@ -178,7 +178,7 @@ class ArtificeModel():
       hist = {}
     epoch = initial_epoch
     while epoch != epochs:
-      new_hist = self.model.fit(art_data.augmented_training_input,
+      new_hist = self.model.fit(art_data.augmented_training_input(),
                                 steps_per_epoch=art_data.steps_per_epoch,
                                 initial_epoch=epoch,
                                 epochs=epoch + 1,
@@ -204,7 +204,7 @@ class ArtificeModel():
       tile_labels = []
       errors = []
       total_num_failed = 0
-      for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input):
+      for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input()):
         if i % 10 == 0:
           logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
         tile_labels += list(batch_labels)

@@ -57,51 +57,23 @@ def _ensure_dirs_exist(dirs):
       os.makedirs(path)
 
 class Artifice:
-  """Bag of state that controls a single `artifice` run.
+  """Bag of state or Main() class that directs a single `artifice` run.
 
   All arguments are required keyword arguments, for the sake of
   correctness. Defaults are specified in the command-line defaults for this
   script. Run `python artifice.py -h` for more info.
 
-  :param commands: 
-  :param mode: 
-  :param data_root: 
-  :param model_root: 
-  :param overwrite: 
-  :param convert_mode: 
-  :param transformation: 
-  :param image_shape: 
-  :param data_size: 
-  :param test_size: 
-  :param batch_size: 
-  :param num_objects: 
-  :param pose_dim: 
-  :param base_shape: 
-  :param level_filters: 
-  :param level_depth: 
-  :param dropout: 
-  :param initial_epoch: 
-  :param epochs: 
-  :param learning_rate: 
-  :param num_parallel_calls: 
-  :param verbose: 
-  :param keras_verbose: 
-  :param eager: 
-  :param show: 
-  :param cache: 
-  :returns: 
-  :rtype: 
-
-  # todo: copy the above from docs file
+  # todo: copy docs here
 
   """
   def __init__(self, *, commands, data_root, model_root, overwrite, deep,
                convert_mode, transformation, identity_prob, priority_mode,
-               annotation_mode, record_size, annotation_delay, image_shape,
-               data_size, test_size, batch_size, num_objects, pose_dim,
-               num_shuffle, base_shape, level_filters, level_depth, dropout,
-               initial_epoch, epochs, learning_rate, num_parallel_calls,
-               verbose, keras_verbose, eager, show, cache, seconds):
+               labeled, annotation_mode, record_size, annotation_delay,
+               image_shape, data_size, test_size, batch_size, num_objects,
+               pose_dim, num_shuffle, base_shape, level_filters, level_depth,
+               dropout, initial_epoch, epochs, learning_rate,
+               num_parallel_calls, verbose, keras_verbose, eager, show, cache,
+               seconds):
     # main
     self.commands = commands
 
@@ -116,6 +88,7 @@ class Artifice:
     self.transformation = transformation
     self.identity_prob = identity_prob
     self.priority_mode = priority_mode
+    self.labeled = labeled
 
     # annotation settings
     self.annotation_mode = annotation_mode
@@ -171,6 +144,9 @@ class Artifice:
     self.annotation_info_path = join(self.model_root, 'annotation_info.pkl')
     self.annotated_dir = join(self.model_root, 'annotated') # model-dependent
 
+    # derived constants, for convenience
+    self.augment = transformation is not None
+
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
                         self.annotated_dir])
@@ -207,13 +183,18 @@ todo: other attributes"""
     return dat.UnlabeledData(join(self.data_root, 'unlabeled_set.tfrecord'),
                              size=self.data_size, **self._data_kwargs)
   def _load_annotated(self):
-    return dat.AnnotatedData(self.annotated_dir,
-                             transformation=tform.transformations[self.transformation],
+    transformation = (None if not self.augment else
+                      tform.transformations[self.transformation])
+    return dat.AnnotatedData(self.annotated_dir, transformation=transformation,
                              size=self.data_size, **self._data_kwargs)
   def _load_test(self):
     return dat.LabeledData(join(self.data_root, 'test_set.tfrecord'),
                            size=self.test_size, **self._data_kwargs)
-
+  def _load_train(self):
+    if self.labeled:
+      return self._load_labeled()
+    return self._load_annotated()
+  
   def _load_model(self):
     return mod.ProxyUNet(base_shape=self.base_shape,
                          level_filters=self.level_filters,
@@ -231,29 +212,20 @@ todo: other attributes"""
         self.data_root, test_size=self.test_size)
 
   def fit(self):
-    """Fit the model using a labeled set."""
-    labeled_set = self._load_labeled()
+    """Fit the model without reloading the dataset every epoch."""
+    train_set = self._load_train()
     model = self._load_model()
-    model.fit(labeled_set, epochs=self.epochs,
+    model.fit(train_set, epochs=self.epochs,
               initial_epoch=self.initial_epoch,
-              verbose=self.keras_verbose)
-
-  def augment(self):
-    """Visualize the augmented training set."""
-    annotated_set = self._load_annotated()
-    for images, proxies in annotated_set.augmented_training_input:
-      for image, proxy in zip(images, proxies):
-        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
-        logger.info(f"showing...")
-        plt.show()
+              verbose=self.keras_verbose, augment=self.augment)
     
   def train(self):
     """Train the model using augmented examples from the annotated set."""
-    annotated_set = self._load_annotated()
+    annotated_set = self._load_training()
     model = self._load_model()
     model.train(annotated_set, epochs=self.epochs,
                 initial_epoch=self.initial_epoch,
-                verbose=self.keras_verbose)
+                verbose=self.keras_verbose, augment=self.augment)
 
   def evaluate(self):
     test_set = self._load_test()
@@ -272,12 +244,13 @@ todo: other attributes"""
     logger.info(f"max: {errors.max(axis=0)}")
 
   def visualize(self):
-    test_set = self._load_test()
-    for images, proxies in test_set.training_input:
-      image = images[0]
-      proxy = proxies[0]
-      vis.plot_image(image, proxy[:,:,0])
-      plt.show()
+    """Visualize the training set. (Mostly for debugging.)"""
+    annotated_set = self._load_annotated()
+    for images, proxies in annotated_set.augmented_training_input():
+      for image, proxy in zip(images, proxies):
+        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
+        logger.info(f"showing...")
+        plt.show()
 
   def prioritize(self):
     """Prioritize images for annotation using an active learning or other strategy.
@@ -357,12 +330,13 @@ def main():
   # data settings
   parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
                       help=docs.convert_mode)
-  parser.add_argument('--transformation', '--augmentation', '-a', nargs=1,
-                      default=[0], type=int, help=docs.transformation)
+  parser.add_argument('--transformation', '--augment', '-a', nargs='?',
+                      default=[None], const=[0], type=int, help=docs.transformation)
   parser.add_argument('--identity-prob', nargs=1, default=[0.01], type=float,
                       help=docs.identity_prob)
   parser.add_argument('--priority-mode', '--priority', nargs=1, default=['random'],
-                      help=docs.select_mode)
+                      help=docs.priority_mode)
+  parser.add_argument('--labeled', action='store_true', help=docs.labeled)
 
   # annotation settings
   parser.add_argument('--annotation-mode', '--annotate', nargs=1,
@@ -409,7 +383,7 @@ def main():
   # runtime settings
   parser.add_argument('--num-parallel-calls', '--cores', nargs=1, default=[-1],
                       type=int, help=docs.num_parallel_calls)
-  parser.add_argument('--verbose', '-v', nargs=1, default=[2], type=int,
+  parser.add_argument('--verbose', '-v', action='count', default=[2], type=int,
                       help=docs.verbose)
   parser.add_argument('--keras-verbose', nargs=1, default=[1], type=int,
                       help=docs.keras_verbose)
@@ -422,7 +396,7 @@ def main():
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
                  transformation=args.transformation[0],
                  identity_prob=args.identity_prob[0],
-                 priority_mode=args.priority_mode[0],
+                 priority_mode=args.priority_mode[0], labeled=args.labeled[0],
                  annotation_mode=args.annotation_mode[0],
                  record_size=args.record_size[0],
                  annotation_delay=args.annotation_delay[0],

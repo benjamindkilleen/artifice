@@ -113,9 +113,8 @@ def combine_1_2_3(image, label, annotation, background):
   """Do all three, potentially adjusting scale dimension of label."""
   raise NotImplementedError
 
-transformations = {0 : identity,
-                   1 : normal_translate,
-                   2 : uniform_rotate,
-                   4 : normal_scale,
+transformations = {0 : normal_translate, 
+                   1 : uniform_rotate,
+                   2 : normal_scale,
                    3 : combine_1_2,
-                   5 : combine_1_2_3}
+                   4 : combine_1_2_3}

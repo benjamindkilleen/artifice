@@ -307,25 +307,18 @@ class ArtificeData(object):
     dataset = self.process(dataset, mode)
     return self.postprocess(dataset, mode)
 
-  @property
   def training_input(self):
     return self.get_input(ArtificeData.TRAINING)
-  @property
   def prediction_input(self):
     return self.get_input(ArtificeData.PREDICTION)
-  @property
   def evaluation_input(self):
     return self.get_input(ArtificeData.EVALUATION)
-  @property
   def enumerated_prediction_input(self):
     return self.get_input(ArtificeData.ENUMERATED_PREDICTION)
-  @property
   def augmented_training_input(self):
     return self.get_input(ArtificeData.AUGMENTED_TRAINING)
-  @property
   def augmented_prediction_input(self):
     return self.get_input(ArtificeData.AUGMENTED_PREDICTION)
-  @property
   def augmented_evaluation_input(self):
     return self.get_input(ArtificeData.AUGMENTED_EVALUATION)
 

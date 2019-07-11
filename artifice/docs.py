@@ -11,7 +11,11 @@ deep = "todo"
 convert_mode = "todo"
 transformation = "todo"
 identity_prob = "todo"
-select_mode = "todo"
+priority_mode = "todo"
+labeled = """use the labeled and not the annotated set for training. This is
+subtly different from the AUGMENT option. If LABELED is true, then AUGMENT
+should not be used, but if LABELED is false, augment may or may not be used,
+since an annotated set can be used with or without augmentation."""
 
 # annotation settings
 annotation_mode = "todo"
