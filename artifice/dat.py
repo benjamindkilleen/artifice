@@ -287,19 +287,21 @@ class ArtificeData(object):
   def postprocess(self, dataset, mode, cache=False):
     if "ENUMERATED" in mode:
       dataset = dataset.apply(tf.data.experimental.enumerate_dataset())
+    if cache:
+      logger.info("caching this epoch...")
+      dataset = dataset.repeat(-1).take(self.size).cache(self.cache_dir)
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     if mode == ArtificeData.TRAINING:
       dataset = dataset.shuffle(self.num_shuffle)
-    if cache:
+    # if cache:
       # todo: this is not being done correctly. Basically, you can't repeat the
       # dataset before you cache it. So if we want to cache every epoch, need to
       # run the dataset out, basically, or repeat it once to the epoch size,
       # then cache it, then forever.
       # todo: figure out why cache files are going in model_root not cache_dir
-      logger.info("caching this epoch...")
-      dataset = dataset.repeat(-1).take(self.size).cache(self.cache_dir)
-    else:
-      dataset = dataset.repeat(-1)
+      # logger.info("caching this epoch...")
+      # dataset = dataset.repeat(-1).take(self.steps_per_epoch).cache(self.cache_dir)
+    dataset = dataset.repeat(-1)
     dataset = dataset.prefetch(self.prefetch_buffer_size)
     return dataset
 

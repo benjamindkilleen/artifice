@@ -698,5 +698,9 @@ Ideas in Artifice can be built on, code as well. Big ideas:
 * Could detect when the annotator is done, and then just call fit up till
   epochs? That would be good.
 
-## July 12, 2019: Experimenting with Caching
+## July 13, 2019: Experimenting with Caching
 * Seeing how long each epoch takes with caching enabled.
+* Had to take `steps_per_epoch` from the dataset, since it had already been
+  batched. May want to take `size` before batching, so that shuffling and
+  batching can be done after caching.
+* Why is the shuffle buffer not being filled anymore?

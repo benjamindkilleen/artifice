@@ -295,6 +295,7 @@ todo: other attributes"""
     logger.info(f"avg (euclidean) detection error: {avg_error[0]}")
     logger.info(f"avg (absolute) pose error: {avg_error[1:]}")
     logger.info("note: some objects may be occluded, making detection impossible")
+    logger.info(f"avg: {errors.mean(axis=0)}")
     logger.info(f"std: {errors.std(axis=0)}")
     logger.info(f"min: {errors.min(axis=0)}")
     logger.info(f"max: {errors.max(axis=0)}")

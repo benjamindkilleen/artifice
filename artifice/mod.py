@@ -177,7 +177,7 @@ class ArtificeModel():
     new_hist = utils.jsonable(new_hist)
     if hist is not None:
       new_hist = _update_hist(hist, new_hist)
-    utils.json_save(hist)
+    utils.json_save(self.history_path, hist)
     return hist
   
   def train(self, art_data, initial_epoch=0, epochs=1, seconds=0,
