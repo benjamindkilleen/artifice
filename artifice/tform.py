@@ -31,9 +31,6 @@ logger = logging.getLogger('artifice')
 def swap(t):
   return tf.gather(t, [1,0])
 
-def identity(image, label, annotation, background):
-  return [image, label]
-
 def normal_translate(image, label, annotation, background):
   """Translate each object with a random offset, normal distributed."""
   # boilerplate code
@@ -102,8 +99,8 @@ def uniform_rotate(image, label, annotation, background):
   raise NotImplementedError
 
 def normal_scale(image, label, annotation, background):
-  """Adjust the scale of each object, with scale factors from N(1,0.1)."""
-  raise NotImplementedError
+   """Adjust the scale of each object, with scale factors from N(1,0.1)."""
+   raise NotImplementedError
 
 def combine_1_2(image, label, annotation, background):
   """Apply random translations and rotations, as above, together."""

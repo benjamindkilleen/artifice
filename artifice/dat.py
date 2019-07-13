@@ -198,20 +198,18 @@ class ArtificeData(object):
   PREDICTION = "PREDICTION"     # single `image` tensor
   EVALUATION = "EVALUATION"     # `(image, label)` tensor tuple
   ENUMERATED_PREDICTION = "ENUMERATED_PREDICTION"
-  AUGMENTED_TRAINING = "AUGMENTED_TRAINING"
-  AUGMENTED_PREDICTION = "AUGMENTED_PREDICTION"
-  AUGMENTED_EVALUATION = "AUGMENTED_EVALUATION"
   
   def __init__(self, record_path, *, size, image_shape, input_tile_shape,
                output_tile_shape, batch_size, num_parallel_calls=None,
-               num_shuffle=10000, cache_dir=None, **kwargs):
+               num_shuffle=10000, cache_dir='cache', **kwargs):
     """Initialize the data, loading it if necessary..
 
     kwargs is there only to allow extraneous keyword arguments. It is not used.
 
     :param record_paths: path or paths containing tfrecord files. If a
     directory, then grabs all .tfrecord files in that directory *at runtime*.
-    :param size: 
+    :param size: size of an epoch. If not a multiple of batch_size, the
+    remainder examples are dropped.
     :param image_shape: 
     :param input_tile_shape: 
     :param output_tile_shape: 
@@ -225,7 +223,7 @@ class ArtificeData(object):
     """
     # inherent
     self.record_paths = utils.listwrap(record_path)
-    self.size = size            # size of an epoch.
+    self.size = size - size % batch_size # size of an epoch
     self.image_shape = image_shape
     assert len(self.image_shape) == 3
     self.input_tile_shape = input_tile_shape
@@ -233,7 +231,7 @@ class ArtificeData(object):
     self.batch_size = batch_size
     self.num_parallel_calls = num_parallel_calls
     self.num_shuffle = num_shuffle
-    self.cache_dir = cache_dir
+    self.cache_dir = os.path.abspath(cache_dir)
 
     # derived
     self.num_tiles = self.compute_num_tiles(self.image_shape,
@@ -286,41 +284,38 @@ class ArtificeData(object):
     """
     raise NotImplementedError("subclasses should implement")
 
-  def postprocess(self, dataset, mode):
+  def postprocess(self, dataset, mode, cache=False):
     if "ENUMERATED" in mode:
       dataset = dataset.apply(tf.data.experimental.enumerate_dataset())
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
-    if "TRAINING" in mode:
+    if mode == ArtificeData.TRAINING:
       dataset = dataset.shuffle(self.num_shuffle)
-    dataset = dataset.repeat(-1).prefetch(self.prefetch_buffer_size)
-    if self.cache_dir is not None:
+    if cache:
       # todo: this is not being done correctly. Basically, you can't repeat the
       # dataset before you cache it. So if we want to cache every epoch, need to
       # run the dataset out, basically, or repeat it once to the epoch size,
       # then cache it, then forever.
       # todo: figure out why cache files are going in model_root not cache_dir
-      dataset = dataset.cache(self.cache_dir)
+      logger.info("caching this epoch...")
+      dataset = dataset.repeat(-1).take(self.size).cache(self.cache_dir)
+    else:
+      dataset = dataset.repeat(-1)
+    dataset = dataset.prefetch(self.prefetch_buffer_size)
     return dataset
 
-  def get_input(self, mode):
+  def get_input(self, mode, cache=False):
     dataset = tf.data.TFRecordDataset(self.record_names)
     dataset = self.process(dataset, mode)
-    return self.postprocess(dataset, mode)
+    return self.postprocess(dataset, mode, cache=cache)
 
-  def training_input(self):
-    return self.get_input(ArtificeData.TRAINING)
+  def training_input(self, cache=False):
+    return self.get_input(ArtificeData.TRAINING, cache=cache)
   def prediction_input(self):
     return self.get_input(ArtificeData.PREDICTION)
   def evaluation_input(self):
     return self.get_input(ArtificeData.EVALUATION)
   def enumerated_prediction_input(self):
     return self.get_input(ArtificeData.ENUMERATED_PREDICTION)
-  def augmented_training_input(self):
-    return self.get_input(ArtificeData.AUGMENTED_TRAINING)
-  def augmented_prediction_input(self):
-    return self.get_input(ArtificeData.AUGMENTED_PREDICTION)
-  def augmented_evaluation_input(self):
-    return self.get_input(ArtificeData.AUGMENTED_EVALUATION)
 
   @property
   def dataset(self):
@@ -611,25 +606,17 @@ class AnnotatedData(LabeledData):
     return annotated_example_from_proto(proto)
   
   def process(self, dataset, mode):
-    if "AUGMENTED" in mode:
+    if self.transformation is not None:
       background = self.get_background()
     def map_func(proto):
       image, label, annotation = self.parse(proto)
+      if self.transformation is not None:
+        image, label = self.augment(image, label, annotation, background)
       if mode == ArtificeData.PREDICTION:
         return self.tile_image(image)
       if mode == ArtificeData.EVALUATION:
         return self.tile_image_label(image, label)
       if mode == ArtificeData.TRAINING:
-        proxy = self.make_proxy(image, label)
-        return self.tile_image_proxy(image, proxy)
-
-      # remaining modes require augmentation
-      image, label = self.augment(image, label, annotation, background)
-      if mode == ArtificeData.AUGMENTED_PREDICTION:
-        return self.tile_image(image)
-      if mode == ArtificeData.AUGMENTED_EVALUATION:
-        return self.tile_image_label(image, label)
-      if mode == ArtificeData.AUGMENTED_TRAINING:
         proxy = self.make_proxy(image, label)
         return self.tile_image_proxy(image, proxy)
       raise ValueError(f"{mode} mode invalid for AnnotatedData")

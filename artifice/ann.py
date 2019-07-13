@@ -172,7 +172,7 @@ class Annotator:
                     record_name)
       self.info.finalize(idxs)
       logger.info(f"saved {i}'th annotated set to {record_name}.")
-      if time() - start_time > seconds >= 0:
+      if time() - start_time > seconds > 0:
         logger.info(f"finished after {seconds}s.")
         break
       

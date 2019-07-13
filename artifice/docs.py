@@ -49,4 +49,6 @@ keras_verbose = "Keras verbosity. Default is 1 (progress bars)."
 patient = "Disable eager execution."
 show = "Show plots rather than save them."
 cache = "cache the pipelined dataset"
-seconds = "todo"
+seconds = """Limits runtime for "prioritize" and "annotate" commands. For "train," sets
+the time after which the dataset is no longer reloaded every epoch, and caching
+can occur."""

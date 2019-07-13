@@ -144,9 +144,6 @@ class Artifice:
     self.annotation_info_path = join(self.model_root, 'annotation_info.pkl')
     self.annotated_dir = join(self.model_root, 'annotated') # model-dependent
 
-    # derived constants, for convenience
-    self.augment = transformation is not None
-
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
                         self.annotated_dir])
@@ -175,7 +172,7 @@ todo: other attributes"""
             'batch_size' : self.batch_size,
             'num_parallel_calls' : self.num_parallel_calls,
             'num_shuffle' : min(self.data_size, self.num_shuffle),
-            'cache_dir' : self.cache_dir if self.cache else None}
+            'cache_dir' : self.cache_dir}
   def _load_labeled(self):
     return dat.LabeledData(join(self.data_root, 'labeled_set.tfrecord'),
                            size=self.data_size, **self._data_kwargs)
@@ -183,7 +180,7 @@ todo: other attributes"""
     return dat.UnlabeledData(join(self.data_root, 'unlabeled_set.tfrecord'),
                              size=self.data_size, **self._data_kwargs)
   def _load_annotated(self):
-    transformation = (None if not self.augment else
+    transformation = (None if not self.transformation is None else
                       tform.transformations[self.transformation])
     return dat.AnnotatedData(self.annotated_dir, transformation=transformation,
                              size=self.data_size, **self._data_kwargs)
@@ -205,52 +202,35 @@ todo: other attributes"""
                          overwrite=self.overwrite)
 
   #################### Methods implementing Commands ####################
-  
+
+
   def convert(self):
     for mode in self.convert_modes:
       conversions.conversions[mode](
         self.data_root, test_size=self.test_size)
 
-  def fit(self):
-    """Fit the model without reloading the dataset every epoch."""
-    train_set = self._load_train()
-    model = self._load_model()
-    model.fit(train_set, epochs=self.epochs,
-              initial_epoch=self.initial_epoch,
-              verbose=self.keras_verbose, augment=self.augment)
+  def uncache(self):
+    """Clean up the cache files."""
+    for path in glob(join(self.model_root, "cache*")):
+      utils.rm(path)
+
+  def clean(self):
+    """Clean up the files associated with this model for a future run.
     
-  def train(self):
-    """Train the model using augmented examples from the annotated set."""
-    annotated_set = self._load_training()
-    model = self._load_model()
-    model.train(annotated_set, epochs=self.epochs,
-                initial_epoch=self.initial_epoch,
-                verbose=self.keras_verbose, augment=self.augment)
+    Removes the annotation info file and lock, annotation records, and
+    cache. 
 
-  def evaluate(self):
-    test_set = self._load_test()
-    model = self._load_model()
-    errors, num_failed = model.evaluate(test_set)
-    avg_error = errors.mean(axis=0)
-    total_num_objects = self.test_size * self.num_objects
-    num_detected = total_num_objects - num_failed
-    logger.info(f"objects detected: {num_detected} / "
-                f"{total_num_objects}")
-    logger.info(f"avg (euclidean) detection error: {avg_error[0]}")
-    logger.info(f"avg (absolute) pose error: {avg_error[1:]}")
-    logger.info("note: some objects may be occluded, making detection impossible")
-    logger.info(f"std: {errors.std(axis=0)}")
-    logger.info(f"min: {errors.min(axis=0)}")
-    logger.info(f"max: {errors.max(axis=0)}")
+    If --deep is specified, also removes the saved model and checkpoints. Does
+    not remove data.
 
-  def visualize(self):
-    """Visualize the training set. (Mostly for debugging.)"""
-    annotated_set = self._load_annotated()
-    for images, proxies in annotated_set.augmented_training_input():
-      for image, proxy in zip(images, proxies):
-        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
-        logger.info(f"showing...")
-        plt.show()
+    """
+    if self.deep:
+      utils.rm(self.model_root)
+    else:
+      # todo: remove cache files
+      utils.rm(self.annotation_info_path)
+      utils.rm(self.annotation_info_path + '.lockfile')
+      utils.rm(self.annotated_dir)
 
   def prioritize(self):
     """Prioritize images for annotation using an active learning or other strategy.
@@ -292,24 +272,41 @@ todo: other attributes"""
     else:
       raise NotImplementedError(f"{self.annotation_mode} annotation mode")
     annotator.run(seconds=self.seconds)
+      
+  def train(self):
+    """Train the model using augmented examples from the annotated set."""
+    train_set = self._load_train()
+    model = self._load_model()
+    model.train(train_set, epochs=self.epochs,
+                initial_epoch=self.initial_epoch,
+                verbose=self.keras_verbose,
+                seconds=self.seconds,
+                cache=self.cache)
 
-  def clean(self):
-    """Clean up the files associated with this model for a future run.
-    
-    Removes the annotation info file and lock, annotation records, and
-    cache. 
+  def evaluate(self):
+    test_set = self._load_test()
+    model = self._load_model()
+    errors, num_failed = model.evaluate(test_set)
+    avg_error = errors.mean(axis=0)
+    total_num_objects = self.test_size * self.num_objects
+    num_detected = total_num_objects - num_failed
+    logger.info(f"objects detected: {num_detected} / "
+                f"{total_num_objects}")
+    logger.info(f"avg (euclidean) detection error: {avg_error[0]}")
+    logger.info(f"avg (absolute) pose error: {avg_error[1:]}")
+    logger.info("note: some objects may be occluded, making detection impossible")
+    logger.info(f"std: {errors.std(axis=0)}")
+    logger.info(f"min: {errors.min(axis=0)}")
+    logger.info(f"max: {errors.max(axis=0)}")
 
-    If --deep is specified, also removes the saved model and checkpoints. Does
-    not remove data.
-
-    """
-    if self.deep:
-      utils.rm(self.model_root)
-    else:
-      # todo: remove cache files
-      utils.rm(self.annotation_info_path)
-      utils.rm(self.annotation_info_path + '.lockfile')
-      utils.rm(self.annotated_dir)
+  def visualize(self):
+    """Visualize the training set. (Mostly for debugging.)"""
+    annotated_set = self._load_annotated()
+    for images, proxies in annotated_set.augmented_training_input():
+      for image, proxy in zip(images, proxies):
+        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
+        logger.info(f"showing...")
+        plt.show()
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -383,20 +380,21 @@ def main():
   # runtime settings
   parser.add_argument('--num-parallel-calls', '--cores', nargs=1, default=[-1],
                       type=int, help=docs.num_parallel_calls)
-  parser.add_argument('--verbose', '-v', action='count', default=[2], type=int,
+  parser.add_argument('--verbose', '-v', action='count', default=[2],
                       help=docs.verbose)
   parser.add_argument('--keras-verbose', nargs=1, default=[1], type=int,
                       help=docs.keras_verbose)
   parser.add_argument('--patient', action='store_true', help=docs.patient)
   parser.add_argument('--show', action='store_true', help=docs.show)
   parser.add_argument('--cache', action='store_true', help=docs.cache)
-  parser.add_argument('--seconds', nargs=1, default=[-1], type=int, help=docs.seconds)
+  parser.add_argument('--seconds', '--time', '--reload', '-t', '-r', nargs='?',
+                      default=[0], const=[-1], type=int, help=docs.seconds)
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
                  transformation=args.transformation[0],
                  identity_prob=args.identity_prob[0],
-                 priority_mode=args.priority_mode[0], labeled=args.labeled[0],
+                 priority_mode=args.priority_mode[0], labeled=args.labeled,
                  annotation_mode=args.annotation_mode[0],
                  record_size=args.record_size[0],
                  annotation_delay=args.annotation_delay[0],

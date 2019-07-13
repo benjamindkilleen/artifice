@@ -4,7 +4,7 @@
 import os
 import logging
 import json
-import time
+from time import time
 import itertools
 import numpy as np
 from stringcase import snakecase
@@ -13,6 +13,26 @@ from tensorflow import keras
 from artifice import dat, utils, img
 
 logger = logging.getLogger('artifice')
+
+def _update_hist(a, b):
+  """Concat the lists in b onto the lists in a.
+
+  If b has elements that a does not, includes them. Behavior is undefined for
+  elements that are not lists.
+
+  :param a: 
+  :param b: 
+  :returns: 
+  :rtype:
+
+  """
+  c = a.copy()
+  for k,v in b.items():
+    if type(v) is list and type(c.get(k)) is list:
+      c[k] += v
+    else:
+      c[k] = v
+  return c
 
 def crop(inputs, shape):
   top_crop = int(np.floor(int(inputs.shape[1] - shape[1]) / 2))
@@ -119,7 +139,7 @@ class ArtificeModel():
   @property
   def callbacks(self):
     return [keras.callbacks.ModelCheckpoint(
-      self.checkpoint_path, verbose=1, save_weights_only=False)]
+      self.checkpoint_path, verbose=1, save_weights_only=True)]
   
   def load_weights(self):
     """Update the model weights from the chekpoint file."""
@@ -138,53 +158,58 @@ class ArtificeModel():
   # found in keras library. Look into it during training. For now, we're fine
   # with just weights in the checkpoint file.
 
-  def fit(self, art_data, initial_epoch=0):
-    """Wrapper around model.fit that includes callbacks and history saving.
+  def fit(self, art_data, hist=None, cache=False, **kwargs):
+    """Thin wrapper around model.fit(). Preferred method is `train()`.
 
-    Only loads the dataset once, then repeats it, so doesn't update with new
-    examples as they are labeled. Should be used with already assembled dataset.
-
-    :param art_data: ArtificeData object
-    :param initial_epoch: initial epoch
+    :param art_data: 
+    :param hist: existing hist. If None, starts from scratch. Use train for
+    loading from existing hist.
+    :param cache: cache the dataset. Should only be used if multiple epochs will
+    be run.
+    :returns: 
+    :rtype: 
 
     """
     kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
-    hist = self.model.fit(art_data.training_input(),
-                          steps_per_epoch=art_data.steps_per_epoch,
-                          initial_epoch=initial_epoch,
-                          **kwargs).history
-    hist = utils.jsonable(hist)
-    if initial_epoch > 0 and os.path.exists(self.history_path):
-      old_hist = utils.json_load(self.history_path)
-      hist = utils.concat_dicts(old_hist, hist)
-    utils.json_save(self.history_path, hist)
-    self.save()                 # save the whole model (not just checkpoint weights)
+    new_hist = self.model.fit(art_data.training_input(cache=cache),
+                              steps_per_epoch=art_data.steps_per_epoch,
+                              **kwargs).history
+    new_hist = utils.jsonable(new_hist)
+    if hist is not None:
+      new_hist = _update_hist(hist, new_hist)
+    utils.json_save(hist)
     return hist
   
-  def train(self, art_data, initial_epoch=0, epochs=1, **kwargs):
-    """Fits the model, saving it along the way, with augmented data.
+  def train(self, art_data, initial_epoch=0, epochs=1, seconds=0,
+            **kwargs):
+    """Fits the model, saving it along the way, and reloads every epoch.
 
-    Saves the training history. Reloads the dataset every epoch, so if new
-    records exist, it will load them as well on the epoch.
-
-    :param art_set: ArtificeData 
+    :param art_data: ArtificeData set
+    :param initial_epoch: epoch that training is starting from
+    :param epochs: epoch number to stop at. If -1, training continues forever.
+    :param seconds: seconds after which to stop reloading every epoch. If -1,
+    reload is never stopped. If 0, dataset is loaded only once, at beginning.
     :returns: history dictionary
 
     """
-    kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
+      
     if initial_epoch > 0 and os.path.exists(self.history_path):
       hist = utils.json_load(self.history_path)
     else:
       hist = {}
     epoch = initial_epoch
-    while epoch != epochs:
-      new_hist = self.model.fit(art_data.augmented_training_input(),
-                                steps_per_epoch=art_data.steps_per_epoch,
-                                initial_epoch=epoch,
-                                epochs=epoch + 1,
-                                **kwargs).history
-      hist = utils.concat_dicts(hist, utils.jsonable(new_hist))
-    utils.json_save(self.history_path, hist)
+    start_time = time()
+
+    while epoch != epochs and time() - start_time > seconds > 0:
+      logger.info("reloading dataset (not cached)...")
+      hist = self.fit(art_data, hist=hist, initial_epoch=epoch, epochs=epoch +
+                      1, **kwargs)
+      epoch += 1
+
+    if epoch != epochs:
+      hist = self.fit(art_data, hist=hist, initial_epoch=epoch,
+                      epochs=epochs, **kwargs)
+
     self.save()
     return hist
   

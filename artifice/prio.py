@@ -26,7 +26,7 @@ class Prioritizer:
         priorities = list(self.prioritize(images))
         self.info.push(list(zip(list(indices), priorities)))
         logger.info(f"pushed {indices} with priorities {priorities}.")
-        if time() - start_time > seconds >= 0:
+        if time() - start_time > seconds > 0:
           logger.info(f"finished after {seconds}s.")
           break
     else:

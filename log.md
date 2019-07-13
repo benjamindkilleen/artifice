@@ -697,3 +697,6 @@ Ideas in Artifice can be built on, code as well. Big ideas:
   to fill up the shuffle buffer. Is this worth it?
 * Could detect when the annotator is done, and then just call fit up till
   epochs? That would be good.
+
+## July 12, 2019: Experimenting with Caching
+* Seeing how long each epoch takes with caching enabled.
