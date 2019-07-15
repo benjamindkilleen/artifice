@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tensorflow import keras
 
 from artifice import dat
 from artifice import mod
@@ -300,7 +301,7 @@ todo: other attributes"""
     logger.info(f"min: {errors.min(axis=0)}")
     logger.info(f"max: {errors.max(axis=0)}")
 
-  def visualize(self):
+  def vis_augment(self):
     """Visualize the training set. (Mostly for debugging.)"""
     annotated_set = self._load_annotated()
     for images, proxies in annotated_set.augmented_training_input():
@@ -308,6 +309,29 @@ todo: other attributes"""
         vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
         logger.info(f"showing...")
         plt.show()
+
+  def vis_levels(self):
+
+    """Visualize the output of each level."""
+    model = self._load_model()
+    level_models = []
+    for layer in [layer for layer in model.layers if 'level_output' in layer.name]:
+      level_models.append(keras.Model(model.layers[0].input, layer.output,
+                                      name=layer.name))
+
+    test_set = self._load_test()
+    for batch in test_set.prediction_input():
+      proxy = model.predict_on_batch(batch)
+      for i, predictions in enumerate(zip(*[level_model.predict_on_batch(batch)
+                                            for level_model in level_models])):
+        vis.plot_image(batch[i,20:120, 20:120],
+                       *[p.mean(axis=-1) for p in predictions],
+                       proxy[i,:,:,0], cram=False)
+        plt.show()
+    
+      
+    logger.debug(str(model))
+    
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)

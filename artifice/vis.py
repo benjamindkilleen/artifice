@@ -15,7 +15,7 @@ logger = logging.getLogger('artifice')
 
 
 def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
-               cmap='gray', **kwargs):
+               cmap='gray', cram=True, **kwargs):
   cmaps = utils.listify(cmap, len(images)) 
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
@@ -26,10 +26,11 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
     im = ax.imshow(np.squeeze(image), cmap=cmaps[i], **kwargs)
     if colorbar:
       fig.colorbar(im, ax=ax, orientation='horizontal', fraction=0.046, pad=0.04)
-  if not ticks:
-    for ax in axes.ravel():
+  for ax in axes.ravel():
+    if not ticks:
       ax.axis('off')
-      ax.set_aspect('equal')
-  fig.subplots_adjust(wspace=0, hspace=0)
+    ax.set_aspect('equal')
+  if cram:
+    fig.subplots_adjust(wspace=0, hspace=0)
   return fig, axes
 

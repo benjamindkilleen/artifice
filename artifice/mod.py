@@ -44,8 +44,8 @@ def crop(inputs, shape):
                                     input_shape=inputs.shape)(inputs)
   return outputs
 
-def conv(inputs, filters, kernel_shape=(3,3),
-         activation='relu', padding='valid', norm=True):
+def conv(inputs, filters, kernel_shape=(3,3), activation='relu',
+         padding='valid', norm=True, **kwargs):
   """Perform 3x3 convolution on the layer.
 
   :param inputs: input tensor
@@ -59,19 +59,14 @@ def conv(inputs, filters, kernel_shape=(3,3),
   """
   if norm:
     inputs = keras.layers.Conv2D(
-      filters, kernel_shape,
-      activation=None,
-      padding=padding,
-      use_bias=False,
-      kernel_initializer='glorot_normal')(inputs)
+      filters, kernel_shape, activation=None, padding=padding, use_bias=False,
+      kernel_initializer='glorot_normal', **kwargs)(inputs)
     inputs = keras.layers.BatchNormalization()(inputs)
     inputs = keras.layers.Activation(activation)(inputs)
   else:
     inputs = keras.layers.Conv2D(
-      filters, kernel_shape,
-      activation=activation,
-      padding=padding,
-      kernel_initializer='glorot_normal')(inputs)
+      filters, kernel_shape, activation=activation, padding=padding,
+      kernel_initializer='glorot_normal', **kwargs)(inputs)
   return inputs
 
 def conv_transpose(inputs, filters, activation='relu'):
@@ -125,10 +120,14 @@ class ArtificeModel():
 
   def __str__(self):
     output = f"{self.name}:\n"
-    for layer in layers:
+    for layer in self.model.layers:
       output += "layer:{} -> {}:{}\n".format(
         layer.input_shape, layer.output_shape, layer.name)
     return output
+
+  @property
+  def layers(self):
+    return self.model.layers
 
   def forward(self, inputs):
     raise NotImplementedError("subclasses should implement")
@@ -212,6 +211,28 @@ class ArtificeModel():
 
     self.save()
     return hist
+
+  def predict_on_batch(self, *args, **kwargs):
+    return self.model.predict_on_batch(*args, **kwargs)
+  
+  def predict(self, art_data):
+    """Run prediction, reassembling tiles, with the Artifice data.
+
+    :param art_data: ArtificeData object
+    :returns: iterator over predictions
+
+    """
+    if tf.executing_eagerly():
+      proxies = []
+      for i, batch in art_data.prediction_input():
+        proxies += list(self.model.predict_on_batch(batch))
+        while len(proxies) >= art_data.num_tiles:
+          proxy = art_data.untile(proxies[:art_data.num_tiles])
+          prediction = analyze_proxy(proxy)
+          del proxies[:art_data.num_tiles]
+          yield prediction
+    else:
+      raise NotImplementedError("patient prediction")
   
   def evaluate(self, art_data):
     """Run evaluation, reassembling tiles, with the ArtificeData object.
@@ -220,8 +241,9 @@ class ArtificeModel():
     test sets, which we will use.
 
     :param art_data: ArtificeData object
-    :returns: `(num_examples, num_objects, 1 + pose_dim)` predictions
-    :rtype: iterator over numpy array
+    :returns: `errors, total_num_failed` error matrix and number of objects not
+    detected
+    :rtype: np.ndarray, int
 
     """
     if tf.executing_eagerly():
@@ -281,6 +303,7 @@ class ProxyUNet(ArtificeModel):
     self.pose_dim = pose_dim
     self.level_depth = level_depth
     self.dropout = dropout
+
     self.input_tile_shape = self.compute_input_tile_shape(
       base_shape, len(self.level_filters), self.level_depth)
     self.output_tile_shape = self.compute_input_tile_shape(
@@ -334,20 +357,24 @@ class ProxyUNet(ArtificeModel):
     level_outputs = []
 
     for i, filters in enumerate(self.level_filters):
-      for _ in range(self.level_depth):
+      for _ in range(self.level_depth - 1):
         inputs = conv(inputs, filters)
       if i < len(self.level_filters) - 1:
+        inputs = conv(inputs, filters)
         level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
-
+      else:
+        inputs = conv(inputs, filters, name='level_output_0')
+        
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
       inputs = conv_transpose(inputs, filters)
       cropped = crop(next(level_outputs), inputs.shape)
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
       inputs = keras.layers.Concatenate()([dropped, inputs])
-      for _ in range(self.level_depth):
+      for _ in range(self.level_depth - 1):
         inputs = conv(inputs, filters)
+      inputs = conv(inputs, filters, name=f'level_output_{i+1}')
 
     inputs = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
                   padding='same', norm=False)

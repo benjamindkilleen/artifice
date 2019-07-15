@@ -238,9 +238,6 @@ class ArtificeData(object):
                                             self.output_tile_shape)
     self.prefetch_buffer_size = self.batch_size
 
-    # private:
-    self._preprocess_ops = []    # list of method names and args (as a tuple)
-
   @property
   def record_names(self):
     record_names = []
@@ -293,15 +290,9 @@ class ArtificeData(object):
     dataset = dataset.batch(self.batch_size, drop_remainder=True)
     if mode == ArtificeData.TRAINING:
       dataset = dataset.shuffle(self.num_shuffle)
-    # if cache:
-      # todo: this is not being done correctly. Basically, you can't repeat the
-      # dataset before you cache it. So if we want to cache every epoch, need to
-      # run the dataset out, basically, or repeat it once to the epoch size,
-      # then cache it, then forever.
-      # todo: figure out why cache files are going in model_root not cache_dir
-      # logger.info("caching this epoch...")
-      # dataset = dataset.repeat(-1).take(self.steps_per_epoch).cache(self.cache_dir)
     dataset = dataset.repeat(-1)
+    if mode != ArtificeData.TRAINING:
+      dataset = dataset.take(self.steps_per_epoch)
     dataset = dataset.prefetch(self.prefetch_buffer_size)
     return dataset
 
@@ -728,6 +719,8 @@ class AnnotatedData(LabeledData):
 def detect_peaks(image, min_distance=2):
   """Analyze the predicted distance proxy for detections.
 
+  TODO: make more sophisticated?
+
   :param image: image, or usually predicted distance proxy
   :returns: detected peaks
   :rtype: 
@@ -735,6 +728,23 @@ def detect_peaks(image, min_distance=2):
   """
   return peak_local_max(image, threshold_abs=0.1, min_distance=min_distance,
                         indices=True, exclude_border=False)
+
+def analyze_proxy(proxy):
+  """Analyze the proxy for objects.
+
+  :param proxy: proxy field.
+  :returns: numpy array of predictions for each object. first two columns are
+  x,y for each object. Remaining columns correspond to pose channels of the
+  proxy.
+  :rtype: 
+
+  """
+  peaks = detect_peaks(proxy[:,:,0])
+  prediction = np.empty((peaks.shape[0], 1 + proxy.shape[-1]), dtype=np.float32)
+  for i, peak in enumerate(peaks):
+    prediction[i,:2] = peak
+    prediction[i,2:] = proxy[int(peak[0]), int(peak[1]), 1:]
+  return prediction
 
 def evaluate_proxy(label, proxy, distance_threshold=10):
   """Evaluage the proxy against the label and return an array of absolute errors.
