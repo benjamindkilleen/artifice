@@ -301,6 +301,16 @@ todo: other attributes"""
     logger.info(f"min: {errors.min(axis=0)}")
     logger.info(f"max: {errors.max(axis=0)}")
 
+  def predict(self):
+    """Run prediction on the unlabeled set."""
+    unlabeled_set = self._load_unlabeled()
+    model = self._load_model()
+    predictions = []
+    for prediction in model.predict(unlabeled_set):
+      predictions.append(prediction)
+    predictions = np.array(predictions)
+    np.save(join(self.model_root, 'predictions.npy'), predictions)
+    
   def vis_augment(self):
     """Visualize the training set. (Mostly for debugging.)"""
     annotated_set = self._load_annotated()
