@@ -192,7 +192,7 @@ class ArtificeModel():
 
     """
       
-    if initial_epoch > 0 and os.path.exists(self.history_path):
+    if initial_epoch > 0 and os.path.exists(self.history_path) and not self.overwrite:
       hist = utils.json_load(self.history_path)
     else:
       hist = {}

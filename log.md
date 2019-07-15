@@ -704,3 +704,6 @@ Ideas in Artifice can be built on, code as well. Big ideas:
   batched. May want to take `size` before batching, so that shuffling and
   batching can be done after caching.
 * Why is the shuffle buffer not being filled anymore?
+
+## July 15, 2019: Running on GPU
+* Regular 

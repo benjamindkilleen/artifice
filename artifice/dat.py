@@ -292,6 +292,7 @@ class ArtificeData(object):
       dataset = dataset.shuffle(self.num_shuffle)
     dataset = dataset.repeat(-1)
     if mode != ArtificeData.TRAINING:
+      logger.debug("not training")
       dataset = dataset.take(self.steps_per_epoch)
     dataset = dataset.prefetch(self.prefetch_buffer_size)
     return dataset
