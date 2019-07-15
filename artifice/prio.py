@@ -21,7 +21,7 @@ class Prioritizer:
     """Run for at most `seconds`. If `seconds` is negative, run forever."""
     start_time = time()
     if tf.executing_eagerly():
-      for indices, images in self.data_set.enumerated_prediction_input():
+      for indices, images in self.data_set.enumerated_prediction_input().repeat(-1):
         logger.info(f"evaluating priorities for {indices}...")
         priorities = list(self.prioritize(images))
         self.info.push(list(zip(list(indices), priorities)))

@@ -228,7 +228,6 @@ todo: other attributes"""
     if self.deep:
       utils.rm(self.model_root)
     else:
-      # todo: remove cache files
       utils.rm(self.annotation_info_path)
       utils.rm(self.annotation_info_path + '.lockfile')
       utils.rm(self.annotated_dir)
@@ -423,7 +422,7 @@ def main():
   parser.add_argument('--show', action='store_true', help=docs.show)
   parser.add_argument('--cache', action='store_true', help=docs.cache)
   parser.add_argument('--seconds', '--time', '--reload', '-t', '-r', nargs='?',
-                      default=[0], const=[-1], type=int, help=docs.seconds)
+                      default=0, const=-1, type=int, help=docs.seconds)
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
