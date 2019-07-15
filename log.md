@@ -705,5 +705,11 @@ Ideas in Artifice can be built on, code as well. Big ideas:
   batching can be done after caching.
 * Why is the shuffle buffer not being filled anymore?
 
-## July 15, 2019: Running on GPU
-* Regular 
+## July 15, 2019: Running 3 epochs on GPU
+* eager, no cache: 40, 24, 24s
+* patient, no cache: 43, 28, 28s <--- yielded lowest training error after 3 epochs
+* eager, cache: 31, 21, 21s <--- best run, by time
+* patient, cache: 35, 25, 25s
+
+So pretty clearly, actually, running with eager execution and caching is the way
+to go.
