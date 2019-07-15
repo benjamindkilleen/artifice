@@ -445,7 +445,7 @@ def main():
                  num_parallel_calls=args.num_parallel_calls[0],
                  verbose=args.verbose[0], keras_verbose=args.keras_verbose[0],
                  eager=(not args.patient), show=args.show, cache=args.cache,
-                 seconds=args.seconds[0])
+                 seconds=args.seconds)
   logger.info(art)
   art()
 
