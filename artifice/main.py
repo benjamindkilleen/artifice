@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """The main script for running artifice.
 
 """
@@ -27,6 +25,7 @@ from artifice import img
 from artifice import ann
 from artifice import prio
 from artifice import tform
+from artifice.windows import AnnotatorWindow
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -311,7 +310,7 @@ todo: other attributes"""
       predictions.append(prediction)
     predictions = np.array(predictions)
     np.save(join(self.model_root, 'predictions.npy'), predictions)
-    
+
   def vis_augment(self):
     """Visualize the training set. (Mostly for debugging.)"""
     annotated_set = self._load_annotated()

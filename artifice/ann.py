@@ -12,7 +12,7 @@ from sortedcontainers import SortedList
 from skimage.draw import circle
 import tensorflow as tf
 
-from artifice.shared import SharedDict
+from artifice.sharedobjects import SharedDict
 from artifice import dat, utils
 
 logger = logging.getLogger('artifice')

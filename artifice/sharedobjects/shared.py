@@ -1,4 +1,3 @@
-
 from os.path import exists
 import pickle
 from filelock import FileLock
