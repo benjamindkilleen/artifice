@@ -15,6 +15,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
+from scipy.stats import variation
 
 from artifice import dat
 from artifice import mod
@@ -26,8 +27,6 @@ from artifice import img
 from artifice import ann
 from artifice import prio
 from artifice import tform
-
-from scipy.stats import variation
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -342,8 +341,6 @@ todo: other attributes"""
                        *[np.std(p, axis=-1) for p in predictions],
                        cram=False, colorbar=True, columns=3)
         plt.show()
-    
-    logger.debug(str(model))
     
 
 def main():
