@@ -27,6 +27,8 @@ from artifice import ann
 from artifice import prio
 from artifice import tform
 
+from scipy.stats import variation
+
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
@@ -334,9 +336,12 @@ todo: other attributes"""
       proxy = model.predict_on_batch(batch)
       for i, predictions in enumerate(zip(*[level_model.predict_on_batch(batch)
                                             for level_model in level_models])):
-        vis.plot_image(batch[i,20:120, 20:120],
-                       *[p.mean(axis=-1) for p in predictions],
-                       proxy[i,:,:,0], cram=False)
+        vis.plot_image(batch[i,20:120, 20:120], proxy[i,:,:,0],
+                       np.zeros_like(proxy[i,:,:,0]),
+                       *[np.linalg.norm(p, axis=-1) for p in predictions],
+                       *[variation(p, axis=-1) for p in predictions],
+                       *[np.std(p, axis=-1) for p in predictions],
+                       cram=False, colorbar=True, columns=3)
         plt.show()
     
       
