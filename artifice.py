@@ -321,7 +321,6 @@ todo: other attributes"""
         plt.show()
 
   def vis_levels(self):
-
     """Visualize the output of each level."""
     model = self._load_model()
     level_models = []
@@ -335,11 +334,10 @@ todo: other attributes"""
       for i, predictions in enumerate(zip(*[level_model.predict_on_batch(batch)
                                             for level_model in level_models])):
         vis.plot_image(batch[i,20:120, 20:120],
-                       *[p.mean(axis=-1) for p in predictions],
+                       *[p.mean(p, axis=-1) for p in predictions],
                        proxy[i,:,:,0], cram=False)
         plt.show()
     
-      
     logger.debug(str(model))
     
 

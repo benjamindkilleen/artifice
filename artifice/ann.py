@@ -224,3 +224,9 @@ class DiskAnnotator(SimulatedAnnotator):
           ys.append(y)
       annotation[xs,ys] = i
     return image, label, annotation
+
+  
+class HumanAnnotator(Annotator):
+  def annotate(self, entry):
+    image = entry[0]
+    

@@ -57,9 +57,9 @@ def image_from_proto(proto):
     'image_dim2' : tf.FixedLenFeature([], tf.int64)}
   features = tf.parse_single_example(proto, feature_description)
   image = tf.decode_raw(features['image'], tf.float32)
-  return tf.reshape(image, [features['image_dim0'],
-                            features['image_dim1'],
-                            features['image_dim2']])
+  return (tf.reshape(image, [features['image_dim0'],
+                             features['image_dim1'],
+                             features['image_dim2']]),)
 
 def proto_from_example(example):
   image, label = example
@@ -266,16 +266,11 @@ class ArtificeData(object):
     * repeat
     * batch
 
-    process() performs the first four of these functions, and it should do so
-    in a single call to map() or interleave(), for efficiency's
-    sake. postprocess takes care of the last 3.
-
-    If training is False, then return tiles paired with (possibly duplicated)
-    labels for the corresponding full images.
+    `process()` does steps 2,3, and 4. MUST return
 
     :param dataset:
-    :param training: if this is for trainign
-    :returns:
+    :param training: if this is for training
+    :returns: 
     :rtype:
 
     """
@@ -515,7 +510,7 @@ class UnlabeledData(ArtificeData):
 
   def process(self, dataset, mode):
     def map_func(proto):
-      image = self.parse(proto)
+      image = self.parse(proto)[0]
       if mode in [ArtificeData.PREDICTION, ArtificeData.ENUMERATED_PREDICTION]:
         return self.tile_image(image)
       raise ValueError(f"{mode} mode invalid for UnlabeledData")

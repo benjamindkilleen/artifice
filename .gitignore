@@ -12,6 +12,7 @@ reports/spring_2018_report/**/*.png
 **.hdf5*
 **.pyc
 **.bak
+**.xml
 **flycheck_*.py
 data/**/*.png
 data/**/*.jpg
