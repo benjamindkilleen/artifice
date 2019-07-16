@@ -323,7 +323,6 @@ todo: other attributes"""
         plt.show()
 
   def vis_levels(self):
-
     """Visualize the output of each level."""
     model = self._load_model()
     level_models = []
@@ -344,7 +343,6 @@ todo: other attributes"""
                        cram=False, colorbar=True, columns=3)
         plt.show()
     
-      
     logger.debug(str(model))
     
 
