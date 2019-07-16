@@ -285,7 +285,12 @@ class ArtificeModel():
 class ProxyUNet(ArtificeModel):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
                level_depth=2, dropout=0.5, **kwargs):
-    """Create an hourglass-shaped model for object detection.
+    """Create a U-Net model for object detection.
+
+    Regresses a distance proxy at every level for multi-scale tracking. Model
+    output consists first of the `pose_dim`-channel pose image, followed by
+    multi-scale fields from smallest (lowest on the U) to largest (original
+    image dimension).
 
     :param base_shape: the height/width of the output of the first layer in the lower
     level. This determines input and output tile shapes. Can be a tuple,
@@ -306,7 +311,7 @@ class ProxyUNet(ArtificeModel):
 
     self.input_tile_shape = self.compute_input_tile_shape(
       base_shape, len(self.level_filters), self.level_depth)
-    self.output_tile_shape = self.compute_input_tile_shape(
+    self.output_tile_shapes = self.compute_input_tile_shapes(
       base_shape, len(self.level_filters), self.level_depth)
     super().__init__(keras.layers.Input(self.input_tile_shape +
                                         [self.num_channels]), **kwargs)
@@ -338,13 +343,30 @@ class ProxyUNet(ArtificeModel):
     return list(tile_shape)
 
   @staticmethod
-  def loss(proxy, prediction):
-    distance_term = tf.losses.mean_squared_error(proxy[:, :, :, 0],
-                                                 prediction[:, :, :, 0])
-    pose_term = tf.losses.mean_squared_error(proxy[:, :, :, 1:],
-                                             prediction[:, :, :, 1:],
-                                             weights=proxy[:, :, :, :1])
-    return distance_term + pose_term
+  def compute_output_tile_shapes(base_shape, num_levels, level_depth):
+    """Compute the shape of the output tiles at every level, bottom to top."""
+    shapes = []
+    tile_shape = np.array(base_shape)
+    tile_shape -= 2*level_depth
+    shapes.append(list(tile_shape))
+    for _ in range(num_levels - 1):
+      tile_shape *= 2
+      tile_shape -= 2*level_depth
+      shapes.append(list(tile_shape))
+    return shapes
+  
+  @staticmethod
+  def loss(y_true, y_pred):
+    logger.debug(f"true: {y_true}}")
+    logger.debug(f"pred: {y_pred}")
+    return tf.constant(0, tf.float32)
+  # todo: fix
+    # distance_term = tf.losses.mean_squared_error(proxy[:, :, :, 0],
+    #                                              prediction[:, :, :, 0])
+    # pose_term = tf.losses.mean_squared_error(proxy[:, :, :, 1:],
+    #                                          prediction[:, :, :, 1:],
+    #                                          weights=proxy[:, :, :, :1])
+    # return distance_term + pose_term
 
   def compile(self):
     if tf.executing_eagerly():
@@ -355,16 +377,16 @@ class ProxyUNet(ArtificeModel):
 
   def forward(self, inputs):
     level_outputs = []
+    fields = []
 
     for i, filters in enumerate(self.level_filters):
-      for _ in range(self.level_depth - 1):
+      for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
       if i < len(self.level_filters) - 1:
-        inputs = conv(inputs, filters)
         level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
-        inputs = conv(inputs, filters, name='level_output_0')
+        fields.append(conv(inputs, 1, kernel_shape=[1,1], name='level_output_0'))
         
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
@@ -372,13 +394,14 @@ class ProxyUNet(ArtificeModel):
       cropped = crop(next(level_outputs), inputs.shape)
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
       inputs = keras.layers.Concatenate()([dropped, inputs])
-      for _ in range(self.level_depth - 1):
+      for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      inputs = conv(inputs, filters, name=f'level_output_{i+1}')
+      fields.append(conv(inputs, filters, kernel_shape=[1,1],
+                         name=f'level_output_{i+1}'))
 
-    inputs = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
-                  padding='same', norm=False)
-    return inputs
+    pose_image = conv(inputs, self.pose_dim, kernel_shape=(1,1), activation=None,
+                      padding='same', norm=False)
+    return [pose_image] + fields
 
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image.
