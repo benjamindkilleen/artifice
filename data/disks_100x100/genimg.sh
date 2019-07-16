@@ -13,8 +13,8 @@ PFX=$1 # prefix for input and output files
 IN=labels/$PFX.txt
 OUT=images/$PFX.png
 
-SX=500  # output image resolution
-SY=500
+SX=100  # output image resolution
+SY=100
 SH=9 # sharpness of object edge
 
 RNG=$(cksum $IN | cut -d' ' -f 1) # RNG seed determined by input

@@ -3,7 +3,7 @@
 # in rcc-land, get a unu GLK trusts
 export PATH=/home/glk/teem-install/bin:$PATH
 
-N=11000 # how many images to make
+N=2100 # how many images to make
 
 if [ ! -d images ]; then
     mkdir images

@@ -9,8 +9,8 @@ trap cleanup err exit int term
 RNG=$1
 OUT=labels/$RNG.txt
 
-N=40                            # number of objects
-SZMIN=0.05                      # range of sizes
+N=4  # number of objects
+SZMIN=0.05  # range of sizes
 SZMAX=0.15
 
 # "shape" parameter; 1=diamond, 2=circle, inf=square
