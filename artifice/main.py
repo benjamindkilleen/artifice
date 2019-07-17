@@ -315,12 +315,14 @@ todo: other attributes"""
   def vis_train(self):
     """Visualize the training set. (Mostly for debugging.)"""
     train_set = self._load_train()
-    for images, proxies in train_set.training_input():
-      for image, targets in zip(images, proxies):
-        pose = targets[0]
+    for batch in train_set.training_input():
+      for b in range(self.batch_size):
+        image = batch[0][b]
+        targets = batch[1]
+        pose = targets[0][b]
         vis.plot_image(image, None, None,
-                       pose[:,:,0], pose[:,:,:1], None,
-                       targets[1], targets[2], targets[3],
+                       pose[:,:,1], pose[:,:,2], None,
+                       targets[1][b], targets[2][b], targets[3][b],
                        columns=3)
         logger.info(f"showing...")
         plt.show()

@@ -366,8 +366,8 @@ class ArtificeData(object):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         tiles.append(image[i:i + self.input_tile_shape[0],
                            j:j + self.input_tile_shape[1]])
-    return tiles
-
+    return tf.data.Dataset.from_tensor_slices(tiles)
+  
   def tile_image_label(self, image, label):
     image = tf.pad(image, self.image_padding, 'CONSTANT')
     tiles = []
@@ -378,42 +378,46 @@ class ArtificeData(object):
                            j:j + self.input_tile_shape[1]])
         tile_space_positions = label[:,:2] - tf.constant([[i,j]], tf.float32)
         labels.append(tf.concat((tile_space_positions, label[:,2:]), axis=1))
-    return tiles, labels
+    return tf.data.Dataset.from_tensor_slices((tiles, labels))
 
-  def make_targets(self, label):
+  @property
+  def make_proxies_map_func(self):
     """Map over a (tile, label) dataset to convert it to (tile, [pose, proxy1,...]) form.
-
-    Remember, label could be empty.
+    
+    todo: remember, label could be empty.
     
     """
-    proxy_set = []
-    positions = tf.cast(label[:, :2], tf.float32) # [num_objects, 2]
-    for level, tile_shape in enumerate(self.output_tile_shapes):
-      scale_factor = 2**(len(self.output_tile_shapes) - level - 1)
-      dx = (scale_factor*tile_shape[0] - self.output_tile_shape[0]) / 2
-      dy = (scale_factor*tile_shape[1] - self.output_tile_shape[1]) / 2
-      translation = tf.constant([dx,dy], dtype=tf.float32)
-      level_positions = (positions + translation) / scale_factor
+    def map_func(tile, label):
+      proxy_set = []
+      positions = tf.cast(label[:, :2], tf.float32) # [num_objects, 2]
+      for level, tile_shape in enumerate(self.output_tile_shapes):
+        scale_factor = 2**(len(self.output_tile_shapes) - level - 1)
+        dx = (scale_factor*tile_shape[0] - self.output_tile_shape[0]) / 2
+        dy = (scale_factor*tile_shape[1] - self.output_tile_shape[1]) / 2
+        translation = tf.constant([[dx,dy]], dtype=tf.float32)
+        level_positions = (positions + translation) / scale_factor
+        
+        points = tf.constant(np.array( # [H*W,2]
+          [np.array([i + 0.5, j + 0.5]) for i in range(tile_shape[0])
+           for j in range(tile_shape[1])], dtype=np.float32), tf.float32)
+        points = tf.expand_dims(points, axis=1)                # [H*W,1,2]
+        level_positions = tf.expand_dims(level_positions, axis=0)
+        object_distances = tf.norm(points - level_positions, axis=-1) # [H*W,num_objects]
+        
+        # make distance proxy function: 1 / (d^2 + 1)
+        distances = tf.reduce_min(object_distances, axis=-1)
+        flat = tf.reciprocal(tf.square(distances) + tf.constant(1, tf.float32))
+        proxy_set.append(tf.reshape(flat, [tile_shape[0], tile_shape[1], 1]))
       
-      indices = tf.constant(np.array( # [H*W,2]
-        [np.array([i,j]) for i in range(tile_shape[0])
-         for j in range(tile_shape[1])], dtype=np.float32), tf.float32)
-      indices = tf.expand_dims(indices, axis=1)                # [H*W,1,2]
-      level_positions = tf.expand_dims(level_positions, axis=0)
-      object_distances = tf.norm(indices - positions, axis=-1) # [H*W,num_objects]
-      
-      # make distance proxy function: 1 / (d^2 + 1)
-      distances = tf.reduce_min(object_distances, axis=-1)
-      flat = tf.reciprocal(tf.square(distances) + tf.constant(1, tf.float32))
-      proxy_set.append(tf.reshape(flat, [tile_shape[0], tile_shape[1], 1]))
-      
-    # make pose map, assumes object_distances at tope of U
-    pose = label[:,2:]
-    regions = tf.expand_dims(tf.argmin(object_distances, axis=-1), axis=-1)
-    pose_field = tf.reshape(tf.gather_nd(pose, regions),
-                            [tile_shape[0], tile_shape[1], -1]) # [H,W,pose_dim]
+      # make pose map, assumes object_distances at tope of U
+      pose = label[:,2:]
+      regions = tf.expand_dims(tf.argmin(object_distances, axis=-1), axis=-1)
+      pose_field = tf.reshape(tf.gather_nd(pose, regions),
+                              [tile_shape[0], tile_shape[1], -1]) # [H,W,pose_dim]
+      pose = tf.concat((proxy_set[-1], pose_field), axis=-1)
     
-    return [pose_field] + proxy_set
+      return tile, (pose,) + tuple(proxy_set)
+    return map_func
   
   def untile(self, tiles):
     """Untile num_tiles tiles into a single "image".
@@ -539,15 +543,13 @@ class LabeledData(ArtificeData):
     def map_func(proto):
       image, label = self.parse(proto)[:2]
       if mode in [ArtificeData.PREDICTION, ArtificeData.ENUMERATED_PREDICTION]:
-        tiles = self.tile_image(image)
-        return tf.data.Dataset.from_tensor_slices(tiles)
+        return self.tile_image(image)
 
-      tiles, labels = self.tile_image_label(image, label)
       if mode == ArtificeData.EVALUATION:
-        return tf.data.Dataset.from_tensor_slices((tiles, labels))
+        return self.tile_image_label(image, label)
       if mode == ArtificeData.TRAINING:
-        proxies = [self.make_targets(label) for label in labels]
-        return tf.data.Dataset.from_tensor_slices((tiles, proxies))
+        tiled_set = self.tile_image_label(image, label)
+        return tiled_set.map(self.make_proxies_map_func)
       raise ValueError(f"{mode} mode invalid for LabeledData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.num_tiles,
@@ -601,15 +603,13 @@ class AnnotatedData(LabeledData):
       if self.transformation is not None:
         image, label = self.augment(image, label, annotation, background)
       if mode == ArtificeData.PREDICTION:
-        tiles = self.tile_image(image)
-        return tf.data.Dataset.from_tensor_slices(tiles)
+        return self.tile_image(image)
 
-      tiles, labels = self.tile_image_label(image, label)
       if mode == ArtificeData.EVALUATION:
-        return tf.data.Dataset.from_tensor_slices((tiles, labels))
+        return self.tile_image_label(image, label)
       if mode == ArtificeData.TRAINING:
-        proxies = [self.make_targets(label) for label in labels]
-        return tf.data.Dataset.from_tensor_slices((tiles, proxies))
+        tiled_set = self.tile_image_label(image, label)
+        return tiled_set.map(self.make_proxies_map_func)
       raise ValueError(f"{mode} mode invalid for AnnotatedData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.num_tiles,

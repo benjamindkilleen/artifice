@@ -309,10 +309,11 @@ class ProxyUNet(ArtificeModel):
     self.level_depth = level_depth
     self.dropout = dropout
 
+    self.num_levels = len(self.level_filters)
     self.input_tile_shape = self.compute_input_tile_shape(
-      base_shape, len(self.level_filters), self.level_depth)
-    self.output_tile_shapes = self.compute_input_tile_shapes(
-      base_shape, len(self.level_filters), self.level_depth)
+      self.base_shape, self.num_levels, self.level_depth)
+    self.output_tile_shapes = self.compute_output_tile_shapes(
+      self.base_shape, self.num_levels, self.level_depth)
     super().__init__(keras.layers.Input(self.input_tile_shape +
                                         [self.num_channels]), **kwargs)
 
@@ -356,24 +357,18 @@ class ProxyUNet(ArtificeModel):
     return shapes
   
   @staticmethod
-  def loss(y_true, y_pred):
-    logger.debug(f"true: {y_true}")
-    logger.debug(f"pred: {y_pred}")
-    return tf.constant(0, tf.float32)
-  # todo: fix
-    # distance_term = tf.losses.mean_squared_error(proxy[:, :, :, 0],
-    #                                              prediction[:, :, :, 0])
-    # pose_term = tf.losses.mean_squared_error(proxy[:, :, :, 1:],
-    #                                          prediction[:, :, :, 1:],
-    #                                          weights=proxy[:, :, :, :1])
-    # return distance_term + pose_term
+  def pose_loss(pose, pred):
+    return tf.losses.mean_squared_error(pose[:, :, :, 1:],
+                                        pred[:, :, :, 1:],
+                                        weights=pose[:, :, :, :1])
 
   def compile(self):
     if tf.executing_eagerly():
       optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
     else:
       optimizer = keras.optimizers.Adadelta(self.learning_rate)
-    self.model.compile(optimizer=optimizer, loss=self.loss, metrics=['mae'])
+    self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
+                       ['mse']*self.num_levels, metrics=['mae'])
 
   def forward(self, inputs):
     level_outputs = []
@@ -386,7 +381,8 @@ class ProxyUNet(ArtificeModel):
         level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
-        fields.append(conv(inputs, 1, kernel_shape=[1,1], name='level_output_0'))
+        fields.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
+                           norm=False, name='level_output_0'))
         
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
@@ -396,11 +392,11 @@ class ProxyUNet(ArtificeModel):
       inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      fields.append(conv(inputs, filters, kernel_shape=[1,1],
-                         name=f'level_output_{i+1}'))
+      fields.append(conv(inputs, filters, kernel_shape=[1,1], activation=None,
+                         norm=False, name=f'level_output_{i+1}'))
 
-    pose_image = conv(inputs, self.pose_dim, kernel_shape=(1,1), activation=None,
-                      padding='same', norm=False)
+    pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
+                      padding='same', norm=False, name='pose')
     return [pose_image] + fields
 
   def uncertainty_on_batch(self, images):
