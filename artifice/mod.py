@@ -34,6 +34,25 @@ def _update_hist(a, b):
       c[k] = v
   return c
 
+def _unbatch_outputs(outputs):
+  """Essentially transpose the batch dimension to the outer dimension outputs.
+
+  :param outputs: batched outputs of the model, like
+  [[pose 0, pose 1, ....], 
+   [level_output_0 0, level_output_0 1, ...],
+   [level_output_1 0, level_output_1 1, ...]]
+  :returns: result after unbatching, like
+  [[pose 0, level_ouput_0 0, level_output_1 0, ...], 
+   [pose 1, level_ouput_0 1, level_output_1 1, ...], 
+   ...]
+
+  """
+  outputs = [list(output) for output in outputs]
+  unbatched_outputs = []
+  for i in range(len(outputs[0])):
+    unbatched_outputs.append([output[i] for output in outputs])
+  return unbatched_outputs
+
 def crop(inputs, shape):
   top_crop = int(np.floor(int(inputs.shape[1] - shape[1]) / 2))
   bottom_crop = int(np.ceil(int(inputs.shape[1] - shape[1]) / 2))
@@ -210,7 +229,7 @@ class ArtificeModel():
 
     self.save()
     return hist
-  
+
   def predict(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data.
 
@@ -219,23 +238,40 @@ class ArtificeModel():
 
     """
     if tf.executing_eagerly():
-      distance_images = [[] * self.num_levels]
-      poses = []
+      outputs = []
       for batch in art_data.prediction_input():
-        outputs = self.model.predict_on_batch(batch)
-        poses += list(outputs[0])
-        for i in range(self.num_levels):
-          distance_images[i] += list(outputs[i+1])
-        while len(poses) >= art_data.num_tiles:
-          peaks = dat.multiscale_detect_peaks([fields[:art_data.num_tiles] for
-                                               fields in distance_images])
-          proxy = art_data.untile(proxies[:art_data.num_tiles])
-          prediction = dat.analyze_proxy(proxy)
-          del proxies[:art_data.num_tiles]
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        while len(outputs) >= art_data.num_tiles:
+          prediction = art_data.analyze_outputs(outputs)
+          del outputs[:art_data.num_tiles]
           yield prediction
     else:
       raise NotImplementedError("patient prediction")
-  
+
+  def untile_and_predict(self, art_data):
+    """Run prediction, reassembling tiles, with the Artifice data.
+
+    :param art_data: ArtificeData object
+    :returns: iterator over (image, prediction)
+
+    """
+    if tf.executing_eagerly():
+      tiles = []
+      outputs = []
+      for i, batch in enumerate(art_data.prediction_input()):
+        tiles += list(batch)
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        logger.debug(f"batch {i}, {len(tiles)} tiles")
+        while len(outputs) >= art_data.num_tiles:
+          image = art_data.untile(tiles[:art_data.num_tiles])
+          del tiles[:art_data.num_tiles]
+          prediction = art_data.analyze_outputs(outputs)
+          del outputs[:art_data.num_tiles]
+          yield (image, prediction)
+    else:
+      raise NotImplementedError("patient prediction")
+
+    
   def evaluate(self, art_data):
     """Run evaluation, reassembling tiles, with the ArtificeData object.
 
@@ -394,7 +430,7 @@ class ProxyUNet(ArtificeModel):
       inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      fields.append(conv(inputs, filters, kernel_shape=[1,1], activation=None,
+      fields.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
                          norm=False, name=f'level_output_{i+1}'))
 
     pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,

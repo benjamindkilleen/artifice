@@ -21,7 +21,6 @@ import tensorflow as tf
 
 from artifice import img, utils
 
-
 logger = logging.getLogger('artifice')
 
 def _bytes_feature(value):
@@ -181,7 +180,7 @@ def write_set(protos, record_path):
       if i % 100 == 0:
         logger.info(f"writing example {i}")
       writer.write(proto)
-      
+
 #################### ArtificeData classes ####################
 
 class ArtificeData(object):
@@ -199,7 +198,7 @@ class ArtificeData(object):
   PREDICTION = "PREDICTION"     # single `image` tensor
   EVALUATION = "EVALUATION"     # `(image, label)` tensor tuple
   ENUMERATED_PREDICTION = "ENUMERATED_PREDICTION"
-  
+
   def __init__(self, record_path, *, size, image_shape, input_tile_shape,
                output_tile_shapes, batch_size, num_parallel_calls=None,
                num_shuffle=10000, cache_dir='cache', **kwargs):
@@ -211,15 +210,15 @@ class ArtificeData(object):
     directory, then grabs all .tfrecord files in that directory *at runtime*.
     :param size: size of an epoch. If not a multiple of batch_size, the
     remainder examples are dropped.
-    :param image_shape: 
-    :param input_tile_shape: 
+    :param image_shape:
+    :param input_tile_shape:
     :param output_tile_shapes: list of output shapes, bottom to top
-    :param batch_size: 
-    :param num_parallel_calls: 
-    :param num_shuffle: 
-    :param cache_dir: 
-    :returns: 
-    :rtype: 
+    :param batch_size:
+    :param num_parallel_calls:
+    :param num_shuffle:
+    :param cache_dir:
+    :returns:
+    :rtype:
 
     """
     # inherent
@@ -272,7 +271,7 @@ class ArtificeData(object):
 
     :param dataset:
     :param training: if this is for training
-    :returns: 
+    :returns:
     :rtype:
 
     """
@@ -289,7 +288,6 @@ class ArtificeData(object):
       dataset = dataset.shuffle(self.num_shuffle)
     dataset = dataset.repeat(-1)
     if mode != ArtificeData.TRAINING:
-      logger.debug("not training")
       dataset = dataset.take(self.steps_per_epoch)
     dataset = dataset.prefetch(self.prefetch_buffer_size)
     return dataset
@@ -311,7 +309,7 @@ class ArtificeData(object):
   @property
   def dataset(self):
     return load_dataset(self.record_names, self.parse, self.num_parallel_calls)
-  
+
   @property
   def steps_per_epoch(self):
     return int(self.size // self.batch_size)
@@ -338,7 +336,7 @@ class ArtificeData(object):
     if issubclass(type(entry), tf.Tensor):
       return entry.numpy()
     return tuple(e.numpy() for e in entry)
-    
+
   #################### Generic functions for proxies/tiling ####################
 
   @property
@@ -368,7 +366,7 @@ class ArtificeData(object):
         tiles.append(image[i:i + self.input_tile_shape[0],
                            j:j + self.input_tile_shape[1]])
     return tf.data.Dataset.from_tensor_slices(tiles)
-  
+
   def tile_image_label(self, image, label):
     image = tf.pad(image, self.image_padding, 'CONSTANT')
     tiles = []
@@ -384,9 +382,9 @@ class ArtificeData(object):
   @property
   def make_proxies_map_func(self):
     """Map over a (tile, label) dataset to convert it to (tile, [pose, proxy1,...]) form.
-    
+
     todo: remember, label could be empty.
-    
+
     """
     def map_func(tile, label):
       proxy_set = []
@@ -397,29 +395,31 @@ class ArtificeData(object):
         dy = (scale_factor*tile_shape[1] - self.output_tile_shape[1]) / 2
         translation = tf.constant([[dx,dy]], dtype=tf.float32)
         level_positions = (positions + translation) / scale_factor
-        
+
         points = tf.constant(np.array( # [H*W,2]
           [np.array([i + 0.5, j + 0.5]) for i in range(tile_shape[0])
            for j in range(tile_shape[1])], dtype=np.float32), tf.float32)
         points = tf.expand_dims(points, axis=1)                # [H*W,1,2]
         level_positions = tf.expand_dims(level_positions, axis=0)
         object_distances = tf.norm(points - level_positions, axis=-1) # [H*W,num_objects]
-        
+
         # make distance proxy function: 1 / (d^2 + 1)
         distances = tf.reduce_min(object_distances, axis=-1)
         flat = tf.reciprocal(tf.square(distances) + tf.constant(1, tf.float32))
         proxy_set.append(tf.reshape(flat, [tile_shape[0], tile_shape[1], 1]))
-      
+
       # make pose map, assumes object_distances at tope of U
       pose = label[:,2:]
       regions = tf.expand_dims(tf.argmin(object_distances, axis=-1), axis=-1)
       pose_field = tf.reshape(tf.gather_nd(pose, regions),
                               [tile_shape[0], tile_shape[1], -1]) # [H,W,pose_dim]
       pose = tf.concat((proxy_set[-1], pose_field), axis=-1)
-    
+
       return tile, (pose,) + tuple(proxy_set)
     return map_func
-  
+
+  #################### output analysis functions ####################
+
   def untile(self, tiles):
     """Untile num_tiles tiles into a single "image".
 
@@ -436,25 +436,74 @@ class ArtificeData(object):
       return tiles[0]
 
     image = np.empty(self.image_shape, dtype=np.float32)
-    tiles = list(tiles)
+    tile_iter = iter(tiles)
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       if i + self.output_tile_shape[0] < self.image_shape[0]:
         si = self.output_tile_shape[0]
       else:
-        si = self.image_shape[0] % self.tile_shape[0]
+        si = self.image_shape[0] % self.output_tile_shape[0]
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         if j + self.output_tile_shape[1] < self.image_shape[1]:
           sj = self.output_tile_shape[1]
         else:
           sj = self.image_shape[1] % self.output_tile_shape[1]
-        image[i:i + si, j:j + sj] = tiles[i][:si,:sj]
+        image[i:i + si, j:j + sj] = next(tile_iter)[:si, :sj]
     return image
+
+  def untile_points(self, points):
+    """Untile points from tile-space to image-space.
+
+    :param points: list of 2d arrays with shape [?,2], containing points in the
+    tile space for that entry of the list. Must be length num_tiles.
+    :returns:
+    :rtype:
+
+    """
+    if len(points) != self.num_tiles:
+      raise RuntimeError("Ensure points is same length as num_tiles.")
+    if self.num_tiles == 1:
+      return points[0]
+
+    image_points = []
+    for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
+      for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
+        image_points += list(points[i] - np.array([[i,j]], dtype=np.float32))
+    return np.array(image_points)
+
+  def analyze_outputs(self, outputs, check_peaks=False):
+    """Analyze the model outputs, return predictions like original labels.
+
+    :param outputs: a list of lists, containing outputs from at least num_tiles
+    examples, so that tiles can be reassembled into full images. Only uses the
+    first num_tiles elements. This contains:
+    [[pose 0, level_ouput_0 0, level_output_1 0, ...],
+     [pose 1, level_ouput_0 1, level_output_1 1, ...],
+     ...]
+    :returns: prediction in the same shape as original labels
+    :rtype: np.ndarray
+
+    """
+    tile_peaks = [multiscale_detect_peaks(output[1:]) for output
+                                in outputs[:self.num_tiles]]
+    peaks = self.untile_points(tile_peaks)
+    pose_image = self.untile([output[0] for output in outputs[:self.num_tiles]])
+    if check_peaks:
+      dist_image = self.untile([output[-1] for output in
+                                outputs[:self.num_tiles]])
+      footprint = make_footprint(peaks, self.image_shape)
+      peaks = detect_peaks(dist_image, footprint=footprint)
+    prediction = np.empty((peaks.shape[0], 1 + outputs[-1].shape[-1]),
+                          dtype=np.float32)
+    for i, peak in enumerate(peaks):
+      prediction[i,:2] = peak
+      prediction[i,2:] = pose_image[int(peak[0]), int(peak[1]), 1:]
+    return prediction
 
   #################### End proxy/tiling functions ####################
 
   def accumulate(self, accumulator):
     """Runs the accumulators across the dataset.
-      
+
     An accumulator function should take a `entry` and an `aggregate` object. On
     the first call, `aggregate` will be None. Afterward, each accumulator will
     be passed the output from its previous call as `aggregate`, as well as the
@@ -498,7 +547,7 @@ class ArtificeData(object):
       return aggregates
     else:
       return aggregates[0]
-    
+
 class UnlabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -580,14 +629,14 @@ class AnnotatedData(LabeledData):
     during augmentation. If multiple, then each augmented example has a randomly
     selected transformation applied to it.
     :param identity_prob: probability that no augmentations are applied to an example.
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     self.transformation = transformation
     self.identity_prob = identity_prob
     super().__init__(*args, **kwargs)
-  
+
   @staticmethod
   def serialize(entry):
     return proto_from_annotated_example(entry)
@@ -595,7 +644,7 @@ class AnnotatedData(LabeledData):
   @staticmethod
   def parse(proto):
     return annotated_example_from_proto(proto)
-  
+
   def process(self, dataset, mode):
     if self.transformation is not None:
       background = self.get_background()
@@ -633,9 +682,9 @@ class AnnotatedData(LabeledData):
     `tform` module. For now, only one of these may be selected, but the function
     in question could randomly apply different transformations within its body.
 
-    :param image: 
-    :param label: 
-    :param annotation: 
+    :param image:
+    :param label:
+    :param annotation:
     :returns: new `(image, label)` example
 
     """
@@ -691,7 +740,7 @@ class AnnotatedData(LabeledData):
     """Grabs te first non-object value for each pixel in the dataset.
 
     Terminates accumulation when finished by returning None.
-    
+
     """
     if background is None:
       assert entry is not None
@@ -708,46 +757,54 @@ class AnnotatedData(LabeledData):
     indices = np.logical_and(unfilled, bg_indices)
     background[indices] = image[indices]
     return background
-    
+
   def get_background(self):
     return self.accumulate(self.greedy_background_accumulator)
-  
-#################### Independant data processing functions ####################
 
+#################### Independant data analysis functions ####################
 
-def detect_multiscale_peaks(images):
-  """Use the images at lower scales to track peaks more efficiently."""
-  peaks = peak_local_max(images[0], threshold_abs=0.1, indices=True,
-                         exclude_border=False)
-  for i in range(1, len(images)):
-    # transform peaks to proper coordinates
-    translation = (2*np.array(images[i-1].shape) - np.array(images[i].shape)) / 2
-    peaks = 2*peaks - translation
-    footprint = np.zeros(images[i].shape[:2], dtype=np.bool)
-    for peak in peaks:
-      rr, cc = circle(peak[0], peak[1], 4, shape=images[i].shape)
-      footprint[rr,cc] = True
-    peaks = peak_local_max(images[i], threshold_abs=0.1, footprint=footprint,
-                           indices=True, exclude_border=False)
-  return peaks
+def make_footprint(points, shape, radius=4):
+  """Make a boolean footprint around each point.
 
-def analyze_multiscale_outputs(outputs):
-  """Analyze the model outputs, returning predictions in the same form as
-  original labels."""
-  pass
+  :param points: array of x,y points too make fooprint around.
+  :param radius: radius of each footprint.
+  :returns:
+  :rtype:
 
-def detect_peaks(image, min_distance=2):
+  """
+  footprint = np.zeros(shape, dtype=np.bool)
+  for point in points:
+    rr, cc = circle(point[0], point[1], radius, shape=shape[:2])
+    footprint[rr, cc] = True
+  return footprint
+
+def detect_peaks(image, threshold_abs=0.1, min_distance=1, **kwargs):
   """Analyze the predicted distance proxy for detections.
 
   TODO: make more sophisticated?
 
   :param image: image, or usually predicted distance proxy
   :returns: detected peaks
-  :rtype: 
+  :rtype:
 
   """
-  return peak_local_max(image, threshold_abs=0.1, min_distance=min_distance,
-                        indices=True, exclude_border=False)
+  return peak_local_max(image, threshold_abs=threshold_abs,
+                        min_distance=min_distance, indices=True,
+                        exclude_border=False, **kwargs)
+
+def multiscale_detect_peaks(images):
+  """Use the images at lower scales to track peaks more efficiently."""
+  peaks = detect_peaks(images[0])
+  logger.debug(f"images: {len(images)}")
+  for i in range(1, len(images)):
+    logger.debug(f"i: {i}")
+    translation = (2*np.array(images[i-1].shape) - np.array(images[i].shape)) / 2
+    peaks = 2*peaks - translation    # transform peaks to proper coordinates
+    footprint = make_footprint(peaks, images[i].shape)
+    logger.debug(f"footprint: {footprint.shape}")
+    logger.debug(f"footprint points: {footprint.sum()}")
+    peaks = detect_peaks(images[i], footprint=footprint)
+  return peaks
 
 def analyze_proxy(proxy):
   """Analyze the proxy for objects.
@@ -756,7 +813,7 @@ def analyze_proxy(proxy):
   :returns: numpy array of predictions for each object. first two columns are
   x,y for each object. Remaining columns correspond to pose channels of the
   proxy.
-  :rtype: 
+  :rtype:
 
   """
   peaks = detect_peaks(proxy[:,:,0])
@@ -795,5 +852,3 @@ def evaluate_proxy(label, proxy, distance_threshold=10):
     for j in range(1, error.shape[1]):
       error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j] - label[i, j+1])
   return error, num_failed
-
-

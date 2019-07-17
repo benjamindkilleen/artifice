@@ -358,8 +358,12 @@ todo: other attributes"""
 
   def vis_predict(self):
     """Run prediction on the test set and visualize the output."""
-    raise NotImplementedError()
-
+    test_set = self._load_test()
+    model = self._load_model()
+    for image, prediction in model.untile_and_predict(test_set):
+      vis.plot_image(image)
+      logger.info(f"prediction:\n{prediction}")
+      self._show()
   
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
