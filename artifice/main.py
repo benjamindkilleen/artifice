@@ -183,7 +183,7 @@ todo: other attributes"""
     return dat.UnlabeledData(join(self.data_root, 'unlabeled_set.tfrecord'),
                              size=self.data_size, **self._data_kwargs)
   def _load_annotated(self):
-    transformation = (None if not self.transformation is None else
+    transformation = (None if self.transformation is None else
                       tform.transformations[self.transformation])
     return dat.AnnotatedData(self.annotated_dir, transformation=transformation,
                              size=self.data_size, **self._data_kwargs)
@@ -312,12 +312,16 @@ todo: other attributes"""
     predictions = np.array(predictions)
     np.save(join(self.model_root, 'predictions.npy'), predictions)
 
-  def vis_augment(self):
+  def vis_train(self):
     """Visualize the training set. (Mostly for debugging.)"""
-    annotated_set = self._load_annotated()
-    for images, proxies in annotated_set.augmented_training_input():
-      for image, proxy in zip(images, proxies):
-        vis.plot_image(image, proxy[:,:,0], proxy[:,:,1], proxy[:,:,2])
+    train_set = self._load_train()
+    for images, proxies in train_set.training_input():
+      for image, targets in zip(images, proxies):
+        pose = targets[0]
+        vis.plot_image(image, None, None,
+                       pose[:,:,0], pose[:,:,:1], None,
+                       targets[1], targets[2], targets[3],
+                       columns=3)
         logger.info(f"showing...")
         plt.show()
 

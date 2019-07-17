@@ -357,7 +357,7 @@ class ProxyUNet(ArtificeModel):
   
   @staticmethod
   def loss(y_true, y_pred):
-    logger.debug(f"true: {y_true}}")
+    logger.debug(f"true: {y_true}")
     logger.debug(f"pred: {y_pred}")
     return tf.constant(0, tf.float32)
   # todo: fix
