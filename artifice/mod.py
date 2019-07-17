@@ -252,22 +252,26 @@ class ArtificeModel():
     """Run prediction, reassembling tiles, with the Artifice data.
 
     :param art_data: ArtificeData object
-    :returns: iterator over (image, prediction)
+    :returns: iterator over (image, predicted distance image, prediction)
 
     """
     if tf.executing_eagerly():
       tiles = []
+      dist_tiles = []
       outputs = []
+      p = art_data.image_padding()
       for i, batch in enumerate(art_data.prediction_input()):
-        tiles += list(batch)
+        tiles += [tile[p[0][0]:, p[1][0]] for tile in list(batch)]
         outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
-        logger.debug(f"batch {i}, {len(tiles)} tiles")
+        dist_tiles += [output[-1] for output in outputs]
         while len(outputs) >= art_data.num_tiles:
           image = art_data.untile(tiles[:art_data.num_tiles])
-          del tiles[:art_data.num_tiles]
+          dist_image = art_data.untile(dist_tiles[:art_data.num_tiles])
           prediction = art_data.analyze_outputs(outputs)
           del outputs[:art_data.num_tiles]
-          yield (image, prediction)
+          del tiles[:art_data.num_tiles]
+          del dist_tiles[:art_data.num_tiles]
+          yield (image, dist_image, prediction)
     else:
       raise NotImplementedError("patient prediction")
 

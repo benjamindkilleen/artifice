@@ -339,7 +339,6 @@ class ArtificeData(object):
 
   #################### Generic functions for proxies/tiling ####################
 
-  @property
   def image_padding(self):
     diff0 = self.input_tile_shape[0] - self.output_tile_shape[0]
     diff1 = self.input_tile_shape[1] - self.output_tile_shape[1]
@@ -351,7 +350,6 @@ class ArtificeData(object):
     pad_right = int(np.ceil(diff1 / 2)) + rem1
     return [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]]
 
-  @property
   def proxy_padding(self):
     rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
     rem1 = self.image_shape[1] - (self.image_shape[1] % self.output_tile_shape[1])
@@ -359,7 +357,7 @@ class ArtificeData(object):
 
   # todo: determing whether to use tf.image.extract_image_patches instead
   def tile_image(self, image):
-    image = tf.pad(image, self.image_padding, 'CONSTANT')
+    image = tf.pad(image, self.image_padding(), 'CONSTANT')
     tiles = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
@@ -368,7 +366,7 @@ class ArtificeData(object):
     return tf.data.Dataset.from_tensor_slices(tiles)
 
   def tile_image_label(self, image, label):
-    image = tf.pad(image, self.image_padding, 'CONSTANT')
+    image = tf.pad(image, self.image_padding(), 'CONSTANT')
     tiles = []
     labels = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
@@ -435,7 +433,14 @@ class ArtificeData(object):
     if self.num_tiles == 1:
       return tiles[0]
 
-    image = np.empty(self.image_shape, dtype=np.float32)
+    if tiles[0].ndim == 3:
+      shape = (self.image_shape[0], self.image_shape[1], tiles[0].shape[2])
+    elif tiles[0].ndim == 2:
+      shape = (self.image_shape[0], self.image_shape[1])
+    else:
+      raise ValueError
+
+    image = np.empty(shape, dtype=np.float32)
     tile_iter = iter(tiles)
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       if i + self.output_tile_shape[0] < self.image_shape[0]:
@@ -464,13 +469,15 @@ class ArtificeData(object):
     if self.num_tiles == 1:
       return points[0]
 
+    points_iter = iter(points)
     image_points = []
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
-        image_points += list(points[i] - np.array([[i,j]], dtype=np.float32))
+        points = next(points_iter)
+        image_points += list(points - np.array([[i,j]], dtype=np.float32))
     return np.array(image_points)
 
-  def analyze_outputs(self, outputs, check_peaks=False):
+  def analyze_outputs(self, outputs, check_peaks=True):
     """Analyze the model outputs, return predictions like original labels.
 
     :param outputs: a list of lists, containing outputs from at least num_tiles
@@ -483,16 +490,15 @@ class ArtificeData(object):
     :rtype: np.ndarray
 
     """
-    tile_peaks = [multiscale_detect_peaks(output[1:]) for output
-                                in outputs[:self.num_tiles]]
-    peaks = self.untile_points(tile_peaks)
+    peaks = self.untile_points([multiscale_detect_peaks(output[1:]) for output
+                                in outputs[:self.num_tiles]])
     pose_image = self.untile([output[0] for output in outputs[:self.num_tiles]])
     if check_peaks:
-      dist_image = self.untile([output[-1] for output in
+      dist_image = self.untile([output[-1][:,:,0] for output in
                                 outputs[:self.num_tiles]])
       footprint = make_footprint(peaks, self.image_shape)
       peaks = detect_peaks(dist_image, footprint=footprint)
-    prediction = np.empty((peaks.shape[0], 1 + outputs[-1].shape[-1]),
+    prediction = np.empty((peaks.shape[0], 1 + pose_image.shape[-1]),
                           dtype=np.float32)
     for i, peak in enumerate(peaks):
       prediction[i,:2] = peak
@@ -778,7 +784,8 @@ def make_footprint(points, shape, radius=4):
     footprint[rr, cc] = True
   return footprint
 
-def detect_peaks(image, threshold_abs=0.1, min_distance=1, **kwargs):
+def detect_peaks(image, threshold_abs=0.1, min_distance=1, footprint=None,
+                 **kwargs):
   """Analyze the predicted distance proxy for detections.
 
   TODO: make more sophisticated?
@@ -788,22 +795,21 @@ def detect_peaks(image, threshold_abs=0.1, min_distance=1, **kwargs):
   :rtype:
 
   """
+  assert image.ndim == 2
+  if footprint is not None and footprint.sum() == 0:
+    return np.empty((0, 2), np.float32)
   return peak_local_max(image, threshold_abs=threshold_abs,
                         min_distance=min_distance, indices=True,
                         exclude_border=False, **kwargs)
 
 def multiscale_detect_peaks(images):
   """Use the images at lower scales to track peaks more efficiently."""
-  peaks = detect_peaks(images[0])
-  logger.debug(f"images: {len(images)}")
+  peaks = detect_peaks(images[0][:,:,0])
   for i in range(1, len(images)):
-    logger.debug(f"i: {i}")
-    translation = (2*np.array(images[i-1].shape) - np.array(images[i].shape)) / 2
+    translation = (2*np.array(images[i-1].shape[:2]) - np.array(images[i].shape[:2])) / 2
     peaks = 2*peaks - translation    # transform peaks to proper coordinates
     footprint = make_footprint(peaks, images[i].shape)
-    logger.debug(f"footprint: {footprint.shape}")
-    logger.debug(f"footprint points: {footprint.sum()}")
-    peaks = detect_peaks(images[i], footprint=footprint)
+    peaks = detect_peaks(images[i][:,:,0], footprint=footprint)
   return peaks
 
 def analyze_proxy(proxy):

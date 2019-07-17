@@ -360,8 +360,8 @@ todo: other attributes"""
     """Run prediction on the test set and visualize the output."""
     test_set = self._load_test()
     model = self._load_model()
-    for image, prediction in model.untile_and_predict(test_set):
-      vis.plot_image(image)
+    for image, dist_image, prediction in model.untile_and_predict(test_set):
+      vis.plot_image(image, dist_image)
       logger.info(f"prediction:\n{prediction}")
       self._show()
   
