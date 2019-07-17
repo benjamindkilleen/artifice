@@ -345,7 +345,7 @@ todo: other attributes"""
                        *[np.linalg.norm(p, axis=-1) for p in predictions],
                        *[variation(p, axis=-1) for p in predictions],
                        *[np.std(p, axis=-1) for p in predictions],
-                       cram=False, colorbar=True, columns=3)
+                       cram=False, colorbar=True, columns=3) # todo: rewrite
         plt.show()
     
 
@@ -369,7 +369,7 @@ def main():
   parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
                       help=docs.convert_mode)
   parser.add_argument('--transformation', '--augment', '-a', nargs='?',
-                      default=[None], const=[0], type=int, help=docs.transformation)
+                      default=None, const=0, type=int, help=docs.transformation)
   parser.add_argument('--identity-prob', nargs=1, default=[0.01], type=float,
                       help=docs.identity_prob)
   parser.add_argument('--priority-mode', '--priority', nargs=1, default=['random'],
@@ -386,14 +386,14 @@ def main():
 
   # sizes relating to data
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3, type=int,
-                      default=[100,100,1], help=docs.image_shape)
-  parser.add_argument('--data-size', '-N', nargs=1, default=[2000], type=int,
+                      default=[500,500,1], help=docs.image_shape)
+  parser.add_argument('--data-size', '-N', nargs=1, default=[10000], type=int,
                       help=docs.data_size)
-  parser.add_argument('--test-size', '-T', nargs=1, default=[100], type=int,
+  parser.add_argument('--test-size', '-T', nargs=1, default=[1000], type=int,
                       help=docs.test_size)
   parser.add_argument('--batch-size', '-b', nargs=1, default=[4], type=int,
                       help=docs.batch_size)
-  parser.add_argument('--num-objects', '-n', nargs=1, default=[4], type=int,
+  parser.add_argument('--num-objects', '-n', nargs=1, default=[40], type=int,
                       help=docs.num_objects)
   parser.add_argument('--pose-dim', '-p', nargs=1, default=[2], type=int,
                       help=docs.pose_dim)
@@ -403,7 +403,7 @@ def main():
   # model architecture
   parser.add_argument('--base-shape', nargs='+', default=[32], type=int,
                       help=docs.base_shape)
-  parser.add_argument('--level-filters', nargs='+', default=[32,64,128],
+  parser.add_argument('--level-filters', nargs='+', default=[32,64,128,128],
                       type=int, help=docs.level_filters)
   parser.add_argument('--level-depth', nargs='+', default=[2], type=int,
                       help=docs.level_depth)
@@ -421,9 +421,9 @@ def main():
   # runtime settings
   parser.add_argument('--num-parallel-calls', '--cores', nargs=1, default=[-1],
                       type=int, help=docs.num_parallel_calls)
-  parser.add_argument('--verbose', '-v', action='count', default=[2],
+  parser.add_argument('--verbose', '-v', nargs='?', const=1, default=2, type=int,
                       help=docs.verbose)
-  parser.add_argument('--keras-verbose', nargs=1, default=[1], type=int,
+  parser.add_argument('--keras-verbose', nargs='?', const=2, default=1, type=int,
                       help=docs.keras_verbose)
   parser.add_argument('--patient', action='store_true', help=docs.patient)
   parser.add_argument('--show', action='store_true', help=docs.show)
@@ -433,7 +433,7 @@ def main():
 
   args = parser.parse_args()
   art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
-                 transformation=args.transformation[0],
+                 transformation=args.transformation,
                  identity_prob=args.identity_prob[0],
                  priority_mode=args.priority_mode[0], labeled=args.labeled,
                  annotation_mode=args.annotation_mode[0],
@@ -450,7 +450,7 @@ def main():
                  initial_epoch=args.initial_epoch[0], epochs=args.epochs[0],
                  learning_rate=args.learning_rate[0],
                  num_parallel_calls=args.num_parallel_calls[0],
-                 verbose=args.verbose[0], keras_verbose=args.keras_verbose[0],
+                 verbose=args.verbose, keras_verbose=args.keras_verbose,
                  eager=(not args.patient), show=args.show, cache=args.cache,
                  seconds=args.seconds)
   logger.info(art)

@@ -228,7 +228,7 @@ class ArtificeModel():
         proxies += list(self.model.predict_on_batch(batch))
         while len(proxies) >= art_data.num_tiles:
           proxy = art_data.untile(proxies[:art_data.num_tiles])
-          prediction = analyze_proxy(proxy)
+          prediction = dat.analyze_proxy(proxy)
           del proxies[:art_data.num_tiles]
           yield prediction
     else:
