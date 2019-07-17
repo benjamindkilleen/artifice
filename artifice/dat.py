@@ -15,8 +15,9 @@ import os
 import logging
 from glob import glob
 import numpy as np
-import tensorflow as tf
 from skimage.feature import peak_local_max
+from skimage.draw import circle
+import tensorflow as tf
 
 from artifice import img, utils
 
@@ -713,6 +714,27 @@ class AnnotatedData(LabeledData):
   
 #################### Independant data processing functions ####################
 
+
+def detect_multiscale_peaks(images):
+  """Use the images at lower scales to track peaks more efficiently."""
+  peaks = peak_local_max(images[0], threshold_abs=0.1, indices=True,
+                         exclude_border=False)
+  for i in range(1, len(images)):
+    # transform peaks to proper coordinates
+    translation = (2*np.array(images[i-1].shape) - np.array(images[i].shape)) / 2
+    peaks = 2*peaks - translation
+    footprint = np.zeros(images[i].shape[:2], dtype=np.bool)
+    for peak in peaks:
+      rr, cc = circle(peak[0], peak[1], 4, shape=images[i].shape)
+      footprint[rr,cc] = True
+    peaks = peak_local_max(images[i], threshold_abs=0.1, footprint=footprint,
+                           indices=True, exclude_border=False)
+  return peaks
+
+def analyze_multiscale_outputs(outputs):
+  """Analyze the model outputs, returning predictions in the same form as
+  original labels."""
+  pass
 
 def detect_peaks(image, min_distance=2):
   """Analyze the predicted distance proxy for detections.

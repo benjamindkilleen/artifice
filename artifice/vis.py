@@ -37,3 +37,6 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
     fig.subplots_adjust(wspace=0, hspace=0)
   return fig, axes
 
+def plot_hist(hist):
+  raise NotImplementedError()
+    

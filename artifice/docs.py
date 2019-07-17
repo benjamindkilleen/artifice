@@ -6,6 +6,7 @@ data_root = "todo"
 model_root = "todo"
 overwrite = "Overwrite existing models."
 deep = "todo"
+figs_dir = "todo"
 
 # data settings
 convert_mode = "todo"

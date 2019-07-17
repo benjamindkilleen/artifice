@@ -69,11 +69,11 @@ class Artifice:
 
   """
   def __init__(self, *, commands, data_root, model_root, overwrite, deep,
-               convert_mode, transformation, identity_prob, priority_mode,
-               labeled, annotation_mode, record_size, annotation_delay,
-               image_shape, data_size, test_size, batch_size, num_objects,
-               pose_dim, num_shuffle, base_shape, level_filters, level_depth,
-               dropout, initial_epoch, epochs, learning_rate,
+               figs_dir, convert_mode, transformation, identity_prob,
+               priority_mode, labeled, annotation_mode, record_size,
+               annotation_delay, image_shape, data_size, test_size, batch_size,
+               num_objects, pose_dim, num_shuffle, base_shape, level_filters,
+               level_depth, dropout, initial_epoch, epochs, learning_rate,
                num_parallel_calls, verbose, keras_verbose, eager, show, cache,
                seconds):
     # main
@@ -84,6 +84,7 @@ class Artifice:
     self.model_root = model_root
     self.overwrite = overwrite
     self.deep = deep
+    self.figs_dir = figs_dir
 
     # data settings
     self.convert_modes = utils.listwrap(convert_mode)
@@ -95,7 +96,7 @@ class Artifice:
     # annotation settings
     self.annotation_mode = annotation_mode
     self.record_size = record_size
-    self.annotation_delay = annotation_delay    
+    self.annotation_delay = annotation_delay
 
     # data sizes/settings
     self.image_shape = image_shape
@@ -125,7 +126,7 @@ class Artifice:
     self.show = show
     self.cache = cache
     self.seconds = seconds
-    
+
     # globals
     _set_verbosity(self.verbose)
     _set_eager(self.eager)
@@ -148,8 +149,10 @@ class Artifice:
     self.annotated_dir = join(self.model_root, 'annotated') # model-dependent
 
     # ensure directories exist
-    _ensure_dirs_exist([self.data_root, self.model_root, self.cache_dir,
-                        self.annotated_dir])
+    _ensure_dirs_exist([self.data_root, self.model_root, self.figs_dir,
+                        self.cache_dir, self.annotated_dir])
+
+  #################### helper functions ####################
 
   def __str__(self):
     return f"""{asctime()}:
@@ -166,6 +169,24 @@ todo: other attributes"""
   def _set_num_parallel_calls(self):
     if self.num_parallel_calls <= 0:
       self.num_parallel_calls = os.cpu_count()
+
+  def _show(self, fname=None):
+    """Show the figure currently in matplotlib or save it, if not self.show.
+
+    If no fname provided, and self.show is False, then closes the figure.
+
+    """
+    if self.show:
+      logger.info("showing figure...")
+      plt.show()
+    elif fname is None:
+      logger.warning("Cannot save figure. Did you forget to set --show?")
+      plt.close()
+    else:
+      plt.savefig(fname)
+      logger.info(f"saved figure to {fname}.")
+
+  #################### loading datasets and models ####################
 
   @property
   def _data_kwargs(self):
@@ -194,7 +215,7 @@ todo: other attributes"""
     if self.labeled:
       return self._load_labeled()
     return self._load_annotated()
-  
+
   def _load_model(self):
     return mod.ProxyUNet(base_shape=self.base_shape,
                          level_filters=self.level_filters,
@@ -219,9 +240,9 @@ todo: other attributes"""
 
   def clean(self):
     """Clean up the files associated with this model for a future run.
-    
+
     Removes the annotation info file and lock, annotation records, and
-    cache. 
+    cache.
 
     If --deep is specified, also removes the saved model and checkpoints. Does
     not remove data.
@@ -253,7 +274,7 @@ todo: other attributes"""
     else:
       raise NotImplementedError(f"{self.priority_mode} priority mode")
     prioritizer.run(seconds=self.seconds)
-    
+
   def annotate(self):
     """Continually annotate new examples.
 
@@ -274,7 +295,7 @@ todo: other attributes"""
     else:
       raise NotImplementedError(f"{self.annotation_mode} annotation mode")
     annotator.run(seconds=self.seconds)
-      
+
   def train(self):
     """Train the model using augmented examples from the annotated set."""
     train_set = self._load_train()
@@ -284,6 +305,16 @@ todo: other attributes"""
                 verbose=self.keras_verbose,
                 seconds=self.seconds,
                 cache=self.cache)
+
+  def predict(self):
+    """Run prediction on the unlabeled set."""
+    unlabeled_set = self._load_unlabeled()
+    model = self._load_model()
+    predictions = []
+    for prediction in model.predict(unlabeled_set):
+      predictions.append(prediction)
+    predictions = np.array(predictions)
+    np.save(join(self.model_root, 'predictions.npy'), predictions)
 
   def evaluate(self):
     test_set = self._load_test()
@@ -302,16 +333,6 @@ todo: other attributes"""
     logger.info(f"min: {errors.min(axis=0)}")
     logger.info(f"max: {errors.max(axis=0)}")
 
-  def predict(self):
-    """Run prediction on the unlabeled set."""
-    unlabeled_set = self._load_unlabeled()
-    model = self._load_model()
-    predictions = []
-    for prediction in model.predict(unlabeled_set):
-      predictions.append(prediction)
-    predictions = np.array(predictions)
-    np.save(join(self.model_root, 'predictions.npy'), predictions)
-
   def vis_train(self):
     """Visualize the training set. (Mostly for debugging.)"""
     train_set = self._load_train()
@@ -324,31 +345,22 @@ todo: other attributes"""
                        pose[:,:,1], pose[:,:,2], None,
                        targets[1][b], targets[2][b], targets[3][b],
                        columns=3)
-        logger.info(f"showing...")
-        plt.show()
+        self._show()
 
-  def vis_levels(self):
-    """Visualize the output of each level."""
+  def vis_history(self):
     model = self._load_model()
-    level_models = []
-    for layer in [layer for layer in model.layers if 'level_output' in layer.name]:
-      level_models.append(keras.Model(model.layers[0].input, layer.output,
-                                      name=layer.name))
+    if not exists(model.history_path):
+      logger.warning(f"no training history at '{model.history_path}'")
+      return
+    hist = utils.json_load(model.history_path)
+    vis.plot_hist(hist)
+    self._show(join(self.figs_dir, 'history.pdf'))
 
-    test_set = self._load_test()
-    for batch in test_set.prediction_input():
-      proxy = model.predict_on_batch(batch)
-      for i, predictions in enumerate(zip(*[level_model.predict_on_batch(batch)
-                                            for level_model in level_models])):
-        vis.plot_image(batch[i,20:120, 20:120], proxy[i,:,:,0],
-                       np.zeros_like(proxy[i,:,:,0]),
-                       *[np.linalg.norm(p, axis=-1) for p in predictions],
-                       *[variation(p, axis=-1) for p in predictions],
-                       *[np.std(p, axis=-1) for p in predictions],
-                       cram=False, colorbar=True, columns=3) # todo: rewrite
-        plt.show()
-    
+  def vis_predict(self):
+    """Run prediction on the test set and visualize the output."""
+    raise NotImplementedError()
 
+  
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('commands', nargs='+', help=docs.commands)
@@ -364,6 +376,10 @@ def main():
                       help=docs.overwrite)
   parser.add_argument('--deep', action='store_true',
                       help=docs.deep)
+  parser.add_argument('--figs-dir', '--figures', nargs=1,
+                      default=['figs'],
+                      help=docs.figs_dir)
+
 
   # data settings
   parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
@@ -441,11 +457,11 @@ def main():
                  annotation_delay=args.annotation_delay[0],
                  data_root=args.data_root[0], model_root=args.model_root[0],
                  overwrite=args.overwrite, deep=args.deep,
-                 image_shape=args.image_shape, data_size=args.data_size[0],
-                 test_size=args.test_size[0], batch_size=args.batch_size[0],
-                 num_objects=args.num_objects[0], pose_dim=args.pose_dim[0],
-                 num_shuffle=args.num_shuffle[0], base_shape=args.base_shape,
-                 level_filters=args.level_filters,
+                 figs_dir=args.figs_dir[0], image_shape=args.image_shape,
+                 data_size=args.data_size[0], test_size=args.test_size[0],
+                 batch_size=args.batch_size[0], num_objects=args.num_objects[0],
+                 pose_dim=args.pose_dim[0], num_shuffle=args.num_shuffle[0],
+                 base_shape=args.base_shape, level_filters=args.level_filters,
                  level_depth=args.level_depth[0], dropout=args.dropout[0],
                  initial_epoch=args.initial_epoch[0], epochs=args.epochs[0],
                  learning_rate=args.learning_rate[0],

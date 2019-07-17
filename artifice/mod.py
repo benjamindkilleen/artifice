@@ -191,7 +191,6 @@ class ArtificeModel():
     :returns: history dictionary
 
     """
-      
     if initial_epoch > 0 and os.path.exists(self.history_path) and not self.overwrite:
       hist = utils.json_load(self.history_path)
     else:
@@ -211,9 +210,6 @@ class ArtificeModel():
 
     self.save()
     return hist
-
-  def predict_on_batch(self, *args, **kwargs):
-    return self.model.predict_on_batch(*args, **kwargs)
   
   def predict(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data.
@@ -223,10 +219,16 @@ class ArtificeModel():
 
     """
     if tf.executing_eagerly():
-      proxies = []
-      for i, batch in art_data.prediction_input():
-        proxies += list(self.model.predict_on_batch(batch))
-        while len(proxies) >= art_data.num_tiles:
+      distance_images = [[] * self.num_levels]
+      poses = []
+      for batch in art_data.prediction_input():
+        outputs = self.model.predict_on_batch(batch)
+        poses += list(outputs[0])
+        for i in range(self.num_levels):
+          distance_images[i] += list(outputs[i+1])
+        while len(poses) >= art_data.num_tiles:
+          peaks = dat.multiscale_detect_peaks([fields[:art_data.num_tiles] for
+                                               fields in distance_images])
           proxy = art_data.untile(proxies[:art_data.num_tiles])
           prediction = dat.analyze_proxy(proxy)
           del proxies[:art_data.num_tiles]
