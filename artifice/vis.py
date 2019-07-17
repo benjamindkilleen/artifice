@@ -38,5 +38,19 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
   return fig, axes
 
 def plot_hist(hist):
-  raise NotImplementedError()
-    
+  fig, axes = plt.subplots(2,1)
+  for name, values in hist.items():
+    if type(values) is not list:
+      continue
+    if 'loss' in name:
+      axes[0].plot(values, label=name)
+
+  axes[0].set_title("Loss (Weigted MSE)")
+  axes[0].set_xlabel("Epoch")
+  axes[0].set_ylabel("Loss")
+
+  axes[1].set_title("Mean Absolute Error")
+  axes[1].set_xlabel("Epoch")
+  axes[1].set_ylabel("MAE")
+  fig.suptitle("Training")
+  return fig, axes
