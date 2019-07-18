@@ -34,7 +34,7 @@ def grayscale(image):
   else:
     return image.mean(axis=2).reshape(*out_shape).astype(np.uint8)
 
-def rgb(image):
+def rgb(image, copy=False):
   """Convert grayscale image to rgb.
 
   :param image: 
@@ -45,12 +45,11 @@ def rgb(image):
   image = np.squeeze(image)
   if image.ndim == 2:
     return np.stack((image, image, image), axis=-1)
-  elif image.ndim == 3 and image.shape[2] > 3:
+  if image.ndim == 3 and image.shape[2] > 3:
     return image[:,:,:3]
-  elif image.ndim == 3 and image.shape[2] == 3:
-    return image.copy()
-  else:
-    raise RuntimeError(f"couldn't handle image shape {image.shape}")
+  if image.ndim == 3 and image.shape[2] == 3:
+    return image.copy() if copy else image
+  raise RuntimeError(f"couldn't handle image shape {image.shape}")
 
 
 def open_as_array(fname):
@@ -122,6 +121,7 @@ def draw_x(image, x, y, size=12, channel=0):
   :rtype: 
 
   """
+  image = rgb(image)
   h = int(size / (2*np.sqrt(2)))
   i = int(x)
   j = int(y)
@@ -145,6 +145,7 @@ def draw_t(image, x, y, size=12, channel=1):
   :rtype: 
 
   """
+  image = rgb(image)
   h = size // 2
   i = int(np.floor(x))
   j = int(np.floor(y))

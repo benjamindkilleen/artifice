@@ -248,11 +248,11 @@ class ArtificeModel():
     else:
       raise NotImplementedError("patient prediction")
 
-  def untile_and_predict(self, art_data):
+  def predict_visualization(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data.
 
     :param art_data: ArtificeData object
-    :returns: iterator over (image, predicted distance image, prediction)
+    :returns: iterator over (image, field, prediction)
 
     """
     if tf.executing_eagerly():
@@ -260,8 +260,8 @@ class ArtificeModel():
       dist_tiles = []
       outputs = []
       p = art_data.image_padding()
-      for i, batch in enumerate(art_data.prediction_input()):
-        tiles += [tile[p[0][0]:, p[1][0]] for tile in list(batch)]
+      for batch in art_data.prediction_input():
+        tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
         outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
         dist_tiles += [output[-1] for output in outputs]
         while len(outputs) >= art_data.num_tiles:
@@ -275,6 +275,31 @@ class ArtificeModel():
     else:
       raise NotImplementedError("patient prediction")
 
+  def predict_outputs(self, art_data):
+    """Run prediction for single tiles images with the Artifice data.
+
+    :param art_data: ArtificeData object
+    :returns: iterator over (tile, prediction, model_outputs)
+
+    """
+    num_tiles = art_data.num_tiles
+    art_data.num_tiles = 1
+    if tf.executing_eagerly():
+      tiles = []
+      outputs = []
+      p = art_data.image_padding()
+      for batch in art_data.prediction_input():
+        tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        while outputs:
+          tile = art_data.untile(tiles[:1])
+          prediction = art_data.analyze_outputs(outputs)
+          yield (tile, prediction, outputs[0]) # todo: del line
+          del outputs[0]
+          del tiles[0]
+    else:
+      raise NotImplementedError("patient prediction")
+    art_data.num_tiles = num_tiles
     
   def evaluate(self, art_data):
     """Run evaluation, reassembling tiles, with the ArtificeData object.

@@ -15,7 +15,7 @@ OUT=images/$PFX.png
 
 SX=500  # output image resolution
 SY=500
-SH=9 # sharpness of object edge
+SH=15 # sharpness of object edge
 
 RNG=$(cksum $IN | cut -d' ' -f 1) # RNG seed determined by input
 NOISE=0.04 # gaussian noise on signals in [0,1]

@@ -19,7 +19,8 @@ from skimage.feature import peak_local_max
 from skimage.draw import circle
 import tensorflow as tf
 
-from artifice import img, utils
+import matplotlib.pyplot as plt
+from artifice import img, utils, vis
 
 logger = logging.getLogger('artifice')
 
@@ -431,7 +432,7 @@ class ArtificeData(object):
     if len(tiles) != self.num_tiles:
       raise RuntimeError("Ensure tiles is same length as num_tiles.")
     if self.num_tiles == 1:
-      return tiles[0]
+      return tiles[0][:self.image_shape[0], :self.image_shape[1]]
 
     if tiles[0].ndim == 3:
       shape = (self.image_shape[0], self.image_shape[1], tiles[0].shape[2])
@@ -496,8 +497,7 @@ class ArtificeData(object):
     if check_peaks:
       dist_image = self.untile([output[-1][:,:,0] for output in
                                 outputs[:self.num_tiles]])
-      footprint = make_footprint(peaks, self.image_shape)
-      peaks = detect_peaks(dist_image, footprint=footprint)
+      peaks = detect_peaks(dist_image, pois=peaks)
     prediction = np.empty((peaks.shape[0], 1 + pose_image.shape[-1]),
                           dtype=np.float32)
     for i, peak in enumerate(peaks):
@@ -769,7 +769,7 @@ class AnnotatedData(LabeledData):
 
 #################### Independant data analysis functions ####################
 
-def make_footprint(points, shape, radius=4):
+def make_footprint(points, shape, radius=3):
   """Make a boolean footprint around each point.
 
   :param points: array of x,y points too make fooprint around.
@@ -784,32 +784,48 @@ def make_footprint(points, shape, radius=4):
     footprint[rr, cc] = True
   return footprint
 
-def detect_peaks(image, threshold_abs=0.1, min_distance=1, footprint=None,
-                 **kwargs):
+def detect_peaks(image, threshold_abs=0.1, min_distance=1, pois=None):
   """Analyze the predicted distance proxy for detections.
 
-  TODO: make more sophisticated?
+  TODO: make more sophisticated, and also fix footprinting behavior
 
   :param image: image, or usually predicted distance proxy
+  :param threshold_abs: 
+  :param min_distance: 
+  :param pois: points of interest to search around
   :returns: detected peaks
-  :rtype:
+  :rtype: 
 
   """
   assert image.ndim == 2
-  if footprint is not None and footprint.sum() == 0:
-    return np.empty((0, 2), np.float32)
-  return peak_local_max(image, threshold_abs=threshold_abs,
-                        min_distance=min_distance, indices=True,
-                        exclude_border=False, **kwargs)
+  if pois is not None and False:
+    if pois.shape[0] == 0:
+      return np.empty((0, 2), np.float32)  
+    footprint = make_footprint(pois, image.shape)
+    peaks = peak_local_max(image, threshold_abs=threshold_abs,
+                           indices=True, footprint=footprint)
+  else:
+    peaks = peak_local_max(image, threshold_abs=threshold_abs,
+                           min_distance=min_distance, indices=True,
+                           exclude_border=False)
+  return peaks
 
 def multiscale_detect_peaks(images):
   """Use the images at lower scales to track peaks more efficiently."""
   peaks = detect_peaks(images[0][:,:,0])
+  # vis.plot_image(images[0])
+  # plt.plot(peaks[:,1], peaks[:,0], 'rx')
+  # plt.show()
   for i in range(1, len(images)):
-    translation = (2*np.array(images[i-1].shape[:2]) - np.array(images[i].shape[:2])) / 2
+    translation = (2*np.array(images[i-1].shape[:2]) -
+                   np.array(images[i].shape[:2])) / 2
     peaks = 2*peaks - translation    # transform peaks to proper coordinates
-    footprint = make_footprint(peaks, images[i].shape)
-    peaks = detect_peaks(images[i][:,:,0], footprint=footprint)
+    # fig, axes = vis.plot_image(images[i])
+    # axes[0,0].plot(peaks[:,1], peaks[:,0], 'rx')
+    peaks = detect_peaks(images[i][:,:,0], pois=peaks)
+    # logger.debug(f"found peaks:\n{peaks}")
+    # axes[0,0].plot(peaks[:,1], peaks[:,0], 'r+')
+    # plt.show()
   return peaks
 
 def analyze_proxy(proxy):

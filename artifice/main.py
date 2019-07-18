@@ -170,7 +170,7 @@ todo: other attributes"""
     if self.num_parallel_calls <= 0:
       self.num_parallel_calls = os.cpu_count()
 
-  def _show(self, fname=None):
+  def _show(self, basename=None):
     """Show the figure currently in matplotlib or save it, if not self.show.
 
     If no fname provided, and self.show is False, then closes the figure.
@@ -179,10 +179,11 @@ todo: other attributes"""
     if self.show:
       logger.info("showing figure...")
       plt.show()
-    elif fname is None:
+    elif basename is None:
       logger.warning("Cannot save figure. Did you forget to set --show?")
       plt.close()
     else:
+      fname = join(self.figs_dir, basename)
       plt.savefig(fname)
       logger.info(f"saved figure to {fname}.")
 
@@ -226,7 +227,6 @@ todo: other attributes"""
                          overwrite=self.overwrite)
 
   #################### Methods implementing Commands ####################
-
 
   def convert(self):
     for mode in self.convert_modes:
@@ -354,17 +354,34 @@ todo: other attributes"""
       return
     hist = utils.json_load(model.history_path)
     vis.plot_hist(hist)
-    self._show(join(self.figs_dir, 'history.pdf'))
+    self._show('history.pdf')
 
   def vis_predict(self):
     """Run prediction on the test set and visualize the output."""
     test_set = self._load_test()
     model = self._load_model()
-    for image, dist_image, prediction in model.untile_and_predict(test_set):
-      vis.plot_image(image, dist_image)
+    for image, dist_image, prediction in model.predict_visualization(test_set):
+      fig, axes = vis.plot_image(image, dist_image, colorbar=True)
+      axes[0,0].plot(prediction[:,1], prediction[:,0], 'rx')
+      axes[0,1].plot(prediction[:,1], prediction[:,0], 'rx')
       logger.info(f"prediction:\n{prediction}")
-      self._show()
-  
+      self._show('prediction.pdf')
+      if not self.show:
+        break
+
+  def vis_outputs(self):
+    """Run prediction on the test set and visualize the output."""
+    test_set = self._load_test()
+    model = self._load_model()
+    for image, prediction, outputs in model.predict_outputs(test_set):
+      level_outputs = outputs[1:]
+      fig, axes = vis.plot_image(image, *level_outputs, colorbar=True)
+      axes[0,0].plot(prediction[:,1], prediction[:,0], 'rx')
+      logger.info(f"prediction:\n{prediction}")
+      self._show('model_outputs.pdf')
+      if not self.show:
+        break
+      
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('commands', nargs='+', help=docs.commands)
@@ -423,7 +440,7 @@ def main():
   # model architecture
   parser.add_argument('--base-shape', nargs='+', default=[32], type=int,
                       help=docs.base_shape)
-  parser.add_argument('--level-filters', nargs='+', default=[32,64,128,128],
+  parser.add_argument('--level-filters', nargs='+', default=[32,64,128],
                       type=int, help=docs.level_filters)
   parser.add_argument('--level-depth', nargs='+', default=[2], type=int,
                       help=docs.level_depth)

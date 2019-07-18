@@ -1,0 +1,33 @@
+INFO:artifice:Thu Jul 18 10:46:48 2019:
+num_parallel_calls: 28
+todo: other attributes
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:435: colocate_with (from tensorflow.python.framework.ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Colocations handled automatically by placer.
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/keras/layers/core.py:143: calling dropout (from tensorflow.python.ops.nn_ops) with keep_prob is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`.
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/losses/losses_impl.py:667: to_float (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.cast instead.
+2019-07-18 10:46:50.134847: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-07-18 10:46:50.146845: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2399850000 Hz
+2019-07-18 10:46:50.146990: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x564cc16be7c0 executing computations on platform Host. Devices:
+2019-07-18 10:46:50.147019: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): <undefined>, <undefined>
+2019-07-18 10:46:50.355253: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x564cc17725f0 executing computations on platform CUDA. Devices:
+2019-07-18 10:46:50.355323: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): Tesla K80, Compute Capability 3.7
+2019-07-18 10:46:50.355746: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1433] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:09:00.0
+totalMemory: 11.17GiB freeMemory: 11.10GiB
+2019-07-18 10:46:50.355773: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
+2019-07-18 10:46:50.357235: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-07-18 10:46:50.357257: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
+2019-07-18 10:46:50.357267: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
+2019-07-18 10:46:50.357528: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10801 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:loaded model weights from models/disks_100x100/proxy_u_net_ckpt.hdf5
+WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/math_ops.py:3066: to_int32 (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.cast instead.
+2019-07-18 10:47:07.080942: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 676 of 1000
+2019-07-18 10:47:11.734315: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:140] Shuffle buffer filled.

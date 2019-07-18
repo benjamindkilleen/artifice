@@ -52,3 +52,4 @@ Use tf.cast instead.
 2019-07-17 16:31:48.703256: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 936 of 1000
 2019-07-17 16:32:01.047699: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 947 of 1000
 2019-07-17 16:32:04.270752: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:140] Shuffle buffer filled.
+slurmstepd-midway2-gpu03: error: *** JOB 61463139 ON midway2-gpu03 CANCELLED AT 2019-07-17T18:21:41 ***

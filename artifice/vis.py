@@ -39,7 +39,7 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
 
 
 def plot_hist(hist):
-  fig, axes = plt.subplots(2,1)
+  fig, axes = plt.subplots(2, 1)
   for name, values in hist.items():
     if type(values) is not list:
       continue

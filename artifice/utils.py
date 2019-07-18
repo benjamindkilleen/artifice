@@ -56,7 +56,7 @@ def json_save(fname, obj):
 
 def json_load(fname):
   with open(fname, 'r') as f:
-    obj = json.loads(r.read())
+    obj = json.loads(f.read())
   return obj
 
 def atleast_4d(image):
