@@ -30,7 +30,9 @@ data/**/*.jpg
 data/**/*.npy
 data/**/*.txt
 
-# duplicate C files
+# cutils stuff
+# until copyright stuff resolved:
+artifice/cutils/*
 artifice/cutils/peaks.c
 
 # misc
