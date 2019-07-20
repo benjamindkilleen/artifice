@@ -1,4 +1,4 @@
-reports/spring_2018_report/**/*.png
+# compile-time junk files
 **__pycache__
 **__temp__.pov
 **__pycache__
@@ -13,11 +13,29 @@ reports/spring_2018_report/**/*.png
 **.pyc
 **.bak
 **.xml
+**.o
+**.so
 **flycheck_*.py
+**/x
+**/y
+**/tmp
+**.xcf
+**/cache/
+**/cache.*
+**.lockfile
+
+# data files, by extension
 data/**/*.png
 data/**/*.jpg
 data/**/*.npy
 data/**/*.txt
+
+# cutils stuff
+# until copyright stuff resolved:
+artifice/cutils/*
+artifice/cutils/peaks.c
+
+# misc
 data/particle_tracking
 !data/gyros/labels.npy
 data/shadowed_right_spheres
@@ -28,11 +46,7 @@ batch/train/**/*.batch
 models/**/*.npy
 models/**/waltzing_spheres/*.mp4
 models/**/*.mp4
-**/cache/
-**/cache.*
-**.lockfile
 !models/gyros*/**/detections.mp4
 reports/
 thesis/
-**.xcf
-models/tmp
+reports/spring_2018_report/**/*.png

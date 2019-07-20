@@ -713,3 +713,12 @@ Ideas in Artifice can be built on, code as well. Big ideas:
 
 So pretty clearly, actually, running with eager execution and caching is the way
 to go.
+
+## July 19, 2019
+
+Todo today:
+* See if there's any possibility of or advantage to grabbing windows around
+  registered objects at each scale and preserving pixels around it.
+* Note that this requires a peak-detection layer. Custom keras layer maybe?
+  Returns shape `(batch_size, num_objects, 2)` int64 tensors giving positions of local peaks?
+* 
