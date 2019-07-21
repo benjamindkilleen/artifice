@@ -722,3 +722,10 @@ Todo today:
 * Note that this requires a peak-detection layer. Custom keras layer maybe?
   Returns shape `(batch_size, num_objects, 2)` int64 tensors giving positions of local peaks?
 * 
+
+Notes on sbnet:
+* The nvcc library is here: /software/cuda-9.0-el7-x86_64/bin. Add that to path.
+* Need to change the path that Makefile looks for cuda/include.
+* Found tensorflow at: 
+  /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/include
+* Added the `-D_GLIBCXX_USE_CXX11_ABI=0` option to both 

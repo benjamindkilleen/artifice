@@ -45,15 +45,11 @@ class PeakDetection(keras.layers.Layer):
   """
   def __init__(self, threshold_abs=None, **kwargs):
     self.threshold_abs = threshold_abs
-    
     super().__init__(**kwargs)
 
   def compute_output_shape(self, input_shape):
     """(batch_size, num_channels, num_peaks, 2)"""
     return (None, len(input_shape))
-
-  def build(self, input_shape):
-    pass
   
   def call(self, inputs):
     """FIXME! briefly describe function

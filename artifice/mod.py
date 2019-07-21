@@ -10,7 +10,11 @@ import numpy as np
 from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
-from artifice import dat, utils, img
+
+from artifice import dat
+from artifice import utils
+from artifice import img
+from artifice import lay
 
 logger = logging.getLogger('artifice')
 
@@ -159,13 +163,20 @@ class ArtificeModel():
     return [keras.callbacks.ModelCheckpoint(
       self.checkpoint_path, verbose=1, save_weights_only=True)]
   
-  def load_weights(self):
-    """Update the model weights from the chekpoint file."""
-    if os.path.exists(self.checkpoint_path):
-      self.model.load_weights(self.checkpoint_path)
-      logger.info(f"loaded model weights from {self.checkpoint_path}")
+  def load_weights(self, checkpoint_path=None):
+    """Update the model weights from the chekpoint file.
+
+    :param checkpoint_path: checkpoint path to use. If not provided, uses the
+    class name to construct a checkpoint path.
+
+    """
+    if checkpoint_path is None:
+      checkpoint_path = self.checkpoint_path
+    if os.path.exists(checkpoint_path):
+      self.model.load_weights(checkpoint_path, by_name=True)
+      logger.info(f"loaded model weights from {checkpoint_path}")
     else:
-      logger.info(f"no checkpoint at {self.checkpoint_path}")
+      logger.info(f"no checkpoint at {checkpoint_path}")
 
   def save(self, filename=None, overwrite=True):
     if filename is None:
@@ -377,15 +388,13 @@ class ProxyUNet(ArtificeModel):
     self.dropout = dropout
 
     self.num_levels = len(self.level_filters)
-    self.input_tile_shape = self.compute_input_tile_shape(
-      self.base_shape, self.num_levels, self.level_depth)
-    self.output_tile_shapes = self.compute_output_tile_shapes(
-      self.base_shape, self.num_levels, self.level_depth)
+    self.input_tile_shape = self.compute_input_tile_shape()
+    self.output_tile_shapes = self.compute_output_tile_shapes()
     super().__init__(keras.layers.Input(self.input_tile_shape +
                                         [self.num_channels]), **kwargs)
 
   @staticmethod
-  def compute_input_tile_shape(base_shape, num_levels, level_depth):
+  def compute_input_tile_shape_(base_shape, num_levels, level_depth):
     """Compute the shape of the input tiles.
 
     :param base_shape: shape of the output of the first layer in the
@@ -400,18 +409,24 @@ class ProxyUNet(ArtificeModel):
       tile_shape *= 2
       tile_shape += 2*level_depth
     return list(tile_shape)
+  def compute_input_tile_shape(self):
+    return self.compute_input_tile_shape(
+      self.base_shape, self.num_levels, self.level_depth) 
 
   @staticmethod
-  def compute_output_tile_shape(base_shape, num_levels, level_depth):
+  def compute_output_tile_shape_(base_shape, num_levels, level_depth):
     tile_shape = np.array(base_shape)
     tile_shape -= 2*level_depth
     for _ in range(num_levels - 1):
       tile_shape *= 2
       tile_shape -= 2*level_depth
     return list(tile_shape)
+  def compute_output_tile_shape(self):
+    return self.compute_output_tile_shape(
+      self.base_shape, self.num_levels, self.level_depth) 
 
   @staticmethod
-  def compute_output_tile_shapes(base_shape, num_levels, level_depth):
+  def compute_output_tile_shapes_(base_shape, num_levels, level_depth):
     """Compute the shape of the output tiles at every level, bottom to top."""
     shapes = []
     tile_shape = np.array(base_shape)
@@ -422,7 +437,36 @@ class ProxyUNet(ArtificeModel):
       tile_shape -= 2*level_depth
       shapes.append(list(tile_shape))
     return shapes
+  def compute_output_tile_shapes(self):
+    return self.compute_output_tile_shapes(
+      self.base_shape, self.num_levels, self.level_depth) 
+
+  def convert_point_between_levels(self, point, level, new_level):
+    """Convert len-2 point in the tile-space at `level` to `new_level`.
+
+    Level 0 is the lowest level, by convention. -1 can mean the highest
+    (original resolution) level.
+
+    :param point: 
+    :param level: level to which the point belongs (last layer in that level).
+    :param new_level: level of the space to which the point should be converted.
+    :returns: 
+    :rtype: 
+
+    """
+    while level < new_level:
+      point *= 2
+      point += self.level_depth
+      level += 1
+    while level > new_level:
+      point /= 2
+      point -= self.level_depth
+      level -= 1
+    return point
   
+  def convert_distance_between_levels(self, distance, level, new_level):
+    return distance * 2**(new_level - level)
+
   @staticmethod
   def pose_loss(pose, pred):
     return tf.losses.mean_squared_error(pose[:, :, :, 1:],
@@ -439,17 +483,17 @@ class ProxyUNet(ArtificeModel):
 
   def forward(self, inputs):
     level_outputs = []
-    fields = []
+    outputs = []
 
-    for i, filters in enumerate(self.level_filters):
+    for level, filters in enumerate(self.level_filters):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      if i < len(self.level_filters) - 1:
+      if level < self.num_levels - 1:
         level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
-        fields.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                           norm=False, name='level_output_0'))
+        outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
+                            norm=False, name='level_output_0'))
         
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
@@ -459,12 +503,12 @@ class ProxyUNet(ArtificeModel):
       inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      fields.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
+      outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
                          norm=False, name=f'level_output_{i+1}'))
 
     pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
                       padding='same', norm=False, name='pose')
-    return [pose_image] + fields
+    return [pose_image] + outputs
 
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image.
@@ -477,6 +521,7 @@ class ProxyUNet(ArtificeModel):
     :rtype: 
 
     """
+    raise NotImplementedError("update for outputs")
     predictions = self.model.predict_on_batch(images)
     proxies = predictions[:,:,:,0]
     confidences = np.empty(proxies.shape[0], np.float32)
@@ -485,4 +530,47 @@ class ProxyUNet(ArtificeModel):
       confidences[i] = np.mean([proxy[x,y] for x,y in detections])
     return 1 - confidences
     
-      
+class SparseUNet(ProxyUNet):
+  def __init__(self, *, window_size, peak_threshold=0.1, **kwargs):
+    """Create a UNet-like architecture using multi-scale tracking.
+
+    :param window_size: width/height of the window surrounding each point of
+    interest, at the scale of the original resolution (resized at each level.)
+    :param peak_threshold: absolute threshold value for peak detection.
+    :returns: 
+    :rtype: 
+
+    """
+    self.peak_threshold = peak_threshold
+    self.window_size = window_size
+    self.half_window = window_size // 2
+    super().__init__(**kwargs)
+
+  # todo: write this forward function. It's gonna be a mess.
+  def forward(self, inputs):
+    level_outputs = []
+    outputs = []
+
+    for level, filters in enumerate(self.level_filters):
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters)
+      if level < self.num_levels - 1:
+        level_outputs.append(inputs)
+        inputs = keras.layers.MaxPool2D()(inputs)
+      else:
+        outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
+                            norm=False, name='level_output_0'))
+
+    peaks = lay.PeakDetection()(outputs[0]) # [num_objects, 4]
+    raise NotImplementedError()
+    # goal: for each of the peaks, need to get out a slice from the actual
+    # feature image. So the shape of the inputs to the next convolutional layer
+    # will have shape [num_objects, batch_size, sx, sy, filters]. Can then use
+    # tf.
+
+    # better idea: from this point on, construct sparse tensors with the desired
+    # regions and perform convolution on those. 
+    
+
+    
+    

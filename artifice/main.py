@@ -135,9 +135,9 @@ class Artifice:
 
     # derived sizes/shapes
     self.num_levels = len(self.level_filters)
-    self.input_tile_shape = mod.ProxyUNet.compute_input_tile_shape(
+    self.input_tile_shape = mod.ProxyUNet.compute_input_tile_shape_(
       self.base_shape, self.num_levels, self.level_depth)
-    self.output_tile_shapes = mod.ProxyUNet.compute_output_tile_shapes(
+    self.output_tile_shapes = mod.ProxyUNet.compute_output_tile_shapes_(
       self.base_shape, self.num_levels, self.level_depth)
     self.output_tile_shape = self.output_tile_shapes[-1]
     self.num_tiles = dat.ArtificeData.compute_num_tiles(
