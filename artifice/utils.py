@@ -4,8 +4,12 @@ import os
 import json
 import shutil
 import logging
+import numpy as np
 
 logger = logging.getLogger('artifice')
+
+def divup(a, b):
+    return (a+b-1) // b
 
 def listwrap(val):
   """Wrap `val` as a list.
@@ -77,6 +81,7 @@ def atleast_4d(image):
     return image[np.newaxis, :, :, np.newaxis]
   if image.ndim == 1:
     return image[np.newaxis, :, np.newaxis, np.newaxis]
+  raise ValueError(f"incompatible image dimension: {image.ndim}")
 
 def rm(path):
   if not os.path.exists(path):

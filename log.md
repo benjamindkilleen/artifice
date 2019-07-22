@@ -729,3 +729,17 @@ Notes on sbnet:
 * Found tensorflow at: 
   /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/include
 * Added the `-D_GLIBCXX_USE_CXX11_ABI=0` option to both 
+
+## July 22, 2019
+* Implemented the sparse conv2d stuff, now I'm running into this cryptic error:
+```
+tensorflow.python.framework.errors_impl.InternalError: Could not find valid device for node.
+Node: {{node ReduceMask}}
+All kernels registered for op ReduceMask :
+  device='GPU'; T in [DT_FLOAT]
+  device='CPU'; T in [DT_FLOAT]
+ [Op:ReduceMask]
+```
+  which is just interesting. Maybe it needs to be run without eager execution, I
+  dunno. I'll figure it out later.
+  
