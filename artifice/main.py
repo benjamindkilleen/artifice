@@ -9,8 +9,6 @@ from glob import glob
 import logging
 import argparse
 import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 from scipy.stats import variation
@@ -25,7 +23,6 @@ from artifice import img
 from artifice import ann
 from artifice import prio
 from artifice import tform
-from artifice.windows import AnnotatorWindow
 
 logger = logging.getLogger('artifice')
 logger.setLevel(logging.INFO)
@@ -46,11 +43,6 @@ def _set_verbosity(verbose):
 def _set_eager(eager):
   if eager:
     tf.enable_eager_execution()
-
-def _set_show(show):
-  if not show:
-    mpl.use('Agg')
-    plt.ioff()
 
 def _ensure_dirs_exist(dirs):
   for path in dirs:
@@ -130,7 +122,7 @@ class Artifice:
     # globals
     _set_verbosity(self.verbose)
     _set_eager(self.eager)
-    _set_show(self.show)
+    vis.set_show(self.show)
     self._set_num_parallel_calls()
 
     # derived sizes/shapes
@@ -169,23 +161,6 @@ todo: other attributes"""
   def _set_num_parallel_calls(self):
     if self.num_parallel_calls <= 0:
       self.num_parallel_calls = os.cpu_count()
-
-  def _show(self, basename=None):
-    """Show the figure currently in matplotlib or save it, if not self.show.
-
-    If no fname provided, and self.show is False, then closes the figure.
-
-    """
-    if self.show:
-      logger.info("showing figure...")
-      plt.show()
-    elif basename is None:
-      logger.warning("Cannot save figure. Did you forget to set --show?")
-      plt.close()
-    else:
-      fname = join(self.figs_dir, basename)
-      plt.savefig(fname)
-      logger.info(f"saved figure to {fname}.")
 
   #################### loading datasets and models ####################
 
@@ -345,7 +320,7 @@ todo: other attributes"""
                        pose[:,:,1], pose[:,:,2], None,
                        targets[1][b], targets[2][b], targets[3][b],
                        columns=3)
-        self._show()
+        vis.show()
 
   def vis_history(self):
     model = self._load_model()
@@ -354,7 +329,7 @@ todo: other attributes"""
       return
     hist = utils.json_load(model.history_path)
     vis.plot_hist(hist)
-    self._show('history.pdf')
+    vis.show(join(self.figs_dir, 'history.pdf'))
 
   def vis_predict(self):
     """Run prediction on the test set and visualize the output."""
@@ -365,7 +340,7 @@ todo: other attributes"""
       axes[0,0].plot(prediction[:,1], prediction[:,0], 'rx')
       axes[0,1].plot(prediction[:,1], prediction[:,0], 'rx')
       logger.info(f"prediction:\n{prediction}")
-      self._show('prediction.pdf')
+      vis.show(join(self.figs_dir, 'prediction.pdf'))
       if not self.show:
         break
 
@@ -378,7 +353,7 @@ todo: other attributes"""
       fig, axes = vis.plot_image(image, *level_outputs, colorbar=True)
       axes[0,0].plot(prediction[:,1], prediction[:,0], 'rx')
       logger.info(f"prediction:\n{prediction}")
-      self._show('model_outputs.pdf')
+      vis.show(join(self.figs_dir, 'model_outputs.pdf'))
       if not self.show:
         break
       

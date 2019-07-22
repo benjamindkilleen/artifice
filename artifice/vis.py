@@ -13,7 +13,31 @@ from artifice import img, utils
 
 logger = logging.getLogger('artifice')
 
+_show = True
+def set_show(val):
+  global _show
+  _show = val
+  if not val:
+    mpl.use('Agg')
+    plt.ioff()
+  
+def show(self, fname=None):
+  """Show the figure currently in matplotlib or save it, if not self.show.
+  
+  If no fname provided, and self.show is False, then closes the figure.
 
+  """
+  if _show:
+    logger.info("showing figure...")
+    plt.show()
+  elif fname is None:
+    logger.warning("Cannot save figure. Did you forget to set --show?")
+    plt.close()
+  else:
+    plt.savefig(fname)
+    logger.info(f"saved figure to {fname}.")
+
+    
 def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
                cmap='gray', cram=False, **kwargs):
   cmaps = utils.listify(cmap, len(images)) 
