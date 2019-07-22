@@ -12,17 +12,14 @@ We expect labels to be of the form:
 """
 
 import os
-import logging
 from glob import glob
 import numpy as np
 from skimage.feature import peak_local_max
 from skimage.draw import circle
 import tensorflow as tf
 
-import matplotlib.pyplot as plt
-from artifice import img, utils, vis
-
-logger = logging.getLogger('artifice')
+from artifice.log import logger
+from artifice import img, utils
 
 def _bytes_feature(value):
   """Returns a bytes_list from a string / byte."""
@@ -813,19 +810,11 @@ def detect_peaks(image, threshold_abs=0.1, min_distance=1, pois=None):
 def multiscale_detect_peaks(images):
   """Use the images at lower scales to track peaks more efficiently."""
   peaks = detect_peaks(images[0][:,:,0])
-  # vis.plot_image(images[0])
-  # plt.plot(peaks[:,1], peaks[:,0], 'rx')
-  # plt.show()
   for i in range(1, len(images)):
     translation = (2*np.array(images[i-1].shape[:2]) -
                    np.array(images[i].shape[:2])) / 2
     peaks = 2*peaks - translation    # transform peaks to proper coordinates
-    # fig, axes = vis.plot_image(images[i])
-    # axes[0,0].plot(peaks[:,1], peaks[:,0], 'rx')
     peaks = detect_peaks(images[i][:,:,0], pois=peaks)
-    # logger.debug(f"found peaks:\n{peaks}")
-    # axes[0,0].plot(peaks[:,1], peaks[:,0], 'r+')
-    # plt.show()
   return peaks
 
 def analyze_proxy(proxy):

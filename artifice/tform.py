@@ -23,10 +23,8 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-import matplotlib.pyplot as plt
-from artifice import img, vis
-
-logger = logging.getLogger('artifice')
+from artifice.log imoprt logger
+from artifice import img
 
 def swap(t):
   return tf.gather(t, [1,0])

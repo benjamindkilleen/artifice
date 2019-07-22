@@ -2,7 +2,6 @@
 """
 
 import os
-import logging
 import json
 from time import time
 import itertools
@@ -11,12 +10,11 @@ from stringcase import snakecase
 import tensorflow as tf
 from tensorflow import keras
 
+from artifice.log import logger
 from artifice import dat
 from artifice import utils
 from artifice import img
 from artifice import lay
-
-logger = logging.getLogger('artifice')
 
 def _update_hist(a, b):
   """Concat the lists in b onto the lists in a.

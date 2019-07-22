@@ -17,7 +17,6 @@ from glob import glob
 import logging
 from itertools import islice
 import numpy as np
-import tensorflow as tf
 from artifice import img, dat
 
 logger = logging.getLogger('artifice')

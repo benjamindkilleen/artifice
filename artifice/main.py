@@ -6,13 +6,14 @@ from time import time, asctime
 import os
 from os.path import join, exists
 from glob import glob
-import logging
 import argparse
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from scipy.stats import variation
 
+from artifice import log
+from artifice.log import logger
 from artifice import dat
 from artifice import mod
 from artifice import docs
@@ -24,21 +25,7 @@ from artifice import ann
 from artifice import prio
 from artifice import tform
 
-logger = logging.getLogger('artifice')
-logger.setLevel(logging.INFO)
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter('%(levelname)s:artifice:%(message)s'))
-logger.addHandler(handler)
-
 logger.debug(f"Use Python{3.6} or higher.")
-
-def _set_verbosity(verbose):
-  if verbose == 0:
-    logger.setLevel(logging.WARNING)
-  elif verbose == 1:
-    logger.setLevel(logging.INFO)
-  else:
-    logger.setLevel(logging.DEBUG)
 
 def _set_eager(eager):
   if eager:
@@ -120,7 +107,7 @@ class Artifice:
     self.seconds = seconds
 
     # globals
-    _set_verbosity(self.verbose)
+    log.set_verbosity(self.verbose)
     _set_eager(self.eager)
     vis.set_show(self.show)
     self._set_num_parallel_calls()

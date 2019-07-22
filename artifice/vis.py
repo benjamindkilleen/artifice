@@ -5,13 +5,12 @@ called without clearing the matplotlib buffer.
 
 """
 
-import logging
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-from artifice import img, utils
 
-logger = logging.getLogger('artifice')
+from artifice.log import logger
+from artifice import utils
 
 _show = True
 def set_show(val):
@@ -21,13 +20,14 @@ def set_show(val):
     mpl.use('Agg')
     plt.ioff()
   
-def show(self, fname=None):
+def show(fname=None, save=False):
   """Show the figure currently in matplotlib or save it, if not self.show.
   
-  If no fname provided, and self.show is False, then closes the figure.
+  If no fname provided, and self.show is False, then closes the figure. If save
+  is True, figure is saved regardless of show.
 
   """
-  if _show:
+  if _show and not save:
     logger.info("showing figure...")
     plt.show()
   elif fname is None:

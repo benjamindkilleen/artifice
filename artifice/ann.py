@@ -10,10 +10,11 @@ from operator import itemgetter
 import numpy as np
 from sortedcontainers import SortedList
 from skimage.draw import circle
-import tensorflow as tf
 
+from artifice.log import logger
 from artifice.sharedobjects import SharedDict
-from artifice import dat, utils
+from artifice import dat
+from artifice import utils
 
 logger = logging.getLogger('artifice')
 

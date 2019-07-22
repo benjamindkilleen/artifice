@@ -12,11 +12,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
+from artifice.log import logger
 from artifice import utils
 from artifice import sbnet
-
-
-logger = logging.getLogger('artifice')
 
 def reduce_mask(mask, *, block_count, bsize, boffset, bstride, tol=0.5,
                 avgpool=False):
@@ -141,7 +139,7 @@ for (ni, hi, wi) in indices.active_block_indices:
 
 def main():
   """For testing/understanding sbnet."""
-  tf.enable_eager_execution()
+  # tf.enable_eager_execution()
   # Specify input tensor dimensions and block-sparsity parameters
   batch = 4
   hw = 256
@@ -179,18 +177,17 @@ def main():
   print("bin_counts:", indices.bin_counts.shape)
   print("active_block_indices:", indices.active_block_indices)
   print("active_block_indices:", indices.active_block_indices.shape)
-  print("count of active_block_indices:",
-        (indices.active_block_indices.numpy() > 0).sum())
 
   # stack active overlapping tiles to batch dimension
   blockStack = sbnet.sparse_gather(x, indices.bin_counts,
-                                          indices.active_block_indices,
-                                          transpose=True, **inBlockParams)
+                                   indices.active_block_indices,
+                                   transpose=True, **inBlockParams)
   print("block_stack:", blockStack.shape)
 
   # perform dense convolution on a sparse stack of tiles
   convBlocks = tf.nn.conv2d(blockStack, w, strides=[1, 1, 1, 1],
                             padding='VALID', data_format='NCHW')
+  # convBlocks = keras.layers.Conv2D(channels, (3,3), padding='valid', data_format='channels_first')(blockStack)
 
   # write/scatter the tiles back on top of original tensor
   # note that the output tensor is reduced by 1 on each side due to 'VALID' convolution

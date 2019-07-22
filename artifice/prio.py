@@ -4,12 +4,10 @@
 
 from time import sleep, time
 import numpy as np
-import logging
 import tensorflow as tf
 
+from artifice.log import logger
 from artifice import ann
-
-logger = logging.getLogger('artifice')
 
 class Prioritizer:
   def __init__(self, data_set, *, info_path):
