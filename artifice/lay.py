@@ -9,27 +9,6 @@ from artifice import img, vis
 
 NEG_INF = np.finfo(np.float32).min
 
-def _apply_activation(inputs, activation):
-  if activation is None:
-    outputs = inputs
-  elif callable(activation):
-    outputs = activation(inputs)
-  elif activation == 'relu':
-    outputs = tf.nn.relu(inputs)
-  elif activation == 'crelu':
-    outputs = tf.nn.crelu(inputs)
-  elif activation == 'elu':
-    outputs = tf.nn.elu(inputs)
-  elif activation == 'leaky_relu':
-    outputs = tf.nn.leaky_relu(inputs)
-  elif activation == 'softmax':
-    outputs = tf.nn.softmax(inputs)
-  elif activation == 'tanh':
-    outputs = tf.math.tanh(inputs)
-  else:
-    raise ValueError(f"unknown activation {activation}")
-  return outputs
-
 class PeakDetection(keras.layers.Layer):
   """Finds local maxima in each channel of the image.
 
@@ -173,6 +152,7 @@ class SparseConv2D(keras.layers.Conv2D):
       bias_constraint=None,
       **kwargs)
 
+    self.input_spec = None      # needed since Conv2D directly subclassed
     self.block_count = None
 
     self.block_size = utils.listify(block_size, 2)
@@ -182,7 +162,7 @@ class SparseConv2D(keras.layers.Conv2D):
     
     self.output_block_size = self.block_stride
     self.output_block_offset = self.block_offset
-    self.output_block_stride = self.input_block_stride
+    self.output_block_stride = self.block_stride
 
     self.threshold = threshold
     self.avgpool = avgpool
@@ -197,7 +177,6 @@ class SparseConv2D(keras.layers.Conv2D):
     
   def build(self, input_shape):
     input_shape, mask_shape = input_shape
-    input_shape = tensor_shape.TensorShape(input_shape)
     if self.data_format == 'channels_first':
       h, w, c = 2, 3, 1
     else:
@@ -237,7 +216,6 @@ class SparseConv2D(keras.layers.Conv2D):
 
   def call(self, inputs):
     inputs, mask = inputs
-
     if self.padding != 'valid':
       paddings = [
         [0, 0],
@@ -246,13 +224,16 @@ class SparseConv2D(keras.layers.Conv2D):
         [0, 0]]
       inputs = tf.pad(inputs, paddings)
 
+    if self.data_format == 'channels_first':
+      raise NotImplementedError('channels_first data format for SparseConv2D')
+
     indices = sparse.reduce_mask(
       mask,
       block_count=self.block_count,
-      bsize=self.bsize,
-      boffset=self.boffset,
-      bstride=self.bstride,
-      tol=self.tol,
+      bsize=self.block_size,
+      boffset=self.block_offset,
+      bstride=self.block_stride,
+      tol=self.threshold,
       avgpool=self.avgpool)
 
     blocks = sparse.sparse_gather(
@@ -260,9 +241,9 @@ class SparseConv2D(keras.layers.Conv2D):
       indices.bin_counts,
       indices.active_block_indices,
       transpose=False,
-      bsize=self.bsize,
-      boffset=self.boffset,
-      bstride=self.bstride)
+      bsize=self.block_size,
+      boffset=self.block_offset,
+      bstride=self.block_stride)
 
     conv_strides = [1, self.strides[0], self.strides[1], 1]
     blocks = tf.nn.conv2d(
@@ -273,14 +254,9 @@ class SparseConv2D(keras.layers.Conv2D):
 
     if self.use_bias:
       if self.data_format == 'channels_first':
-        if self.rank == 1:
-          # nn.bias_add does not accept a 1D input tensor.
-          bias = array_ops.reshape(self.bias, (1, self.filters, 1))
-          blocks += bias
-        else:
-          blocks = nn.bias_add(blocks, self.bias, data_format='NCHW')
+        blocks = tf.nn.bias_add(blocks, self.bias, data_format='NCHW')
       else:
-        blocks = nn.bias_add(blocks, self.bias, data_format='NHWC')
+        blocks = tf.nn.bias_add(blocks, self.bias, data_format='NHWC')
 
     if self.activation is not None:
       blocks = self.activation(blocks)
@@ -295,9 +271,10 @@ class SparseConv2D(keras.layers.Conv2D):
       indices.bin_counts,
       indices.active_block_indices,
       inputs,
-      bsize=self.bsize,
-      boffset=self.boffset,
-      bstride=self.bstride)
+      bsize=self.block_size,
+      boffset=self.block_offset,
+      bstride=self.block_stride,
+      transpose=False)
 
 class SparseConv2DTranspose(SparseConv2D):
   """2D transpose convolution using the sbnet library.
@@ -319,35 +296,8 @@ class SparseConv2DTranspose(SparseConv2D):
   :rtype: 
 
   """
+  pass
 
-  def __init__(self, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    
-  # todo: implement compute_output_shape
-  def compute_output_shape(self, input_shape):
-    input_shape, _ = input_shape
-    
-
-  def call(self, inputs):
-    inputs, mask = inputs
-
-    indices = sparse.reduce_mask(mask, block_count=self.block_count,
-                                 bsize=self.bsize, boffset=self.boffset,
-                                 bstride=self.bstride, tol=self.tol,
-                                 avgpool=self.avgpool)
-
-    block_stack = sparse.sparse_gather(inputs, indices.bin_counts,
-                                       indices.active_block_indices,
-                                       transpose=False, bsize=self.bsize,
-                                       boffset=self.boffset,
-                                       bstride=self.bstride)
-    
-    block_stack = tf.nn.conv2d_transpose(
-      value=block_stack, filter=self.w,
-      output_shape=[None, ],
-      strides=[1, self.strides[0], self.strides[1], 1])
-  
-    
 def main():
   tf.enable_eager_execution()
   inputs = tf.constant(
@@ -357,7 +307,7 @@ def main():
               img.open_as_float('../data/disks_100x100/images/1004.png')]))
   inputs = tf.expand_dims(inputs, -1)
   mask = inputs
-  outputs = SparseConv2D(64, [3,3], kernel_initializer='ones')([inputs, mask])
+  outputs = SparseConv2D(1, [3,3], kernel_initializer='zeros', padding='same', use_bias=False)([inputs, mask])
   if tf.executing_eagerly():
     inputs = inputs.numpy()
     outputs = outputs.numpy()
@@ -366,7 +316,7 @@ def main():
       sess.run(tf.global_variables_initializer())
       inputs, mask, outputs = sess.run([inputs, mask, outputs])
   vis.plot_image(*inputs, *outputs, columns=4)
-  vis.show('../figs/sparse_conv2d_example.pdf', save=True)
+  vis.show('../figs/sparse_conv2d_example.pdf')
 
 if __name__ == '__main__':
   main()
