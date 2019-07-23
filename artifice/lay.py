@@ -106,17 +106,201 @@ class PeakDetection(keras.layers.Layer):
     return tf.where(mask)
 
 
-class SparseConv2D(keras.layers.Layer):
+class SparseConv2D(keras.layers.Conv2D):
   """2D convolution using the sbnet library.
 
-  Note that this does not implement convolution over SparseTensors, as the class
-  name might suggest. Instead, it uses the SBNet API to mask the areas where
-  convolution is performed. The inputs to this layer should therefore be a list
-  of tensors `[inputs, mask]` where `mask` is broadcastable to
-  `inputs`.
+  The input to this layer should therefore be a list of tensors `[inputs,
+  mask]` where `mask` has shape `[N, W, H, 1]`.
 
   In theory, additional performance gain can be achieved by making inputs a
   tf.Variable. We have not tested this.
+
+  :param filters: 
+  :param kernel_size: 
+  :param strides: 
+  :param padding: 
+  :param data_format: 
+  :param dilation_rate: 
+  :param activation: 
+  :param use_bias: 
+  :param kernel_initializer: 
+  :param bias_initializer: 
+  :param kernel_regularizer: 
+  :param bias_regularizer: 
+  :param activity_regularizer: 
+  :param kernel_constraint: 
+  :param bias_constraint: 
+  :returns: 
+  :rtype:
+
+  """
+
+  def __init__(self,
+               filters,
+               kernel_size,
+               strides=[1, 1],
+               padding='valid',
+               data_format=None,
+               dilation_rate=[1, 1],
+               activation=None,
+               use_bias=True,
+               kernel_initializer='glorot_uniform',
+               bias_initializer='zeros',
+               kernel_regularizer=None,
+               bias_regularizer=None,
+               activity_regularizer=None,
+               kernel_constraint=None,
+               bias_constraint=None,
+               block_size=[16, 16],
+               threshold=0.5,
+               avgpool=False,
+               **kwargs):
+    super().__init__(
+      filters,
+      kernel_size,
+      strides=strides,
+      padding=padding,
+      data_format=data_format,
+      dilation_rate=dilation_rate,
+      activation=activation,
+      use_bias=use_bias,
+      kernel_initializer='glorot_uniform',
+      bias_initializer='zeros',
+      kernel_regularizer=None,
+      bias_regularizer=None,
+      activity_regularizer=None,
+      kernel_constraint=None,
+      bias_constraint=None,
+      **kwargs)
+
+    self.block_count = None
+
+    self.block_size = utils.listify(block_size, 2)
+    self.block_offset = [0, 0]
+    self.block_stride = [self.block_size[0] - self.kernel_size[0] + 1,
+                         self.block_size[1] - self.kernel_size[1] + 1]
+    
+    self.output_block_size = self.block_stride
+    self.output_block_offset = self.block_offset
+    self.output_block_stride = self.input_block_stride
+
+    self.threshold = threshold
+    self.avgpool = avgpool
+    
+    pad_h = self.kernel_size[0] // 2
+    pad_w = self.kernel_size[1] // 2
+    if self.padding == 'valid':
+      self.pad_size = [0,0]
+    else:
+      self.pad_size = [pad_h, pad_w]
+    self.block_pad_size = [pad_h, pad_w]
+    
+  def build(self, input_shape):
+    input_shape, mask_shape = input_shape
+    input_shape = tensor_shape.TensorShape(input_shape)
+    if self.data_format == 'channels_first':
+      h, w, c = 2, 3, 1
+    else:
+      h, w, c = 1, 2, 3
+    if input_shape.dims[c].value is None:
+      raise ValueError('The channel dimension of the inputs '
+                       'should be defined. Found `None`.')
+    input_dim = int(input_shape[c])
+    kernel_shape = self.kernel_size + (input_dim, self.filters)
+
+    self.kernel = self.add_weight(
+        name='kernel',
+        shape=kernel_shape,
+        initializer=self.kernel_initializer,
+        regularizer=self.kernel_regularizer,
+        constraint=self.kernel_constraint,
+        trainable=True,
+        dtype=self.dtype)
+    if self.use_bias:
+      self.bias = self.add_weight(
+          name='bias',
+          shape=(self.filters,),
+          initializer=self.bias_initializer,
+          regularizer=self.bias_regularizer,
+          constraint=self.bias_constraint,
+          trainable=True,
+          dtype=self.dtype)
+    else:
+      self.bias = None
+    self.block_count = [utils.divup(input_shape[h], self.block_stride[0]),
+                        utils.divup(input_shape[w], self.block_stride[1])]
+    self.built = True
+
+  def compute_output_shape(self, input_shape):
+    input_shape, mask_shape = input_shape
+    return super().compute_output_shape(input_shape)
+
+  def call(self, inputs):
+    inputs, mask = inputs
+
+    if self.padding != 'valid':
+      paddings = [
+        [0, 0],
+        [self.pad_size[0], self.pad_size[0]],
+        [self.pad_size[1], self.pad_size[1]],
+        [0, 0]]
+      inputs = tf.pad(inputs, paddings)
+
+    indices = sparse.reduce_mask(
+      mask,
+      block_count=self.block_count,
+      bsize=self.bsize,
+      boffset=self.boffset,
+      bstride=self.bstride,
+      tol=self.tol,
+      avgpool=self.avgpool)
+
+    blocks = sparse.sparse_gather(
+      inputs,
+      indices.bin_counts,
+      indices.active_block_indices,
+      transpose=False,
+      bsize=self.bsize,
+      boffset=self.boffset,
+      bstride=self.bstride)
+
+    conv_strides = [1, self.strides[0], self.strides[1], 1]
+    blocks = tf.nn.conv2d(
+      blocks,
+      self.kernel,
+      strides=conv_strides,
+      padding='VALID')
+
+    if self.use_bias:
+      if self.data_format == 'channels_first':
+        if self.rank == 1:
+          # nn.bias_add does not accept a 1D input tensor.
+          bias = array_ops.reshape(self.bias, (1, self.filters, 1))
+          blocks += bias
+        else:
+          blocks = nn.bias_add(blocks, self.bias, data_format='NCHW')
+      else:
+        blocks = nn.bias_add(blocks, self.bias, data_format='NHWC')
+
+    if self.activation is not None:
+      blocks = self.activation(blocks)
+
+    inputs = inputs[:,
+                    self.pad_size[0] : inputs.shape[1] - self.pad_size[0],
+                    self.pad_size[1] : inputs.shape[2] - self.pad_size[1],
+                    :]
+
+    return sparse.sparse_scatter(
+      blocks,
+      indices.bin_counts,
+      indices.active_block_indices,
+      inputs,
+      bsize=self.bsize,
+      boffset=self.boffset,
+      bstride=self.bstride)
+
+class SparseConv2DTranspose(SparseConv2D):
+  """2D transpose convolution using the sbnet library.
 
   :param filters: 
   :param kernel_size: 
@@ -135,110 +319,35 @@ class SparseConv2D(keras.layers.Layer):
   :rtype: 
 
   """
-  def __init__(self, filters, kernel_size, strides=[1, 1], padding='valid',
-               activation=None, use_bias=True,
-               kernel_initializer='glorot_uniform', bias_initializer='zeros',
-               bsize=[16,16], boffset=[0,0], tol=0.5, avgpool=False, **kwargs):
-    self.filters = filters
-    self.kernel_size = utils.listify(kernel_size, 2)
-    self.strides = utils.listify(strides, 2)
-    self.padding = padding      # block-layer must have valid padding
-    self.activation = activation
-    self.use_bias = use_bias
-    self.kernel_initializer = kernel_initializer
-    self.bias_initializer = bias_initializer
 
-    self.block_count = None
-    self.bsize = bsize
-    self.boffset = boffset
-    self.output_bsize = self.bstride = [bsize[0] - self.kernel_size[0] + 1,
-                                        bsize[1] - self.kernel_size[1] + 1]
-    self.tol = tol
-    self.avgpool = avgpool
-    self.pad_size = [self.kernel_size[0] // 2, self.kernel_size[1] // 2]
-    super().__init__(**kwargs)
-
-  def build(self, input_shape):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    
+  # todo: implement compute_output_shape
+  def compute_output_shape(self, input_shape):
     input_shape, _ = input_shape
-    if len(input_shape) != 4:
-      raise ValueError("inputs to SparseConv2D must have rank 4")
-    self.block_count = [utils.divup(input_shape[1], self.bstride[0]),
-                        utils.divup(input_shape[2], self.bstride[1])]
-    self.w = self.add_weight(
-      'w',
-      shape=[self.kernel_size[0], self.kernel_size[1], int(input_shape[3]), self.filters],
-      initializer=self.kernel_initializer, trainable=True)
-    if self.use_bias:
-      self.b = self.add_weight('b', shape=[1, 1, 1, self.filters],
-                               initializer=self.bias_initializer, trainable=True)
-
-  # todo: implement compute_ouput_shape
+    
 
   def call(self, inputs):
     inputs, mask = inputs
+
     indices = sparse.reduce_mask(mask, block_count=self.block_count,
                                  bsize=self.bsize, boffset=self.boffset,
                                  bstride=self.bstride, tol=self.tol,
                                  avgpool=self.avgpool)
+
     block_stack = sparse.sparse_gather(inputs, indices.bin_counts,
                                        indices.active_block_indices,
                                        transpose=False, bsize=self.bsize,
                                        boffset=self.boffset,
                                        bstride=self.bstride)
-    block_stack = tf.nn.conv2d(block_stack, self.w,
-                               strides=[1, self.strides[0], self.strides[1], 1],
-                               padding='VALID')
-    if self.use_bias:
-      block_stack += self.b
-    block_stack = _apply_activation(block_stack, self.activation)
-      
-    if self.padding == 'valid':
-      valid = inputs[:, self.pad_size[0] : inputs.shape[1] -
-                     self.pad_size[0], self.pad_size[1] :
-                     inputs.shape[2] - self.pad_size[1], :]
-      outputs = sparse.sparse_scatter(block_stack, indices.bin_counts,
-                                      indices.active_block_indices, valid,
-                                      bsize=self.bsize, boffset=self.boffset,
-                                      bstride=self.bstride)
-    else:
-      raise NotImplementedError("'same' padding not supported yet")
-    return outputs
-
-class SparseConv2DTranspose(keras.layers.Layer):
-  """2D transpose convolution using the sbnet library.
-
-  Padding is 'same'.
-
-  :param filters: 
-  :param kernel_size: 
-  :param strides: 
-  :param activation: 
-  :param use_bias: 
-  :param kernel_initializer: 
-  :param bias_initializer: 
-  :returns: 
-  :rtype: 
-
-  """
-
-  def __init__(self, filters, kernel_size, strides=[1,1], activation=None,
-               use_bias=True, kernel_initializer='glorot_uniform',
-               bias_initializer='zeros', self.bsize=[16,16], boffset=[0,0],
-               tol=0.5, avgpool=False, **kwargs):
-    self.filters = filters
-    self.kernel_size = utils.listify(kernel_size, 2)
-    self.strides = utils.listify(strides, 2)
-    self.padding = padding
-    self.activation = activation
-    self.use_bias = use_bias
-    self.kernel_initializer = kernel_initializer
-    self.bias_initializer = bias_initializer
-
-    self.block_count = None
-    self.bsize = bsize
-    self.boffset = boffset
-    self.bstride = None         # todo figure this out based on paper
-
+    
+    block_stack = tf.nn.conv2d_transpose(
+      value=block_stack, filter=self.w,
+      output_shape=[None, ],
+      strides=[1, self.strides[0], self.strides[1], 1])
+  
+    
 def main():
   tf.enable_eager_execution()
   inputs = tf.constant(
