@@ -743,3 +743,17 @@ All kernels registered for op ReduceMask :
   which is just interesting. Maybe it needs to be run without eager execution, I
   dunno. I'll figure it out later.
   
+## July 23, 2019
+* Maybe we should revert ProxyUnet to just predict the last layer, or have three
+  models, one that does just the last level, one that does every level but not
+  sparsely, and finally SparseUNet.
+* TODO: change dat.py so that the different between data subclasses is not the
+  structure of the files from which they read, which can be set at instantiation
+  just by passing in a parse/serialize function, but rather in the process
+  function, which can design different output for different models.
+* This doesn't matter so much for ProxyUNet vs SparseUNet, which take the same
+  style of outputs, so can keep it the same for now.
+* But then again, maybe the model should be able to select the different kind of
+  outputs. We'll see.
+* Currently needing to implement sparse tranpose convolution as well as sparse
+  upsample for the mask?

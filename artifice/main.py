@@ -335,11 +335,9 @@ todo: other attributes"""
     """Run prediction on the test set and visualize the output."""
     test_set = self._load_test()
     model = self._load_model()
-    for image, prediction, outputs in model.predict_outputs(test_set):
+    for image, outputs in model.predict_outputs(test_set):
       level_outputs = outputs[1:]
       fig, axes = vis.plot_image(image, *level_outputs, colorbar=True)
-      axes[0,0].plot(prediction[:,1], prediction[:,0], 'rx')
-      logger.info(f"prediction:\n{prediction}")
       vis.show(join(self.figs_dir, 'model_outputs.pdf'))
       if not self.show:
         break

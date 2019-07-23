@@ -41,11 +41,11 @@ def _unbatch_outputs(outputs):
 
   :param outputs: batched outputs of the model, like
   [[pose 0, pose 1, ....], 
-   [level_output_0 0, level_output_0 1, ...],
-   [level_output_1 0, level_output_1 1, ...]]
+   [output_0 0, output_0 1, ...],
+   [output_1 0, output_1 1, ...]]
   :returns: result after unbatching, like
-  [[pose 0, level_ouput_0 0, level_output_1 0, ...], 
-   [pose 1, level_ouput_0 1, level_output_1 1, ...], 
+  [[pose 0, output_0 0, output_1 0, ...], 
+   [pose 1, output_0 1, output_1 1, ...], 
    ...]
 
   """
@@ -246,75 +246,37 @@ class ArtificeModel():
     :returns: iterator over predictions
 
     """
-    if tf.executing_eagerly():
-      outputs = []
-      for batch in art_data.prediction_input():
-        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
-        while len(outputs) >= art_data.num_tiles:
-          prediction = art_data.analyze_outputs(outputs)
-          del outputs[:art_data.num_tiles]
-          yield prediction
-    else:
-      raise NotImplementedError("patient prediction")
+    raise NotImplementedError("subclasses should implement.")
 
   def predict_visualization(self, art_data):
-    """Run prediction, reassembling tiles, with the Artifice data.
+    """Run prediction, reassembling tiles, with the ArtificeData.
+
+    Intended for visualization. Implementation will depend on the model.
 
     :param art_data: ArtificeData object
     :returns: iterator over (image, field, prediction)
 
     """
-    if tf.executing_eagerly():
-      tiles = []
-      dist_tiles = []
-      outputs = []
-      p = art_data.image_padding()
-      for batch in art_data.prediction_input():
-        tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
-        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
-        dist_tiles += [output[-1] for output in outputs]
-        while len(outputs) >= art_data.num_tiles:
-          image = art_data.untile(tiles[:art_data.num_tiles])
-          dist_image = art_data.untile(dist_tiles[:art_data.num_tiles])
-          prediction = art_data.analyze_outputs(outputs)
-          del outputs[:art_data.num_tiles]
-          del tiles[:art_data.num_tiles]
-          del dist_tiles[:art_data.num_tiles]
-          yield (image, dist_image, prediction)
-    else:
-      raise NotImplementedError("patient prediction")
-
+    raise NotImplementedError()
+    
+    
   def predict_outputs(self, art_data):
     """Run prediction for single tiles images with the Artifice data.
+
+    Returns the raw outputs, with no prediction. Depends on subclass
+    implementation.
 
     :param art_data: ArtificeData object
     :returns: iterator over (tile, prediction, model_outputs)
 
     """
-    num_tiles = art_data.num_tiles
-    art_data.num_tiles = 1
-    if tf.executing_eagerly():
-      tiles = []
-      outputs = []
-      p = art_data.image_padding()
-      for batch in art_data.prediction_input():
-        tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
-        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
-        while outputs:
-          tile = art_data.untile(tiles[:1])
-          prediction = art_data.analyze_outputs(outputs)
-          yield (tile, prediction, outputs[0]) # todo: del line
-          del outputs[0]
-          del tiles[0]
-    else:
-      raise NotImplementedError("patient prediction")
-    art_data.num_tiles = num_tiles
-    
-  def evaluate(self, art_data):
-    """Run evaluation, reassembling tiles, with the ArtificeData object.
+    raise NotImplementedError("subclasses should implement")
 
-    Returns an iterator over the predictions. This is necessary for very large
-    test sets, which we will use.
+  
+  def evaluate(self, art_data):
+    """Run evaluation for object detection with the ArtificeData object.
+
+    Depends on the structure of the model.
 
     :param art_data: ArtificeData object
     :returns: `errors, total_num_failed` error matrix and number of objects not
@@ -322,31 +284,7 @@ class ArtificeModel():
     :rtype: np.ndarray, int
 
     """
-    if tf.executing_eagerly():
-      proxies = []
-      tile_labels = []
-      errors = []
-      total_num_failed = 0
-      for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input()):
-        if i % 10 == 0:
-          logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
-        tile_labels += list(batch_labels)
-        proxies += list(self.model.predict_on_batch(batch_tiles))
-        while len(proxies) >= art_data.num_tiles:
-          label = tile_labels[0]
-          proxy = art_data.untile(proxies[:art_data.num_tiles])
-          error, num_failed = dat.evaluate_proxy(label, proxy)
-          total_num_failed += num_failed
-          errors += list(error[error[:, 0] >= 0])
-          del tile_labels[:art_data.num_tiles]
-          del proxies[:art_data.num_tiles]
-        if len(errors) >= art_data.size: # todo: figure out why necessary
-          break
-      errors = np.array(errors)
-    else:
-      raise NotImplementedError
-
-    return errors, total_num_failed
+    raise NotImplementedError('subclasses should implmement')
   
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image.
@@ -491,7 +429,7 @@ class ProxyUNet(ArtificeModel):
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
         outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                            norm=False, name='level_output_0'))
+                            norm=False, name='output_0'))
         
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
@@ -502,23 +440,97 @@ class ProxyUNet(ArtificeModel):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
       outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                         norm=False, name=f'level_output_{i+1}'))
+                         norm=False, name=f'output_{i+1}'))
 
     pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
                       padding='same', norm=False, name='pose')
     return [pose_image] + outputs
 
+  def predict(self, art_data):
+    """Run prediction, reassembling tiles, with the Artifice data."""
+    if tf.executing_eagerly():
+      outputs = []
+      for batch in art_data.prediction_input():
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        while len(outputs) >= art_data.num_tiles:
+          prediction = art_data.analyze_outputs(outputs)
+          del outputs[:art_data.num_tiles]
+          yield prediction
+    else:
+      raise NotImplementedError("patient prediction")
+
+  def evaluate(self, art_data):
+    """Runs evaluation for ProxyUNet."""
+    raise NotImplementedError("update for outputs style")
+    # if tf.executing_eagerly():
+    #   proxies = []
+    #   tile_labels = []
+    #   errors = []
+    #   total_num_failed = 0
+    #   for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input()):
+    #     if i % 10 == 0:
+    #       logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
+    #     tile_labels += list(batch_labels)
+    #     proxies += list(self.model.predict_on_batch(batch_tiles))
+    #     while len(proxies) >= art_data.num_tiles:
+    #       label = tile_labels[0]
+    #       proxy = art_data.untile(proxies[:art_data.num_tiles])
+    #       error, num_failed = dat.evaluate_proxy(label, proxy)
+    #       total_num_failed += num_failed
+    #       errors += list(error[error[:, 0] >= 0])
+    #       del tile_labels[:art_data.num_tiles]
+    #       del proxies[:art_data.num_tiles]
+    #     if len(errors) >= art_data.size: # todo: figure out why necessary
+    #       break
+    #   errors = np.array(errors)
+    # else:
+    #   raise NotImplementedError
+    # return errors, total_num_failed
+    
+  def predict_visualization(self, art_data):
+    """Run prediction, reassembling tiles, with the Artifice data."""
+    if tf.executing_eagerly():
+      tiles = []
+      dist_tiles = []
+      outputs = []
+      p = art_data.image_padding()
+      for batch in art_data.prediction_input():
+        tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        dist_tiles += [output[-1] for output in outputs]
+        while len(outputs) >= art_data.num_tiles:
+          image = art_data.untile(tiles[:art_data.num_tiles])
+          dist_image = art_data.untile(dist_tiles[:art_data.num_tiles])
+          prediction = art_data.analyze_outputs(outputs)
+          del outputs[:art_data.num_tiles]
+          del tiles[:art_data.num_tiles]
+          del dist_tiles[:art_data.num_tiles]
+          yield (image, dist_image, prediction)
+    else:
+      raise NotImplementedError("patient prediction")
+
+  def predict_outputs(self, art_data):
+    """Run prediction for single tiles images with the Artifice data."""
+    num_tiles = art_data.num_tiles
+    art_data.num_tiles = 1
+    if tf.executing_eagerly():
+      tiles = []
+      outputs = []
+      p = art_data.image_padding()
+      for batch in art_data.prediction_input():
+        tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        while outputs:
+          tile = art_data.untile(tiles[:1])
+          yield (tile, outputs[0]) # todo: del line
+          del outputs[0]
+          del tiles[0]
+    else:
+      raise NotImplementedError("patient prediction")
+    art_data.num_tiles = num_tiles
+    
   def uncertainty_on_batch(self, images):
-    """Estimate the model's uncertainty for each image.
-
-    For ProxyUNet, there are a couple possible strategies. As a first
-    approximation, we can take the average peak value among detections.
-
-    :param images: a batch of images
-    :returns: "uncertainty" for each image (as a numpy array)
-    :rtype: 
-
-    """
+    """Estimate the model's uncertainty for each image."""
     raise NotImplementedError("update for outputs")
     predictions = self.model.predict_on_batch(images)
     proxies = predictions[:,:,:,0]
@@ -529,20 +541,21 @@ class ProxyUNet(ArtificeModel):
     return 1 - confidences
     
 class SparseUNet(ProxyUNet):
-  def __init__(self, *, window_size, peak_threshold=0.1, **kwargs):
+  def __init__(self, *, block_size=[8,8], threshold=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
 
-    :param window_size: width/height of the window surrounding each point of
-    interest, at the scale of the original resolution (resized at each level.)
-    :param peak_threshold: absolute threshold value for peak detection.
-    :returns: 
-    :rtype: 
+    :param block_size: width/height of the blocks used for sparsity, at the
+    scale of the original resolution (resized at each level. These are rescaled
+    at each level.
+
+    :param threshold: absolute threshold value for sbnet attention.
+    :returns:
+    :rtype:
 
     """
-    self.peak_threshold = peak_threshold
-    self.window_size = window_size
-    self.half_window = window_size // 2
     super().__init__(**kwargs)
+    self.threshold = threshold
+    self.block_size = block_size
 
   # todo: write this forward function. It's gonna be a mess.
   def forward(self, inputs):
@@ -553,12 +566,24 @@ class SparseUNet(ProxyUNet):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
       if level < self.num_levels - 1:
-        level_outputs.append(inputs)
+        level_outputs_down.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
         outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                            norm=False, name='level_output_0'))
+                            norm=False, name='output_0'))
 
+    level_outputs = reversed(level_outputs)
+    for i, filters in enumerate(reversed(self.level_filters[:-1])):
+      inputs = conv_transpose(inputs, filters)
+      cropped = crop(next(level_outputs), inputs.shape)
+      dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
+      inputs = keras.layers.Concatenate()([dropped, inputs])
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters)
+      outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
+                         norm=False, name=f'output_{i+1}'))
+
+        
     peaks = lay.PeakDetection()(outputs[0]) # [num_objects, 4]
     raise NotImplementedError()
     # goal: for each of the peaks, need to get out a slice from the actual

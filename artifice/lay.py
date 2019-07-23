@@ -9,6 +9,27 @@ from artifice import img, vis
 
 NEG_INF = np.finfo(np.float32).min
 
+def _apply_activation(inputs, activation):
+  if activation is None:
+    outputs = inputs
+  elif callable(activation):
+    outputs = activation(inputs)
+  elif activation == 'relu':
+    outputs = tf.nn.relu(inputs)
+  elif activation == 'crelu':
+    outputs = tf.nn.crelu(inputs)
+  elif activation == 'elu':
+    outputs = tf.nn.elu(inputs)
+  elif activation == 'leaky_relu':
+    outputs = tf.nn.leaky_relu(inputs)
+  elif activation == 'softmax':
+    outputs = tf.nn.softmax(inputs)
+  elif activation == 'tanh':
+    outputs = tf.math.tanh(inputs)
+  else:
+    raise ValueError(f"unknown activation {activation}")
+  return outputs
+
 class PeakDetection(keras.layers.Layer):
   """Finds local maxima in each channel of the image.
 
@@ -114,7 +135,7 @@ class SparseConv2D(keras.layers.Layer):
   :rtype: 
 
   """
-  def __init__(self, filters, kernel_size, strides=(1, 1), padding='valid',
+  def __init__(self, filters, kernel_size, strides=[1, 1], padding='valid',
                activation=None, use_bias=True,
                kernel_initializer='glorot_uniform', bias_initializer='zeros',
                bsize=[16,16], boffset=[0,0], tol=0.5, avgpool=False, **kwargs):
@@ -152,7 +173,7 @@ class SparseConv2D(keras.layers.Layer):
                                initializer=self.bias_initializer, trainable=True)
 
   # todo: implement compute_ouput_shape
-    
+
   def call(self, inputs):
     inputs, mask = inputs
     indices = sparse.reduce_mask(mask, block_count=self.block_count,
@@ -169,10 +190,12 @@ class SparseConv2D(keras.layers.Layer):
                                padding='VALID')
     if self.use_bias:
       block_stack += self.b
+    block_stack = _apply_activation(block_stack, self.activation)
+      
     if self.padding == 'valid':
-      valid = tf.zeros_like(inputs)[:, self.pad_size[0] : inputs.shape[1] -
-                                    self.pad_size[0], self.pad_size[1] :
-                                    inputs.shape[2] - self.pad_size[1], :]
+      valid = inputs[:, self.pad_size[0] : inputs.shape[1] -
+                     self.pad_size[0], self.pad_size[1] :
+                     inputs.shape[2] - self.pad_size[1], :]
       outputs = sparse.sparse_scatter(block_stack, indices.bin_counts,
                                       indices.active_block_indices, valid,
                                       bsize=self.bsize, boffset=self.boffset,
@@ -180,6 +203,41 @@ class SparseConv2D(keras.layers.Layer):
     else:
       raise NotImplementedError("'same' padding not supported yet")
     return outputs
+
+class SparseConv2DTranspose(keras.layers.Layer):
+  """2D transpose convolution using the sbnet library.
+
+  Padding is 'same'.
+
+  :param filters: 
+  :param kernel_size: 
+  :param strides: 
+  :param activation: 
+  :param use_bias: 
+  :param kernel_initializer: 
+  :param bias_initializer: 
+  :returns: 
+  :rtype: 
+
+  """
+
+  def __init__(self, filters, kernel_size, strides=[1,1], activation=None,
+               use_bias=True, kernel_initializer='glorot_uniform',
+               bias_initializer='zeros', self.bsize=[16,16], boffset=[0,0],
+               tol=0.5, avgpool=False, **kwargs):
+    self.filters = filters
+    self.kernel_size = utils.listify(kernel_size, 2)
+    self.strides = utils.listify(strides, 2)
+    self.padding = padding
+    self.activation = activation
+    self.use_bias = use_bias
+    self.kernel_initializer = kernel_initializer
+    self.bias_initializer = bias_initializer
+
+    self.block_count = None
+    self.bsize = bsize
+    self.boffset = boffset
+    self.bstride = None         # todo figure this out based on paper
 
 def main():
   tf.enable_eager_execution()
