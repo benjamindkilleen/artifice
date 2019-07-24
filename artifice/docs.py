@@ -34,10 +34,15 @@ num_objects = "Maximum number of objects."
 pose_dim = "todo"
 num_shuffle = "todo"
 
-# model hyperparameters
+# model architecture
 base_size = "Height/width of the output of the first layer of the lower level."
 level_filters = "Number of filters for each level in the unet."
 level_depth = "todo"
+
+# sparse eval settings
+sparse = "Use the SparseUNet instead of the ProxyUNet."
+
+# model hyperparameters
 dropout = "todo"
 initial_epoch = """Initial epoch, starting at 0."""
 epochs = """Number of training epochs. Default is 1."""

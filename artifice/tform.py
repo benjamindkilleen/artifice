@@ -23,7 +23,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from artifice.log imoprt logger
+from artifice.log import logger
 from artifice import img
 
 def swap(t):

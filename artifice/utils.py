@@ -9,7 +9,7 @@ import numpy as np
 logger = logging.getLogger('artifice')
 
 def divup(a, b):
-    return (a+b-1) // b
+  return (a+b-1) // b
 
 def listwrap(val):
   """Wrap `val` as a list.
@@ -21,6 +21,8 @@ def listwrap(val):
   """
   if isinstance(val, list):
     return val
+  if isinstance(val, tuple):
+    return list(val)
   return [val]
 
 

@@ -65,8 +65,32 @@ def crop(inputs, shape):
                                     input_shape=inputs.shape)(inputs)
   return outputs
 
-def conv(inputs, filters, kernel_shape=(3,3), activation='relu',
-         padding='valid', norm=True, **kwargs):
+def conv_output_crop(inputs,
+                     kernel_shape=[3, 3],
+                     padding='valid',
+                     dilations=[1, 1]):
+  """Crop the height, width dims of inputs as if convolved with a stride of 1.
+
+  :returns: 
+  :rtype:
+
+  """
+  assert padding in {'same', 'valid'}
+  if padding == 'same':
+    return inputs
+  pad_h = kernel_shape[0] + (kernel_shape[0] - 1) * (dilations[0] - 1)
+  pad_w = kernel_shape[1] + (kernel_shape[1] - 1) * (dilations[1] - 1)
+  return inputs[:, pad_h : inputs.shape[1] - pad_h,
+                pad_w : inputs.shape[2] - pad_w, :]
+
+def conv(inputs,
+         filters,
+         kernel_shape=[3, 3],
+         activation='relu',
+         padding='valid',
+         norm=True,
+         mask=None,
+         **kwargs):
   """Perform 3x3 convolution on the layer.
 
   :param inputs: input tensor
@@ -74,29 +98,82 @@ def conv(inputs, filters, kernel_shape=(3,3), activation='relu',
   :param activation: keras activation to use. Default is 'relu'
   :param padding: 'valid' or 'same'
   :param norm: whether or not to perform batch normalization on the output
+  :param mask: if not None, performs a sparse convolution with mask.
+  
+  Other kwargs passed to the convolutional layer.
+
   :returns:
   :rtype:
 
   """
-  if norm:
+  if mask is None:
     inputs = keras.layers.Conv2D(
-      filters, kernel_shape, activation=None, padding=padding, use_bias=False,
-      kernel_initializer='glorot_normal', **kwargs)(inputs)
-    inputs = keras.layers.BatchNormalization()(inputs)
-    inputs = keras.layers.Activation(activation)(inputs)
+      filters,
+      kernel_shape,
+      activation=None,
+      padding=padding,
+      use_bias=False,
+      kernel_initializer='glorot_normal',
+      **kwargs)(inputs)
   else:
-    inputs = keras.layers.Conv2D(
-      filters, kernel_shape, activation=activation, padding=padding,
-      kernel_initializer='glorot_normal', **kwargs)(inputs)
+    inputs = lay.SparseConv2D(
+      filters,
+      kernel_shape,
+      activation=None,
+      padding=padding,
+      use_bias=False,
+      kernel_initializer='glorot_normal',
+      **kwargs)([inputs, mask])
+  if norm:
+    inputs = keras.layers.BatchNormalization()(inputs)
+  inputs = keras.layers.Activation(activation)(inputs)
   return inputs
 
-def conv_transpose(inputs, filters, activation='relu'):
-  inputs = keras.layers.Conv2DTranspose(
-    filters, (2,2),
-    strides=(2,2),
-    padding='same',
-    activation=activation)(inputs)
+def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwargs):
+  """Upsample the inputs in dimensions 1,2 with a transpose convolution.
+
+  :param inputs: 
+  :param filters: 
+  :param scale: scale by which to upsample. Can be an int or a list of 2 ints,
+  specifying scale in each direction.
+  :param activation: relu by default
+  :param mask: if not None, use a SparseConv2DTranspose layer.
+
+  Additional kwargs passed to the conv transpose layer.
+
+  :returns: 
+  :rtype: 
+
+  """
+  scale = utils.listify(scale, 2)
+  if mask is None:
+    inputs = keras.layers.Conv2DTranspose(
+      filters, scale,
+      strides=scale,
+      padding='same',
+      activation=activation,
+      **kwargs)(inputs)
+  else:
+    inputs = lay.SparseConv2DTranspose(
+      filters, scale,
+      strides=scale,
+      padding='same',
+      activation=activation,
+      **kwargs)([inputs, mask])
   return inputs
+
+
+def upsample(inputs, size, interpolation='nearest'):
+  """Upsamples the inputs by scale, using interpolation.
+
+  :param inputs: 
+  :param scale: int or 2-list of ints to scale the inputs by.
+  :returns: 
+  :rtype: 
+
+  """
+  return keras.layers.UpSampling2D(size, interpolation=interpolation)(inputs)
+
 
 class ArtificeModel():
   """A wrapper around keras models.
@@ -346,7 +423,7 @@ class ProxyUNet(ArtificeModel):
       tile_shape += 2*level_depth
     return list(tile_shape)
   def compute_input_tile_shape(self):
-    return self.compute_input_tile_shape(
+    return self.compute_input_tile_shape_(
       self.base_shape, self.num_levels, self.level_depth) 
 
   @staticmethod
@@ -358,7 +435,7 @@ class ProxyUNet(ArtificeModel):
       tile_shape -= 2*level_depth
     return list(tile_shape)
   def compute_output_tile_shape(self):
-    return self.compute_output_tile_shape(
+    return self.compute_output_tile_shape_(
       self.base_shape, self.num_levels, self.level_depth) 
 
   @staticmethod
@@ -374,9 +451,14 @@ class ProxyUNet(ArtificeModel):
       shapes.append(list(tile_shape))
     return shapes
   def compute_output_tile_shapes(self):
-    return self.compute_output_tile_shapes(
+    return self.compute_output_tile_shapes_(
       self.base_shape, self.num_levels, self.level_depth) 
 
+  def _fix_level_index(self, level):
+    if level >= 0:
+      return level
+    return self.num_levels + level
+  
   def convert_point_between_levels(self, point, level, new_level):
     """Convert len-2 point in the tile-space at `level` to `new_level`.
 
@@ -390,6 +472,8 @@ class ProxyUNet(ArtificeModel):
     :rtype: 
 
     """
+    level = self._fix_level_index(level)
+    new_level = self._fix_level_index(new_level)
     while level < new_level:
       point *= 2
       point += self.level_depth
@@ -401,6 +485,8 @@ class ProxyUNet(ArtificeModel):
     return point
   
   def convert_distance_between_levels(self, distance, level, new_level):
+    level = self._fix_level_index(level)
+    new_level = self._fix_level_index(new_level)
     return distance * 2**(new_level - level)
 
   @staticmethod
@@ -433,7 +519,7 @@ class ProxyUNet(ArtificeModel):
         
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
-      inputs = conv_transpose(inputs, filters)
+      inputs = conv_upsample(inputs, filters)
       cropped = crop(next(level_outputs), inputs.shape)
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
       inputs = keras.layers.Concatenate()([dropped, inputs])
@@ -541,21 +627,20 @@ class ProxyUNet(ArtificeModel):
     return 1 - confidences
     
 class SparseUNet(ProxyUNet):
-  def __init__(self, *, block_size=[8,8], threshold=0.1, **kwargs):
+  def __init__(self, *, block_size=[8, 8], tol=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
 
     :param block_size: width/height of the blocks used for sparsity, at the
     scale of the original resolution (resized at each level. These are rescaled
     at each level.
-
-    :param threshold: absolute threshold value for sbnet attention.
-    :returns:
-    :rtype:
+    :param tol: absolute threshold value for sbnet attention.
+    :returns: 
+    :rtype: 
 
     """
+    self.tol = tol
+    self.block_size = utils.listify(block_size, 2)
     super().__init__(**kwargs)
-    self.threshold = threshold
-    self.block_size = block_size
 
   # todo: write this forward function. It's gonna be a mess.
   def forward(self, inputs):
@@ -566,33 +651,46 @@ class SparseUNet(ProxyUNet):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
       if level < self.num_levels - 1:
-        level_outputs_down.append(inputs)
+        level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
-        outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                            norm=False, name='output_0'))
+        mask = conv(inputs, 1, kernel_shape=[1,1], activation=None,
+                    norm=False, name='output_0')
+        outputs.append(mask)
 
     level_outputs = reversed(level_outputs)
+    block_size = [
+      self.convert_distance_between_levels(self.block_size[0], -1, 0),
+      self.convert_distance_between_levels(self.block_size[0], -1, 0)]
+                  
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
-      inputs = conv_transpose(inputs, filters)
+      # inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
+      #                        block_size=block_size)
+      inputs = conv_upsample(inputs, filters)
+      mask = upsample(mask, size=2, interpolation='nearest')
+      block_size = [2 * block_size[0], 2 * block_size[1]]
+      
       cropped = crop(next(level_outputs), inputs.shape)
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
       inputs = keras.layers.Concatenate()([dropped, inputs])
+
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                         norm=False, name=f'output_{i+1}'))
+        # inputs = conv(inputs, filters, mask=mask, tol=self.tol,
+        #               block_size=block_size)
+        mask = conv_output_crop(mask)
+      mask = conv(inputs, 1, kernel_shape=[1,1], activation=None, norm=False,
+                  name=f'output_{i+1}') # add mask
+      outputs.append(mask)
 
-        
-    peaks = lay.PeakDetection()(outputs[0]) # [num_objects, 4]
-    raise NotImplementedError()
-    # goal: for each of the peaks, need to get out a slice from the actual
-    # feature image. So the shape of the inputs to the next convolutional layer
-    # will have shape [num_objects, batch_size, sx, sy, filters]. Can then use
-    # tf.
-
-    # better idea: from this point on, construct sparse tensors with the desired
-    # regions and perform convolution on those. 
+    # pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
+    #                   padding='same', norm=False, name='pose', mask=mask, tol=self.tol)
+    pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
+                      padding='same', norm=False, name='pose')
+    outputs = [pose_image] + outputs
+    logger.debug(f"outputs: {outputs}")
+    return outputs
+ 
     
 
     

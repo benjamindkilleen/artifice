@@ -757,3 +757,9 @@ All kernels registered for op ReduceMask :
   outputs. We'll see.
 * Currently needing to implement sparse tranpose convolution as well as sparse
   upsample for the mask?
+
+## July 24, 2019: Timing the sparse net
+I used the 500x500 disk images with 10000 images, batch size of 4, on GPU. (No
+caching.) I ran 3 epochs, no augmentation or anything. Fully labeled.
+* ProxyUNet: 324, 268, 258s
+* SparseUNet: 

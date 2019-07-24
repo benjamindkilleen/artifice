@@ -24,7 +24,7 @@ logger = logging.getLogger('artifice')
 def _get_paths(dirpath, ext):
   paths = sorted(glob(join(dirpath, f'*.{ext}')))
   if not paths:
-    raise FileNotFoundError("no '.{ext}' files in {dirpath}")
+    raise FileNotFoundError(f"no '.{ext}' files in {dirpath}")
   return paths
 
 def _load_single_labels(labels_path):

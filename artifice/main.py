@@ -52,9 +52,9 @@ class Artifice:
                priority_mode, labeled, annotation_mode, record_size,
                annotation_delay, image_shape, data_size, test_size, batch_size,
                num_objects, pose_dim, num_shuffle, base_shape, level_filters,
-               level_depth, dropout, initial_epoch, epochs, learning_rate,
-               num_parallel_calls, verbose, keras_verbose, eager, show, cache,
-               seconds):
+               level_depth, sparse, dropout, initial_epoch, epochs,
+               learning_rate, num_parallel_calls, verbose, keras_verbose, eager,
+               show, cache, seconds):
     # main
     self.commands = commands
 
@@ -90,6 +90,9 @@ class Artifice:
     self.base_shape = utils.listify(base_shape, 2)
     self.level_filters = level_filters
     self.level_depth = level_depth
+
+    # sparse model settings
+    self.sparse = sparse
 
     # hyperparameters
     self.dropout = dropout
@@ -180,13 +183,20 @@ todo: other attributes"""
     return self._load_annotated()
 
   def _load_model(self):
-    return mod.ProxyUNet(base_shape=self.base_shape,
-                         level_filters=self.level_filters,
-                         num_channels=self.image_shape[2],
-                         pose_dim=self.pose_dim, level_depth=self.level_depth,
-                         dropout=self.dropout, model_dir=self.model_root,
-                         learning_rate=self.learning_rate,
-                         overwrite=self.overwrite)
+    kwargs = {'base_shape' : self.base_shape,
+              'level_filters' : self.level_filters,
+              'num_channels' : self.image_shape[2],
+              'pose_dim' : self.pose_dim,
+              'level_depth' : self.level_depth,
+              'dropout' : self.dropout,
+              'model_dir' : self.model_root,
+              'learning_rate' : self.learning_rate,
+              'overwrite' : self.overwrite}
+    if self.sparse:
+      model = mod.SparseUNet(**kwargs)
+    else:
+      model = mod.ProxyUNet(**kwargs)
+    return model
 
   #################### Methods implementing Commands ####################
 
@@ -383,7 +393,7 @@ def main():
 
   # sizes relating to data
   parser.add_argument('--image-shape', '--shape', '-s', nargs=3, type=int,
-                      default=[500,500,1], help=docs.image_shape)
+                      default=[500, 500, 1], help=docs.image_shape)
   parser.add_argument('--data-size', '-N', nargs=1, default=[10000], type=int,
                       help=docs.data_size)
   parser.add_argument('--test-size', '-T', nargs=1, default=[1000], type=int,
@@ -404,6 +414,9 @@ def main():
                       type=int, help=docs.level_filters)
   parser.add_argument('--level-depth', nargs='+', default=[2], type=int,
                       help=docs.level_depth)
+
+  # sparse evaluation settings
+  parser.add_argument('--sparse', action='store_true', help=docs.sparse)
 
   # model hyperparameters
   parser.add_argument('--dropout', nargs=1, default=[0.5], type=float,
@@ -443,9 +456,9 @@ def main():
                  batch_size=args.batch_size[0], num_objects=args.num_objects[0],
                  pose_dim=args.pose_dim[0], num_shuffle=args.num_shuffle[0],
                  base_shape=args.base_shape, level_filters=args.level_filters,
-                 level_depth=args.level_depth[0], dropout=args.dropout[0],
-                 initial_epoch=args.initial_epoch[0], epochs=args.epochs[0],
-                 learning_rate=args.learning_rate[0],
+                 level_depth=args.level_depth[0], sparse=args.sparse,
+                 dropout=args.dropout[0], initial_epoch=args.initial_epoch[0],
+                 epochs=args.epochs[0], learning_rate=args.learning_rate[0],
                  num_parallel_calls=args.num_parallel_calls[0],
                  verbose=args.verbose, keras_verbose=args.keras_verbose,
                  eager=(not args.patient), show=args.show, cache=args.cache,
