@@ -10,6 +10,18 @@ from artifice import img, vis
 
 NEG_INF = np.finfo(np.float32).min
 
+def _apply_activation(activation, inputs):
+  if activation is None:
+    return inputs
+  if callable(activation):
+    return activation(inputs)
+  if activation == 'relu':
+    return tf.nn.relu(inputs)
+  if activation == 'softmax':
+    return tf.nn.softmax(inputs)
+  raise NotImplementedError(f"'{activation}' activation")
+    
+
 class PeakDetection(keras.layers.Layer):
   """Finds local maxima in each channel of the image.
 
@@ -123,65 +135,41 @@ class SparseConv2D(keras.layers.Layer):
                kernel_size,
                strides=[1, 1],
                padding='valid',
-               data_format=None,
-               dilation_rate=[1, 1],
                activation=None,
                use_bias=True,
                kernel_initializer='glorot_uniform',
                bias_initializer='zeros',
                kernel_regularizer=None,
                bias_regularizer=None,
-               activity_regularizer=None,
                kernel_constraint=None,
                bias_constraint=None,
                block_size=[16, 16],
                tol=0.5,
                avgpool=False,
                **kwargs):
-    # self.filters = filters
-    # self.kernel_size = utils.listify(kernel_size, 2)
-    # self.strides = utils.listify(strides, 2)
-    # self.padding = padding
-    # self.data_format = data_format
-    # self.dilation_rate = utils.listify(dilation_rate, 2)
-    # self.activation = activation
-    
-    
-    super().__init__(
-      filters,
-      kernel_size,
-      strides=strides,
-      padding=padding,
-      data_format=data_format,
-      dilation_rate=dilation_rate,
-      activation=activation,
-      use_bias=use_bias,
-      kernel_initializer=kernel_initializer,
-      bias_initializer=bias_initializer,
-      kernel_regularizer=kernel_regularizer,
-      bias_regularizer=bias_regularizer,
-      activity_regularizer=activity_regularizer,
-      kernel_constraint=kernel_constraint,
-      bias_constraint=bias_constraint,
-      **kwargs)
+    self.filters = filters
+    self.kernel_size = utils.listify(kernel_size, 2)
+    self.strides = utils.listify(strides, 2)
+    self.padding = padding
+    self.activation = activation
+    self.use_bias = use_bias
+    self.kernel_initializer = kernel_initializer
+    self.bias_initializer = bias_initializer
+    self.kernel_regularizer = kernel_regularizer
+    self.bias_regularizer = bias_regularizer
+    self.kernel_constraint = kernel_constraint
+    self.bias_constraint = bias_constraint
 
-    self.input_spec = None      # needed since Conv2D directly subclassed
     self.block_count = None
-
     self.block_size = utils.listify(block_size, 2)
-    self.output_block_size = list(super().compute_output_shape(
-      [1, self.block_size[0], self.block_size[1], 1]))[1:3]
+    self.output_block_size = list(self.compute_output_shape(
+      [[1, self.block_size[0], self.block_size[1], 1], None]))[1:3]
 
     self.block_offset = [0, 0]
     self.output_block_offset = self.block_offset
 
     self.block_stride = self.output_block_size
     self.output_block_stride = self.output_block_size
-
-    logger.debug(f"block_size: {self.block_size}")
-    logger.debug(f"output_block_size: {self.output_block_size}")
-    logger.debug(f"block_stride: {self.block_stride}")
-    logger.debug(f"output_block_stride: {self.output_block_stride}")
 
     self.tol = tol
     self.avgpool = avgpool
@@ -194,44 +182,54 @@ class SparseConv2D(keras.layers.Layer):
       self.pad_size = [pad_h, pad_w]
     self.block_pad_size = [pad_h, pad_w]
 
+    super().__init__(**kwargs)
+
+    
   def build(self, input_shape):
-    input_shape, mask_shape = input_shape
-    if self.data_format == 'channels_first':
-      h, w, c = 2, 3, 1
-    else:
-      h, w, c = 1, 2, 3
-    if input_shape[c] is None:
+    input_shape, _ = input_shape
+    if input_shape[3] is None:
       raise ValueError('The channel dimension of the inputs '
                        'should be defined. Found `None`.')
-    input_dim = int(input_shape[c])
-    kernel_shape = self.kernel_size + (input_dim, self.filters)
+    input_dim = int(input_shape[3])
+    kernel_shape = self.kernel_size + [input_dim, self.filters]
 
     self.kernel = self.add_weight(
-        name='kernel',
-        shape=kernel_shape,
-        initializer=self.kernel_initializer,
-        regularizer=self.kernel_regularizer,
-        constraint=self.kernel_constraint,
-        trainable=True,
-        dtype=self.dtype)
+      name='kernel',
+      shape=kernel_shape,
+      initializer=self.kernel_initializer,
+      regularizer=self.kernel_regularizer,
+      constraint=self.kernel_constraint,
+      trainable=True,
+      dtype=tf.float32)
     if self.use_bias:
       self.bias = self.add_weight(
-          name='bias',
-          shape=(self.filters,),
-          initializer=self.bias_initializer,
-          regularizer=self.bias_regularizer,
-          constraint=self.bias_constraint,
-          trainable=True,
-          dtype=self.dtype)
+        name='bias',
+        shape=(self.filters,),
+        initializer=self.bias_initializer,
+        regularizer=self.bias_regularizer,
+        constraint=self.bias_constraint,
+        trainable=True,
+        dtype=tf.float32)
     else:
       self.bias = None
-    self.block_count = [utils.divup(input_shape[h], self.block_stride[0]),
-                        utils.divup(input_shape[w], self.block_stride[1])]
-    self.built = True
+    self.block_count = [utils.divup(input_shape[1], self.block_stride[0]),
+                        utils.divup(input_shape[2], self.block_stride[1])]
 
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
-    return super().compute_output_shape(input_shape)
+    logger.debug(f"input_shape: {input_shape}")
+    space = input_shape[1:-1]
+    new_space = []
+    for i in range(len(space)):
+      new_dim = conv_utils.conv_output_length(
+        space[i],
+        self.kernel_size[i],
+        padding=self.padding,
+        stride=self.strides[i])
+      new_space.append(new_dim)
+    output_shape = tf.TensorShape([input_shape[0]] + new_space + [self.filters])
+    logger.debug(f"output_shape: {output_shape}")
+    return output_shape
 
   def call(self, inputs):
     inputs, mask = inputs
@@ -242,10 +240,7 @@ class SparseConv2D(keras.layers.Layer):
         [self.pad_size[1], self.pad_size[1]],
         [0, 0]]
       inputs = tf.pad(inputs, paddings)
-
-    if self.data_format == 'channels_first':
-      raise NotImplementedError('channels_first data format for SparseConv2D')
-
+      
     indices = sparse.reduce_mask(
       mask,
       block_count=self.block_count,
@@ -272,13 +267,10 @@ class SparseConv2D(keras.layers.Layer):
       padding='VALID')
 
     if self.use_bias:
-      if self.data_format == 'channels_first':
-        blocks = tf.nn.bias_add(blocks, self.bias, data_format='NCHW')
-      else:
-        blocks = tf.nn.bias_add(blocks, self.bias, data_format='NHWC')
+      blocks = tf.nn.bias_add(blocks, self.bias, data_format='NHWC')
 
     if self.activation is not None:
-      blocks = self.activation(blocks)
+      blocks = _apply_activation(blocks, self.activation)
 
     output_shape = self.compute_output_shape([inputs.shape, mask.shape])
     outputs = inputs[:, :output_shape[1], :output_shape[2], :]
@@ -506,7 +498,7 @@ class SparseConv2DTranspose(keras.layers.Conv2DTranspose):
     output_shape = self.compute_output_shape([inputs.shape, mask.shape])
     outputs = tf.zeros(output_shape, tf.float32)
 
-    return sparse.sparse_scatter(
+    outputs = sparse.sparse_scatter(
       blocks,
       indices.bin_counts,
       indices.active_block_indices,
@@ -516,6 +508,8 @@ class SparseConv2DTranspose(keras.layers.Conv2DTranspose):
       bstride=self.output_block_stride,
       transpose=False)
 
+    logger.debug(f"outputs: {outputs}")
+    return outputs
 
 def main():
   tf.enable_eager_execution()

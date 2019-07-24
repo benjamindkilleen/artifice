@@ -124,6 +124,7 @@ def conv(inputs,
       use_bias=False,
       kernel_initializer='glorot_normal',
       **kwargs)([inputs, mask])
+    logger.debug(f"inputs after sparse_conv2d: {inputs}")
   if norm:
     inputs = keras.layers.BatchNormalization()(inputs)
   inputs = keras.layers.Activation(activation)(inputs)
@@ -659,17 +660,12 @@ class SparseUNet(ProxyUNet):
         outputs.append(mask)
 
     level_outputs = reversed(level_outputs)
-    block_size = [
-      self.convert_distance_between_levels(self.block_size[0], -1, 0),
-      self.convert_distance_between_levels(self.block_size[0], -1, 0)]
-                  
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
       # inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
-      #                        block_size=block_size)
+      #                        block_size=self.block_size)
       inputs = conv_upsample(inputs, filters)
       mask = upsample(mask, size=2, interpolation='nearest')
-      block_size = [2 * block_size[0], 2 * block_size[1]]
-      
+
       cropped = crop(next(level_outputs), inputs.shape)
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
       inputs = keras.layers.Concatenate()([dropped, inputs])
@@ -677,7 +673,7 @@ class SparseUNet(ProxyUNet):
       for _ in range(self.level_depth):
         # inputs = conv(inputs, filters)
         inputs = conv(inputs, filters, mask=mask, tol=self.tol,
-                      block_size=block_size)
+                      block_size=self.block_size)
         mask = conv_output_crop(mask)
       mask = conv(inputs, 1, kernel_shape=[1,1], activation=None, norm=False,
                   name=f'output_{i+1}') # add mask
@@ -691,6 +687,7 @@ class SparseUNet(ProxyUNet):
     #   padding='same',
     #   norm=False,
     #   mask=mask,
+    #   block_size=self.block_size,
     #   tol=self.tol,
     #   name='pose')
     pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
