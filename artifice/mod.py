@@ -675,16 +675,24 @@ class SparseUNet(ProxyUNet):
       inputs = keras.layers.Concatenate()([dropped, inputs])
 
       for _ in range(self.level_depth):
-        inputs = conv(inputs, filters)
-        # inputs = conv(inputs, filters, mask=mask, tol=self.tol,
-        #               block_size=block_size)
+        # inputs = conv(inputs, filters)
+        inputs = conv(inputs, filters, mask=mask, tol=self.tol,
+                      block_size=block_size)
         mask = conv_output_crop(mask)
       mask = conv(inputs, 1, kernel_shape=[1,1], activation=None, norm=False,
                   name=f'output_{i+1}') # add mask
       outputs.append(mask)
 
-    # pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
-    #                   padding='same', norm=False, name='pose', mask=mask, tol=self.tol)
+    # pose_image = conv(
+    #   inputs,
+    #   1 + self.pose_dim,
+    #   kernel_shape=[1, 1],
+    #   activation=None,
+    #   padding='same',
+    #   norm=False,
+    #   mask=mask,
+    #   tol=self.tol,
+    #   name='pose')
     pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
                       padding='same', norm=False, name='pose')
     outputs = [pose_image] + outputs

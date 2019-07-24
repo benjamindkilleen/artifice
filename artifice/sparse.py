@@ -127,14 +127,17 @@ for (ni, hi, wi) in indices.active_block_indices:
   """
 
   if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
-    if isinstance(outputs, tf.Variable):
-      scatter_fn = sbnet.sparse_scatter_var
-    else:
-      scatter_fn = sbnet.sparse_scatter
-    return scatter_fn(block_stack, bin_counts, active_block_indices, outputs,
-                      dynamic_bsize=bsize, dynamic_boffset=boffset,
-                      dynamic_bstride=bstride, add=add, atomic=atomic,
-                      transpose=transpose)
+    return sbnet.sparase_scatter(
+      block_stack,
+      bin_counts,
+      active_block_indices,
+      outputs,
+      dynamic_bsize=bsize,
+      dynamic_boffset=boffset,
+      dynamic_bstride=bstride,
+      add=add,
+      atomic=atomic,
+      transpose=transpose)
   raise NotImplementedError("sparse_scatter for CPU")
 
 def main():
