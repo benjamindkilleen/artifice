@@ -763,3 +763,6 @@ I used the 500x500 disk images with 10000 images, batch size of 4, on GPU. (No
 caching.) I ran 3 epochs, no augmentation or anything. Fully labeled.
 * ProxyUNet: 324, 268, 258s
 * SparseUNet: 
+
+## July 25, 2019: Debugging gradients for sbnet
+* 

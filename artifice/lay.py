@@ -147,6 +147,8 @@ class SparseConv2D(keras.layers.Layer):
                tol=0.5,
                avgpool=False,
                **kwargs):
+    super().__init__(**kwargs)
+    
     self.filters = filters
     self.kernel_size = utils.listify(kernel_size, 2)
     self.strides = utils.listify(strides, 2)
@@ -182,42 +184,57 @@ class SparseConv2D(keras.layers.Layer):
       self.pad_size = [pad_h, pad_w]
     self.block_pad_size = [pad_h, pad_w]
 
-    super().__init__(**kwargs)
-
+    # make the nested layers
+    self.pad = keras.layers.ZeroPadding2D(self.pad_size)
+      
+    self.reduce_mask = keras.layers.Lambda(
+      lambda mask: sparse.reduce_mask(
+        mask,
+        block_count=self.block_count,
+        bsize=self.block_size,
+        boffset=self.block_offset,
+        bstride=self.block_stride,
+        tol=self.tol,
+        avgpool=self.avgpool))
     
-  def build(self, input_shape):
-    input_shape, _ = input_shape
-    if input_shape[3] is None:
-      raise ValueError('The channel dimension of the inputs '
-                       'should be defined. Found `None`.')
-    input_dim = int(input_shape[3])
-    kernel_shape = self.kernel_size + [input_dim, self.filters]
+    self.sparse_gather = keras.layers.Lambda(
+      lambda ip: sparse.sparse_gather(
+        ip[0],                  # inputs
+        ip[1],                  # bin_counts
+        ip[2],                  # active_block_indices
+        transpose=False,
+        bsize=self.block_size,
+        boffset=self.block_offset,
+        bstride=self.block_stride))
+    
+    self.conv = keras.layers.Conv2D(
+      filters,
+      kernel_size,
+      strides=strides,
+      padding='same',
+      activation=activation,
+      use_bias=use_bias,
+      kernel_initializer=kernel_initializer,
+      bias_initializer=bias_initializer,
+      kernel_regularizer=kernel_regularizer,
+      bias_regularizer=bias_regularizer,
+      kernel_constraint=kernel_constraint,
+      bias_constraint=bias_constraint)
 
-    self.kernel = self.add_weight(
-      name='kernel',
-      shape=kernel_shape,
-      initializer=self.kernel_initializer,
-      regularizer=self.kernel_regularizer,
-      constraint=self.kernel_constraint,
-      trainable=True,
-      dtype=tf.float32)
-    if self.use_bias:
-      self.bias = self.add_weight(
-        name='bias',
-        shape=(self.filters,),
-        initializer=self.bias_initializer,
-        regularizer=self.bias_regularizer,
-        constraint=self.bias_constraint,
-        trainable=True,
-        dtype=tf.float32)
-    else:
-      self.bias = None
-    self.block_count = [utils.divup(input_shape[1], self.block_stride[0]),
-                        utils.divup(input_shape[2], self.block_stride[1])]
-
+    self.sparse_scatter = keras.layers.Lambda(
+      lambda ip: sparse.sparse_scatter(
+        ip[0],                  # blocks
+        ip[1],                  # bin_counts
+        ip[2],                  # active_block_indices
+        ip[3],                  # outputs
+        bsize=self.output_block_size,
+        boffset=self.output_block_offset,
+        bstride=self.output_block_stride,
+        transpose=False))
+      
+  
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
-    logger.debug(f"input_shape: {input_shape}")
     space = input_shape[1:-1]
     new_space = []
     for i in range(len(space)):
@@ -228,63 +245,37 @@ class SparseConv2D(keras.layers.Layer):
         stride=self.strides[i])
       new_space.append(new_dim)
     output_shape = tf.TensorShape([input_shape[0]] + new_space + [self.filters])
-    logger.debug(f"output_shape: {output_shape}")
     return output_shape
 
   def call(self, inputs):
     inputs, mask = inputs
+    logger.debug(f"inputs keras_history: {inputs._keras_history}")
     if self.padding != 'valid':
-      paddings = [
-        [0, 0],
-        [self.pad_size[0], self.pad_size[0]],
-        [self.pad_size[1], self.pad_size[1]],
-        [0, 0]]
-      inputs = tf.pad(inputs, paddings)
-      
-    indices = sparse.reduce_mask(
-      mask,
-      block_count=self.block_count,
-      bsize=self.block_size,
-      boffset=self.block_offset,
-      bstride=self.block_stride,
-      tol=self.tol,
-      avgpool=self.avgpool)
+      inputs = self.pad(inputs)
 
-    blocks = sparse.sparse_gather(
-      inputs,
-      indices.bin_counts,
-      indices.active_block_indices,
-      transpose=False,
-      bsize=self.block_size,
-      boffset=self.block_offset,
-      bstride=self.block_stride)
+    logger.debug(f"padded keras_history: {inputs._keras_history}")
+    indices = self.reduce_mask(mask)
 
-    strides = [1, self.strides[0], self.strides[1], 1]
-    blocks = tf.nn.conv2d(
-      blocks,
-      self.kernel,
-      strides=strides,
-      padding='VALID')
-
-    if self.use_bias:
-      blocks = tf.nn.bias_add(blocks, self.bias, data_format='NHWC')
-
-    if self.activation is not None:
-      blocks = _apply_activation(blocks, self.activation)
-
+    logger.debug(f"indices keras_history: {indices._keras_history}")
+    blocks = self.sparse_gather([inputs,
+                                 indices.bin_counts,
+                                 indices.active_block_indices])
+    logger.debug(f"blocks keras_history: {blocks._keras_history}")
+    
+    blocks = self.conv(blocks)
+    logger.debug(f"conv keras_history: {blocks._keras_history}")
+    
     output_shape = self.compute_output_shape([inputs.shape, mask.shape])
-    outputs = inputs[:, :output_shape[1], :output_shape[2], :]
-    # tf.zeros(output_shape, tf.float32) # todo: make a variable?
+    outputs = tf.zeros(output_shape, tf.float32) # todo: make a variable?
+    # inputs[:, :output_shape[1], :output_shape[2], :]
 
-    return sparse.sparse_scatter(
-      blocks,
-      indices.bin_counts,
-      indices.active_block_indices,
-      outputs,
-      bsize=self.output_block_size,
-      boffset=self.output_block_offset,
-      bstride=self.output_block_stride,
-      transpose=False)
+    outputs = self.sparse_gather([blocks,
+                                  indices.bin_counts,
+                                  indices.active_block_indices,
+                                  outputs])
+
+    logger.debug(f"outputs keras_history: {outputs._keras_history}")
+    return outputs
 
 class SparseConv2DTranspose(keras.layers.Conv2DTranspose):
   """2D transpose convolution using the sbnet library.

@@ -124,7 +124,6 @@ def conv(inputs,
       use_bias=False,
       kernel_initializer='glorot_normal',
       **kwargs)([inputs, mask])
-    logger.debug(f"inputs after sparse_conv2d: {inputs}")
   if norm:
     inputs = keras.layers.BatchNormalization()(inputs)
   inputs = keras.layers.Activation(activation)(inputs)
@@ -655,7 +654,7 @@ class SparseUNet(ProxyUNet):
         level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
-        mask = conv(inputs, 1, kernel_shape=[1,1], activation=None,
+        mask = conv(inputs, 1, kernel_shape=[1, 1], activation=None,
                     norm=False, name='output_0')
         outputs.append(mask)
 
@@ -671,27 +670,30 @@ class SparseUNet(ProxyUNet):
       inputs = keras.layers.Concatenate()([dropped, inputs])
 
       for _ in range(self.level_depth):
-        # inputs = conv(inputs, filters)
-        inputs = conv(inputs, filters, mask=mask, tol=self.tol,
-                      block_size=self.block_size)
+        inputs = conv(inputs, filters)
+        # inputs = conv(inputs, filters, mask=mask, tol=self.tol,
+        #               block_size=self.block_size)
         mask = conv_output_crop(mask)
       mask = conv(inputs, 1, kernel_shape=[1,1], activation=None, norm=False,
                   name=f'output_{i+1}') # add mask
       outputs.append(mask)
 
-    # pose_image = conv(
-    #   inputs,
-    #   1 + self.pose_dim,
-    #   kernel_shape=[1, 1],
-    #   activation=None,
-    #   padding='same',
-    #   norm=False,
-    #   mask=mask,
-    #   block_size=self.block_size,
-    #   tol=self.tol,
-    #   name='pose')
-    pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
-                      padding='same', norm=False, name='pose')
+    logger.debug(f"inputs: {inputs._keras_history}")
+    pose_image = conv(
+      inputs,
+      1 + self.pose_dim,
+      kernel_shape=[1, 1],
+      activation=None,
+      padding='same',
+      norm=False,
+      mask=mask,
+      block_size=self.block_size,
+      tol=self.tol,
+      name='pose')
+    logger.debug(f"pose_image: {pose_image._keras_history}")
+
+    # pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
+    #                   padding='same', norm=False, name='pose')
     outputs = [pose_image] + outputs
     logger.debug(f"outputs: {outputs}")
     return outputs
