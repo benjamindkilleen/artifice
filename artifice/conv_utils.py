@@ -4,7 +4,7 @@
 
 
 def divup(a, b):
-    return (a+b-1) // b
+  return (a+b-1) // b
 
 def conv_output_length(input_length, filter_size, padding, stride, dilation=1):
   """Determines output length of a convolution given input length.
@@ -29,7 +29,30 @@ def conv_output_length(input_length, filter_size, padding, stride, dilation=1):
     output_length = input_length + dilated_filter_size - 1
   return (output_length + stride - 1) // stride
 
-  
+def conv_output_shape(input_shape, filters, kernel_size, padding, strides):
+  """Compute the output shape of the given convolutional layer.
+
+  :param input_shape: 
+  :param filters: 
+  :param kernel_size: 
+  :param padding: 
+  :param strides: 
+  :returns: 
+  :rtype: 
+
+  """
+  output_h = conv_output_length(
+    input_shape[1],
+    kernel_size[0],
+    padding,
+    strides[0])
+  output_w = conv_output_length(
+    input_shape[2],
+    kernel_size[1],
+    padding,
+    strides[1])
+  return [input_shape[0].value, output_h, output_w, filters]
+    
 def deconv_output_length(input_length, filter_size, padding,
                          output_padding=None, stride=0, dilation=1):
   """Determines output length of a transposed convolution given input length.
@@ -73,3 +96,30 @@ def deconv_output_length(input_length, filter_size, padding,
     length = ((input_length - 1) * stride + filter_size - 2 * pad +
               output_padding)
   return length
+
+
+def deconv_output_shape(input_shape, filters, kernel_size, padding, strides):
+  """Compute the output shape of the given transpose convolutional layer.
+
+  :param input_shape: 
+  :param filters: 
+  :param kernel_size: 
+  :param padding: 
+  :param strides: 
+  :returns: 
+  :rtype: 
+
+  """
+  
+  output_h = deconv_output_length(
+    input_shape[1],
+    kernel_size[0],
+    padding,
+    stride=strides[0])
+  output_w = deconv_output_length(
+    input_shape[2],
+    kernel_size[1],
+    padding,
+    stride=strides[1])
+  return [input_shape[0].value, output_h, output_w, filters]
+    

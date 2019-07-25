@@ -16,6 +16,7 @@ from artifice.log import logger
 from artifice import utils
 from artifice import sbnet
 
+
 def reduce_mask(mask, *, block_count, bsize, boffset, bstride, tol=0.5,
                 avgpool=False):
   """Reduce `mask` to indices for sparse_gather or sparse_scatter.
@@ -76,14 +77,20 @@ for (ni, hi, wi) in indices.active_block_indices:
 
   """
   if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
-    return sbnet.sparse_gather(inputs, bin_counts, active_block_indices,
-                               dynamic_bsize=bsize, dynamic_boffset=boffset,
-                               dynamic_bstride=bstride, transpose=transpose)
-  raise NotImplementedError("sparse_gather for CPU")
+    outputs = sbnet.sparse_gather(inputs, bin_counts, active_block_indices,
+                                  dynamic_bsize=bsize, dynamic_boffset=boffset,
+                                  dynamic_bstride=bstride, transpose=transpose)
+  else:
+    raise NotImplementedError("sparse_gather for CPU")
+
+  if not tf.executing_eagerly():
+    shape = tf.TensorShape([None, bsize[0], bsize[1], inputs.shape[3]])
+    outputs.set_shape(shape)
+  return outputs
 
 def sparse_scatter(block_stack, bin_counts, active_block_indices, outputs, *,
                    bsize, boffset, bstride, add=False, atomic=False,
-                   transpose=False):
+                   transpose=False, set_shape=None):
   """Scatter blocks in `block_stack` back onto `outputs`.
 
   Note that due to a limitation of TensorFlow API an intermediate tensor cannot
@@ -126,8 +133,9 @@ for (ni, hi, wi) in indices.active_block_indices:
 
   """
 
+  shape = outputs.shape
   if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
-    return sbnet.sparase_scatter(
+    outputs = sbnet.sparse_scatter(
       block_stack,
       bin_counts,
       active_block_indices,
@@ -138,7 +146,12 @@ for (ni, hi, wi) in indices.active_block_indices:
       add=add,
       atomic=atomic,
       transpose=transpose)
-  raise NotImplementedError("sparse_scatter for CPU")
+  else:  
+    raise NotImplementedError("sparse_scatter for CPU")
+
+  if not tf.executing_eagerly():
+    outputs.set_shape(shape)
+  return outputs
 
 def main():
   """For testing/understanding sbnet."""
