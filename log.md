@@ -765,4 +765,9 @@ caching.) I ran 3 epochs, no augmentation or anything. Fully labeled.
 * SparseUNet: 
 
 ## July 25, 2019: Debugging gradients for sbnet
-* 
+The plan:
+* implement `sparse` package in artifice, which imports from sbnet, more
+  tightly. Make sure gradients are working, which was the problem. I never
+  registered gradients.
+* In `lay`, make sure each layer is totally working by building a simple model,
+  just the identity function is fine. After that, should be good to go.
