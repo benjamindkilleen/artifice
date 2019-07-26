@@ -101,8 +101,6 @@ class SparseConv2D(keras.layers.Layer):
   :param kernel_size:
   :param strides:
   :param padding:
-  :param data_format:
-  :param dilation_rate:
   :param activation:
   :param use_bias:
   :param kernel_initializer:
@@ -168,13 +166,13 @@ class SparseConv2D(keras.layers.Layer):
     self.tol = tol
     self.avgpool = avgpool
 
-    pad_h = self.kernel_size[0] // 2
-    pad_w = (self.kernel_size[1] - 1) // 2
     if self.padding == 'valid':
-      self.pad_size = [0,0]
+      pad_size = [0,0]
     else:
-      self.pad_size = [pad_h, pad_w]
-    self.pad = keras.layers.ZeroPadding2D(self.pad_size)
+      pad_h = self.kernel_size[0] // 2
+      pad_w = (self.kernel_size[1] - 1) // 2
+      pad_size = [pad_h, pad_w]
+    self.pad = keras.layers.ZeroPadding2D(pad_size)
 
     
   def build(self, input_shape):
@@ -194,23 +192,30 @@ class SparseConv2D(keras.layers.Layer):
     self.kernel = self.add_weight(
       name='kernel',
       shape=kernel_shape,
+      dtype=tf.float32,
       initializer=self.kernel_initializer,
       regularizer=self.kernel_regularizer,
       constraint=self.kernel_constraint,
-      trainable=True,
-      dtype=tf.float32)
+      trainable=True)
     if self.use_bias:
       self.bias = self.add_weight(
         name='bias',
         shape=(self.filters,),
+        dtype=tf.float32,
         initializer=self.bias_initializer,
         regularizer=self.bias_regularizer,
         constraint=self.bias_constraint,
-        trainable=True,
-        dtype=tf.float32)
+        trainable=True)
     else:
       self.bias = None
 
+    # output_shape = self.compute_output_shape([input_shape, mask_shape])
+    # self.outputs = self.add_variable(
+    #   name='outputs',
+    #   shape=output_shape,
+    #   dtype=tf.float32,
+    #   initializer='zeros',
+    #   trainable=False)
       
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
@@ -225,12 +230,12 @@ class SparseConv2D(keras.layers.Layer):
 
   def call(self, inputs):
     inputs, mask = inputs
-    outputs = tf.zeros_like(inputs) # todo: make a variable?
+    output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
+    batch_size = array_ops.shape(inputs)[0]
+    outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
+    # todo: make a variable?
 
-    if self.padding == 'valid':
-      outputs = outputs[:, self.pad_size[0] : outputs.shape[1] - self.pad_size[0],
-                        self.pad_size[1] : outputs.shape[2] - self.pad_size[1], :]
-    else:
+    if self.padding == 'same':
       inputs = self.pad(inputs)
       mask = self.pad(mask)
 
@@ -439,13 +444,13 @@ class SparseConv2DTranspose(keras.layers.Layer):
       padding='valid',
       output_padding=out_pad_w,
       stride=stride_w)
-    output_shape = (batch_size, out_height, out_width, self.filters)
+    blocks_output_shape = (batch_size, out_height, out_width, self.filters)
 
     strides = [1, self.strides[0], self.strides[1], 1]
     blocks = tf.nn.conv2d_transpose(
       blocks,
       self.kernel,
-      output_shape,
+      blocks_output_shape,
       strides=strides,
       padding='VALID',
       data_format='NHWC')
@@ -461,8 +466,9 @@ class SparseConv2DTranspose(keras.layers.Layer):
     if self.activation is not None:
       blocks = self.activation(blocks)
 
-    output_shape = self.compute_output_shape([inputs.shape, mask.shape])
-    outputs = tf.zeros(output_shape, tf.float32)
+    output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
+    batch_size = array_ops.shape(inputs)[0]
+    outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
 
     outputs = sparse.sparse_scatter(
       blocks,
@@ -481,9 +487,9 @@ def main():
   inputs = keras.layers.Input(shape=(100, 100, 1))
   x = SparseConv2D(1, [3, 3], padding='same')([inputs, inputs])
   x = SparseConv2D(1, [1, 1], padding='same')([x, x])
-  x = SparseConv2DTranspose(1, [2, 2], strides=[2, 2], padding='same')([x, x])
-  outputs = keras.layers.MaxPool2D()(x)
-  model = keras.Model(inputs, outputs)
+  # x = SparseConv2DTranspose(1, [2, 2], strides=[2, 2], padding='same')([x, x])
+  # x = keras.layers.MaxPool2D()(x)
+  model = keras.Model(inputs, x)
   model.compile(optimizer=tf.train.AdadeltaOptimizer(0.1), loss='mse',
                 metrics=['mae'])
 

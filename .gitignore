@@ -50,3 +50,5 @@ models/**/*.mp4
 reports/
 thesis/
 reports/spring_2018_report/**/*.png
+log.err
+log.out

@@ -762,7 +762,7 @@ All kernels registered for op ReduceMask :
 I used the 500x500 disk images with 10000 images, batch size of 4, on GPU. (No
 caching.) I ran 3 epochs, no augmentation or anything. Fully labeled.
 * ProxyUNet: 324, 268, 258s
-* SparseUNet: 
+* SparseUNet: (didn't get to work)
 
 ## July 25, 2019: Debugging gradients for sbnet
 The plan:
@@ -771,3 +771,28 @@ The plan:
   registered gradients.
 * In `lay`, make sure each layer is totally working by building a simple model,
   just the identity function is fine. After that, should be good to go.
+
+## July 26, 2019: Timing the sparse net (actual)
+I used the 500x500 disk images with 10000 images, batch size of 4, on GPU. (No
+caching.) I ran 3 epochs, no augmentation or anything. Fully labeled.
+* eager ProxyUNet: 
+* eager SparseUNet: 
+* patient ProxyUNet: 
+* patient SparseUNet: 372, 262, 256
+
+Changing the `block_length` for interleave didn't have much effect. Still
+hitting bottlenecks:
+* patient SparseUNet, double block_length: 380s
+
+There are some notable bottlenecks which I'm not sure where they could be coming
+from. Might want to tweak the data generation settings? Also need to consider
+using variables for sparse scatter.
+
+Todo, in no particular order
+* migrating weights between sparse/dense UNet implementations. In theory, if we
+  load by weight name, these should be compatible, but we have to make sure that
+  using different layers doesn't result in different weight names. Could be a
+  headache.
+* CPU implementations of reduce_mask, etc. Can largely grab implementations from
+  `sparse_conv_libs.py` directly. Should just make prediction easier.
+* Multiscale tracking code, using the output at each level.

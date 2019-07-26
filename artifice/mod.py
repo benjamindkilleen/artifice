@@ -16,15 +16,16 @@ from artifice import utils
 from artifice import img
 from artifice import lay
 
+
 def _update_hist(a, b):
   """Concat the lists in b onto the lists in a.
 
   If b has elements that a does not, includes them. Behavior is undefined for
   elements that are not lists.
 
-  :param a: 
-  :param b: 
-  :returns: 
+  :param a:
+  :param b:
+  :returns:
   :rtype:
 
   """
@@ -36,16 +37,17 @@ def _update_hist(a, b):
       c[k] = v
   return c
 
+
 def _unbatch_outputs(outputs):
   """Essentially transpose the batch dimension to the outer dimension outputs.
 
   :param outputs: batched outputs of the model, like
-  [[pose 0, pose 1, ....], 
+  [[pose 0, pose 1, ....],
    [output_0 0, output_0 1, ...],
    [output_1 0, output_1 1, ...]]
   :returns: result after unbatching, like
-  [[pose 0, output_0 0, output_1 0, ...], 
-   [pose 1, output_0 1, output_1 1, ...], 
+  [[pose 0, output_0 0, output_1 0, ...],
+   [pose 1, output_0 1, output_1 1, ...],
    ...]
 
   """
@@ -65,23 +67,31 @@ def crop(inputs, shape):
                                     input_shape=inputs.shape)(inputs)
   return outputs
 
+
 def conv_output_crop(inputs,
-                     kernel_shape=[3, 3],
-                     padding='valid',
-                     dilations=[1, 1]):
+                     kernel_size=[3, 3],
+                     padding='valid'):
   """Crop the height, width dims of inputs as if convolved with a stride of 1.
 
+  :param inputs: 
+  :param kernel_size: 
+  :param padding: 
   :returns: 
-  :rtype:
+  :rtype: 
 
   """
   assert padding in {'same', 'valid'}
   if padding == 'same':
-    return inputs
-  pad_h = kernel_shape[0] + (kernel_shape[0] - 1) * (dilations[0] - 1)
-  pad_w = kernel_shape[1] + (kernel_shape[1] - 1) * (dilations[1] - 1)
-  return inputs[:, pad_h : inputs.shape[1] - pad_h,
-                pad_w : inputs.shape[2] - pad_w, :]
+      return Inputs
+  top_crop = kernel_size[0] // 2
+  bottom_crop = (kernel_size[0] - 1) // 2
+  left_crop = kernel_size[1] // 2
+  right_crop = (kernel_size[1] - 1) // 2
+  outputs = keras.layers.Cropping2D(cropping=((top_crop, bottom_crop),
+                                              (left_crop, right_crop)),
+                                    input_shape=inputs.shape)(inputs)
+  return outputs
+
 
 def conv(inputs,
          filters,
@@ -99,7 +109,7 @@ def conv(inputs,
   :param padding: 'valid' or 'same'
   :param norm: whether or not to perform batch normalization on the output
   :param mask: if not None, performs a sparse convolution with mask.
-  
+
   Other kwargs passed to the convolutional layer.
 
   :returns:
@@ -126,14 +136,16 @@ def conv(inputs,
       **kwargs)([inputs, mask])
   if norm:
     inputs = keras.layers.BatchNormalization()(inputs)
-  inputs = keras.layers.Activation(activation)(inputs)
+  if activation is not None:
+    inputs = keras.layers.Activation(activation)(inputs)
   return inputs
+
 
 def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwargs):
   """Upsample the inputs in dimensions 1,2 with a transpose convolution.
 
-  :param inputs: 
-  :param filters: 
+  :param inputs:
+  :param filters:
   :param scale: scale by which to upsample. Can be an int or a list of 2 ints,
   specifying scale in each direction.
   :param activation: relu by default
@@ -141,8 +153,8 @@ def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwar
 
   Additional kwargs passed to the conv transpose layer.
 
-  :returns: 
-  :rtype: 
+  :returns:
+  :rtype:
 
   """
   scale = utils.listify(scale, 2)
@@ -152,6 +164,7 @@ def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwar
       strides=scale,
       padding='same',
       activation=activation,
+      use_bias=False,
       **kwargs)(inputs)
   else:
     inputs = lay.SparseConv2DTranspose(
@@ -159,6 +172,7 @@ def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwar
       strides=scale,
       padding='same',
       activation=activation,
+      use_bias=False,
       **kwargs)([inputs, mask])
   return inputs
 
@@ -166,10 +180,10 @@ def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwar
 def upsample(inputs, size, interpolation='nearest'):
   """Upsamples the inputs by scale, using interpolation.
 
-  :param inputs: 
+  :param inputs:
   :param scale: int or 2-list of ints to scale the inputs by.
-  :returns: 
-  :rtype: 
+  :returns:
+  :rtype:
 
   """
   return keras.layers.UpSampling2D(size, interpolation=interpolation)(inputs)
@@ -232,12 +246,12 @@ class ArtificeModel():
 
   def compile(self):
     raise NotImplementedError("subclasses should implement")
-  
+
   @property
   def callbacks(self):
     return [keras.callbacks.ModelCheckpoint(
       self.checkpoint_path, verbose=1, save_weights_only=True)]
-  
+
   def load_weights(self, checkpoint_path=None):
     """Update the model weights from the chekpoint file.
 
@@ -265,13 +279,13 @@ class ArtificeModel():
   def fit(self, art_data, hist=None, cache=False, **kwargs):
     """Thin wrapper around model.fit(). Preferred method is `train()`.
 
-    :param art_data: 
+    :param art_data:
     :param hist: existing hist. If None, starts from scratch. Use train for
     loading from existing hist.
     :param cache: cache the dataset. Should only be used if multiple epochs will
     be run.
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     kwargs['callbacks'] = kwargs.get('callbacks', []) + self.callbacks
@@ -283,7 +297,7 @@ class ArtificeModel():
       new_hist = _update_hist(hist, new_hist)
     utils.json_save(self.history_path, hist)
     return hist
-  
+
   def train(self, art_data, initial_epoch=0, epochs=1, seconds=0,
             **kwargs):
     """Fits the model, saving it along the way, and reloads every epoch.
@@ -335,8 +349,8 @@ class ArtificeModel():
 
     """
     raise NotImplementedError()
-    
-    
+
+
   def predict_outputs(self, art_data):
     """Run prediction for single tiles images with the Artifice data.
 
@@ -349,7 +363,7 @@ class ArtificeModel():
     """
     raise NotImplementedError("subclasses should implement")
 
-  
+
   def evaluate(self, art_data):
     """Run evaluation for object detection with the ArtificeData object.
 
@@ -362,17 +376,17 @@ class ArtificeModel():
 
     """
     raise NotImplementedError('subclasses should implmement')
-  
+
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image.
 
     :param images: a batch of images
-    :returns: "uncertainty" for each image. 
-    :rtype: 
+    :returns: "uncertainty" for each image.
+    :rtype:
 
     """
     raise NotImplementedError("uncertainty estimates not implemented")
-    
+
 class ProxyUNet(ArtificeModel):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
                level_depth=2, dropout=0.5, **kwargs):
@@ -424,7 +438,7 @@ class ProxyUNet(ArtificeModel):
     return list(tile_shape)
   def compute_input_tile_shape(self):
     return self.compute_input_tile_shape_(
-      self.base_shape, self.num_levels, self.level_depth) 
+      self.base_shape, self.num_levels, self.level_depth)
 
   @staticmethod
   def compute_output_tile_shape_(base_shape, num_levels, level_depth):
@@ -436,7 +450,7 @@ class ProxyUNet(ArtificeModel):
     return list(tile_shape)
   def compute_output_tile_shape(self):
     return self.compute_output_tile_shape_(
-      self.base_shape, self.num_levels, self.level_depth) 
+      self.base_shape, self.num_levels, self.level_depth)
 
   @staticmethod
   def compute_output_tile_shapes_(base_shape, num_levels, level_depth):
@@ -452,24 +466,24 @@ class ProxyUNet(ArtificeModel):
     return shapes
   def compute_output_tile_shapes(self):
     return self.compute_output_tile_shapes_(
-      self.base_shape, self.num_levels, self.level_depth) 
+      self.base_shape, self.num_levels, self.level_depth)
 
   def _fix_level_index(self, level):
     if level >= 0:
       return level
     return self.num_levels + level
-  
+
   def convert_point_between_levels(self, point, level, new_level):
     """Convert len-2 point in the tile-space at `level` to `new_level`.
 
     Level 0 is the lowest level, by convention. -1 can mean the highest
     (original resolution) level.
 
-    :param point: 
+    :param point:
     :param level: level to which the point belongs (last layer in that level).
     :param new_level: level of the space to which the point should be converted.
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     level = self._fix_level_index(level)
@@ -483,7 +497,7 @@ class ProxyUNet(ArtificeModel):
       point -= self.level_depth
       level -= 1
     return point
-  
+
   def convert_distance_between_levels(self, distance, level, new_level):
     level = self._fix_level_index(level)
     new_level = self._fix_level_index(new_level)
@@ -516,7 +530,7 @@ class ProxyUNet(ArtificeModel):
       else:
         outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
                             norm=False, name='output_0'))
-        
+
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
       inputs = conv_upsample(inputs, filters)
@@ -572,7 +586,7 @@ class ProxyUNet(ArtificeModel):
     # else:
     #   raise NotImplementedError
     # return errors, total_num_failed
-    
+
   def predict_visualization(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data."""
     if tf.executing_eagerly():
@@ -614,7 +628,7 @@ class ProxyUNet(ArtificeModel):
     else:
       raise NotImplementedError("patient prediction")
     art_data.num_tiles = num_tiles
-    
+
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image."""
     raise NotImplementedError("update for outputs")
@@ -625,7 +639,7 @@ class ProxyUNet(ArtificeModel):
       detections = dat.detect_peaks(proxy)
       confidences[i] = np.mean([proxy[x,y] for x,y in detections])
     return 1 - confidences
-    
+
 class SparseUNet(ProxyUNet):
   def __init__(self, *, block_size=[8, 8], tol=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
@@ -634,8 +648,8 @@ class SparseUNet(ProxyUNet):
     scale of the original resolution (resized at each level. These are rescaled
     at each level.
     :param tol: absolute threshold value for sbnet attention.
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     self.tol = tol
@@ -660,9 +674,8 @@ class SparseUNet(ProxyUNet):
 
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
-      # inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
-      #                        block_size=self.block_size)
-      inputs = conv_upsample(inputs, filters)
+      inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
+                             block_size=self.block_size)
       mask = upsample(mask, size=2, interpolation='nearest')
 
       cropped = crop(next(level_outputs), inputs.shape)
@@ -670,15 +683,22 @@ class SparseUNet(ProxyUNet):
       inputs = keras.layers.Concatenate()([dropped, inputs])
 
       for _ in range(self.level_depth):
-        inputs = conv(inputs, filters)
-        # inputs = conv(inputs, filters, mask=mask, tol=self.tol,
-        #               block_size=self.block_size)
+        inputs = conv(inputs, filters, mask=mask, tol=self.tol,
+                      block_size=self.block_size)
         mask = conv_output_crop(mask)
-      mask = conv(inputs, 1, kernel_shape=[1,1], activation=None, norm=False,
-                  name=f'output_{i+1}') # add mask
+      mask = conv(
+        inputs,
+        1,
+        kernel_shape=[1, 1],
+        activation=None,
+        norm=False,
+        padding='same',
+        mask=mask,
+        tol=self.tol,
+        block_size=self.block_size,
+        name=f'output_{i+1}')
       outputs.append(mask)
 
-    logger.debug(f"inputs: {inputs._keras_history}")
     pose_image = conv(
       inputs,
       1 + self.pose_dim,
@@ -690,15 +710,6 @@ class SparseUNet(ProxyUNet):
       block_size=self.block_size,
       tol=self.tol,
       name='pose')
-    logger.debug(f"pose_image: {pose_image._keras_history}")
 
-    # pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
-    #                   padding='same', norm=False, name='pose')
     outputs = [pose_image] + outputs
-    logger.debug(f"outputs: {outputs}")
     return outputs
- 
-    
-
-    
-    

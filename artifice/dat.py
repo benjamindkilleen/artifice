@@ -236,6 +236,7 @@ class ArtificeData(object):
     self.num_tiles = self.compute_num_tiles(self.image_shape,
                                             self.output_tile_shape)
     self.prefetch_buffer_size = self.batch_size
+    self.block_length = self.num_tiles
 
   @property
   def record_names(self):
@@ -568,7 +569,7 @@ class UnlabeledData(ArtificeData):
         return tf.data.Dataset.from_tensor_slices(tiles)
       raise ValueError(f"{mode} mode invalid for UnlabeledData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
-                              block_length=self.num_tiles,
+                              block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
 class LabeledData(ArtificeData):
@@ -605,7 +606,7 @@ class LabeledData(ArtificeData):
         return tiled_set.map(self.make_proxies_map_func)
       raise ValueError(f"{mode} mode invalid for LabeledData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
-                              block_length=self.num_tiles,
+                              block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
 class AnnotatedData(LabeledData):
@@ -665,7 +666,7 @@ class AnnotatedData(LabeledData):
         return tiled_set.map(self.make_proxies_map_func)
       raise ValueError(f"{mode} mode invalid for AnnotatedData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
-                              block_length=self.num_tiles,
+                              block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
   def augment(self, image, label, annotation, background):

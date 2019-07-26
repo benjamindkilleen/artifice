@@ -88,9 +88,18 @@ for (ni, hi, wi) in indices.active_block_indices:
     outputs.set_shape(shape)
   return outputs
 
-def sparse_scatter(block_stack, bin_counts, active_block_indices, outputs, *,
-                   bsize, boffset, bstride, add=False, atomic=False,
-                   transpose=False, set_shape=None):
+def sparse_scatter(block_stack,
+                   bin_counts,
+                   active_block_indices,
+                   outputs, *,
+                   bsize,
+                   boffset,
+                   bstride,
+                   add=False,
+                   atomic=False,
+                   transpose=False,
+                   set_shape=None,
+                   use_var=False):
   """Scatter blocks in `block_stack` back onto `outputs`.
 
   Note that due to a limitation of TensorFlow API an intermediate tensor cannot
@@ -135,17 +144,30 @@ for (ni, hi, wi) in indices.active_block_indices:
 
   shape = outputs.shape
   if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
-    outputs = sbnet.sparse_scatter(
-      block_stack,
-      bin_counts,
-      active_block_indices,
-      outputs,
-      dynamic_bsize=bsize,
-      dynamic_boffset=boffset,
-      dynamic_bstride=bstride,
-      add=add,
-      atomic=atomic,
-      transpose=transpose)
+    if use_var:
+      outputs = sbnet.sparse_scatter_var(
+        block_stack,
+        bin_counts,
+        active_block_indices,
+        outputs,
+        dynamic_bsize=bsize,
+        dynamic_boffset=boffset,
+        dynamic_bstride=bstride,
+        add=add,
+        atomic=atomic,
+        transpose=transpose)
+    else:
+      outputs = sbnet.sparse_scatter(
+        block_stack,
+        bin_counts,
+        active_block_indices,
+        outputs,
+        dynamic_bsize=bsize,
+        dynamic_boffset=boffset,
+        dynamic_bstride=bstride,
+        add=add,
+        atomic=atomic,
+        transpose=transpose)
   else:  
     raise NotImplementedError("sparse_scatter for CPU")
 
