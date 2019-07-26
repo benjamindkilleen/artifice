@@ -349,11 +349,13 @@ class ArtificeData(object):
     pad_right = int(np.ceil(diff1 / 2)) + rem1
     return [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]]
 
+  
   def proxy_padding(self):
     rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
     rem1 = self.image_shape[1] - (self.image_shape[1] % self.output_tile_shape[1])
     return [[0, rem0], [0, rem1], [0,0]]
 
+  
   # todo: determing whether to use tf.image.extract_image_patches instead
   def tile_image(self, image):
     image = tf.pad(image, self.image_padding(), 'CONSTANT')
@@ -364,6 +366,7 @@ class ArtificeData(object):
                            j:j + self.input_tile_shape[1]])
     return tf.data.Dataset.from_tensor_slices(tiles)
 
+  
   def tile_image_label(self, image, label):
     image = tf.pad(image, self.image_padding(), 'CONSTANT')
     tiles = []
@@ -376,6 +379,7 @@ class ArtificeData(object):
         labels.append(tf.concat((tile_space_positions, label[:,2:]), axis=1))
     return tf.data.Dataset.from_tensor_slices((tiles, labels))
 
+  
   @property
   def make_proxies_map_func(self):
     """Map over a (tile, label) dataset to convert it to (tile, [pose, proxy1,...]) form.
@@ -473,7 +477,7 @@ class ArtificeData(object):
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         points = next(points_iter)
-        image_points += list(points - np.array([[i,j]], dtype=np.float32))
+        image_points += list(points - np.array([[i, j]], dtype=np.float32))
     return np.array(image_points)
 
   def analyze_outputs(self, outputs, check_peaks=True):
@@ -503,7 +507,7 @@ class ArtificeData(object):
       prediction[i,2:] = pose_image[int(peak[0]), int(peak[1]), 1:]
     return prediction
 
-  #################### End proxy/tiling functions ####################
+  #################### accumulation ####################
 
   def accumulate(self, accumulator):
     """Runs the accumulators across the dataset.
@@ -552,6 +556,8 @@ class ArtificeData(object):
     else:
       return aggregates[0]
 
+#################### Subclasses ####################
+    
 class UnlabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -572,6 +578,7 @@ class UnlabeledData(ArtificeData):
                               block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
+  
 class LabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -609,6 +616,7 @@ class LabeledData(ArtificeData):
                               block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
+  
 class AnnotatedData(LabeledData):
   """Class for annotated data, which can be augmented. Annotated data consists of
   an `(image, label, annotation)` tuple, which we call an "annotated example".

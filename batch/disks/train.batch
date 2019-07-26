@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=disks
-#SBATCH --output=train.out
-#SBATCH --error=train.err
+#SBATCH --output=/project2/glk/artifice/batch/disks/train.out
+#SBATCH --error=/project2/glk/artifice/batch/disks/train.err
 #SBATCH --partition=gpu2
 #SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00
@@ -26,7 +26,7 @@ data=disks
 
 echo "Starting training..."
 python -m artifice train -i data/$data \
-       --overwrite --patient -e 30 --initial-epoch 0 \
+       --overwrite --patient -e 100 --initial-epoch 0 \
        --image-shape 500 500 1 --data-size 10000 --test-size 1000 \
        --batch-size 4 --num-objects 40 \
        -m models/${data} --labeled \

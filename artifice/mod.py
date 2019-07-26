@@ -262,7 +262,7 @@ class ArtificeModel():
     if checkpoint_path is None:
       checkpoint_path = self.checkpoint_path
     if os.path.exists(checkpoint_path):
-      self.model.load_weights(checkpoint_path, by_name=True)
+      self.model.load_weights(checkpoint_path, by_name=True) # todo: by_name?
       logger.info(f"loaded model weights from {checkpoint_path}")
     else:
       logger.info(f"no checkpoint at {checkpoint_path}")
@@ -559,34 +559,6 @@ class ProxyUNet(ArtificeModel):
     else:
       raise NotImplementedError("patient prediction")
 
-  def evaluate(self, art_data):
-    """Runs evaluation for ProxyUNet."""
-    raise NotImplementedError("update for outputs style")
-    # if tf.executing_eagerly():
-    #   proxies = []
-    #   tile_labels = []
-    #   errors = []
-    #   total_num_failed = 0
-    #   for i, (batch_tiles,batch_labels) in enumerate(art_data.evaluation_input()):
-    #     if i % 10 == 0:
-    #       logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
-    #     tile_labels += list(batch_labels)
-    #     proxies += list(self.model.predict_on_batch(batch_tiles))
-    #     while len(proxies) >= art_data.num_tiles:
-    #       label = tile_labels[0]
-    #       proxy = art_data.untile(proxies[:art_data.num_tiles])
-    #       error, num_failed = dat.evaluate_proxy(label, proxy)
-    #       total_num_failed += num_failed
-    #       errors += list(error[error[:, 0] >= 0])
-    #       del tile_labels[:art_data.num_tiles]
-    #       del proxies[:art_data.num_tiles]
-    #     if len(errors) >= art_data.size: # todo: figure out why necessary
-    #       break
-    #   errors = np.array(errors)
-    # else:
-    #   raise NotImplementedError
-    # return errors, total_num_failed
-
   def predict_visualization(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data."""
     if tf.executing_eagerly():
@@ -629,15 +601,40 @@ class ProxyUNet(ArtificeModel):
       raise NotImplementedError("patient prediction")
     art_data.num_tiles = num_tiles
 
+  def evaluate(self, art_data):
+    """Runs evaluation for ProxyUNet."""
+    if tf.executing_eagerly():
+      outputs = []
+      tile_labels = []
+      errors = []
+      total_num_failed = 0
+      for i, (batch_tiles, batch_labels) in enumerate(art_data.evaluation_input()):
+        if i % 10 == 0:
+          logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
+        tile_labels += list(batch_labels)
+        proxies += list(self.model.predict_on_batch(batch_tiles))
+        while len(proxies) >= art_data.num_tiles:
+          label = tile_labels[0]
+          proxy = art_data.untile(proxies[:art_data.num_tiles])
+          error, num_failed = dat.evaluate_proxy(label, proxy)
+          total_num_failed += num_failed
+          errors += list(error[error[:, 0] >= 0])
+          del tile_labels[:art_data.num_tiles]
+          del proxies[:art_data.num_tiles]
+        if len(errors) >= art_data.size: # todo: figure out why necessary
+          break
+      errors = np.array(errors)
+    else:
+      raise NotImplementedError
+    return errors, total_num_failed
+
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image."""
-    raise NotImplementedError("update for outputs")
-    predictions = self.model.predict_on_batch(images)
-    proxies = predictions[:,:,:,0]
-    confidences = np.empty(proxies.shape[0], np.float32)
-    for i, proxy in enumerate(proxies):
-      detections = dat.detect_peaks(proxy)
-      confidences[i] = np.mean([proxy[x,y] for x,y in detections])
+    batch_outputs = _unbatch_outputs(self.model.predict_on_batch(images))
+    confidences = np.empty(len(batch_outputs), np.float32)
+    for i, outputs in enumerate(batch_outputs):
+      detections = dat.multiscale_detect_peaks(outputs[1:])
+      confidences[i] = np.mean([outputs[0][x,y] for x, y in detections])
     return 1 - confidences
 
 class SparseUNet(ProxyUNet):
