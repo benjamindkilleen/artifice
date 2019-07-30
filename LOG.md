@@ -802,3 +802,17 @@ Todo, in no particular order
 
 ## July 29, 2019:
 Multiscale tracking is still messed up. Figure out why.
+
+## July 30, 2019: Figured out multiscale
+For some reason, multiscale tracking (in post-eval analysis), as implemented
+with `peak_local_max` and the `labels` keyword actually takes longer. The
+difference is stark. On the unlabeled disk set, which has 10,000 images, batch
+size of 4:
+* without multiscale tracking: 34.2s
+* with multiscale tracking: 44.2s 
+* sparse, no multiscale: 36.3s
+* sparse, no multiscale, patient: 34.1s
+* 
+
+Note that both options still used the multi-output UNet. Still, this is not
+encouraging.

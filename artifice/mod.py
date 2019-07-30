@@ -2,7 +2,6 @@
 """
 
 import os
-import json
 from time import time
 import itertools
 import numpy as np
@@ -13,7 +12,6 @@ from tensorflow import keras
 from artifice.log import logger
 from artifice import dat
 from artifice import utils
-from artifice import img
 from artifice import lay
 
 
@@ -31,7 +29,7 @@ def _update_hist(a, b):
   """
   c = a.copy()
   for k, v in b.items():
-    if type(v) is list and type(c.get(k)) is list:
+    if isinstance(v, list) and isinstance(c.get(k), list):
       c[k] += v
     else:
       c[k] = v
@@ -82,7 +80,7 @@ def conv_output_crop(inputs,
   """
   assert padding in {'same', 'valid'}
   if padding == 'same':
-      return Inputs
+      return inputs
   top_crop = kernel_size[0] // 2
   bottom_crop = (kernel_size[0] - 1) // 2
   left_crop = kernel_size[1] // 2
@@ -330,7 +328,7 @@ class ArtificeModel():
     self.save()
     return hist
 
-  def predict(self, art_data):
+  def predict(self, art_data, multiscale=True):
     """Run prediction, reassembling tiles, with the Artifice data.
 
     :param art_data: ArtificeData object
@@ -550,18 +548,36 @@ class ProxyUNet(ArtificeModel):
     return [pose_image] + outputs
 
 
-  def predict(self, art_data):
+  def predict(self, art_data, multiscale=True):
     """Run prediction, reassembling tiles, with the Artifice data."""
     if tf.executing_eagerly():
       outputs = []
-      for batch in art_data.prediction_input():
+      for i, batch in enumerate(art_data.prediction_input()):
+        if i % 100 == 0:
+          logger.info(f"batch {i} / {art_data.steps_per_epoch}")
         outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
         while len(outputs) >= art_data.num_tiles:
-          prediction = art_data.analyze_outputs(outputs)
-          del outputs[:art_data.num_tiles]
+          prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
           yield prediction
+          del outputs[:art_data.num_tiles]
     else:
-      raise NotImplementedError("patient prediction")
+      raise NotImplementedError("enable eager execution for eval (remove --patient)")
+      outputs = []
+      next_batch = art_data.prediction_input().make_one_shot_iterator().get_next()
+      with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        for i in itertools.count():
+          try:
+            batch = sess.run(next_batch)
+          except tf.errors.OutOfRangeError:
+            return
+          if i % 100 == 0:
+            logger.info(f"batch {i} / {art_data.steps_per_epoch}")
+          outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+          while len(outputs) >= art_data.num_tiles:
+            prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
+            yield prediction
+            del outputs[:art_data.num_tiles]
 
 
   def predict_visualization(self, art_data):
@@ -635,6 +651,7 @@ class ProxyUNet(ArtificeModel):
       raise NotImplementedError
     return errors, total_num_failed
 
+  
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image."""
     batch_outputs = _unbatch_outputs(self.model.predict_on_batch(images))
@@ -644,6 +661,7 @@ class ProxyUNet(ArtificeModel):
       confidences[i] = np.mean([outputs[0][x,y] for x, y in detections])
     return 1 - confidences
 
+  
 class SparseUNet(ProxyUNet):
   def __init__(self, *, block_size=[8, 8], tol=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.

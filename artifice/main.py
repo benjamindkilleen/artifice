@@ -8,9 +8,8 @@ from os.path import join, exists
 from glob import glob
 import argparse
 import numpy as np
+
 import tensorflow as tf
-from tensorflow import keras
-from scipy.stats import variation
 
 from artifice import log
 from artifice.log import logger
@@ -20,7 +19,6 @@ from artifice import docs
 from artifice import vis
 from artifice import conversions
 from artifice import utils
-from artifice import img
 from artifice import ann
 from artifice import prio
 from artifice import tform
@@ -47,14 +45,44 @@ class Artifice:
   # todo: copy docs here
 
   """
-  def __init__(self, *, commands, data_root, model_root, overwrite, deep,
-               figs_dir, convert_mode, transformation, identity_prob,
-               priority_mode, labeled, annotation_mode, record_size,
-               annotation_delay, image_shape, data_size, test_size, batch_size,
-               num_objects, pose_dim, num_shuffle, base_shape, level_filters,
-               level_depth, sparse, dropout, initial_epoch, epochs,
-               learning_rate, num_parallel_calls, verbose, keras_verbose, eager,
-               show, cache, seconds):
+  def __init__(self, *, # pylint: disable=too-many-statements
+               commands,
+               data_root,
+               model_root,
+               overwrite,
+               deep,
+               figs_dir,
+               convert_mode,
+               transformation,
+               identity_prob,
+               priority_mode,
+               labeled,
+               annotation_mode,
+               record_size,
+               annotation_delay,
+               image_shape,
+               data_size,
+               test_size,
+               batch_size,
+               num_objects,
+               pose_dim,
+               num_shuffle,
+               base_shape,
+               level_filters,
+               level_depth,
+               sparse,
+               multiscale,
+               dropout,
+               initial_epoch,
+               epochs,
+               learning_rate,
+               num_parallel_calls,
+               verbose,
+               keras_verbose,
+               eager,
+               show,
+               cache,
+               seconds):
     # main
     self.commands = commands
 
@@ -93,6 +121,7 @@ class Artifice:
 
     # sparse model settings
     self.sparse = sparse
+    self.multiscale = multiscale
 
     # hyperparameters
     self.dropout = dropout
@@ -282,11 +311,14 @@ todo: other attributes"""
     """Run prediction on the unlabeled set."""
     unlabeled_set = self._load_unlabeled()
     model = self._load_model()
-    predictions = []
-    for prediction in model.predict(unlabeled_set):
-      predictions.append(prediction)
-    predictions = np.array(predictions)
-    np.save(join(self.model_root, 'predictions.npy'), predictions)
+    start_time = time()
+    predictions = list(model.predict(unlabeled_set, multiscale=self.multiscale))
+    logger.info(f"ran prediction in {time() - start_time}s.")
+    logger.debug(f"prediction:\n{predictions}")
+
+    fname = join(self.model_root, 'predictions.npy')
+    np.save(fname, predictions)
+    logger.info(f"saved {len(predictions)} predictions to {fname}.")
 
   def evaluate(self):
     test_set = self._load_test()
@@ -351,7 +383,7 @@ todo: other attributes"""
       vis.show(join(self.figs_dir, 'model_outputs.pdf'))
       if not self.show:
         break
-      
+
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('commands', nargs='+', help=docs.commands)
@@ -370,7 +402,6 @@ def main():
   parser.add_argument('--figs-dir', '--figures', nargs=1,
                       default=['figs'],
                       help=docs.figs_dir)
-
 
   # data settings
   parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
@@ -415,8 +446,9 @@ def main():
   parser.add_argument('--level-depth', nargs='+', default=[2], type=int,
                       help=docs.level_depth)
 
-  # sparse evaluation settings
+  # sparse eval and other optimization settings
   parser.add_argument('--sparse', action='store_true', help=docs.sparse)
+  parser.add_argument('--multiscale', action='store_true', help=docs.multiscale)
 
   # model hyperparameters
   parser.add_argument('--dropout', nargs=1, default=[0.5], type=float,
@@ -442,26 +474,42 @@ def main():
                       default=0, const=-1, type=int, help=docs.seconds)
 
   args = parser.parse_args()
-  art = Artifice(commands=args.commands, convert_mode=args.convert_mode,
+  art = Artifice(commands=args.commands,
+                 convert_mode=args.convert_mode,
                  transformation=args.transformation,
                  identity_prob=args.identity_prob[0],
-                 priority_mode=args.priority_mode[0], labeled=args.labeled,
+                 priority_mode=args.priority_mode[0],
+                 labeled=args.labeled,
                  annotation_mode=args.annotation_mode[0],
                  record_size=args.record_size[0],
                  annotation_delay=args.annotation_delay[0],
-                 data_root=args.data_root[0], model_root=args.model_root[0],
-                 overwrite=args.overwrite, deep=args.deep,
-                 figs_dir=args.figs_dir[0], image_shape=args.image_shape,
-                 data_size=args.data_size[0], test_size=args.test_size[0],
-                 batch_size=args.batch_size[0], num_objects=args.num_objects[0],
-                 pose_dim=args.pose_dim[0], num_shuffle=args.num_shuffle[0],
-                 base_shape=args.base_shape, level_filters=args.level_filters,
-                 level_depth=args.level_depth[0], sparse=args.sparse,
-                 dropout=args.dropout[0], initial_epoch=args.initial_epoch[0],
-                 epochs=args.epochs[0], learning_rate=args.learning_rate[0],
+                 data_root=args.data_root[0],
+                 model_root=args.model_root[0],
+                 overwrite=args.overwrite,
+                 deep=args.deep,
+                 figs_dir=args.figs_dir[0],
+                 image_shape=args.image_shape,
+                 data_size=args.data_size[0],
+                 test_size=args.test_size[0],
+                 batch_size=args.batch_size[0],
+                 num_objects=args.num_objects[0],
+                 pose_dim=args.pose_dim[0],
+                 num_shuffle=args.num_shuffle[0],
+                 base_shape=args.base_shape,
+                 level_filters=args.level_filters,
+                 level_depth=args.level_depth[0],
+                 sparse=args.sparse,
+                 multiscale=args.multiscale,
+                 dropout=args.dropout[0],
+                 initial_epoch=args.initial_epoch[0],
+                 epochs=args.epochs[0],
+                 learning_rate=args.learning_rate[0],
                  num_parallel_calls=args.num_parallel_calls[0],
-                 verbose=args.verbose, keras_verbose=args.keras_verbose,
-                 eager=(not args.patient), show=args.show, cache=args.cache,
+                 verbose=args.verbose,
+                 keras_verbose=args.keras_verbose,
+                 eager=(not args.patient),
+                 show=args.show,
+                 cache=args.cache,
                  seconds=args.seconds)
   logger.info(art)
   art()

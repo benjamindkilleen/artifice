@@ -482,7 +482,7 @@ class ArtificeData(object):
         image_points += list(points + np.array([[i, j]], dtype=np.float32))
     return np.array(image_points)
 
-  def analyze_outputs(self, outputs, check_peaks=True):
+  def analyze_outputs(self, outputs, multiscale=True):
     """Analyze the model outputs, return predictions like original labels.
 
     :param outputs: a list of lists, containing outputs from at least num_tiles
@@ -495,13 +495,22 @@ class ArtificeData(object):
     :rtype: np.ndarray
 
     """
-    peaks = self.untile_points([multiscale_detect_peaks(output[1:]) for output
-                                in outputs[:self.num_tiles]])
+
+    if multiscale:
+      peaks = self.untile_points([multiscale_detect_peaks(output[1:]) for output
+                                  in outputs[:self.num_tiles]])
+    else:
+      peaks = None
+      
+    # check peaks, possible conflicts at edges:
+    # todo: limit checks to edges AND regions
+    dist_image = self.untile([output[-1][:, :, 0] for output in
+                              outputs[:self.num_tiles]])
+    vis.plot_image(dist_image)
+    vis.show()
+    peaks = detect_peaks(dist_image, pois=peaks)
+
     pose_image = self.untile([output[0] for output in outputs[:self.num_tiles]])
-    if check_peaks:
-      dist_image = self.untile([output[-1][:,:,0] for output in
-                                outputs[:self.num_tiles]])
-      peaks = detect_peaks(dist_image, pois=peaks)
     prediction = np.empty((peaks.shape[0], 1 + pose_image.shape[-1]),
                           dtype=np.float32)
     for i, peak in enumerate(peaks):
@@ -573,8 +582,7 @@ class UnlabeledData(ArtificeData):
     def map_func(proto):
       image = self.parse(proto)[0]
       if mode in [ArtificeData.PREDICTION, ArtificeData.ENUMERATED_PREDICTION]:
-        tiles = self.tile_image(image)
-        return tf.data.Dataset.from_tensor_slices(tiles)
+        return self.tile_image(image)
       raise ValueError(f"{mode} mode invalid for UnlabeledData")
     return dataset.interleave(map_func, cycle_length=self.num_parallel_calls,
                               block_length=self.block_length,

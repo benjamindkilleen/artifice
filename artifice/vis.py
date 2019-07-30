@@ -19,10 +19,10 @@ def set_show(val):
   if not val:
     mpl.use('Agg')
     plt.ioff()
-  
+
 def show(fname=None, save=False):
   """Show the figure currently in matplotlib or save it, if not self.show.
-  
+
   If no fname provided, and self.show is False, then closes the figure. If save
   is True, figure is saved regardless of show.
 
@@ -37,10 +37,10 @@ def show(fname=None, save=False):
     plt.savefig(fname)
     logger.info(f"saved figure to {fname}.")
 
-    
+
 def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
                cmap='gray', cram=False, **kwargs):
-  cmaps = utils.listify(cmap, len(images)) 
+  cmaps = utils.listify(cmap, len(images))
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
   fig, axes = plt.subplots(rows,columns, squeeze=False,
