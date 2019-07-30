@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#SBATCH --job-name=disks
+#SBATCH --output=/project2/glk/artifice/batch/disks_sparse/train.out
+#SBATCH --error=/project2/glk/artifice/batch/disks_sparse/train.err
+#SBATCH --partition=gpu2
+#SBATCH --gres=gpu:1
+#SBATCH --time=24:00:00
+#SBATCH --account=pi-glk
+#SBATCH --mem-per-cpu=32000
+
+module unload python
+module load ffmpeg
+module load Anaconda3/2018.12
+
+# CPU:
+# source activate tf-cpu-1.13.1
+
+# GPU:
+module load cuda/9.0
+source activate tf-gpu-1.13.1
+
+cd /project2/glk/artifice
+
+data=disks
+
+echo "Starting training..."
+python -m artifice train -i data/$data \
+       --overwrite --patient -e 100 --initial-epoch 0 \
+       --image-shape 500 500 1 --data-size 10000 --test-size 1000 \
+       --batch-size 4 --num-objects 40 \
+       -m models/${data} --labeled --sparse \
+       --verbose 2 --keras-verbose 2
+echo "Finished."
+

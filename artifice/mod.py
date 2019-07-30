@@ -30,7 +30,7 @@ def _update_hist(a, b):
 
   """
   c = a.copy()
-  for k,v in b.items():
+  for k, v in b.items():
     if type(v) is list and type(c.get(k)) is list:
       c[k] += v
     else:
@@ -73,11 +73,11 @@ def conv_output_crop(inputs,
                      padding='valid'):
   """Crop the height, width dims of inputs as if convolved with a stride of 1.
 
-  :param inputs: 
-  :param kernel_size: 
-  :param padding: 
-  :returns: 
-  :rtype: 
+  :param inputs:
+  :param kernel_size:
+  :param padding:
+  :returns:
+  :rtype:
 
   """
   assert padding in {'same', 'valid'}
@@ -503,11 +503,13 @@ class ProxyUNet(ArtificeModel):
     new_level = self._fix_level_index(new_level)
     return distance * 2**(new_level - level)
 
+
   @staticmethod
   def pose_loss(pose, pred):
     return tf.losses.mean_squared_error(pose[:, :, :, 1:],
                                         pred[:, :, :, 1:],
                                         weights=pose[:, :, :, :1])
+
 
   def compile(self):
     if tf.executing_eagerly():
@@ -516,6 +518,7 @@ class ProxyUNet(ArtificeModel):
       optimizer = keras.optimizers.Adadelta(self.learning_rate)
     self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
                        ['mse']*self.num_levels, metrics=['mae'])
+
 
   def forward(self, inputs):
     level_outputs = []
@@ -546,6 +549,7 @@ class ProxyUNet(ArtificeModel):
                       padding='same', norm=False, name='pose')
     return [pose_image] + outputs
 
+
   def predict(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data."""
     if tf.executing_eagerly():
@@ -559,6 +563,7 @@ class ProxyUNet(ArtificeModel):
     else:
       raise NotImplementedError("patient prediction")
 
+
   def predict_visualization(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data."""
     if tf.executing_eagerly():
@@ -568,18 +573,20 @@ class ProxyUNet(ArtificeModel):
       p = art_data.image_padding()
       for batch in art_data.prediction_input():
         tiles += [tile[p[0][0]:, p[1][0]:] for tile in list(batch)]
-        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
-        dist_tiles += [output[-1] for output in outputs]
+        new_outputs = _unbatch_outputs(self.model.predict_on_batch(batch))
+        outputs += new_outputs
+        dist_tiles += [output[-1] for output in new_outputs]
         while len(outputs) >= art_data.num_tiles:
           image = art_data.untile(tiles[:art_data.num_tiles])
           dist_image = art_data.untile(dist_tiles[:art_data.num_tiles])
           prediction = art_data.analyze_outputs(outputs)
+          yield (image, dist_image, prediction)
           del outputs[:art_data.num_tiles]
           del tiles[:art_data.num_tiles]
           del dist_tiles[:art_data.num_tiles]
-          yield (image, dist_image, prediction)
     else:
       raise NotImplementedError("patient prediction")
+
 
   def predict_outputs(self, art_data):
     """Run prediction for single tiles images with the Artifice data."""
@@ -601,10 +608,10 @@ class ProxyUNet(ArtificeModel):
       raise NotImplementedError("patient prediction")
     art_data.num_tiles = num_tiles
 
+
   def evaluate(self, art_data):
     """Runs evaluation for ProxyUNet."""
     if tf.executing_eagerly():
-      outputs = []
       tile_labels = []
       errors = []
       total_num_failed = 0

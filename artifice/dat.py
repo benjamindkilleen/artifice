@@ -15,11 +15,12 @@ import os
 from glob import glob
 import numpy as np
 from skimage.feature import peak_local_max
-from skimage.draw import circle
 import tensorflow as tf
 
 from artifice.log import logger
-from artifice import img, utils
+from artifice import utils
+from artifice import img
+from artifice import vis
 
 def _bytes_feature(value):
   """Returns a bytes_list from a string / byte."""
@@ -349,13 +350,13 @@ class ArtificeData(object):
     pad_right = int(np.ceil(diff1 / 2)) + rem1
     return [[pad_top, pad_bottom], [pad_left, pad_right], [0,0]]
 
-  
+
   def proxy_padding(self):
     rem0 = self.image_shape[0] - (self.image_shape[0] % self.output_tile_shape[0])
     rem1 = self.image_shape[1] - (self.image_shape[1] % self.output_tile_shape[1])
     return [[0, rem0], [0, rem1], [0,0]]
 
-  
+
   # todo: determing whether to use tf.image.extract_image_patches instead
   def tile_image(self, image):
     image = tf.pad(image, self.image_padding(), 'CONSTANT')
@@ -366,7 +367,7 @@ class ArtificeData(object):
                            j:j + self.input_tile_shape[1]])
     return tf.data.Dataset.from_tensor_slices(tiles)
 
-  
+
   def tile_image_label(self, image, label):
     image = tf.pad(image, self.image_padding(), 'CONSTANT')
     tiles = []
@@ -379,7 +380,7 @@ class ArtificeData(object):
         labels.append(tf.concat((tile_space_positions, label[:,2:]), axis=1))
     return tf.data.Dataset.from_tensor_slices((tiles, labels))
 
-  
+
   @property
   def make_proxies_map_func(self):
     """Map over a (tile, label) dataset to convert it to (tile, [pose, proxy1,...]) form.
@@ -446,17 +447,18 @@ class ArtificeData(object):
     image = np.empty(shape, dtype=np.float32)
     tile_iter = iter(tiles)
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
-      if i + self.output_tile_shape[0] < self.image_shape[0]:
+      if i + self.output_tile_shape[0] <= self.image_shape[0]:
         si = self.output_tile_shape[0]
       else:
         si = self.image_shape[0] % self.output_tile_shape[0]
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
-        if j + self.output_tile_shape[1] < self.image_shape[1]:
+        if j + self.output_tile_shape[1] <= self.image_shape[1]:
           sj = self.output_tile_shape[1]
         else:
           sj = self.image_shape[1] % self.output_tile_shape[1]
         image[i:i + si, j:j + sj] = next(tile_iter)[:si, :sj]
     return image
+
 
   def untile_points(self, points):
     """Untile points from tile-space to image-space.
@@ -477,7 +479,7 @@ class ArtificeData(object):
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         points = next(points_iter)
-        image_points += list(points - np.array([[i, j]], dtype=np.float32))
+        image_points += list(points + np.array([[i, j]], dtype=np.float32))
     return np.array(image_points)
 
   def analyze_outputs(self, outputs, check_peaks=True):
@@ -503,8 +505,8 @@ class ArtificeData(object):
     prediction = np.empty((peaks.shape[0], 1 + pose_image.shape[-1]),
                           dtype=np.float32)
     for i, peak in enumerate(peaks):
-      prediction[i,:2] = peak
-      prediction[i,2:] = pose_image[int(peak[0]), int(peak[1]), 1:]
+      prediction[i, :2] = peak
+      prediction[i, 2:] = pose_image[int(peak[0]), int(peak[1]), 1:]
     return prediction
 
   #################### accumulation ####################
@@ -557,7 +559,7 @@ class ArtificeData(object):
       return aggregates[0]
 
 #################### Subclasses ####################
-    
+
 class UnlabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -578,7 +580,7 @@ class UnlabeledData(ArtificeData):
                               block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
-  
+
 class LabeledData(ArtificeData):
   @staticmethod
   def serialize(entry):
@@ -616,7 +618,7 @@ class LabeledData(ArtificeData):
                               block_length=self.block_length,
                               num_parallel_calls=self.num_parallel_calls)
 
-  
+
 class AnnotatedData(LabeledData):
   """Class for annotated data, which can be augmented. Annotated data consists of
   an `(image, label, annotation)` tuple, which we call an "annotated example".
@@ -775,8 +777,10 @@ class AnnotatedData(LabeledData):
 
 #################### Independant data analysis functions ####################
 
-def make_footprint(points, shape, radius=3):
-  """Make a boolean footprint around each point.
+def make_regions(points, shape, radius=3):
+  """Make a boolean footprint around each point, for `labels` kw.
+
+  For efficiency's sake, each region is a simple rectangle with width 2*radius.
 
   :param points: array of x,y points too make fooprint around.
   :param radius: radius of each footprint.
@@ -784,11 +788,14 @@ def make_footprint(points, shape, radius=3):
   :rtype:
 
   """
-  footprint = np.zeros(shape, dtype=np.bool)
+  regions = np.zeros(shape, dtype=np.bool)
   for point in points:
-    rr, cc = circle(point[0], point[1], radius, shape=shape[:2])
-    footprint[rr, cc] = True
-  return footprint
+    top = max(int(np.floor(point[0] - radius)), 0)
+    bottom = min(int(np.ceil(point[0] + radius + 1)), regions.shape[0])
+    left = max(int(np.floor(point[1] - radius)), 0)
+    right = min(int(np.ceil(point[1] + radius + 1)), regions.shape[1])
+    regions[top : bottom, left : right] = True
+  return regions
 
 def detect_peaks(image, threshold_abs=0.1, min_distance=1, pois=None):
   """Analyze the predicted distance proxy for detections.
@@ -796,20 +803,20 @@ def detect_peaks(image, threshold_abs=0.1, min_distance=1, pois=None):
   TODO: make more sophisticated, and also fix footprinting behavior
 
   :param image: image, or usually predicted distance proxy
-  :param threshold_abs: 
-  :param min_distance: 
+  :param threshold_abs:
+  :param min_distance:
   :param pois: points of interest to search around
   :returns: detected peaks
-  :rtype: 
+  :rtype:
 
   """
   assert image.ndim == 2
-  if pois is not None and False:
+  if pois is not None:
     if pois.shape[0] == 0:
-      return np.empty((0, 2), np.float32)  
-    footprint = make_footprint(pois, image.shape)
-    peaks = peak_local_max(image, threshold_abs=threshold_abs,
-                           indices=True, footprint=footprint)
+      return np.empty((0, 2), np.float32)
+    regions = make_regions(pois, image.shape)
+    peaks = peak_local_max(image, threshold_abs=threshold_abs, indices=True,
+                           labels=regions, exclude_border=False)
   else:
     peaks = peak_local_max(image, threshold_abs=threshold_abs,
                            min_distance=min_distance, indices=True,
@@ -818,30 +825,13 @@ def detect_peaks(image, threshold_abs=0.1, min_distance=1, pois=None):
 
 def multiscale_detect_peaks(images):
   """Use the images at lower scales to track peaks more efficiently."""
-  peaks = detect_peaks(images[0][:,:,0])
+  peaks = detect_peaks(images[0][:, :, 0])
   for i in range(1, len(images)):
     translation = (2*np.array(images[i-1].shape[:2]) -
                    np.array(images[i].shape[:2])) / 2
     peaks = 2*peaks - translation    # transform peaks to proper coordinates
-    peaks = detect_peaks(images[i][:,:,0], pois=peaks)
+    peaks = detect_peaks(images[i][:, :, 0], pois=peaks)
   return peaks
-
-def analyze_proxy(proxy):
-  """Analyze the proxy for objects.
-
-  :param proxy: proxy field.
-  :returns: numpy array of predictions for each object. first two columns are
-  x,y for each object. Remaining columns correspond to pose channels of the
-  proxy.
-  :rtype:
-
-  """
-  peaks = detect_peaks(proxy[:,:,0])
-  prediction = np.empty((peaks.shape[0], 1 + proxy.shape[-1]), dtype=np.float32)
-  for i, peak in enumerate(peaks):
-    prediction[i,:2] = peak
-    prediction[i,2:] = proxy[int(peak[0]), int(peak[1]), 1:]
-  return prediction
 
 def evaluate_proxy(label, proxy, distance_threshold=10):
   """Evaluage the proxy against the label and return an array of absolute errors.
@@ -856,6 +846,7 @@ def evaluate_proxy(label, proxy, distance_threshold=10):
   :rtype:
 
   """
+  raise NotImplementedError()
   peaks = detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
   error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
   num_failed = 0

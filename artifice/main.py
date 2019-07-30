@@ -333,9 +333,9 @@ todo: other attributes"""
     test_set = self._load_test()
     model = self._load_model()
     for image, dist_image, prediction in model.predict_visualization(test_set):
-      fig, axes = vis.plot_image(image, dist_image, colorbar=True)
-      axes[0,0].plot(prediction[:,1], prediction[:,0], 'rx')
+      fig, axes = vis.plot_image(image, image, dist_image, colorbar=True)
       axes[0,1].plot(prediction[:,1], prediction[:,0], 'rx')
+      axes[0,2].plot(prediction[:,1], prediction[:,0], 'rx')
       logger.info(f"prediction:\n{prediction}")
       vis.show(join(self.figs_dir, 'prediction.pdf'))
       if not self.show:

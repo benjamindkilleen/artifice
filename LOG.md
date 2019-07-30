@@ -796,3 +796,9 @@ Todo, in no particular order
 * CPU implementations of reduce_mask, etc. Can largely grab implementations from
   `sparse_conv_libs.py` directly. Should just make prediction easier.
 * Multiscale tracking code, using the output at each level.
+* Add Variable to Sparse Conv layer implementations. Each layer would just have
+  a variable that stores its outputs that gets set to 0 once, during each pass,
+  as opposed to copying the same tensor a bunch.
+
+## July 29, 2019:
+Multiscale tracking is still messed up. Figure out why.
