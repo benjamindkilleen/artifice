@@ -825,7 +825,9 @@ execution):
 * sparse, cached: 153, 117, 116
 * sparse, use-var, cached: 345, 138, 137s
 
-
 I'm noticing that this is hanging up a lot on something, so I'm wondering if the
 eval is actually not the bottleneck.
 
+Possible update that would make things faster:
+* The gradient for `scatter` doesn't use `sparse_scatter_var`, so maybe that's
+  another bottleneck? Probably not though.
