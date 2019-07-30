@@ -245,7 +245,8 @@ for (ni, hi, wi) in indices.active_block_indices:
   shape = outputs.shape
   if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
     if use_var:
-      outputs = sbnet.sparse_scatter_var(
+      logger.debug(f"outputs: {outputs}")
+      outputs = sbnet.sparse_scatter_var( # todo: figure out why fucking up
         block_stack,
         bin_counts,
         active_block_indices,

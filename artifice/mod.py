@@ -98,15 +98,18 @@ def conv(inputs,
          padding='valid',
          norm=True,
          mask=None,
+         batch_size=None,
          **kwargs):
   """Perform 3x3 convolution on the layer.
 
   :param inputs: input tensor
   :param filters: number of filters or kernels
+  :param kernel_shape: 
   :param activation: keras activation to use. Default is 'relu'
   :param padding: 'valid' or 'same'
   :param norm: whether or not to perform batch normalization on the output
   :param mask: if not None, performs a sparse convolution with mask.
+  :param batch_size: needed for sparse layers. Required if mask is not None
 
   Other kwargs passed to the convolutional layer.
 
@@ -124,9 +127,11 @@ def conv(inputs,
       kernel_initializer='glorot_normal',
       **kwargs)(inputs)
   else:
+    assert batch_size is not None, 'Sparse layers need batch size'
     inputs = lay.SparseConv2D(
       filters,
       kernel_shape,
+      batch_size,
       activation=None,
       padding=padding,
       use_bias=False,
@@ -139,15 +144,22 @@ def conv(inputs,
   return inputs
 
 
-def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwargs):
+def conv_upsample(inputs,
+                  filters,
+                  scale=2,
+                  activation='relu',
+                  mask=None,
+                  batch_size=None,
+                  **kwargs):
   """Upsample the inputs in dimensions 1,2 with a transpose convolution.
 
-  :param inputs:
-  :param filters:
+  :param inputs: 
+  :param filters: 
   :param scale: scale by which to upsample. Can be an int or a list of 2 ints,
   specifying scale in each direction.
   :param activation: relu by default
   :param mask: if not None, use a SparseConv2DTranspose layer.
+  :param batch_size: 
 
   Additional kwargs passed to the conv transpose layer.
 
@@ -165,8 +177,11 @@ def conv_upsample(inputs, filters, scale=2, activation='relu', mask=None, **kwar
       use_bias=False,
       **kwargs)(inputs)
   else:
+    assert batch_size is not None, 'Sparse layers need batch size'
     inputs = lay.SparseConv2DTranspose(
-      filters, scale,
+      filters,
+      scale,
+      batch_size,
       strides=scale,
       padding='same',
       activation=activation,
@@ -663,7 +678,7 @@ class ProxyUNet(ArtificeModel):
 
   
 class SparseUNet(ProxyUNet):
-  def __init__(self, *, block_size=[8, 8], tol=0.1, **kwargs):
+  def __init__(self, *, batch_size, block_size=[8, 8], tol=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
 
     :param block_size: width/height of the blocks used for sparsity, at the
@@ -674,6 +689,7 @@ class SparseUNet(ProxyUNet):
     :rtype:
 
     """
+    self.batch_size = batch_size
     self.tol = tol
     self.block_size = utils.listify(block_size, 2)
     super().__init__(**kwargs)
@@ -697,7 +713,8 @@ class SparseUNet(ProxyUNet):
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(reversed(self.level_filters[:-1])):
       inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
-                             block_size=self.block_size)
+                             block_size=self.block_size,
+                             batch_size=self.batch_size)
       mask = upsample(mask, size=2, interpolation='nearest')
 
       cropped = crop(next(level_outputs), inputs.shape)
@@ -706,7 +723,8 @@ class SparseUNet(ProxyUNet):
 
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters, mask=mask, tol=self.tol,
-                      block_size=self.block_size)
+                      block_size=self.block_size,
+                      batch_size=self.batch_size)
         mask = conv_output_crop(mask)
       mask = conv(
         inputs,
@@ -718,6 +736,7 @@ class SparseUNet(ProxyUNet):
         mask=mask,
         tol=self.tol,
         block_size=self.block_size,
+        batch_size=self.batch_size,
         name=f'output_{i+1}')
       outputs.append(mask)
 
@@ -731,6 +750,7 @@ class SparseUNet(ProxyUNet):
       mask=mask,
       block_size=self.block_size,
       tol=self.tol,
+      batch_size=self.batch_size,
       name='pose')
 
     outputs = [pose_image] + outputs

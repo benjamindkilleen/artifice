@@ -812,7 +812,12 @@ size of 4:
 * with multiscale tracking: 44.2s 
 * sparse, no multiscale: 36.3s
 * sparse, no multiscale, patient: 34.1s
-* 
 
 Note that both options still used the multi-output UNet. Still, this is not
 encouraging.
+
+For training, we observed a slight speedup using sparse evaluation (patient
+execution):
+* dense: 368, 288, 286s
+* sparse: 386, 269, 255s
+* 

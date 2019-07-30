@@ -222,6 +222,7 @@ todo: other attributes"""
               'learning_rate' : self.learning_rate,
               'overwrite' : self.overwrite}
     if self.sparse:
+      kwargs['batch_size'] = self.batch_size
       model = mod.SparseUNet(**kwargs)
     else:
       model = mod.ProxyUNet(**kwargs)
