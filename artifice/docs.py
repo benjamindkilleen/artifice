@@ -42,6 +42,7 @@ level_depth = "todo"
 # sparse eval and other optimization settings
 sparse = "Use the SparseUNet instead of the ProxyUNet."
 multiscale = "todo"
+use_var = "todo"
 
 # model hyperparameters
 dropout = "todo"

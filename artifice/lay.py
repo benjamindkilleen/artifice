@@ -99,6 +99,8 @@ class SparseConv2D(keras.layers.Layer):
 
   :param filters:
   :param kernel_size:
+  :param batch_size: if provided, allows SparseConv2D to use sparse_scatter_var
+  (assuming eager execution is not enabled)
   :param strides:
   :param padding:
   :param activation:
@@ -121,7 +123,7 @@ class SparseConv2D(keras.layers.Layer):
   def __init__(self,
                filters,
                kernel_size,
-               batch_size,
+               batch_size=None, # todo: replace with a use_var option
                strides=[1, 1],
                padding='valid',
                activation=None,
@@ -141,6 +143,7 @@ class SparseConv2D(keras.layers.Layer):
     self.filters = filters
     self.kernel_size = utils.listify(kernel_size, 2)
     self.batch_size = batch_size
+    self.use_var = batch_size is not None and not tf.executing_eagerly()
     self.strides = utils.listify(strides, 2)
     self.padding = padding
     self.activation = keras.layers.Activation(activation)
@@ -176,7 +179,7 @@ class SparseConv2D(keras.layers.Layer):
       pad_size = [pad_h, pad_w]
     self.pad = keras.layers.ZeroPadding2D(pad_size)
 
-    
+
   def build(self, input_shape):
     input_shape, mask_shape = input_shape
     self.block_count = [utils.divup(input_shape[1], self.block_stride[0]),
@@ -211,15 +214,17 @@ class SparseConv2D(keras.layers.Layer):
     else:
       self.bias = None
 
-    # outputs variable
-    output_shape = self.compute_output_shape([input_shape, mask_shape])
-    self.outputs = self.add_variable(
-      name='outputs',
-      shape=[self.batch_size] + list(output_shape)[1:],
-      dtype=tf.float32,
-      initializer='zeros',
-      trainable=False)
-    
+    if self.use_var:
+      output_shape = list(self.compute_output_shape([input_shape, mask_shape]))
+      self.outputs = self.add_variable(
+        name='outputs',
+        shape=[self.batch_size] + output_shape[1:],
+        dtype=tf.float32,
+        initializer='zeros',
+        trainable=False,
+        use_resource=False)
+
+
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
     shape = conv_utils.conv_output_shape(
@@ -229,14 +234,18 @@ class SparseConv2D(keras.layers.Layer):
       self.padding,
       self.strides)
     return tf.TensorShape(shape)
-  
+
 
   def call(self, inputs):
     inputs, mask = inputs
-    # output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
-    # batch_size = array_ops.shape(inputs)[0]
-    # outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
-    # todo: make a variable?
+
+    if self.use_var:
+      self.outputs.assign(tf.zeros_like(self.outputs))
+      outputs = self.outputs
+    else:
+      output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
+      batch_size = array_ops.shape(inputs)[0]
+      outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
 
     if self.padding == 'same':
       inputs = self.pad(inputs)
@@ -251,7 +260,7 @@ class SparseConv2D(keras.layers.Layer):
       tol=self.tol,
       avgpool=self.avgpool)
 
-    blocks = sparse.sparse_gather(
+    blocks = sparse.gather(
       inputs,
       indices.bin_counts,
       indices.active_block_indices,
@@ -273,19 +282,21 @@ class SparseConv2D(keras.layers.Layer):
     if self.activation is not None:
       blocks = self.activation(blocks)
 
-    self.outputs.assign(self.outputs.initial_value)
-    sparse.sparse_scatter(
+    outputs = sparse.scatter(
       blocks,
       indices.bin_counts,
       indices.active_block_indices,
-      self.outputs,
+      outputs,
       bsize=self.output_block_size,
       boffset=self.output_block_offset,
       bstride=self.output_block_stride,
       transpose=False,
-      use_var=True)
+      use_var=self.use_var)
 
-    return self.outputs.value()
+    if self.use_var:
+      outputs.set_shape([None] + outputs.shape.as_list()[1:])
+
+    return outputs
 
 class SparseConv2DTranspose(keras.layers.Layer):
   """2D transpose convolution using the sbnet library.
@@ -336,6 +347,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
     self.filters = filters
     self.kernel_size = utils.listify(kernel_size, 2)
     self.batch_size = batch_size
+    self.use_var = batch_size is not None and not tf.executing_eagerly()
     self.strides = utils.listify(strides, 2)
     self.padding = padding
     self.activation = keras.layers.Activation(activation)
@@ -397,14 +409,15 @@ class SparseConv2DTranspose(keras.layers.Layer):
     else:
       self.bias = None
 
-    # outputs variable
-    output_shape = self.compute_output_shape([input_shape, mask_shape])
-    self.outputs = self.add_variable(
-      name='outputs',
-      shape=[self.batch_size] + list(output_shape)[1:],
-      dtype=tf.float32,
-      initializer='zeros',
-      trainable=False)
+    if self.use_var:
+      output_shape = self.compute_output_shape([input_shape, mask_shape])
+      self.outputs = self.add_variable(
+        name='outputs',
+        shape=[self.batch_size] + list(output_shape)[1:],
+        dtype=tf.float32,
+        initializer='zeros',
+        trainable=False,
+        use_resource=False)
 
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
@@ -421,7 +434,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
 
     if self.padding == 'valid':
       raise NotImplementedError('valid padding for transpose convolution')
-    
+
     indices = sparse.reduce_mask(
       mask,
       block_count=self.block_count,
@@ -431,7 +444,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
       tol=self.tol,
       avgpool=self.avgpool)
 
-    blocks = sparse.sparse_gather(
+    blocks = sparse.gather(
       inputs,
       indices.bin_counts,
       indices.active_block_indices,
@@ -470,7 +483,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
       strides=strides,
       padding='VALID',
       data_format='NHWC')
-    
+
     if not tf.executing_eagerly():
       # Infer the static output shape:
       out_shape = self.compute_output_shape([blocks.shape, mask.shape])
@@ -482,29 +495,35 @@ class SparseConv2DTranspose(keras.layers.Layer):
     if self.activation is not None:
       blocks = self.activation(blocks)
 
-    # output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
-    # batch_size = array_ops.shape(inputs)[0]
-    # outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
+    if self.use_var:
+      self.outputs.assign(tf.zeros_like(self.outputs))
+      outputs = self.outputs
+    else:
+      output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
+      batch_size = array_ops.shape(inputs)[0]
+      outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
 
-    self.outputs.assign(self.outputs.initial_value)
-    outputs = sparse.sparse_scatter(
+    outputs = sparse.scatter(
       blocks,
       indices.bin_counts,
       indices.active_block_indices,
-      self.outputs,
+      outputs,
       bsize=self.output_block_size,
       boffset=self.output_block_offset,
       bstride=self.output_block_stride,
       transpose=False,
-      use_var=True)
+      use_var=self.use_var)
 
-    return outputs.value()
+    if self.use_var:
+      outputs.set_shape([None] + outputs.shape.as_list()[1:])
+
+    return outputs
 
 def main():
   # tf.enable_eager_execution()
   inputs = keras.layers.Input(shape=(100, 100, 1))
-  x = SparseConv2D(1, [3, 3], padding='same')([inputs, inputs])
-  x = SparseConv2D(1, [1, 1], padding='same')([x, x])
+  x = SparseConv2D(1, [3, 3], 4, padding='same')([inputs, inputs])
+  x = SparseConv2D(1, [1, 1], 4, padding='same')([x, x])
   # x = SparseConv2DTranspose(1, [2, 2], strides=[2, 2], padding='same')([x, x])
   # x = keras.layers.MaxPool2D()(x)
   model = keras.Model(inputs, x)
@@ -516,7 +535,7 @@ def main():
     img.open_as_float('../data/disks_100x100/images/1002.png'),
     img.open_as_float('../data/disks_100x100/images/1003.png'),
     img.open_as_float('../data/disks_100x100/images/1004.png')])
-  images = images[:,:,:,np.newaxis]
+  images = images[:, :, :, np.newaxis]
 
   dataset = tf.data.Dataset.from_tensor_slices((images, images))
   dataset = dataset.batch(4).repeat(-1)

@@ -820,4 +820,12 @@ For training, we observed a slight speedup using sparse evaluation (patient
 execution):
 * dense: 368, 288, 286s
 * sparse: 386, 269, 255s
-* 
+* sparse, use-var: 401, 279, 279s
+* dense, cached: 150, 136, 136
+* sparse, cached: 153, 117, 116
+* sparse, use-var, cached: 345, 138, 137s
+
+
+I'm noticing that this is hanging up a lot on something, so I'm wondering if the
+eval is actually not the bottleneck.
+

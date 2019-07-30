@@ -72,6 +72,7 @@ class Artifice:
                level_depth,
                sparse,
                multiscale,
+               use_var,
                dropout,
                initial_epoch,
                epochs,
@@ -122,6 +123,7 @@ class Artifice:
     # sparse model settings
     self.sparse = sparse
     self.multiscale = multiscale
+    self.use_var = use_var
 
     # hyperparameters
     self.dropout = dropout
@@ -222,7 +224,8 @@ todo: other attributes"""
               'learning_rate' : self.learning_rate,
               'overwrite' : self.overwrite}
     if self.sparse:
-      kwargs['batch_size'] = self.batch_size
+      if self.use_var:
+        kwargs['batch_size'] = self.batch_size
       model = mod.SparseUNet(**kwargs)
     else:
       model = mod.ProxyUNet(**kwargs)
@@ -450,6 +453,7 @@ def main():
   # sparse eval and other optimization settings
   parser.add_argument('--sparse', action='store_true', help=docs.sparse)
   parser.add_argument('--multiscale', action='store_true', help=docs.multiscale)
+  parser.add_argument('--use-var', action='store_true', help=docs.use_var)
 
   # model hyperparameters
   parser.add_argument('--dropout', nargs=1, default=[0.5], type=float,
@@ -501,6 +505,7 @@ def main():
                  level_depth=args.level_depth[0],
                  sparse=args.sparse,
                  multiscale=args.multiscale,
+                 use_var=args.use_var,
                  dropout=args.dropout[0],
                  initial_epoch=args.initial_epoch[0],
                  epochs=args.epochs[0],

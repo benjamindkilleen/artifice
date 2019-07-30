@@ -127,11 +127,10 @@ def conv(inputs,
       kernel_initializer='glorot_normal',
       **kwargs)(inputs)
   else:
-    assert batch_size is not None, 'Sparse layers need batch size'
     inputs = lay.SparseConv2D(
       filters,
       kernel_shape,
-      batch_size,
+      batch_size=batch_size,
       activation=None,
       padding=padding,
       use_bias=False,
@@ -177,11 +176,10 @@ def conv_upsample(inputs,
       use_bias=False,
       **kwargs)(inputs)
   else:
-    assert batch_size is not None, 'Sparse layers need batch size'
     inputs = lay.SparseConv2DTranspose(
       filters,
       scale,
-      batch_size,
+      batch_size=batch_size,
       strides=scale,
       padding='same',
       activation=activation,
@@ -678,15 +676,18 @@ class ProxyUNet(ArtificeModel):
 
   
 class SparseUNet(ProxyUNet):
-  def __init__(self, *, batch_size, block_size=[8, 8], tol=0.1, **kwargs):
+  def __init__(self, *, batch_size=None, block_size=[8, 8], tol=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
 
+    :param batch_size: determines whether variables will be used in sparse
+    layers for the scatter operation.
     :param block_size: width/height of the blocks used for sparsity, at the
     scale of the original resolution (resized at each level. These are rescaled
     at each level.
+    :param 8]: 
     :param tol: absolute threshold value for sbnet attention.
-    :returns:
-    :rtype:
+    :returns: 
+    :rtype: 
 
     """
     self.batch_size = batch_size
@@ -696,9 +697,11 @@ class SparseUNet(ProxyUNet):
 
   # todo: write this forward function. It's gonna be a mess.
   def forward(self, inputs):
+    if self.batch_size is not None:
+      inputs.set_shape([self.batch_size] + list(inputs.shape)[1:])
+
     level_outputs = []
     outputs = []
-
     for level, filters in enumerate(self.level_filters):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)

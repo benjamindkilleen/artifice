@@ -43,7 +43,7 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
   cmaps = utils.listify(cmap, len(images))
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
-  fig, axes = plt.subplots(rows,columns, squeeze=False,
+  fig, axes = plt.subplots(rows, columns, squeeze=False,
                            figsize=(scale, scale*rows/columns))
   for i, image in enumerate(images):
     ax = axes[i // columns, i % columns]
