@@ -823,7 +823,11 @@ execution):
 * sparse, use-var: 401, 279, 279s
 * dense, cached: 150, 136, 136
 * sparse, cached: 153, 117, 116
-* sparse, use-var, cached: 345, 138, 137s
+* sparse, use-var, cached: 345, 138, 137s 
+
+So sparse, cached exhibited a 15% speedup over dense, cached, as opposed to a
+10% speedup without caching. Use-var showed no speedup, possibly because of the
+overhead of initializing/accessing variables?
 
 I'm noticing that this is hanging up a lot on something, so I'm wondering if the
 eval is actually not the bottleneck.
@@ -831,3 +835,8 @@ eval is actually not the bottleneck.
 Possible update that would make things faster:
 * The gradient for `scatter` doesn't use `sparse_scatter_var`, so maybe that's
   another bottleneck? Probably not though.
+
+## July 31, 2019: Rerunning with more levels
+We using patient execution, with level filters: 128, 128, 64, 32. Input tile
+shape.
+* dense, no cache: 1289 (~18m), 1034, 1021s

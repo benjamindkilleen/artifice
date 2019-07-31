@@ -169,7 +169,15 @@ class Artifice:
 
   def __str__(self):
     return f"""{asctime()}:
+data_root: {self.data_root}
+model_root: {self.model_root}
+figs_dir: {self.figs_dir}
+----
+labeled: {self.labeled}
 num_parallel_calls: {self.num_parallel_calls}
+----
+input tile shape: {self.input_tile_shapes}
+output shapes: {self.output_tile_shapes}
 todo: other attributes"""
 
   def __call__(self):
@@ -445,7 +453,7 @@ def main():
   # model architecture
   parser.add_argument('--base-shape', nargs='+', default=[32], type=int,
                       help=docs.base_shape)
-  parser.add_argument('--level-filters', nargs='+', default=[32,64,128],
+  parser.add_argument('--level-filters', nargs='+', default=[128, 64, 32],
                       type=int, help=docs.level_filters)
   parser.add_argument('--level-depth', nargs='+', default=[2], type=int,
                       help=docs.level_depth)

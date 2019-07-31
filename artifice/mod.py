@@ -341,7 +341,7 @@ class ArtificeModel():
     self.save()
     return hist
 
-  def predict(self, art_data, multiscale=True):
+  def predict(self, art_data, multiscale=False):
     """Run prediction, reassembling tiles, with the Artifice data.
 
     :param art_data: ArtificeData object
@@ -411,7 +411,7 @@ class ProxyUNet(ArtificeModel):
     :param base_shape: the height/width of the output of the first layer in the lower
     level. This determines input and output tile shapes. Can be a tuple,
     specifying different height/width, or a single integer.
-    :param level_filters: number of filters at each level (top to bottom).
+    :param level_filters: number of filters at each level (bottom to top).
     :param level_depth: number of layers per level
     :param dropout: dropout to use for concatenations
     :param num_channels: number of channels in the input
@@ -535,7 +535,7 @@ class ProxyUNet(ArtificeModel):
     level_outputs = []
     outputs = []
 
-    for level, filters in enumerate(self.level_filters):
+    for level, filters in enumerate(reversed(self.level_filters)):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
       if level < self.num_levels - 1:
@@ -546,7 +546,7 @@ class ProxyUNet(ArtificeModel):
                             norm=False, name='output_0'))
 
     level_outputs = reversed(level_outputs)
-    for i, filters in enumerate(reversed(self.level_filters[:-1])):
+    for i, filters in enumerate(self.level_filters[1:]):
       inputs = conv_upsample(inputs, filters)
       cropped = crop(next(level_outputs), inputs.shape)
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
@@ -561,7 +561,7 @@ class ProxyUNet(ArtificeModel):
     return [pose_image] + outputs
 
 
-  def predict(self, art_data, multiscale=True):
+  def predict(self, art_data, multiscale=False):
     """Run prediction, reassembling tiles, with the Artifice data."""
     if tf.executing_eagerly():
       outputs = []
@@ -638,27 +638,26 @@ class ProxyUNet(ArtificeModel):
     art_data.num_tiles = num_tiles
 
 
-  def evaluate(self, art_data):
+  def evaluate(self, art_data, multiscale=False):
     """Runs evaluation for ProxyUNet."""
     if tf.executing_eagerly():
       tile_labels = []
       errors = []
+      outputs = []
       total_num_failed = 0
       for i, (batch_tiles, batch_labels) in enumerate(art_data.evaluation_input()):
         if i % 10 == 0:
-          logger.info(f"predicting batch {i} / {art_data.steps_per_epoch}")
+          logger.info(f"evaluating batch {i} / {art_data.steps_per_epoch}")
         tile_labels += list(batch_labels)
-        proxies += list(self.model.predict_on_batch(batch_tiles))
-        while len(proxies) >= art_data.num_tiles:
-          label = tile_labels[0]
-          proxy = art_data.untile(proxies[:art_data.num_tiles])
-          error, num_failed = dat.evaluate_proxy(label, proxy)
+        outputs += _unbatch_outputs(self.model.predict_on_batch(batch_tiles))
+        while len(outputs) >= art_data.num_tiles:
+          label = art_data.untile_points(tile_labels)
+          prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
+          error, num_failed = dat.evaluate_prediction(label, prediction)
           total_num_failed += num_failed
           errors += list(error[error[:, 0] >= 0])
           del tile_labels[:art_data.num_tiles]
-          del proxies[:art_data.num_tiles]
-        if len(errors) >= art_data.size: # todo: figure out why necessary
-          break
+          del outputs[:art_data.num_tiles]
       errors = np.array(errors)
     else:
       raise NotImplementedError
@@ -702,7 +701,7 @@ class SparseUNet(ProxyUNet):
 
     level_outputs = []
     outputs = []
-    for level, filters in enumerate(self.level_filters):
+    for level, filters in enumerate(reversed(self.level_filters)):
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
       if level < self.num_levels - 1:
@@ -714,7 +713,7 @@ class SparseUNet(ProxyUNet):
         outputs.append(mask)
 
     level_outputs = reversed(level_outputs)
-    for i, filters in enumerate(reversed(self.level_filters[:-1])):
+    for i, filters in enumerate(self.level_filters[1:]):
       inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
                              block_size=self.block_size,
                              batch_size=self.batch_size)

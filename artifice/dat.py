@@ -376,7 +376,7 @@ class ArtificeData(object):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         tiles.append(image[i:i + self.input_tile_shape[0],
                            j:j + self.input_tile_shape[1]])
-        tile_space_positions = label[:,:2] - tf.constant([[i,j]], tf.float32)
+        tile_space_positions = label[:, :2] - tf.constant([[i, j]], tf.float32)
         labels.append(tf.concat((tile_space_positions, label[:,2:]), axis=1))
     return tf.data.Dataset.from_tensor_slices((tiles, labels))
 
@@ -463,8 +463,9 @@ class ArtificeData(object):
   def untile_points(self, points):
     """Untile points from tile-space to image-space.
 
-    :param points: list of 2d arrays with shape [?,2], containing points in the
-    tile space for that entry of the list. Must be length num_tiles.
+    :param points: list of 2d arrays with shape [?,>= 2], containing points in
+    the tile space for that entry of the list. Must be length num_tiles. Leaves
+    extra elements of dim 1 alone.
     :returns:
     :rtype:
 
@@ -479,10 +480,11 @@ class ArtificeData(object):
     for i in range(0, self.image_shape[0], self.output_tile_shape[0]):
       for j in range(0, self.image_shape[1], self.output_tile_shape[1]):
         points = next(points_iter)
-        image_points += list(points + np.array([[i, j]], dtype=np.float32))
+        image_points += list(
+          points + np.array([[i, j] + [0]*(points.shape[1] - 2)], dtype=np.float32))
     return np.array(image_points)
 
-  def analyze_outputs(self, outputs, multiscale=True):
+  def analyze_outputs(self, outputs, multiscale=False):
     """Analyze the model outputs, return predictions like original labels.
 
     :param outputs: a list of lists, containing outputs from at least num_tiles
@@ -831,6 +833,7 @@ def detect_peaks(image, threshold_abs=0.1, min_distance=1, pois=None):
                            exclude_border=False)
   return peaks
 
+
 def multiscale_detect_peaks(images):
   """Use the images at lower scales to track peaks more efficiently."""
   peaks = detect_peaks(images[0][:, :, 0])
@@ -841,33 +844,34 @@ def multiscale_detect_peaks(images):
     peaks = detect_peaks(images[i][:, :, 0], pois=peaks)
   return peaks
 
-def evaluate_proxy(label, proxy, distance_threshold=10):
-  """Evaluage the proxy against the label and return an array of absolute errors.
+
+def evaluate_prediction(label, prediction_, distance_threshold=10):
+  """Evaluage the prediction against the label and return an array of absolute
 
   The error array has the same ordering as objects in the label. Negative values
   indicate that object was not detected.
 
-  :param label:
-  :param proxy:
-  :param distance_threshold:
-  :returns:
-  :rtype:
+  :param label: 
+  :param prediction_: 
+  :param distance_threshold: 
+  :returns: 
+  :rtype: 
 
   """
-  raise NotImplementedError()
-  peaks = detect_peaks(proxy[:,:,0]) # [num_peaks, 2]
-  error = np.empty((label.shape[0], label.shape[1] - 1)) # [num_objects,1+pose_dim]
+  prediction = prediction_.copy()
+  error = np.empty((label.shape[0], label.shape[1] - 1))
   num_failed = 0
+  
   for i in range(label.shape[0]):
-    distances = np.linalg.norm(peaks - label[i:i+1, :2], axis=1)
-    if np.min(distances) >= distance_threshold:
+    distances = np.linalg.norm(prediction[i:i+1, :2] - label[i:i+1, :2], axis=1)
+    pidex = np.argmin(distances)
+    if distances[pidx] >= distance_threshold:
       num_failed += 1
       error[i] = -1
       continue
-    pidx = np.argmin(distances)
-    peak = peaks[pidx].copy()
-    peaks[pidx] = np.inf
-    error[i, 0] = np.linalg.norm(peak - label[i, :2])
-    for j in range(1, error.shape[1]):
-      error[i, j] = abs(proxy[int(peak[0]), int(peak[1]), j] - label[i, j+1])
+    
+    error[i, 0] = np.linalg.norm(prediction[pidx, :2] - label[i, :2])
+    error[i, 1:] = np.abs(prediction[pidx, 2:] - label[i, 2:])
+    prediction[pidx, :2] = np.inf
+    
   return error, num_failed
