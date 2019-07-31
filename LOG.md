@@ -838,5 +838,9 @@ Possible update that would make things faster:
 
 ## July 31, 2019: Rerunning with more levels
 We using patient execution, with level filters: 128, 128, 64, 32. Input tile
-shape.
+shape, (on gpu).
 * dense, no cache: 1289 (~18m), 1034, 1021s
+* dense, cache: 1062, 459, 459s
+* sparse, cache: 547, 401, 396s
+
+which is like a 13% speed boost, ish, when cached.

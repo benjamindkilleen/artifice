@@ -10,15 +10,25 @@ comes mostly from the git repo README, albeit in a more pythonic format.
 import logging
 import numpy as np
 import tensorflow as tf
-from collections import namedtuple
 from tensorflow import keras
 
 from artifice.log import logger
 from artifice import utils
-from artifice import sbnet
+
+_gpu = tf.test.is_gpu_available() and tf.test.is_built_with_cuda()
+
+if _gpu:
+  from artifice import sbnet
+else:
+  import sparse_lib
 
 
-def reduce_mask(mask, *, block_count, bsize, boffset, bstride, tol=0.5,
+def reduce_mask(mask, *,
+                block_count,
+                bsize,
+                boffset,
+                bstride,
+                tol=0.5,
                 avgpool=False):
   """Reduce `mask` to indices for sparse_gather or sparse_scatter.
 
@@ -46,15 +56,26 @@ def reduce_mask(mask, *, block_count, bsize, boffset, bstride, tol=0.5,
   `active_block_indices`, for passing to `sparse_gather` and `sparse_scatter`.
 
   """
-  if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
-    indices = sbnet.reduce_mask(mask, block_count, dynamic_bsize=bsize,
-                                dynamic_boffset=boffset, dynamic_bstride=bstride,
-                                tol=tol, avgpool=avgpool)
+  if _gpu:
+    indices = sbnet.reduce_mask(
+      mask,
+      block_count,
+      dynamic_bsize=bsize,
+      dynamic_boffset=boffset,
+      dynamic_bstride=bstride,
+      tol=tol,
+      avgpool=avgpool)
   else:
-    raise NotImplementedError('reduce_mask for cpu')
+    indices = sparse_lib.reduce_mask(
+      mask,
+      block_count,
+      bsize=bsize,
+      boffset=boffset,
+      bstride=bstride,
+      tol=tol,
+      avgpool=avgpool)
 
   return indices
-
 
 def gather(inputs, bin_counts, active_block_indices, *, bsize, boffset,
            bstride, transpose=False):
@@ -80,16 +101,24 @@ for (ni, hi, wi) in indices.active_block_indices:
   :returns: `[nBlocks, BSZH, BSZW, C]` tensor stack of blocks
 
   """
-  if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
-    outputs = sbnet.sparse_gather(inputs,
-                                  bin_counts,
-                                  active_block_indices,
-                                  dynamic_bsize=bsize,
-                                  dynamic_boffset=boffset,
-                                  dynamic_bstride=bstride,
-                                  transpose=transpose)
+
+  if _gpu:
+    outputs = sbnet.sparse_gather(
+      inputs,
+      bin_counts,
+      active_block_indices,
+      dynamic_bsize=bsize,
+      dynamic_boffset=boffset,
+      dynamic_bstride=bstride,
+      transpose=transpose)
   else:
-    raise NotImplementedError("sparse_gather for CPU")
+    outputs = sparse_lib.gather(
+      inputs,
+      bin_counts,
+      active_block_indices,
+      bsize=bsize,
+      boffset=boffset,
+      bstride=bstride)
 
   if not tf.executing_eagerly():
     shape = tf.TensorShape([None, bsize[0], bsize[1], inputs.shape[3]])
@@ -118,7 +147,7 @@ def scatter(block_stack,
   detect whether `outputs` is a Tensor or a Variable and using the proper
   fucntion. Using a Variable is strongly recommended for maximum performance.
 
-  The effect of this operation is opposite to sparse_gather - the input blocks
+  the effect of this operation is opposite to sparse_gather - the input blocks
   will be written on top of base tensor x, or added to it's contents if do_add
   is True. The following pseudo-code snippet illustrates the semantics of
   sparse_scatter:
@@ -150,8 +179,9 @@ for (ni, hi, wi) in indices.active_block_indices:
   """
 
   shape = outputs.shape
-  if tf.test.is_gpu_available() and tf.test.is_built_with_cuda():
+  if _gpu:
     if use_var:
+      assert not tf.executing_eagerly(), 'use_var forbids eager execution'
       outputs = sbnet.sparse_scatter_var(
         block_stack,
         bin_counts,
@@ -176,7 +206,14 @@ for (ni, hi, wi) in indices.active_block_indices:
         atomic=atomic,
         transpose=transpose)
   else:
-    raise NotImplementedError("sparse_scatter for CPU")
+    outputs = sparse_lib.scatter(
+      block_stack,
+      bin_counts,
+      active_block_indices,
+      outputs,
+      bsize=bsize,
+      boffset=boffset,
+      bstride=bstride)
 
   if not tf.executing_eagerly():
     outputs.set_shape(shape)
