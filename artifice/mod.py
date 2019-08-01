@@ -306,8 +306,9 @@ class ArtificeModel():
     new_hist = utils.jsonable(new_hist)
     if hist is not None:
       new_hist = _update_hist(hist, new_hist)
-    utils.json_save(self.history_path, hist)
-    return hist
+    utils.json_save(self.history_path, new_hist)
+
+    return new_hist
 
   def train(self, art_data, initial_epoch=0, epochs=1, seconds=0,
             **kwargs):
@@ -694,7 +695,77 @@ class SparseUNet(ProxyUNet):
     self.block_size = utils.listify(block_size, 2)
     super().__init__(**kwargs)
 
-  # todo: write this forward function. It's gonna be a mess.
+  def forward(self, inputs):
+    if self.batch_size is not None:
+      inputs.set_shape([self.batch_size] + list(inputs.shape)[1:])
+
+    level_outputs = []
+    outputs = []
+    for level, filters in enumerate(reversed(self.level_filters)):
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters)
+      if level < self.num_levels - 1:
+        level_outputs.append(inputs)
+        inputs = keras.layers.MaxPool2D()(inputs)
+      else:
+        mask = conv(inputs, 1, kernel_shape=[1, 1], activation=None,
+                    norm=False, name='output_0')
+        outputs.append(mask)
+
+    level_outputs = reversed(level_outputs)
+    for i, filters in enumerate(self.level_filters[1:]):
+      inputs = conv_upsample(inputs, filters, mask=mask, tol=self.tol,
+                             block_size=self.block_size,
+                             batch_size=self.batch_size)
+      mask = upsample(mask, size=2, interpolation='nearest')
+
+      cropped = crop(next(level_outputs), inputs.shape)
+      dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
+      inputs = keras.layers.Concatenate()([dropped, inputs])
+
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters, mask=mask, tol=self.tol,
+                      block_size=self.block_size,
+                      batch_size=self.batch_size)
+        mask = conv_output_crop(mask)
+      mask = conv(
+        inputs,
+        1,
+        kernel_shape=[1, 1],
+        activation=None,
+        norm=False,
+        padding='same',
+        mask=mask,
+        tol=self.tol,
+        block_size=self.block_size,
+        batch_size=self.batch_size,
+        name=f'output_{i+1}')
+      outputs.append(mask)
+
+    pose_image = conv(
+      inputs,
+      1 + self.pose_dim,
+      kernel_shape=[1, 1],
+      activation=None,
+      padding='same',
+      norm=False,
+      mask=mask,
+      block_size=self.block_size,
+      tol=self.tol,
+      batch_size=self.batch_size,
+      name='pose')
+
+    outputs = [pose_image] + outputs
+    return outputs
+
+class FullSparseUNet(SparseUNet):
+  """An extension of the SparseUNet that foregoes repeated gather and scatter
+  operations. Although it uses the same inputs and outputs as the other models,
+  it only uses the distance output of the first (lowest) and last level,
+  outputting empty tensors (or zeros) at the other levels, not used in the loss.
+
+  """
+  
   def forward(self, inputs):
     if self.batch_size is not None:
       inputs.set_shape([self.batch_size] + list(inputs.shape)[1:])

@@ -375,6 +375,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
     self.tol = tol
     self.avgpool = avgpool
 
+
   def build(self, input_shape):
     input_shape, mask_shape = input_shape
     self.block_count = [utils.divup(input_shape[1], self.block_stride[0]),
@@ -419,6 +420,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
         trainable=False,
         use_resource=False)
 
+
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
     shape = conv_utils.deconv_output_shape(
@@ -428,6 +430,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
       self.padding,
       self.strides)
     return tf.TensorShape(shape)
+
 
   def call(self, inputs):
     inputs, mask = inputs
@@ -518,6 +521,44 @@ class SparseConv2DTranspose(keras.layers.Layer):
       outputs.set_shape([None] + outputs.shape.as_list()[1:])
 
     return outputs
+
+
+class SparseGather(keras.layers.Layer):
+  def __init__(self,
+               block_size=[16, 16],
+               block_offset=[0, 0],
+               block_stride=[16, 16],
+               tol=0.5,
+               avgpool=False,
+               **kwargs):
+    """Perform the sparse gather operation.
+
+    :param block_size: 
+    :param block_offset: 
+    :param block_stride: 
+    :param tol: 
+    :param avgpool: 
+    :returns: 
+    :rtype: 
+
+    """
+    super().__init__(**kwargs)
+
+    self.block_size = utils.listify(block_size, 2)
+    self.block_offset = utils.listify(block_offset, 2)
+    self.block_stride = utils.listify(block_stride, 2)
+    self.tol = tol
+    self.avgpool = avgpool
+
+
+  def compute_output_shape(self, input_shape):
+    input_shape, mask_shape = input_shape
+    pass
+
+
+  def call(self, inputs):
+    pass
+
 
 def main():
   # tf.enable_eager_execution()

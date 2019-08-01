@@ -12,6 +12,7 @@ import numpy as np
 from artifice.log import logger
 from artifice import utils
 
+
 _show = True
 def set_show(val):
   global _show
@@ -20,6 +21,7 @@ def set_show(val):
     mpl.use('Agg')
     plt.ioff()
 
+    
 def show(fname=None, save=False):
   """Show the figure currently in matplotlib or save it, if not self.show.
 

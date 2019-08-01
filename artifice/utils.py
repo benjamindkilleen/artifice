@@ -56,7 +56,7 @@ def jsonable(hist):
   return out
 
 def json_save(fname, obj):
-  """Opens json object stored at fname. Errors if file doesn't exist."""
+  """Saves obj to fname as JSON."""
   with open(fname, 'w') as f:
     f.write(json.dumps(obj))
 

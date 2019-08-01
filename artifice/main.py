@@ -176,7 +176,7 @@ figs_dir: {self.figs_dir}
 labeled: {self.labeled}
 num_parallel_calls: {self.num_parallel_calls}
 ----
-input tile shape: {self.input_tile_shapes}
+input tile shape: {self.input_tile_shape}
 output shapes: {self.output_tile_shapes}
 todo: other attributes"""
 
@@ -246,10 +246,12 @@ todo: other attributes"""
       conversions.conversions[mode](
         self.data_root, test_size=self.test_size)
 
+
   def uncache(self):
     """Clean up the cache files."""
     for path in glob(join(self.model_root, "cache*")):
       utils.rm(path)
+
 
   def clean(self):
     """Clean up the files associated with this model for a future run.
@@ -267,6 +269,7 @@ todo: other attributes"""
       utils.rm(self.annotation_info_path)
       utils.rm(self.annotation_info_path + '.lockfile')
       utils.rm(self.annotated_dir)
+
 
   def prioritize(self):
     """Prioritize images for annotation using an active learning or other strategy.
@@ -287,6 +290,7 @@ todo: other attributes"""
     else:
       raise NotImplementedError(f"{self.priority_mode} priority mode")
     prioritizer.run(seconds=self.seconds)
+
 
   def annotate(self):
     """Continually annotate new examples.
@@ -309,6 +313,7 @@ todo: other attributes"""
       raise NotImplementedError(f"{self.annotation_mode} annotation mode")
     annotator.run(seconds=self.seconds)
 
+
   def train(self):
     """Train the model using augmented examples from the annotated set."""
     train_set = self._load_train()
@@ -318,6 +323,7 @@ todo: other attributes"""
                 verbose=self.keras_verbose,
                 seconds=self.seconds,
                 cache=self.cache)
+
 
   def predict(self):
     """Run prediction on the unlabeled set."""
@@ -349,6 +355,7 @@ todo: other attributes"""
     logger.info(f"min: {errors.min(axis=0)}")
     logger.info(f"max: {errors.max(axis=0)}")
 
+
   def vis_train(self):
     """Visualize the training set. (Mostly for debugging.)"""
     train_set = self._load_train()
@@ -363,6 +370,7 @@ todo: other attributes"""
                        columns=3)
         vis.show()
 
+
   def vis_history(self):
     model = self._load_model()
     if not exists(model.history_path):
@@ -371,6 +379,7 @@ todo: other attributes"""
     hist = utils.json_load(model.history_path)
     vis.plot_hist(hist)
     vis.show(join(self.figs_dir, 'history.pdf'))
+
 
   def vis_predict(self):
     """Run prediction on the test set and visualize the output."""
@@ -385,6 +394,7 @@ todo: other attributes"""
       if not self.show:
         break
 
+
   def vis_outputs(self):
     """Run prediction on the test set and visualize the output."""
     test_set = self._load_test()
@@ -395,6 +405,7 @@ todo: other attributes"""
       vis.show(join(self.figs_dir, 'model_outputs.pdf'))
       if not self.show:
         break
+
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -441,7 +452,7 @@ def main():
                       help=docs.data_size)
   parser.add_argument('--test-size', '-T', nargs=1, default=[1000], type=int,
                       help=docs.test_size)
-  parser.add_argument('--batch-size', '-b', nargs=1, default=[4], type=int,
+  parser.add_argument('--batch-size', '-b', nargs=1, default=[16], type=int,
                       help=docs.batch_size)
   parser.add_argument('--num-objects', '-n', nargs=1, default=[40], type=int,
                       help=docs.num_objects)
