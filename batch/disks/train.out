@@ -131,3 +131,272 @@ Epoch 33/100
 
 Epoch 00033: saving model to models/disks/proxy_u_net_ckpt.hdf5
  - 91s - loss: 0.0042 - pose_loss: 0.0033 - output_0_loss: 2.7578e-04 - output_1_loss: 2.9553e-04 - output_2_loss: 3.4303e-04 - pose_mean_absolute_error: 0.8256 - output_0_mean_absolute_error: 0.0096 - output_1_mean_absolute_error: 0.0059 - output_2_mean_absolute_error: 0.0039
+Epoch 34/100
+
+Epoch 00034: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0042 - pose_loss: 0.0033 - output_0_loss: 2.7631e-04 - output_1_loss: 2.9083e-04 - output_2_loss: 3.4101e-04 - pose_mean_absolute_error: 0.8261 - output_0_mean_absolute_error: 0.0096 - output_1_mean_absolute_error: 0.0058 - output_2_mean_absolute_error: 0.0039
+Epoch 35/100
+
+Epoch 00035: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0041 - pose_loss: 0.0032 - output_0_loss: 2.6921e-04 - output_1_loss: 2.8507e-04 - output_2_loss: 3.3953e-04 - pose_mean_absolute_error: 0.8259 - output_0_mean_absolute_error: 0.0095 - output_1_mean_absolute_error: 0.0058 - output_2_mean_absolute_error: 0.0038
+Epoch 36/100
+
+Epoch 00036: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0041 - pose_loss: 0.0032 - output_0_loss: 2.6643e-04 - output_1_loss: 2.8096e-04 - output_2_loss: 3.3773e-04 - pose_mean_absolute_error: 0.8268 - output_0_mean_absolute_error: 0.0094 - output_1_mean_absolute_error: 0.0057 - output_2_mean_absolute_error: 0.0038
+Epoch 37/100
+
+Epoch 00037: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0040 - pose_loss: 0.0032 - output_0_loss: 2.6215e-04 - output_1_loss: 2.7605e-04 - output_2_loss: 3.3606e-04 - pose_mean_absolute_error: 0.8272 - output_0_mean_absolute_error: 0.0094 - output_1_mean_absolute_error: 0.0057 - output_2_mean_absolute_error: 0.0038
+Epoch 38/100
+
+Epoch 00038: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0040 - pose_loss: 0.0031 - output_0_loss: 2.5760e-04 - output_1_loss: 2.7101e-04 - output_2_loss: 3.3387e-04 - pose_mean_absolute_error: 0.8282 - output_0_mean_absolute_error: 0.0093 - output_1_mean_absolute_error: 0.0056 - output_2_mean_absolute_error: 0.0038
+Epoch 39/100
+
+Epoch 00039: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0039 - pose_loss: 0.0031 - output_0_loss: 2.5657e-04 - output_1_loss: 2.6876e-04 - output_2_loss: 3.3220e-04 - pose_mean_absolute_error: 0.8288 - output_0_mean_absolute_error: 0.0093 - output_1_mean_absolute_error: 0.0056 - output_2_mean_absolute_error: 0.0038
+Epoch 40/100
+
+Epoch 00040: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0039 - pose_loss: 0.0030 - output_0_loss: 2.5255e-04 - output_1_loss: 2.6499e-04 - output_2_loss: 3.3053e-04 - pose_mean_absolute_error: 0.8300 - output_0_mean_absolute_error: 0.0092 - output_1_mean_absolute_error: 0.0056 - output_2_mean_absolute_error: 0.0038
+Epoch 41/100
+
+Epoch 00041: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0038 - pose_loss: 0.0030 - output_0_loss: 2.5280e-04 - output_1_loss: 2.6028e-04 - output_2_loss: 3.2854e-04 - pose_mean_absolute_error: 0.8310 - output_0_mean_absolute_error: 0.0092 - output_1_mean_absolute_error: 0.0055 - output_2_mean_absolute_error: 0.0037
+Epoch 42/100
+
+Epoch 00042: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0038 - pose_loss: 0.0029 - output_0_loss: 2.4641e-04 - output_1_loss: 2.5541e-04 - output_2_loss: 3.2642e-04 - pose_mean_absolute_error: 0.8318 - output_0_mean_absolute_error: 0.0091 - output_1_mean_absolute_error: 0.0055 - output_2_mean_absolute_error: 0.0037
+Epoch 43/100
+
+Epoch 00043: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0037 - pose_loss: 0.0029 - output_0_loss: 2.4614e-04 - output_1_loss: 2.5198e-04 - output_2_loss: 3.2404e-04 - pose_mean_absolute_error: 0.8330 - output_0_mean_absolute_error: 0.0091 - output_1_mean_absolute_error: 0.0054 - output_2_mean_absolute_error: 0.0037
+Epoch 44/100
+
+Epoch 00044: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0037 - pose_loss: 0.0029 - output_0_loss: 2.4396e-04 - output_1_loss: 2.4741e-04 - output_2_loss: 3.2159e-04 - pose_mean_absolute_error: 0.8344 - output_0_mean_absolute_error: 0.0091 - output_1_mean_absolute_error: 0.0054 - output_2_mean_absolute_error: 0.0037
+Epoch 45/100
+
+Epoch 00045: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0036 - pose_loss: 0.0028 - output_0_loss: 2.4060e-04 - output_1_loss: 2.4415e-04 - output_2_loss: 3.1910e-04 - pose_mean_absolute_error: 0.8359 - output_0_mean_absolute_error: 0.0090 - output_1_mean_absolute_error: 0.0054 - output_2_mean_absolute_error: 0.0037
+Epoch 46/100
+
+Epoch 00046: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0036 - pose_loss: 0.0028 - output_0_loss: 2.3933e-04 - output_1_loss: 2.4148e-04 - output_2_loss: 3.1636e-04 - pose_mean_absolute_error: 0.8375 - output_0_mean_absolute_error: 0.0090 - output_1_mean_absolute_error: 0.0053 - output_2_mean_absolute_error: 0.0037
+Epoch 47/100
+
+Epoch 00047: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0036 - pose_loss: 0.0028 - output_0_loss: 2.3876e-04 - output_1_loss: 2.3749e-04 - output_2_loss: 3.1323e-04 - pose_mean_absolute_error: 0.8383 - output_0_mean_absolute_error: 0.0090 - output_1_mean_absolute_error: 0.0053 - output_2_mean_absolute_error: 0.0037
+Epoch 48/100
+
+Epoch 00048: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0035 - pose_loss: 0.0027 - output_0_loss: 2.3403e-04 - output_1_loss: 2.3349e-04 - output_2_loss: 3.1021e-04 - pose_mean_absolute_error: 0.8389 - output_0_mean_absolute_error: 0.0089 - output_1_mean_absolute_error: 0.0052 - output_2_mean_absolute_error: 0.0036
+Epoch 49/100
+
+Epoch 00049: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0035 - pose_loss: 0.0027 - output_0_loss: 2.3081e-04 - output_1_loss: 2.3016e-04 - output_2_loss: 3.0713e-04 - pose_mean_absolute_error: 0.8401 - output_0_mean_absolute_error: 0.0088 - output_1_mean_absolute_error: 0.0052 - output_2_mean_absolute_error: 0.0036
+Epoch 50/100
+
+Epoch 00050: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0034 - pose_loss: 0.0027 - output_0_loss: 2.2949e-04 - output_1_loss: 2.2688e-04 - output_2_loss: 3.0349e-04 - pose_mean_absolute_error: 0.8404 - output_0_mean_absolute_error: 0.0088 - output_1_mean_absolute_error: 0.0052 - output_2_mean_absolute_error: 0.0036
+Epoch 51/100
+
+Epoch 00051: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0034 - pose_loss: 0.0026 - output_0_loss: 2.2916e-04 - output_1_loss: 2.2479e-04 - output_2_loss: 3.0036e-04 - pose_mean_absolute_error: 0.8405 - output_0_mean_absolute_error: 0.0088 - output_1_mean_absolute_error: 0.0051 - output_2_mean_absolute_error: 0.0036
+Epoch 52/100
+
+Epoch 00052: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0034 - pose_loss: 0.0026 - output_0_loss: 2.2625e-04 - output_1_loss: 2.2252e-04 - output_2_loss: 2.9614e-04 - pose_mean_absolute_error: 0.8405 - output_0_mean_absolute_error: 0.0087 - output_1_mean_absolute_error: 0.0051 - output_2_mean_absolute_error: 0.0036
+Epoch 53/100
+
+Epoch 00053: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0033 - pose_loss: 0.0026 - output_0_loss: 2.2464e-04 - output_1_loss: 2.1898e-04 - output_2_loss: 2.9195e-04 - pose_mean_absolute_error: 0.8410 - output_0_mean_absolute_error: 0.0087 - output_1_mean_absolute_error: 0.0051 - output_2_mean_absolute_error: 0.0035
+Epoch 54/100
+
+Epoch 00054: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0033 - pose_loss: 0.0026 - output_0_loss: 2.2010e-04 - output_1_loss: 2.1575e-04 - output_2_loss: 2.8785e-04 - pose_mean_absolute_error: 0.8406 - output_0_mean_absolute_error: 0.0086 - output_1_mean_absolute_error: 0.0050 - output_2_mean_absolute_error: 0.0035
+Epoch 55/100
+
+Epoch 00055: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0033 - pose_loss: 0.0025 - output_0_loss: 2.1967e-04 - output_1_loss: 2.1410e-04 - output_2_loss: 2.8366e-04 - pose_mean_absolute_error: 0.8412 - output_0_mean_absolute_error: 0.0086 - output_1_mean_absolute_error: 0.0050 - output_2_mean_absolute_error: 0.0035
+Epoch 56/100
+
+Epoch 00056: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0032 - pose_loss: 0.0025 - output_0_loss: 2.1485e-04 - output_1_loss: 2.1191e-04 - output_2_loss: 2.7892e-04 - pose_mean_absolute_error: 0.8399 - output_0_mean_absolute_error: 0.0085 - output_1_mean_absolute_error: 0.0050 - output_2_mean_absolute_error: 0.0035
+Epoch 57/100
+
+Epoch 00057: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0032 - pose_loss: 0.0025 - output_0_loss: 2.1149e-04 - output_1_loss: 2.0945e-04 - output_2_loss: 2.7420e-04 - pose_mean_absolute_error: 0.8406 - output_0_mean_absolute_error: 0.0085 - output_1_mean_absolute_error: 0.0049 - output_2_mean_absolute_error: 0.0035
+Epoch 58/100
+
+Epoch 00058: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0032 - pose_loss: 0.0025 - output_0_loss: 2.1347e-04 - output_1_loss: 2.0807e-04 - output_2_loss: 2.6929e-04 - pose_mean_absolute_error: 0.8399 - output_0_mean_absolute_error: 0.0085 - output_1_mean_absolute_error: 0.0049 - output_2_mean_absolute_error: 0.0034
+Epoch 59/100
+
+Epoch 00059: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0031 - pose_loss: 0.0025 - output_0_loss: 2.1391e-04 - output_1_loss: 2.0517e-04 - output_2_loss: 2.6404e-04 - pose_mean_absolute_error: 0.8403 - output_0_mean_absolute_error: 0.0085 - output_1_mean_absolute_error: 0.0049 - output_2_mean_absolute_error: 0.0034
+Epoch 60/100
+
+Epoch 00060: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0031 - pose_loss: 0.0024 - output_0_loss: 2.1062e-04 - output_1_loss: 2.0429e-04 - output_2_loss: 2.5963e-04 - pose_mean_absolute_error: 0.8399 - output_0_mean_absolute_error: 0.0084 - output_1_mean_absolute_error: 0.0049 - output_2_mean_absolute_error: 0.0034
+Epoch 61/100
+
+Epoch 00061: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0031 - pose_loss: 0.0024 - output_0_loss: 2.0924e-04 - output_1_loss: 2.0146e-04 - output_2_loss: 2.5425e-04 - pose_mean_absolute_error: 0.8391 - output_0_mean_absolute_error: 0.0084 - output_1_mean_absolute_error: 0.0048 - output_2_mean_absolute_error: 0.0034
+Epoch 62/100
+
+Epoch 00062: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0031 - pose_loss: 0.0024 - output_0_loss: 2.0552e-04 - output_1_loss: 1.9929e-04 - output_2_loss: 2.4952e-04 - pose_mean_absolute_error: 0.8387 - output_0_mean_absolute_error: 0.0084 - output_1_mean_absolute_error: 0.0048 - output_2_mean_absolute_error: 0.0034
+Epoch 63/100
+
+Epoch 00063: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0030 - pose_loss: 0.0024 - output_0_loss: 2.0517e-04 - output_1_loss: 1.9773e-04 - output_2_loss: 2.4453e-04 - pose_mean_absolute_error: 0.8385 - output_0_mean_absolute_error: 0.0084 - output_1_mean_absolute_error: 0.0048 - output_2_mean_absolute_error: 0.0033
+Epoch 64/100
+
+Epoch 00064: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0030 - pose_loss: 0.0024 - output_0_loss: 2.0362e-04 - output_1_loss: 1.9562e-04 - output_2_loss: 2.4015e-04 - pose_mean_absolute_error: 0.8382 - output_0_mean_absolute_error: 0.0083 - output_1_mean_absolute_error: 0.0047 - output_2_mean_absolute_error: 0.0033
+Epoch 65/100
+
+Epoch 00065: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0030 - pose_loss: 0.0024 - output_0_loss: 1.9978e-04 - output_1_loss: 1.9332e-04 - output_2_loss: 2.3550e-04 - pose_mean_absolute_error: 0.8381 - output_0_mean_absolute_error: 0.0083 - output_1_mean_absolute_error: 0.0047 - output_2_mean_absolute_error: 0.0033
+Epoch 66/100
+
+Epoch 00066: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0030 - pose_loss: 0.0023 - output_0_loss: 2.0362e-04 - output_1_loss: 1.9188e-04 - output_2_loss: 2.3104e-04 - pose_mean_absolute_error: 0.8371 - output_0_mean_absolute_error: 0.0083 - output_1_mean_absolute_error: 0.0047 - output_2_mean_absolute_error: 0.0033
+Epoch 67/100
+
+Epoch 00067: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0029 - pose_loss: 0.0023 - output_0_loss: 1.9996e-04 - output_1_loss: 1.9015e-04 - output_2_loss: 2.2684e-04 - pose_mean_absolute_error: 0.8371 - output_0_mean_absolute_error: 0.0082 - output_1_mean_absolute_error: 0.0047 - output_2_mean_absolute_error: 0.0033
+Epoch 68/100
+
+Epoch 00068: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0029 - pose_loss: 0.0023 - output_0_loss: 2.0076e-04 - output_1_loss: 1.8771e-04 - output_2_loss: 2.2276e-04 - pose_mean_absolute_error: 0.8368 - output_0_mean_absolute_error: 0.0082 - output_1_mean_absolute_error: 0.0046 - output_2_mean_absolute_error: 0.0032
+Epoch 69/100
+
+Epoch 00069: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0029 - pose_loss: 0.0023 - output_0_loss: 1.9821e-04 - output_1_loss: 1.8614e-04 - output_2_loss: 2.1843e-04 - pose_mean_absolute_error: 0.8359 - output_0_mean_absolute_error: 0.0082 - output_1_mean_absolute_error: 0.0046 - output_2_mean_absolute_error: 0.0032
+Epoch 70/100
+
+Epoch 00070: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0029 - pose_loss: 0.0023 - output_0_loss: 1.9831e-04 - output_1_loss: 1.8457e-04 - output_2_loss: 2.1471e-04 - pose_mean_absolute_error: 0.8357 - output_0_mean_absolute_error: 0.0082 - output_1_mean_absolute_error: 0.0046 - output_2_mean_absolute_error: 0.0032
+Epoch 71/100
+
+Epoch 00071: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0029 - pose_loss: 0.0023 - output_0_loss: 1.9423e-04 - output_1_loss: 1.8303e-04 - output_2_loss: 2.1134e-04 - pose_mean_absolute_error: 0.8352 - output_0_mean_absolute_error: 0.0082 - output_1_mean_absolute_error: 0.0046 - output_2_mean_absolute_error: 0.0032
+Epoch 72/100
+
+Epoch 00072: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0028 - pose_loss: 0.0023 - output_0_loss: 1.9476e-04 - output_1_loss: 1.8132e-04 - output_2_loss: 2.0764e-04 - pose_mean_absolute_error: 0.8345 - output_0_mean_absolute_error: 0.0082 - output_1_mean_absolute_error: 0.0046 - output_2_mean_absolute_error: 0.0032
+Epoch 73/100
+
+Epoch 00073: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0028 - pose_loss: 0.0022 - output_0_loss: 1.9381e-04 - output_1_loss: 1.7900e-04 - output_2_loss: 2.0399e-04 - pose_mean_absolute_error: 0.8336 - output_0_mean_absolute_error: 0.0081 - output_1_mean_absolute_error: 0.0045 - output_2_mean_absolute_error: 0.0031
+Epoch 74/100
+
+Epoch 00074: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0028 - pose_loss: 0.0022 - output_0_loss: 1.9334e-04 - output_1_loss: 1.7735e-04 - output_2_loss: 2.0042e-04 - pose_mean_absolute_error: 0.8332 - output_0_mean_absolute_error: 0.0081 - output_1_mean_absolute_error: 0.0045 - output_2_mean_absolute_error: 0.0031
+Epoch 75/100
+
+Epoch 00075: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0028 - pose_loss: 0.0022 - output_0_loss: 1.9418e-04 - output_1_loss: 1.7617e-04 - output_2_loss: 1.9742e-04 - pose_mean_absolute_error: 0.8329 - output_0_mean_absolute_error: 0.0081 - output_1_mean_absolute_error: 0.0045 - output_2_mean_absolute_error: 0.0031
+Epoch 76/100
+
+Epoch 00076: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0028 - pose_loss: 0.0022 - output_0_loss: 1.9166e-04 - output_1_loss: 1.7409e-04 - output_2_loss: 1.9426e-04 - pose_mean_absolute_error: 0.8317 - output_0_mean_absolute_error: 0.0081 - output_1_mean_absolute_error: 0.0045 - output_2_mean_absolute_error: 0.0031
+Epoch 77/100
+
+Epoch 00077: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0022 - output_0_loss: 1.8687e-04 - output_1_loss: 1.7186e-04 - output_2_loss: 1.9152e-04 - pose_mean_absolute_error: 0.8309 - output_0_mean_absolute_error: 0.0080 - output_1_mean_absolute_error: 0.0044 - output_2_mean_absolute_error: 0.0031
+Epoch 78/100
+
+Epoch 00078: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0022 - output_0_loss: 1.8743e-04 - output_1_loss: 1.7094e-04 - output_2_loss: 1.8847e-04 - pose_mean_absolute_error: 0.8311 - output_0_mean_absolute_error: 0.0080 - output_1_mean_absolute_error: 0.0044 - output_2_mean_absolute_error: 0.0030
+Epoch 79/100
+
+Epoch 00079: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0022 - output_0_loss: 1.8573e-04 - output_1_loss: 1.6829e-04 - output_2_loss: 1.8565e-04 - pose_mean_absolute_error: 0.8298 - output_0_mean_absolute_error: 0.0080 - output_1_mean_absolute_error: 0.0044 - output_2_mean_absolute_error: 0.0030
+Epoch 80/100
+
+Epoch 00080: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0022 - output_0_loss: 1.8830e-04 - output_1_loss: 1.6747e-04 - output_2_loss: 1.8309e-04 - pose_mean_absolute_error: 0.8289 - output_0_mean_absolute_error: 0.0080 - output_1_mean_absolute_error: 0.0044 - output_2_mean_absolute_error: 0.0030
+Epoch 81/100
+
+Epoch 00081: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0021 - output_0_loss: 1.8861e-04 - output_1_loss: 1.6588e-04 - output_2_loss: 1.8044e-04 - pose_mean_absolute_error: 0.8283 - output_0_mean_absolute_error: 0.0080 - output_1_mean_absolute_error: 0.0044 - output_2_mean_absolute_error: 0.0030
+Epoch 82/100
+
+Epoch 00082: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0021 - output_0_loss: 1.8296e-04 - output_1_loss: 1.6441e-04 - output_2_loss: 1.7845e-04 - pose_mean_absolute_error: 0.8281 - output_0_mean_absolute_error: 0.0079 - output_1_mean_absolute_error: 0.0044 - output_2_mean_absolute_error: 0.0030
+Epoch 83/100
+
+Epoch 00083: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0027 - pose_loss: 0.0021 - output_0_loss: 1.8504e-04 - output_1_loss: 1.6239e-04 - output_2_loss: 1.7588e-04 - pose_mean_absolute_error: 0.8273 - output_0_mean_absolute_error: 0.0080 - output_1_mean_absolute_error: 0.0043 - output_2_mean_absolute_error: 0.0030
+Epoch 84/100
+
+Epoch 00084: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.8460e-04 - output_1_loss: 1.6108e-04 - output_2_loss: 1.7378e-04 - pose_mean_absolute_error: 0.8262 - output_0_mean_absolute_error: 0.0079 - output_1_mean_absolute_error: 0.0043 - output_2_mean_absolute_error: 0.0030
+Epoch 85/100
+
+Epoch 00085: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.8270e-04 - output_1_loss: 1.5918e-04 - output_2_loss: 1.7143e-04 - pose_mean_absolute_error: 0.8255 - output_0_mean_absolute_error: 0.0079 - output_1_mean_absolute_error: 0.0043 - output_2_mean_absolute_error: 0.0029
+Epoch 86/100
+
+Epoch 00086: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.8080e-04 - output_1_loss: 1.5782e-04 - output_2_loss: 1.6934e-04 - pose_mean_absolute_error: 0.8250 - output_0_mean_absolute_error: 0.0079 - output_1_mean_absolute_error: 0.0043 - output_2_mean_absolute_error: 0.0029
+Epoch 87/100
+
+Epoch 00087: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.8200e-04 - output_1_loss: 1.5664e-04 - output_2_loss: 1.6798e-04 - pose_mean_absolute_error: 0.8248 - output_0_mean_absolute_error: 0.0079 - output_1_mean_absolute_error: 0.0043 - output_2_mean_absolute_error: 0.0029
+Epoch 88/100
+
+Epoch 00088: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.8021e-04 - output_1_loss: 1.5507e-04 - output_2_loss: 1.6575e-04 - pose_mean_absolute_error: 0.8237 - output_0_mean_absolute_error: 0.0079 - output_1_mean_absolute_error: 0.0042 - output_2_mean_absolute_error: 0.0029
+Epoch 89/100
+
+Epoch 00089: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.7913e-04 - output_1_loss: 1.5345e-04 - output_2_loss: 1.6378e-04 - pose_mean_absolute_error: 0.8236 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0042 - output_2_mean_absolute_error: 0.0029
+Epoch 90/100
+
+Epoch 00090: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0026 - pose_loss: 0.0021 - output_0_loss: 1.7776e-04 - output_1_loss: 1.5188e-04 - output_2_loss: 1.6210e-04 - pose_mean_absolute_error: 0.8225 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0042 - output_2_mean_absolute_error: 0.0029
+Epoch 91/100
+
+Epoch 00091: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0021 - output_0_loss: 1.7630e-04 - output_1_loss: 1.5057e-04 - output_2_loss: 1.6043e-04 - pose_mean_absolute_error: 0.8222 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0042 - output_2_mean_absolute_error: 0.0029
+Epoch 92/100
+
+Epoch 00092: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7670e-04 - output_1_loss: 1.4969e-04 - output_2_loss: 1.5890e-04 - pose_mean_absolute_error: 0.8215 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0042 - output_2_mean_absolute_error: 0.0029
+Epoch 93/100
+
+Epoch 00093: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7590e-04 - output_1_loss: 1.4813e-04 - output_2_loss: 1.5709e-04 - pose_mean_absolute_error: 0.8207 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0042 - output_2_mean_absolute_error: 0.0029
+Epoch 94/100
+
+Epoch 00094: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7573e-04 - output_1_loss: 1.4681e-04 - output_2_loss: 1.5554e-04 - pose_mean_absolute_error: 0.8206 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Epoch 95/100
+
+Epoch 00095: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7365e-04 - output_1_loss: 1.4523e-04 - output_2_loss: 1.5394e-04 - pose_mean_absolute_error: 0.8197 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Epoch 96/100
+
+Epoch 00096: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7457e-04 - output_1_loss: 1.4492e-04 - output_2_loss: 1.5291e-04 - pose_mean_absolute_error: 0.8196 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Epoch 97/100
+
+Epoch 00097: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7388e-04 - output_1_loss: 1.4336e-04 - output_2_loss: 1.5119e-04 - pose_mean_absolute_error: 0.8182 - output_0_mean_absolute_error: 0.0078 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Epoch 98/100
+
+Epoch 00098: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0025 - pose_loss: 0.0020 - output_0_loss: 1.7370e-04 - output_1_loss: 1.4246e-04 - output_2_loss: 1.5007e-04 - pose_mean_absolute_error: 0.8183 - output_0_mean_absolute_error: 0.0077 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Epoch 99/100
+
+Epoch 00099: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 91s - loss: 0.0024 - pose_loss: 0.0020 - output_0_loss: 1.7209e-04 - output_1_loss: 1.4156e-04 - output_2_loss: 1.4856e-04 - pose_mean_absolute_error: 0.8175 - output_0_mean_absolute_error: 0.0077 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Epoch 100/100
+
+Epoch 00100: saving model to models/disks/proxy_u_net_ckpt.hdf5
+ - 90s - loss: 0.0024 - pose_loss: 0.0020 - output_0_loss: 1.7287e-04 - output_1_loss: 1.4083e-04 - output_2_loss: 1.4750e-04 - pose_mean_absolute_error: 0.8167 - output_0_mean_absolute_error: 0.0077 - output_1_mean_absolute_error: 0.0041 - output_2_mean_absolute_error: 0.0028
+Finished.
