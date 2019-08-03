@@ -13,12 +13,14 @@ import tensorflow as tf
 from artifice.log import logger  # noqa
 from artifice import utils
 
-_gpu = tf.test.is_gpu_available() and tf.test.is_built_with_cuda()
+# whether to use custom sparse ops from sbnet
+# todo: check if compiled sbnet available
+_use_sbnet = tf.test.is_gpu_available() and tf.test.is_built_with_cuda()
 
-if _gpu:
+if _use_sbnet:
   from artifice import sbnet
 else:
-  import sparse_lib
+  from . import sparse_lib
 
 
 def reduce_mask(mask, *,
@@ -55,7 +57,7 @@ def reduce_mask(mask, *,
   `active_block_indices`, for passing to `sparse_gather` and `sparse_scatter`.
 
   """
-  if _gpu:
+  if _use_sbnet:
     indices = sbnet.reduce_mask(
       mask,
       block_count,
@@ -90,7 +92,7 @@ for (ni, hi, wi) in indices.active_block_indices:
 ```
 
   :param inputs: `[N, H, W, C]` shaped input tensor
-  :param bin_counts:
+  :param bin_counts: Number of indices of active blocks.
   :param active_block_indices: `[nBlocks, 3]` set of active block indices.
   :param bsize: `[BSZH, BSZW]` block size
   :param boffset: `[BOFFSH, BOFFSW]` block offset
@@ -102,7 +104,7 @@ for (ni, hi, wi) in indices.active_block_indices:
 
   """
 
-  if _gpu:
+  if _use_sbnet:
     outputs = sbnet.sparse_gather(
       inputs,
       bin_counts,
@@ -168,7 +170,7 @@ for (ni, hi, wi) in indices.active_block_indices:
   the output.
 
   :param block_stack: `[nBlocks, BSZH, BSZW, C]` tensor stack of blocks
-  :param bin_counts:
+  :param bin_counts: Number of indices of active blocks.
   :param active_block_indices: `[nBlocks, 3]` set of active block indices.
   :param outputs: base tensor to copy to output and overwrite on top of
   :param bsize: `[BSZH, BSZW]` block size
@@ -183,7 +185,7 @@ for (ni, hi, wi) in indices.active_block_indices:
   """
 
   shape = outputs.shape
-  if _gpu:
+  if _use_sbnet:
     if use_var:
       assert not tf.executing_eagerly(), 'use_var forbids eager execution'
       outputs = sbnet.sparse_scatter_var(
@@ -210,15 +212,28 @@ for (ni, hi, wi) in indices.active_block_indices:
         atomic=atomic,
         transpose=transpose)
   else:
-    outputs = sparse_lib.scatter(
-      block_stack,
-      bin_counts,
-      active_block_indices,
-      outputs,
-      bsize=bsize,
-      boffset=boffset,
-      bstride=bstride)
-
+    if use_var:
+      assert not tf.executing_eagerly(), 'use_var forbids eager execution'
+      outputs = sparse_lib.scatter_var(
+        block_stack,
+        bin_counts,
+        active_block_indices,
+        outputs,
+        bsize=bsize,
+        boffset=boffset,
+        bstride=bstride,
+        add=add)
+    else:
+      outputs = sparse_lib.scatter(
+        block_stack,
+        bin_counts,
+        active_block_indices,
+        outputs,
+        bsize=bsize,
+        boffset=boffset,
+        bstride=bstride,
+        add=add)
+      
   if not tf.executing_eagerly():
     outputs.set_shape(shape)
   return outputs

@@ -28,8 +28,8 @@ echo "Starting training..."
 python -m artifice train -i data/$data \
        --overwrite --patient -e 100 --initial-epoch 0 \
        --image-shape 500 500 1 --data-size 10000 --test-size 1000 \
-       --batch-size 4 --num-objects 40 \
-       -m models/${data} --labeled \
+       --batch-size 16 --num-objects 40 \
+       -m models/${data} --labeled --cache \
        --verbose 2 --keras-verbose 2
 echo "Finished."
 

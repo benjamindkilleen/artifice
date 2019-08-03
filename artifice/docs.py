@@ -40,7 +40,8 @@ level_filters = "Number of filters for each level in the unet."
 level_depth = "todo"
 
 # sparse eval and other optimization settings
-sparse = "Use the SparseUNet instead of the ProxyUNet."
+model = "Which model to use."
+model_choices = ['unet', 'sparse', 'dynamic']
 multiscale = "todo"
 use_var = "todo"
 

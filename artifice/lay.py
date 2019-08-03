@@ -266,8 +266,7 @@ class SparseConv2D(keras.layers.Layer):
       indices.active_block_indices,
       bsize=self.block_size,
       boffset=self.block_offset,
-      bstride=self.block_stride,
-      transpose=False)
+      bstride=self.block_stride)
 
     strides = [1, self.strides[0], self.strides[1], 1]
     blocks = tf.nn.conv2d(
@@ -290,7 +289,6 @@ class SparseConv2D(keras.layers.Layer):
       bsize=self.output_block_size,
       boffset=self.output_block_offset,
       bstride=self.output_block_stride,
-      transpose=False,
       use_var=self.use_var)
 
     if self.use_var:
@@ -375,6 +373,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
     self.tol = tol
     self.avgpool = avgpool
 
+
   def build(self, input_shape):
     input_shape, mask_shape = input_shape
     self.block_count = [utils.divup(input_shape[1], self.block_stride[0]),
@@ -419,6 +418,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
         trainable=False,
         use_resource=False)
 
+
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
     shape = conv_utils.deconv_output_shape(
@@ -428,6 +428,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
       self.padding,
       self.strides)
     return tf.TensorShape(shape)
+
 
   def call(self, inputs):
     inputs, mask = inputs
@@ -450,8 +451,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
       indices.active_block_indices,
       bsize=self.block_size,
       boffset=self.block_offset,
-      bstride=self.block_stride,
-      transpose=False)
+      bstride=self.block_stride)
 
     blocks_shape = array_ops.shape(blocks)
     num_blocks = blocks_shape[0]
@@ -511,13 +511,147 @@ class SparseConv2DTranspose(keras.layers.Layer):
       bsize=self.output_block_size,
       boffset=self.output_block_offset,
       bstride=self.output_block_stride,
-      transpose=False,
       use_var=self.use_var)
 
     if self.use_var:
       outputs.set_shape([None] + outputs.shape.as_list()[1:])
 
     return outputs
+
+
+class ReduceMask(keras.layers.Layer):
+  """Perform the sparse gather operation.
+
+  Outputs is a list containing [bin_counts, active_block_indices] rather than
+  the usual namedtuple.
+
+  :param block_size: 
+  :param block_offset: 
+  :param block_stride: 
+  :param tol: 
+  :param avgpool: 
+  :returns: 
+  :rtype: 
+
+  """
+
+  def __init__(self,
+               block_size=[16, 16],
+               block_offset=[0, 0],
+               block_stride=[16, 16],
+               tol=0.5,
+               avgpool=False,
+               **kwargs):
+    super().__init__(**kwargs)
+
+    self.block_size = utils.listify(block_size, 2)
+    self.block_offset = utils.listify(block_offset, 2)
+    self.block_stride = utils.listify(block_stride, 2)
+    self.tol = tol
+    self.avgpool = avgpool
+
+
+  def build(self, mask_shape):
+    self.block_count = [utils.divup(mask_shape[1], self.block_stride[0]),
+                        utils.divup(mask_shape[2], self.block_stride[1])]
+    
+
+  def compute_output_shape(self, _):
+    return [tf.TensorShape([]), tf.TensorShape([None, 3])]
+
+
+  def call(self, mask):
+    indices = sparse.reduce_mask(
+      mask,
+      block_count=self.block_count,
+      bsize=self.block_size,
+      boffset=self.block_offset,
+      bstride=self.block_stride,
+      tol=self.tol,
+      avgpool=self.avgpool)
+
+    return [indices.bin_counts, indices.active_block_indices]
+
+
+class SparseGather(keras.layers.Layer):
+  """Perform the sparse gather operation.
+
+  :param block_size: 
+  :param block_offset: 
+  :param block_stride: 
+  :returns: 
+  :rtype: 
+
+  """
+  def __init__(self,
+               block_size=[16, 16],
+               block_offset=[0, 0],
+               block_stride=[16, 16],
+               **kwargs):
+    super().__init__(**kwargs)
+
+    self.block_size = utils.listify(block_size, 2)
+    self.block_offset = utils.listify(block_offset, 2)
+    self.block_stride = utils.listify(block_stride, 2)
+
+
+  def compute_output_shape(self, input_shape):
+    input_shape, _, _ = input_shape
+    return tf.TensorShape([None, self.block_size[0], self.block_size[1], input_shape[3]])
+    
+
+  def call(self, inputs):
+    inputs, bin_counts, active_block_indices = inputs
+    return sparse.gather(
+      inputs,
+      bin_counts,
+      active_block_indices,
+      bsize=self.block_size,
+      boffset=self.block_offset,
+      bstride=self.block_stride)
+
+
+class SparseScatter(keras.layers.Layer):
+  """Perform the sparse scatter operation.
+
+  :param block_size: 
+  :param block_offset: 
+  :param block_stride: 
+  :returns: 
+  :rtype: 
+
+  """
+  def __init__(self,
+               block_size=[16, 16],
+               block_offset=[0, 0],
+               block_stride=[16, 16],
+               use_var=False,
+               **kwargs):
+    super().__init__(**kwargs)
+
+    self.block_size = utils.listify(block_size, 2)
+    self.block_offset = utils.listify(block_offset, 2)
+    self.block_stride = utils.listify(block_stride, 2)
+
+
+  def compute_output_shape(self, input_shape):
+    _, _, _, output_shape = input_shape
+    return output_shape
+    
+
+  def call(self, inputs):
+    inputs, bin_counts, active_block_indices, outputs = inputs
+    return sparse.scatter(
+      inputs,
+      bin_counts,
+      active_block_indices,
+      outputs,
+      bsize=self.block_size,
+      boffset=self.block_offset,
+      bstride=self.block_stride,
+      use_var=self.use_var)
+
+
 
 def main():
   # tf.enable_eager_execution()

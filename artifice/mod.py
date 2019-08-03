@@ -67,9 +67,9 @@ def crop(inputs, shape):
   return outputs
 
 
-def conv_output_crop(inputs,
-                     kernel_size=[3, 3],
-                     padding='valid'):
+def _crop_like_conv(inputs,
+                    kernel_size=[3, 3],
+                    padding='valid'):
   """Crop the height, width dims of inputs as if convolved with a stride of 1.
 
   :param inputs:
@@ -90,6 +90,12 @@ def conv_output_crop(inputs,
                                               (left_crop, right_crop)),
                                     input_shape=inputs.shape)(inputs)
   return outputs
+
+
+def _reindex_like_upsample(indices, scale=2):
+  scale = utils.listify(scale, 2)
+  scale_factor = tf.constant([1, scale[0], scale[1]], tf.float32)
+  return keras.layers.multiply([indices, scale_factor])
 
 
 def conv(inputs,
@@ -146,7 +152,7 @@ def conv(inputs,
 
 def conv_upsample(inputs,
                   filters,
-                  scale=2,
+                  size=2,
                   activation='relu',
                   mask=None,
                   batch_size=None,
@@ -167,11 +173,11 @@ def conv_upsample(inputs,
   :rtype:
 
   """
-  scale = utils.listify(scale, 2)
+  size = utils.listify(size, 2)
   if mask is None:
     inputs = keras.layers.Conv2DTranspose(
-      filters, scale,
-      strides=scale,
+      filters, size,
+      strides=size,
       padding='same',
       activation=activation,
       use_bias=False,
@@ -179,9 +185,9 @@ def conv_upsample(inputs,
   else:
     inputs = lay.SparseConv2DTranspose(
       filters,
-      scale,
+      size,
       batch_size=batch_size,
-      strides=scale,
+      strides=size,
       padding='same',
       activation=activation,
       use_bias=False,
@@ -189,8 +195,8 @@ def conv_upsample(inputs,
   return inputs
 
 
-def upsample(inputs, size, interpolation='nearest'):
-  """Upsamples the inputs by scale, using interpolation.
+def upsample(inputs, size=2, interpolation='nearest'):
+  """Upsamples the inputs by `size`, using interpolation.
 
   :param inputs:
   :param scale: int or 2-list of ints to scale the inputs by.
@@ -201,7 +207,16 @@ def upsample(inputs, size, interpolation='nearest'):
   return keras.layers.UpSampling2D(size, interpolation=interpolation)(inputs)
 
 
-class ArtificeModel():
+class Builder(type):
+  """Metaclass that calls build *after* init but before finishing
+  instantiation."""
+  def __call__(cls, *args, **kwargs):
+    obj = type.__call__(cls, *args, **kwargs)
+    obj.build()
+    return obj
+
+
+class ArtificeModel(metaclass=Builder):
   """A wrapper around keras models.
 
   If loading an existing model, this class is sufficient, since the save file
@@ -212,7 +227,7 @@ class ArtificeModel():
 
   """
 
-  def __init__(self, inputs, model_dir='.', learning_rate=0.1,
+  def __init__(self, input_shape, model_dir='.', learning_rate=0.1,
                overwrite=False):
     """Describe a model using keras' functional API.
 
@@ -230,6 +245,7 @@ class ArtificeModel():
     this.
 
     """
+    self.input_shape = input_shape
     self.overwrite = overwrite
     self.model_dir = model_dir
     self.learning_rate = learning_rate
@@ -240,6 +256,9 @@ class ArtificeModel():
     self.history_path = os.path.join(
       self.model_dir, f"{self.name}_history.json")
 
+  def build(self):
+    """Called after all subclasses have finished __init__()"""
+    inputs = keras.layers.Input(self.input_shape)
     outputs = self.forward(inputs)
     self.model = keras.Model(inputs, outputs)
     self.compile()
@@ -311,8 +330,9 @@ class ArtificeModel():
     new_hist = utils.jsonable(new_hist)
     if hist is not None:
       new_hist = _update_hist(hist, new_hist)
-      utils.json_save(self.history_path, hist)
-    return hist
+    utils.json_save(self.history_path, new_hist)
+
+    return new_hist
 
   def train(self, art_data, initial_epoch=0, epochs=1, seconds=0,
             **kwargs):
@@ -434,14 +454,14 @@ class ProxyUNet(ArtificeModel):
     self.num_levels = len(self.level_filters)
     self.input_tile_shape = self.compute_input_tile_shape()
     self.output_tile_shapes = self.compute_output_tile_shapes()
-    super().__init__(keras.layers.Input(self.input_tile_shape +
-                                        [self.num_channels]), **kwargs)
+
+    super().__init__(self.input_tile_shape + [self.num_channels], **kwargs)
 
   @staticmethod
   def compute_input_tile_shape_(base_shape, num_levels, level_depth):
     """Compute the shape of the input tiles.
 
-    :param base_shape: shape of the output of the first layer in the
+    :param base_shape: shape of the output of the last layer in the
     lower level.
     :param num_levels: number of levels
     :param level_depth: layers per level (per side)
@@ -449,6 +469,7 @@ class ProxyUNet(ArtificeModel):
 
     """
     tile_shape = np.array(base_shape)
+    tile_shape += 2 * level_depth
     for _ in range(num_levels - 1):
       tile_shape *= 2
       tile_shape += 2 * level_depth
@@ -461,7 +482,6 @@ class ProxyUNet(ArtificeModel):
   @staticmethod
   def compute_output_tile_shape_(base_shape, num_levels, level_depth):
     tile_shape = np.array(base_shape)
-    tile_shape -= 2 * level_depth
     for _ in range(num_levels - 1):
       tile_shape *= 2
       tile_shape -= 2 * level_depth
@@ -476,7 +496,6 @@ class ProxyUNet(ArtificeModel):
     """Compute the shape of the output tiles at every level, bottom to top."""
     shapes = []
     tile_shape = np.array(base_shape)
-    tile_shape -= 2 * level_depth
     shapes.append(list(tile_shape))
     for _ in range(num_levels - 1):
       tile_shape *= 2
@@ -488,10 +507,25 @@ class ProxyUNet(ArtificeModel):
     return self.compute_output_tile_shapes_(
       self.base_shape, self.num_levels, self.level_depth)
 
+  @staticmethod
+  def compute_level_input_shapes_(base_shape, num_levels, level_depth):
+    """Compute the shape of the output tiles at every level, bottom to top."""
+    shapes = []
+    tile_shape = np.array(base_shape)
+    shapes.append(list(tile_shape + 2 * level_depth))
+    for _ in range(num_levels - 1):
+      tile_shape *= 2
+      shapes.append(list(tile_shape))
+      tile_shape -= 2 * level_depth
+    return shapes
+
   def _fix_level_index(self, level):
     if level >= 0:
       return level
-    return self.num_levels + level
+    l = self.num_levels + level
+    if l < 0 or l >= self.num_levels:
+      raise ValueError(f"bad level: {level}")
+    return l
 
   def convert_point_between_levels(self, point, level, new_level):
     """Convert len-2 point in the tile-space at `level` to `new_level`.
@@ -529,13 +563,17 @@ class ProxyUNet(ArtificeModel):
                                         pred[:, :, :, 1:],
                                         weights=pose[:, :, :, :1])
 
+  @staticmethod
+  def pose_mae(true_outputs, outputs):
+    return tf.losses.mean_absolute_error(true_outputs[0], outputs[0])
+
   def compile(self):
     if tf.executing_eagerly():
       optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
     else:
       optimizer = keras.optimizers.Adadelta(self.learning_rate)
-      self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
-                         ['mse'] * self.num_levels, metrics=['mae'])
+    self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
+                       ['mse'] * self.num_levels, metrics=[self.pose_mae])
 
   def forward(self, inputs):
     level_outputs = []
@@ -584,20 +622,20 @@ class ProxyUNet(ArtificeModel):
     outputs = []
     next_batch = art_data.prediction_input().make_one_shot_iterator().get_next()
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        for i in itertools.count():
-          try:
-            batch = sess.run(next_batch)
-          except tf.errors.OutOfRangeError:
-            return
-          if i % 100 == 0:
-            logger.info(f"batch {i} / {art_data.steps_per_epoch}")
-            outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
-          while len(outputs) >= art_data.num_tiles:
-            prediction = art_data.analyze_outputs(
-              outputs, multiscale=multiscale)
-            yield prediction
-            del outputs[:art_data.num_tiles]
+      sess.run(tf.global_variables_initializer())
+      for i in itertools.count():
+        try:
+          batch = sess.run(next_batch)
+        except tf.errors.OutOfRangeError:
+          return
+        if i % 100 == 0:
+          logger.info(f"batch {i} / {art_data.steps_per_epoch}")
+          outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+        while len(outputs) >= art_data.num_tiles:
+          prediction = art_data.analyze_outputs(
+            outputs, multiscale=multiscale)
+          yield prediction
+          del outputs[:art_data.num_tiles]
 
   def predict_visualization(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data."""
@@ -692,12 +730,11 @@ class SparseUNet(ProxyUNet):
     :rtype:
 
     """
-    self.batch_size = batch_size
-    self.tol = tol
-    self.block_size = utils.listify(block_size, 2)
     super().__init__(**kwargs)
+    self.batch_size = batch_size
+    self.block_size = utils.listify(block_size, 2)
+    self.tol = tol
 
-  # todo: write this forward function. It's gonna be a mess.
   def forward(self, inputs):
     if self.batch_size is not None:
       inputs.set_shape([self.batch_size] + list(inputs.shape)[1:])
@@ -730,20 +767,20 @@ class SparseUNet(ProxyUNet):
         inputs = conv(inputs, filters, mask=mask, tol=self.tol,
                       block_size=self.block_size,
                       batch_size=self.batch_size)
-        mask = conv_output_crop(mask)
-        mask = conv(
-          inputs,
-          1,
-          kernel_shape=[1, 1],
-          activation=None,
-          norm=False,
-          padding='same',
-          mask=mask,
-          tol=self.tol,
-          block_size=self.block_size,
-          batch_size=self.batch_size,
-          name=f'output_{i+1}')
-        outputs.append(mask)
+        mask = _crop_like_conv(mask)
+      mask = conv(
+        inputs,
+        1,
+        kernel_shape=[1, 1],
+        activation=None,
+        norm=False,
+        padding='same',
+        mask=mask,
+        tol=self.tol,
+        block_size=self.block_size,
+        batch_size=self.batch_size,
+        name=f'output_{i+1}')
+      outputs.append(mask)
 
     pose_image = conv(
       inputs,
@@ -760,3 +797,130 @@ class SparseUNet(ProxyUNet):
 
     outputs = [pose_image] + outputs
     return outputs
+
+
+class DynamicUNet(SparseUNet):
+  """An extension of the SparseUNet that foregoes repeated gather and scatter
+  operations. Although it uses the same inputs and outputs as the other models,
+  it only uses the distance output of the first (lowest) and last level,
+  outputting empty tensors (or zeros) at the other levels, not used in the loss.
+
+  Uses the block_size as the base_shape for computing what is essentially a more
+  dynamic UNet, with a second tiling phase. The block stride is computed based
+  on the output block size.
+
+  """
+
+  def __init__(self, **kwargs):
+    super().__init__(**kwargs)
+
+    self.input_block_size = self.block_size
+    self.level_input_block_sizes = self.compute_level_input_shapes_(
+      self.block_size, self.num_levels, self.level_depth)
+    self.output_block_sizes = self.compute_output_tile_shapes_(
+      self.block_size, self.num_levels, self.level_depth)
+    self.output_block_size = self.output_block_sizes[-1]
+
+    self.input_block_stride = [
+      int(self.convert_distance_between_levels(
+        self.output_block_size[i], -1, 0))
+      for i in range(2)]        # at the last layer of level 0
+    self.level_input_block_strides = self.compute_level_input_block_strides_(
+      self.input_block_stride, self.num_levels, self.level_depth)
+    self.output_block_stride = self.output_block_size
+
+  @staticmethod
+  def compute_level_input_block_strides_(input_block_stride, num_levels, level_depth):
+    """Compute the block stride at the input to every level."""
+    strides = []
+    stride = np.array(input_block_stride)
+    strides.append(list(stride))
+    for _ in range(num_levels - 1):
+      stride *= 2
+      strides.append(list(stride))
+    return strides
+
+  def forward(self, inputs):
+    batch_size = tf.shape(inputs)[0]
+    logger.debug(f"block size: {self.block_size}")
+    logger.debug(f"level input block sizes: {self.level_input_block_sizes}")
+
+    level_outputs = []
+    outputs = []
+    for level, filters in enumerate(reversed(self.level_filters)):
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters)
+      if level < self.num_levels - 1:
+        level_outputs.append(inputs)
+        inputs = keras.layers.MaxPool2D()(inputs)
+      else:
+        mask = conv(inputs, 1, kernel_shape=[1, 1], activation=None,
+                    norm=False, name='output_0')
+        outputs.append(mask)
+
+    # sparsify based on the first mask
+    bin_counts, active_block_indices = lay.ReduceMask(
+      block_size=self.input_block_size,
+      block_stride=self.input_block_stride)(mask)
+    blocks = lay.SparseGather(
+      block_size=self.input_block_size,
+      block_stride=self.input_block_stride
+    )([inputs, bin_counts, active_block_indices])
+
+    level_outputs = reversed(level_outputs)
+    for i, filters in enumerate(self.level_filters[1:]):
+      level = i + 1
+      logger.debug(f"level: {level}")
+      blocks = conv_upsample(blocks, filters)
+      active_block_indices = _reindex_like_upsample(active_block_indices)
+
+      cropped = crop(next(level_outputs), inputs.shape)
+      dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
+      logger.debug(f'level output: {dropped}')
+      logger.debug(f'blocks: {blocks}')
+      blocked = lay.SparseGather(
+        block_size=self.level_input_block_sizes[level],
+        block_stride=self.level_input_block_strides[level]
+      )([dropped, bin_counts, active_block_indices])
+      logger.debug(f'blocked: {blocked}')
+      blocks = keras.layers.Concatenate()([blocked, blocks])
+
+      for _ in range(self.level_depth):
+        blocks = conv(inputs, filters)
+
+      # not used but needed for valid outputs
+      outputs.append(
+        tf.zeros([batch_size] + self.output_tile_shapes[level] + [1], tf.float32))
+
+    pose_blocks = conv(
+      blocks,
+      1 + self.pose_dim,
+      kernel_shape=[1, 1],
+      activation=None,
+      padding='same',
+      norm=False,
+      name='pose')
+
+    # todo: use-var option
+    pose_image = tf.zeros([batch_size] + self.output_tile_shape + [1 + self.pose_dim],
+                          tf.float32)
+    pose_image = lay.SparseScatter(
+      block_size=self.output_block_size,
+      block_stride=self.output_block_stride
+    )([pose_blocks, bin_counts, active_block_indices, pose_image])
+
+    outputs = [pose_image] + outputs
+    return outputs
+
+  @staticmethod
+  def zero_loss(y_true, y_pred):  # pylint: disable=unused-argument
+    return tf.constant(0, tf.float32)
+
+  def compile(self):
+    if tf.executing_eagerly():
+      optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
+    else:
+      optimizer = keras.optimizers.Adadelta(self.learning_rate)
+    self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
+                       ['mse'] + [self.zero_loss] * (self.num_levels - 1),
+                       metrics=[self.pose_mae])

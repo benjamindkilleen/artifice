@@ -17,120 +17,148 @@
 
 """
 
+import numpy as np
 from collections import namedtuple
 import tensorflow as tf
 
-from tf_conv_dims import calc_padding_4d
+from artifice.log import logger
 
-def _calc_block_strides(bsize, ksize, strides):
-  """Calculates strides for blocks.
+def _compute_mask_padding(size, bcount, bsize, boffset, bstride):
+  """Computes the padding for the reduce_mask operation.
 
-  :param bsize:     [list]        List of 4 int. Size of blocks, or downsample ratio.
-  :param ksize:     [list]        List of 4 int. Sparse convolution kernel size.
-  :param strides:   [list]        List of 4 int. Sparse convolution strides.
-
-  :return           [list]        List of 4 int. Block strides.
-  """
-  return [1, bsize[1] - ksize[0] + strides[1], bsize[2] - ksize[1] + strides[2], 1]
-
-
-def _pad_input(x, ksize, strides, padding, bsize=None, bstrides=None):
-  """Pads the input tensor.
-
-  Optional to pass in block strides. The right hand side padding will be increased
-  if the last block does not fit in (no effect on the convolution results.
-
-  :param x:        [Tensor]   [N, H, W, C]. input tensor, dtype float32.
-  :param ksize:    [list]     List of 4 int. Sparse convolution kernel size.
-  :param strides:  [list]     List of 4 int. Sparse convolution stride size.
-  :param padding:  [string]   `VALID` or `SAME`, padding method for sparse convolution.
-  :param bsize     [list]     List of 4 int. Block size. Optional.
-  :param bstrides: [list]     List of 4 int. Block strides. Optional.
-
-  :return          [Tensor]   [N, H+Ph, W+Pw, C]. Padded input tensor.
+  :param size: `[SZH, SZW]` list-like of ints, size of image
+  :param bcount: `[BCH, BCW]` list of ints
+  :param bsize:
+  :param boffset:
+  :param bstride:
+  :returns: `pad_h, pad_w` for _pad_mask function, possibly negative.
+  :rtype:
 
   """
-  x_shape = tf.shape(x)
-  if padding == 'SAME':
-    pad_h0, pad_h1, pad_w0, pad_w1 = calc_padding_4d(x_shape, ksize, strides, padding)
+  pad_h = [boffset[0], boffset[0] + bstride[0]*(bcount[0] - 1) + bsize[0] - size[0]]
+  pad_w = [boffset[1], boffset[1] + bstride[1]*(bcount[1] - 1) + bsize[1] - size[1]]
+  return pad_h, pad_w
 
-    if bstrides is not None:
-      # Here we do not use the standard padding on the right hand side.  If the
-      # convolution results is larger than expected, the scatter function will
-      # not use out-of-boundary points.
-      assert bsize is not None, 'Must pass in bsize and bstrides together.'
-      h = x_shape[1] + pad_h0 + pad_h1
-      w = x_shape[2] + pad_w0 + pad_w1
-      pad_h1 += tf.mod(-h + bsize[1], bstrides[1])
-      pad_w1 += tf.mod(-w + bsize[2], bstrides[2])
-    return tf.pad(x, [[0, 0], [pad_h0, pad_h1], [pad_w0, pad_w1], [0, 0]])
-  else:
-    if bstrides is not None:
-      assert bsize is not None, 'Must pass in bsize and bstrides together.'
-      h = x_shape[1]
-      w = x_shape[2]
-      pad_h1 = tf.mod(-h + bsize[1], bstrides[1])
-      pad_w1 = tf.mod(-w + bsize[2], bstrides[2])
-      return tf.cond(
-        tf.logical_or(tf.greater(pad_h1, 0), tf.greater(pad_w1, 0)),
-        lambda: tf.pad(x, [[0, 0], [0, pad_h1], [0, pad_w1], [0, 0]]), lambda: x)
-    else:
-      return x
+def _pad_mask(mask, bcount, bsize, boffset, bstride):
+  """Pad the mask for then
 
+  :param mask: 4D tensor containing the mask.
+  :param bcount:
+  :param bsize:
+  :param boffset:
+  :param bstride:
+  :returns: Padded (or cropped) mask
+  :rtype: tf.Tensor
 
-def convert_mask_to_indices(mask, *, bsize, ksize, strides, padding, tol):
   """
-  Converts a binary mask to sparse indices.
+  pad_h, pad_w = _compute_mask_padding(
+    mask.shape[1:3], bcount, bsize, boffset, bstride)
 
-  :param mask:     [Tensor]   [N, H, W]. 1 indicates non-sparse locations. Dtype float32.
-  :param bsize:    [list]     List of 4 int. Size of blocks, or downsample ratio.
-  :param ksize:    [list]     List of 4 int. Sparse convolution kernel size.
-  :param strides:  [list]     List of 4 int. Sparse convolution stride size.
-                              Currently only supports when,
-                              1) (bsize[1] - ksize[0]) % strides[1] == 0 and,
-                              2) (bsize[2] - ksize[1]) % strides[2] == 0
-  :param padding:  [string]   `VALID` or `SAME`, padding method for sparse convolution.
-  :param tol:      [float]    Lower bound of occupancy for creating a rectangle.
+  if pad_h[0] < 0:
+    mask = mask[:, -pad_h[0]:, :, :]
+    pad_h[0] = 0
+  if pad_h[1] < 0:
+    mask = mask[:, :-pad_h[1], :, :]
+    mad_h[1] = 0
+  if pad_w[0] < 0:
+    mask = mask[:, :, -pad_w[0]:, :]
+    pad_w[0] = 0
+  if pad_w[1] < 0:
+    mask = mask[:, :, :-pad_w[1], :]
+    mad_w[1] = 0
 
-  :return          [Tensor]   [M, 3]. Center locations (N, H, W) of M rectangles. Dtype int32.
+  pad_n = pad_c = [0, 0]
+  return tf.pad(mask, [pad_n, pad_h, pad_w, pad_c])
+
+
+def _compute_upsample_offsets(bsize):
+  """Compute the offsets for blocks with bsize.
+
+  Assumes that the given coordinate is at the top left of the block.
+
+  So for example, if the block size were [3, 4], the returned offsets would be:
+```
+  [[[0], [1], [2], [3]],
+   [[1], [2], [3], [4]],
+   [[2], [3], [4], [5]]]
+```
+  which has shape [1, 3, 4, 1]
+
+  :param bsize: `[BSZH, BSZW]` size of the blocks.
+  :returns: [1, bsize[0], bsize[1], 1] array of offsets to upsample a set of
+  block_indices.
+  :rtype: tf.Tensor
+
   """
-  ERR_MSG_RANK = 'Expect mask rank = 3'
-  ERR_MSG_DIV = 'Expect `stride` divides `bsize` - `ksize`. stride {}, bsize {}, ksize {}.'
-  ERR_MSG_DIM = 'Expect first and last dimensions of strides = 1. Dim {}.'
+  offsets = np.array([np.arange(i, i + bsize[1]) for i in range(bsize[0])], np.int32)
+  offsets = tf.constant(offsets, tf.int32)
+  offsets = tf.expand_dims(offsets, 0)
+  offsets = tf.expand_dims(offsets, 3)
+  return offsets
 
-  assert len(mask.get_shape()) == 3, ERR_MSG_RANK
-  assert type(bsize) in [list, tuple], '`bsize` needs to be a list or tuple.'
-  assert type(ksize) in [list, tuple], '`ksize` needs to be a list or tuple.'
-  assert type(strides) in [list, tuple], '`strides` needs to be a list or tuple.'
-  assert (bsize[1] - ksize[0]) % strides[1] == 0, ERR_MSG_DIV.format(
-    strides[1], bsize[1], ksize[0])
-  assert (bsize[2] - ksize[1]) % strides[2] == 0, ERR_MSG_DIV.format(
-    strides[2], bsize[2], ksize[1])
-  assert strides[0] == strides[3] == 1, ERR_MSG_DIM.format(strides)
 
-  bstrides = _calc_block_strides(bsize, ksize, strides)
+def _upsample_block_indices(active_block_indices, bsize, boffset, bstride):
+  """Upsamples the indices to have all indices in a rectangle.
 
-  # Pad mask.
-  mask_ = tf.expand_dims(mask, 3)
-  mask_ = _pad_input(mask_, ksize, strides, padding, bsize=bsize, bstrides=bstrides)
-  mask_ = tf.nn.max_pool(mask_, bsize, bstrides, 'VALID')    # Blocks are always valid conv.
-  mask_ = tf.squeeze(mask_, [3])
-  indices = tf.where(tf.greater(mask_, tol))
-  indices = tf.cast(indices, tf.int32)
+  :param active_block_indices: [M,3] Tensor. Corresponds to top left coordinate
+  after offset and scaling.
+  :param bsize: block size
+  :param boffset:
+  :param bstride:
+  :returns: [M, bsize[0], bsize[1], 3] locations of all pixels in the blocks.
+  :rtype:
+
+  """
+  offset = tf.constant([1, boffset[0], boffset[1]], dtype=tf.int32)
+  scale = tf.constant([1, bstride[0], bstride[1]], dtype=tf.int32)
+  indices = active_block_indices + offset
+  indices *= scale                                       # [M, 3]
+  indices = tf.expand_dims(indices, 1)
+  indices = tf.expand_dims(indices, 2) # [M, 1, 1, 3]
+  upsample_offsets = _compute_upsample_offsets(bsize) # [1, bsize[0], bsize[1], 1]
+  indices += upsample_offsets # [M, bsize[0], bsize[1], 3]
+
   return indices
 
-#################### cpu or primitive implementations ####################
 
-# todo: need to implement these, based on tensorflow primitives
+#################### tf primitive implementations ####################
 
-def reduce_mask(mask, *,
-                block_count,
+
+def reduce_mask(mask,
+                block_count, *,
                 bsize,
                 boffset,
                 bstride,
                 tol=0.5,
                 avgpool=False):
-  pass
+  """Reduce the mask to namedtuple `(bin_counts, active_block_indices)`, indices.
+
+  :param mask:
+  :param block_count:
+  :param bsize:
+  :param boffset:
+  :param bstride:
+  :param tol:
+  :param avgpool:
+  :returns:
+  :rtype:
+
+  """
+  mask = _pad_mask(mask, block_count, bsize, boffset, bstride)
+  mask = tf.nn.pool(
+    mask,
+    window_shape=bsize,
+    pooling_type='AVG' if avgpool else 'MAX',
+    padding='SAME',
+    strides=bstride)
+  logger.debug(f"mask values: {mask.numpy().min()} to {mask.numpy().max()}")
+  mask = tf.squeeze(mask, axis=3)
+  active_block_indices = tf.where(mask > tf.constant(tol, mask.dtype))
+  active_block_indices = tf.cast(active_block_indices, tf.int32)
+  bin_counts = tf.shape(active_block_indices)[0]
+  logger.debug(f"bin_counts: {bin_counts.numpy()}")
+  Indices = namedtuple('Indices', ['active_block_indices', 'bin_counts'])
+  return Indices(active_block_indices, bin_counts)
 
 
 def gather(
@@ -140,15 +168,94 @@ def gather(
     bsize,
     boffset,
     bstride):
-  pass
+  """FIXME! briefly describe function
 
+  :param inputs:
+  :param bin_counts: number of blocks?
+  :param active_block_indices:
+  :param bsize:
+  :param boffset:
+  :param bstride:
+  :returns:
+  :rtype:
+
+  """
+  indices = _upsample_block_indices(
+    active_block_indices,
+    bsize,
+    boffset,
+    bstride)
+  blocks = tf.gather_nd(inputs, indices)
+  blocks = tf.reshape(blocks, [bin_counts, bsize[0], bsize[1], tf.shape(inputs)[3]])
+  return blocks
 
 def scatter(
-    block_stack,
-    bin_counts,
+    blocks,
+    bin_counts,                 # pylint: disable=unused-argument
     active_block_indices,
     outputs, *,
     bsize,
     boffset,
-    bstride):
-  pass
+    bstride,
+    add=False):
+  """Scatter the blocks back onto outputs.
+
+  Note that currently this only uses `outputs.shape` to scatter onto a tensor of zeros.
+
+  In tf >= 1.14, the functions tf.tensor_scatter_nd_update and
+  tf.tensor_scatter_nd_add would overcome this barrier.
+
+  :param blocks: [M, bsize[0], bsize[1], C]
+  :param bin_counts:
+  :param active_block_indices:
+  :param outputs: [N, H, W, C]
+  :param bsize:
+  :param boffset:
+  :param bstride:
+  :returns:
+  :rtype:
+
+  """
+  indices = _upsample_block_indices(
+    active_block_indices,
+    bsize,
+    boffset,
+    bstride)                    # [M, bsize[0], bsize[1], 3]
+
+  if add:
+    raise NotImplementedError
+  else:
+    # if indices.shape[1] != blocks.shape[1] and indices.shape[2] != indices.shape[2]:
+    #   raise ValueError(f'indices and blocks have incompatible shapes: '
+    #                    f'{indices.shape} vs {blocks.shape}')
+    outputs = tf.cond(
+      tf.cast(tf.shape(blocks)[0], tf.bool),
+      lambda: tf.scatter_nd(indices, blocks, tf.shape(outputs)),
+      lambda: outputs)
+
+  return outputs
+
+def scatter_var(
+    blocks,
+    bin_counts,                 # pylint: disable=unused-argument
+    active_block_indices,
+    outputs, *,
+    bsize,
+    boffset,
+    bstride,
+    add=False):
+
+  raise NotImplementedError("no gradient for sparse_lib.scatter_var")
+  
+  indices = _upsample_block_indices(
+    active_block_indices,
+    bsize,
+    boffset,
+    bstride)                    # [M, bsize[0], bsize[1], 3]
+
+  if add:
+    outputs = tf.scatter_nd_add(outputs, indices, blocks)
+  else:
+    outputs = tf.scatter_nd_update(outputs, indices, blocks)
+
+  return outputs

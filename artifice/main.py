@@ -74,7 +74,7 @@ class Artifice:
                base_shape,
                level_filters,
                level_depth,
-               sparse,
+               model,
                multiscale,
                use_var,
                dropout,
@@ -124,8 +124,8 @@ class Artifice:
     self.level_filters = level_filters
     self.level_depth = level_depth
 
-    # sparse model settings
-    self.sparse = sparse
+    # model type settings
+    self.model = model
     self.multiscale = multiscale
     self.use_var = use_var
 
@@ -182,7 +182,7 @@ figs_dir: {self.figs_dir}
 labeled: {self.labeled}
 num_parallel_calls: {self.num_parallel_calls}
 ----
-input tile shape: {self.input_tile_shapes}
+input tile shape: {self.input_tile_shape}
 output shapes: {self.output_tile_shapes}
 todo: other attributes"""
 
@@ -245,13 +245,17 @@ todo: other attributes"""
               'model_dir': self.model_root,
               'learning_rate': self.learning_rate,
               'overwrite': self.overwrite}
-    if self.sparse:
-      if self.use_var:
-        kwargs['batch_size'] = self.batch_size
-      model = mod.SparseUNet(**kwargs)
+    if self.use_var and self.model in ['sparse', 'dynamic']:
+      kwargs['batch_size'] = self.batch_size
+
+    if self.model == 'unet':
+      return mod.ProxyUNet(**kwargs)
+    elif self.model == 'sparse':
+      return mod.SparseUNet(**kwargs)
+    elif self.model == 'dynamic':
+      return mod.DynamicUNet(**kwargs)
     else:
-      model = mod.ProxyUNet(**kwargs)
-    return model
+      raise RuntimeError(f"No '{self.model}' model type.")
 
   """
   Methods implementing Commands.
@@ -461,7 +465,7 @@ def main():
                       help=docs.data_size)
   parser.add_argument('--test-size', '-T', nargs=1, default=[1000], type=int,
                       help=docs.test_size)
-  parser.add_argument('--batch-size', '-b', nargs=1, default=[4], type=int,
+  parser.add_argument('--batch-size', '-b', nargs=1, default=[16], type=int,
                       help=docs.batch_size)
   parser.add_argument('--num-objects', '-n', nargs=1, default=[40], type=int,
                       help=docs.num_objects)
@@ -471,7 +475,7 @@ def main():
                       help=docs.num_shuffle)
 
   # model architecture
-  parser.add_argument('--base-shape', nargs='+', default=[32], type=int,
+  parser.add_argument('--base-shape', nargs='+', default=[28], type=int,
                       help=docs.base_shape)
   parser.add_argument('--level-filters', nargs='+', default=[128, 64, 32],
                       type=int, help=docs.level_filters)
@@ -479,7 +483,8 @@ def main():
                       help=docs.level_depth)
 
   # sparse eval and other optimization settings
-  parser.add_argument('--sparse', action='store_true', help=docs.sparse)
+  parser.add_argument('--model', '-M', nargs='?', default='unet',
+                      choices=docs.model_choices, help=docs.model)
   parser.add_argument('--multiscale', action='store_true',
                       help=docs.multiscale)
   parser.add_argument('--use-var', action='store_true', help=docs.use_var)
@@ -532,7 +537,7 @@ def main():
                  base_shape=args.base_shape,
                  level_filters=args.level_filters,
                  level_depth=args.level_depth[0],
-                 sparse=args.sparse,
+                 model=args.model,
                  multiscale=args.multiscale,
                  use_var=args.use_var,
                  dropout=args.dropout[0],

@@ -1,173 +1,45 @@
+2019-08-01 15:35:18.185445: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-08-01 15:35:18.216199: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2400115000 Hz
+2019-08-01 15:35:18.216338: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x55934af4e270 executing computations on platform Host. Devices:
+2019-08-01 15:35:18.216365: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): <undefined>, <undefined>
+2019-08-01 15:35:18.314440: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x55934b0054c0 executing computations on platform CUDA. Devices:
+2019-08-01 15:35:18.314509: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): Tesla K80, Compute Capability 3.7
+2019-08-01 15:35:18.314774: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1433] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:88:00.0
+totalMemory: 11.17GiB freeMemory: 11.11GiB
+2019-08-01 15:35:18.314807: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
+2019-08-01 15:35:18.317051: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-08-01 15:35:18.317078: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
+2019-08-01 15:35:18.317090: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
+2019-08-01 15:35:18.317261: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
 DEBUG:artifice:Use Python3.6 or higher.
-INFO:artifice:Fri Jul 26 15:46:51 2019:
+INFO:artifice:Thu Aug  1 15:35:18 2019:
+data_root: data/disks
+model_root: models/disks
+figs_dir: figs
+----
+labeled: True
 num_parallel_calls: 28
+----
+input tile shape: [140, 140]
+output shapes: [[28, 28], [52, 52], [100, 100]]
 todo: other attributes
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:435: colocate_with (from tensorflow.python.framework.ops) is deprecated and will be removed in a future version.
 Instructions for updating:
 Colocations handled automatically by placer.
-2019-07-26 15:46:52.146502: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-07-26 15:46:52.605244: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2400190000 Hz
-2019-07-26 15:46:52.610532: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x55c2f7a5b260 executing computations on platform Host. Devices:
-2019-07-26 15:46:52.610613: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): <undefined>, <undefined>
-2019-07-26 15:46:52.756014: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x55c2f7b12010 executing computations on platform CUDA. Devices:
-2019-07-26 15:46:52.756078: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): Tesla K80, Compute Capability 3.7
-2019-07-26 15:46:52.756457: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1433] Found device 0 with properties: 
-name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:89:00.0
-totalMemory: 11.17GiB freeMemory: 11.11GiB
-2019-07-26 15:46:52.756504: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.758964: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.758991: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.759003: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.759312: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.764054: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.764097: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.764114: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.764125: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.764266: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.793023: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.793057: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.793069: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.793077: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.793194: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/keras/layers/core.py:143: calling dropout (from tensorflow.python.ops.nn_ops) with keep_prob is deprecated and will be removed in a future version.
 Instructions for updating:
 Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`.
-2019-07-26 15:46:52.844089: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.844122: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.844135: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.844143: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.844261: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.847009: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.847042: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.847054: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.847061: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.847177: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.850940: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.850973: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.850986: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.850994: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.851125: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.909975: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.910007: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.910019: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.910027: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.910144: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.912812: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.912843: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.912855: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.912862: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.912976: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.916613: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.916644: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.916656: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.916664: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.916801: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.977444: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.977475: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.977487: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.977495: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.977613: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.980299: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.980330: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.980342: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.980350: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.980464: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.984025: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.984056: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.984068: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.984076: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.984189: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.993370: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.993401: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.993413: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.993421: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.993535: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:52.996200: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:52.996232: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:52.996244: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:52.996251: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:52.996365: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.021261: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.021292: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.021305: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.021313: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.021428: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.057145: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.057177: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.057189: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.057197: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.057312: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.060069: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.060100: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.060112: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.060121: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.060236: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.063776: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.063807: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.063819: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.063827: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.063941: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.121978: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.122010: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.122022: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.122030: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.122165: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.124854: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.124886: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.124898: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.124906: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.125020: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.128556: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.128587: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.128598: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.128606: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.128758: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.189667: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.189703: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.189715: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.189723: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.189842: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.192452: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.192483: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.192495: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.192503: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.192617: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.196215: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.196245: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.196257: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.196265: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.196379: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.216162: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.216193: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.216205: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.216213: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.216327: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.218960: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.218992: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.219019: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.219027: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.219141: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
-2019-07-26 15:46:53.222767: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:53.222798: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:53.222810: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:53.222817: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:53.222931: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/losses/losses_impl.py:667: to_float (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
 Instructions for updating:
 Use tf.cast instead.
-2019-07-26 15:46:54.051820: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 15:46:54.051896: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 15:46:54.051910: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 15:46:54.051918: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 15:46:54.052080: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:89:00.0, compute capability: 3.7)
+INFO:artifice:caching this epoch...
+2019-08-01 15:35:20.114417: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
+2019-08-01 15:35:20.114474: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-08-01 15:35:20.114486: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
+2019-08-01 15:35:20.114494: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
+2019-08-01 15:35:20.114657: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:88:00.0, compute capability: 3.7)
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/math_ops.py:3066: to_int32 (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
 Instructions for updating:
 Use tf.cast instead.
-2019-07-26 15:47:32.365219: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 63 of 1000
-2019-07-26 15:47:42.364806: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 207 of 1000
-2019-07-26 15:47:52.366140: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 363 of 1000
-2019-07-26 15:48:02.408062: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 532 of 1000
-2019-07-26 15:48:12.435378: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 707 of 1000
-2019-07-26 15:48:22.450720: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 882 of 1000
-2019-07-26 15:48:22.784687: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:140] Shuffle buffer filled.

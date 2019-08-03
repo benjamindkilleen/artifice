@@ -12,6 +12,7 @@ import numpy as np
 from artifice.log import logger
 from artifice import utils
 
+
 _show = True
 
 

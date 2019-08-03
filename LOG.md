@@ -838,9 +838,56 @@ Possible update that would make things faster:
 
 ## July 31, 2019: Rerunning with more levels
 We using patient execution, with level filters: 128, 128, 64, 32. Input tile
-shape, (on gpu).
+shape, (on gpu), 10000 500x500 images with batch_size of 4.
 * dense, no cache: 1289 (~18m), 1034, 1021s
 * dense, cache: 1062, 459, 459s
 * sparse, cache: 547, 401, 396s
 
 which is like a 13% speed boost, ish, when cached.
+
+## August 1, 2019: Idea: 
+Create layers for the `sparse_gather` and `sparse_scatter` operations so that we
+don't scatter unless absolutely necessary, potentially just at the end of the
+first layer and at the end of the last layer. This lets us use fewer of the
+outputs for the loss (potentially cutting out that data processing/loading
+bottleneck a little bit,) but also requires some fancy arithmetic on the blocks.
+
+For now:
+* Re-implement `reduce_mask1`, `gather`, `scatter`, and `scatter_var` for CPU.
+* Look into benchmarks for evaluation.
+* Think about fully-sparse U-Net `FullSparseUNet`.
+
+### More time checks:
+I rebuilt the sparse ops with tf primitives. Here's how they run on GPU, using
+caching and patient executiong. 
+
+Just as a reminder, the sbnet runtimes were (pre-cached, patient, gpu):
+* dense: 150, 136, 136s
+* sparse: 153, 117, 116s
+* sparse, use-var: 345, 138, 137s 
+
+And my implementation with tf primitives:
+* sparse: 321, 143, 142s (not pre-cached)
+  pre-cached: 175, 148, 144 (comparable)
+
+Use-var resulted in a gradient error, probably due to `tf.scatter_nd_update`.
+
+Okay, so tf primitives are not unreasonable, but not as good as the sparse,
+non-variable option, and use-var was actually better. CPU evaluation worked as
+expected.
+
+Messing with the batch size, using sparse, gpu, patient, caching:
+* -b 8: 354, 93, 92s (not pre-cached)
+* -b 16: 383, 92, 83s
+
+so batch size 8 seems to be the way to go, since it's a huge improvement over
+-b 4. 16 is also fine, might improve on 8, so we'll go with that from now
+on. Higher batch sizes wouldn't evenly divide the 10000 size dataset, so
+whatever.
+
+The full training run, using these settings:
+* dense: 100, 91, 91, 91, ...
+* sparse: 212, 91, 83, 81, 80, 80, 79, ...
+
+The dense network never dropped between 91s, but the sparse network got
+below 80. 

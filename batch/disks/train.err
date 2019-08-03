@@ -1,6 +1,30 @@
+2019-08-01 15:23:55.664467: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
+2019-08-01 15:23:55.694305: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2400115000 Hz
+2019-08-01 15:23:55.694439: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x5576fc963290 executing computations on platform Host. Devices:
+2019-08-01 15:23:55.694465: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): <undefined>, <undefined>
+2019-08-01 15:23:55.798342: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x5576fca1a4c0 executing computations on platform CUDA. Devices:
+2019-08-01 15:23:55.798411: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): Tesla K80, Compute Capability 3.7
+2019-08-01 15:23:55.798686: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1433] Found device 0 with properties: 
+name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
+pciBusID: 0000:09:00.0
+totalMemory: 11.17GiB freeMemory: 11.11GiB
+2019-08-01 15:23:55.798717: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
+2019-08-01 15:23:55.800836: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-08-01 15:23:55.800861: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
+2019-08-01 15:23:55.800872: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
+2019-08-01 15:23:55.801037: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
 DEBUG:artifice:Use Python3.6 or higher.
-INFO:artifice:Fri Jul 26 17:24:22 2019:
+INFO:artifice:creating 'models/disks/cache'
+INFO:artifice:Thu Aug  1 15:23:56 2019:
+data_root: data/disks
+model_root: models/disks
+figs_dir: figs
+----
+labeled: True
 num_parallel_calls: 28
+----
+input tile shape: [140, 140]
+output shapes: [[28, 28], [52, 52], [100, 100]]
 todo: other attributes
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/resource_variable_ops.py:435: colocate_with (from tensorflow.python.framework.ops) is deprecated and will be removed in a future version.
 Instructions for updating:
@@ -11,28 +35,12 @@ Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/losses/losses_impl.py:667: to_float (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
 Instructions for updating:
 Use tf.cast instead.
-2019-07-26 17:24:24.054195: I tensorflow/core/platform/cpu_feature_guard.cc:141] Your CPU supports instructions that this TensorFlow binary was not compiled to use: SSE4.1 SSE4.2 AVX AVX2 FMA
-2019-07-26 17:24:24.060293: I tensorflow/core/platform/profile_utils/cpu_utils.cc:94] CPU Frequency: 2400190000 Hz
-2019-07-26 17:24:24.060426: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x557296d134a0 executing computations on platform Host. Devices:
-2019-07-26 17:24:24.060449: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): <undefined>, <undefined>
-2019-07-26 17:24:24.194941: I tensorflow/compiler/xla/service/service.cc:150] XLA service 0x557296dca250 executing computations on platform CUDA. Devices:
-2019-07-26 17:24:24.195017: I tensorflow/compiler/xla/service/service.cc:158]   StreamExecutor device (0): Tesla K80, Compute Capability 3.7
-2019-07-26 17:24:24.195295: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1433] Found device 0 with properties: 
-name: Tesla K80 major: 3 minor: 7 memoryClockRate(GHz): 0.8235
-pciBusID: 0000:09:00.0
-totalMemory: 11.17GiB freeMemory: 11.11GiB
-2019-07-26 17:24:24.195327: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
-2019-07-26 17:24:24.197545: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
-2019-07-26 17:24:24.197570: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
-2019-07-26 17:24:24.197582: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
-2019-07-26 17:24:24.197758: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
+INFO:artifice:caching this epoch...
+2019-08-01 15:23:57.495190: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1512] Adding visible gpu devices: 0
+2019-08-01 15:23:57.495244: I tensorflow/core/common_runtime/gpu/gpu_device.cc:984] Device interconnect StreamExecutor with strength 1 edge matrix:
+2019-08-01 15:23:57.495257: I tensorflow/core/common_runtime/gpu/gpu_device.cc:990]      0 
+2019-08-01 15:23:57.495265: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1003] 0:   N 
+2019-08-01 15:23:57.495400: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1115] Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10805 MB memory) -> physical GPU (device: 0, name: Tesla K80, pci bus id: 0000:09:00.0, compute capability: 3.7)
 WARNING:tensorflow:From /software/Anaconda3-2018.12-el7-x86_64/envs/tf-gpu-1.13.1/lib/python3.7/site-packages/tensorflow/python/ops/math_ops.py:3066: to_int32 (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
 Instructions for updating:
 Use tf.cast instead.
-2019-07-26 17:24:41.590130: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 6 of 1000
-2019-07-26 17:24:52.311324: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 181 of 1000
-2019-07-26 17:25:01.634204: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 355 of 1000
-2019-07-26 17:25:12.596510: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 530 of 1000
-2019-07-26 17:25:21.828911: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 704 of 1000
-2019-07-26 17:25:31.210944: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:101] Filling up shuffle buffer (this may take a while): 878 of 1000
-2019-07-26 17:25:37.080380: I tensorflow/core/kernels/data/shuffle_dataset_op.cc:140] Shuffle buffer filled.
