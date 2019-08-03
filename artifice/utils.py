@@ -3,20 +3,20 @@
 import os
 import json
 import shutil
-import logging
 import numpy as np
 
-logger = logging.getLogger('artifice')
+from artifice.log import logger
+
 
 def divup(a, b):
-  return (a+b-1) // b
+  return (a + b - 1) // b
+
 
 def listwrap(val):
   """Wrap `val` as a list.
 
   :param val: iterable or constant
   :returns: `list(val)` if `val` is iterable, else [val]
-  :rtype: 
 
   """
   if isinstance(val, list):
@@ -44,6 +44,7 @@ def listify(val, length):
     return val
   return [val] * length
 
+
 def jsonable(hist):
   """Make a history dictionary json-serializable.
 
@@ -51,28 +52,31 @@ def jsonable(hist):
 
   """
   out = {}
-  for k,v in hist.items():
+  for k, v in hist.items():
     out[k] = list(map(float, v))
   return out
+
 
 def json_save(fname, obj):
   """Opens json object stored at fname. Errors if file doesn't exist."""
   with open(fname, 'w') as f:
     f.write(json.dumps(obj))
 
+
 def json_load(fname):
   with open(fname, 'r') as f:
     obj = json.loads(f.read())
   return obj
+
 
 def atleast_4d(image):
   """Expand a numpy array (typically an image) to 4d.
 
   Inserts batch dim, then channel dim.
 
-  :param image: 
-  :returns: 
-  :rtype: 
+  :param image:
+  :returns:
+  :rtype:
 
   """
   if image.ndim >= 4:
@@ -84,6 +88,7 @@ def atleast_4d(image):
   if image.ndim == 1:
     return image[np.newaxis, :, np.newaxis, np.newaxis]
   raise ValueError(f"incompatible image dimension: {image.ndim}")
+
 
 def rm(path):
   if not os.path.exists(path):

@@ -6,6 +6,7 @@ handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(levelname)s:artifice:%(message)s'))
 logger.addHandler(handler)
 
+
 def set_verbosity(verbose):
   if verbose == 0:
     logger.setLevel(logging.WARNING)

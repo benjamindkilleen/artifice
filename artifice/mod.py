@@ -55,6 +55,7 @@ def _unbatch_outputs(outputs):
     unbatched_outputs.append([output[i] for output in outputs])
   return unbatched_outputs
 
+
 def crop(inputs, shape):
   top_crop = int(np.floor(int(inputs.shape[1] - shape[1]) / 2))
   bottom_crop = int(np.ceil(int(inputs.shape[1] - shape[1]) / 2))
@@ -80,7 +81,7 @@ def conv_output_crop(inputs,
   """
   assert padding in {'same', 'valid'}
   if padding == 'same':
-      return inputs
+    return inputs
   top_crop = kernel_size[0] // 2
   bottom_crop = (kernel_size[0] - 1) // 2
   left_crop = kernel_size[1] // 2
@@ -104,7 +105,7 @@ def conv(inputs,
 
   :param inputs: input tensor
   :param filters: number of filters or kernels
-  :param kernel_shape: 
+  :param kernel_shape:
   :param activation: keras activation to use. Default is 'relu'
   :param padding: 'valid' or 'same'
   :param norm: whether or not to perform batch normalization on the output
@@ -152,13 +153,13 @@ def conv_upsample(inputs,
                   **kwargs):
   """Upsample the inputs in dimensions 1,2 with a transpose convolution.
 
-  :param inputs: 
-  :param filters: 
+  :param inputs:
+  :param filters:
   :param scale: scale by which to upsample. Can be an int or a list of 2 ints,
   specifying scale in each direction.
   :param activation: relu by default
   :param mask: if not None, use a SparseConv2DTranspose layer.
-  :param batch_size: 
+  :param batch_size:
 
   Additional kwargs passed to the conv transpose layer.
 
@@ -210,6 +211,7 @@ class ArtificeModel():
   subclass __init__() method.
 
   """
+
   def __init__(self, inputs, model_dir='.', learning_rate=0.1,
                overwrite=False):
     """Describe a model using keras' functional API.
@@ -220,10 +222,12 @@ class ArtificeModel():
     layers.Input)
     :param model_dir: directory to save the model. Default is cwd.
     :param learning_rate:
+
     :param overwrite: prefer to create a new model rather than load an existing
     one in `model_dir`. Note that if a subclass uses overwrite=False, then the
-    loaded architecture may differ from the stated architecture in the subclass,
-    although the structure of the saved model names should prevent this.
+    loaded architecture may differ from the stated architecture in the
+    subclass, although the structure of the saved model names should prevent
+    this.
 
     """
     self.overwrite = overwrite
@@ -231,8 +235,10 @@ class ArtificeModel():
     self.learning_rate = learning_rate
     self.name = snakecase(type(self).__name__).lower()
     self.model_path = os.path.join(self.model_dir, f"{self.name}.hdf5")
-    self.checkpoint_path = os.path.join(self.model_dir, f"{self.name}_ckpt.hdf5")
-    self.history_path = os.path.join(self.model_dir, f"{self.name}_history.json")
+    self.checkpoint_path = os.path.join(
+      self.model_dir, f"{self.name}_ckpt.hdf5")
+    self.history_path = os.path.join(
+      self.model_dir, f"{self.name}_history.json")
 
     outputs = self.forward(inputs)
     self.model = keras.Model(inputs, outputs)
@@ -273,7 +279,7 @@ class ArtificeModel():
     if checkpoint_path is None:
       checkpoint_path = self.checkpoint_path
     if os.path.exists(checkpoint_path):
-      self.model.load_weights(checkpoint_path, by_name=True) # todo: by_name?
+      self.model.load_weights(checkpoint_path, by_name=True)  # todo: by_name?
       logger.info(f"loaded model weights from {checkpoint_path}")
     else:
       logger.info(f"no checkpoint at {checkpoint_path}")
@@ -293,8 +299,7 @@ class ArtificeModel():
     :param art_data:
     :param hist: existing hist. If None, starts from scratch. Use train for
     loading from existing hist.
-    :param cache: cache the dataset. Should only be used if multiple epochs will
-    be run.
+    :param cache: cache the dataset.
     :returns:
     :rtype:
 
@@ -306,7 +311,7 @@ class ArtificeModel():
     new_hist = utils.jsonable(new_hist)
     if hist is not None:
       new_hist = _update_hist(hist, new_hist)
-    utils.json_save(self.history_path, hist)
+      utils.json_save(self.history_path, hist)
     return hist
 
   def train(self, art_data, initial_epoch=0, epochs=1, seconds=0,
@@ -321,17 +326,19 @@ class ArtificeModel():
     :returns: history dictionary
 
     """
-    if initial_epoch > 0 and os.path.exists(self.history_path) and not self.overwrite:
+    if (initial_epoch > 0
+        and os.path.exists(self.history_path)
+        and not self.overwrite):
       hist = utils.json_load(self.history_path)
     else:
       hist = {}
-    epoch = initial_epoch
-    start_time = time()
+      epoch = initial_epoch
+      start_time = time()
 
     while epoch != epochs and time() - start_time > seconds > 0:
       logger.info("reloading dataset (not cached)...")
-      hist = self.fit(art_data, hist=hist, initial_epoch=epoch, epochs=epoch +
-                      1, **kwargs)
+      hist = self.fit(art_data, hist=hist, initial_epoch=epoch,
+                      epochs=(epoch + 1), **kwargs)
       epoch += 1
 
     if epoch != epochs:
@@ -361,7 +368,6 @@ class ArtificeModel():
     """
     raise NotImplementedError()
 
-
   def predict_outputs(self, art_data):
     """Run prediction for single tiles images with the Artifice data.
 
@@ -373,7 +379,6 @@ class ArtificeModel():
 
     """
     raise NotImplementedError("subclasses should implement")
-
 
   def evaluate(self, art_data):
     """Run evaluation for object detection with the ArtificeData object.
@@ -397,6 +402,7 @@ class ArtificeModel():
 
     """
     raise NotImplementedError("uncertainty estimates not implemented")
+
 
 class ProxyUNet(ArtificeModel):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
@@ -445,8 +451,9 @@ class ProxyUNet(ArtificeModel):
     tile_shape = np.array(base_shape)
     for _ in range(num_levels - 1):
       tile_shape *= 2
-      tile_shape += 2*level_depth
+      tile_shape += 2 * level_depth
     return list(tile_shape)
+
   def compute_input_tile_shape(self):
     return self.compute_input_tile_shape_(
       self.base_shape, self.num_levels, self.level_depth)
@@ -454,11 +461,12 @@ class ProxyUNet(ArtificeModel):
   @staticmethod
   def compute_output_tile_shape_(base_shape, num_levels, level_depth):
     tile_shape = np.array(base_shape)
-    tile_shape -= 2*level_depth
+    tile_shape -= 2 * level_depth
     for _ in range(num_levels - 1):
       tile_shape *= 2
-      tile_shape -= 2*level_depth
+      tile_shape -= 2 * level_depth
     return list(tile_shape)
+
   def compute_output_tile_shape(self):
     return self.compute_output_tile_shape_(
       self.base_shape, self.num_levels, self.level_depth)
@@ -468,13 +476,14 @@ class ProxyUNet(ArtificeModel):
     """Compute the shape of the output tiles at every level, bottom to top."""
     shapes = []
     tile_shape = np.array(base_shape)
-    tile_shape -= 2*level_depth
+    tile_shape -= 2 * level_depth
     shapes.append(list(tile_shape))
     for _ in range(num_levels - 1):
       tile_shape *= 2
-      tile_shape -= 2*level_depth
+      tile_shape -= 2 * level_depth
       shapes.append(list(tile_shape))
     return shapes
+
   def compute_output_tile_shapes(self):
     return self.compute_output_tile_shapes_(
       self.base_shape, self.num_levels, self.level_depth)
@@ -514,22 +523,19 @@ class ProxyUNet(ArtificeModel):
     new_level = self._fix_level_index(new_level)
     return distance * 2**(new_level - level)
 
-
   @staticmethod
   def pose_loss(pose, pred):
     return tf.losses.mean_squared_error(pose[:, :, :, 1:],
                                         pred[:, :, :, 1:],
                                         weights=pose[:, :, :, :1])
 
-
   def compile(self):
     if tf.executing_eagerly():
       optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
     else:
       optimizer = keras.optimizers.Adadelta(self.learning_rate)
-    self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
-                       ['mse']*self.num_levels, metrics=['mae'])
-
+      self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
+                         ['mse'] * self.num_levels, metrics=['mae'])
 
   def forward(self, inputs):
     level_outputs = []
@@ -542,7 +548,7 @@ class ProxyUNet(ArtificeModel):
         level_outputs.append(inputs)
         inputs = keras.layers.MaxPool2D()(inputs)
       else:
-        outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
+        outputs.append(conv(inputs, 1, kernel_shape=[1, 1], activation=None,
                             norm=False, name='output_0'))
 
     level_outputs = reversed(level_outputs)
@@ -553,13 +559,12 @@ class ProxyUNet(ArtificeModel):
       inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-      outputs.append(conv(inputs, 1, kernel_shape=[1,1], activation=None,
-                         norm=False, name=f'output_{i+1}'))
+        outputs.append(conv(inputs, 1, kernel_shape=[1, 1], activation=None,
+                            norm=False, name=f'output_{i+1}'))
 
-    pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1,1), activation=None,
+    pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1, 1), activation=None,
                       padding='same', norm=False, name='pose')
     return [pose_image] + outputs
-
 
   def predict(self, art_data, multiscale=False):
     """Run prediction, reassembling tiles, with the Artifice data."""
@@ -568,16 +573,17 @@ class ProxyUNet(ArtificeModel):
       for i, batch in enumerate(art_data.prediction_input()):
         if i % 100 == 0:
           logger.info(f"batch {i} / {art_data.steps_per_epoch}")
-        outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+          outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
         while len(outputs) >= art_data.num_tiles:
           prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
           yield prediction
           del outputs[:art_data.num_tiles]
     else:
-      raise NotImplementedError("enable eager execution for eval (remove --patient)")
-      outputs = []
-      next_batch = art_data.prediction_input().make_one_shot_iterator().get_next()
-      with tf.Session() as sess:
+      raise NotImplementedError(
+        "enable eager execution for eval (remove --patient)")
+    outputs = []
+    next_batch = art_data.prediction_input().make_one_shot_iterator().get_next()
+    with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         for i in itertools.count():
           try:
@@ -586,12 +592,12 @@ class ProxyUNet(ArtificeModel):
             return
           if i % 100 == 0:
             logger.info(f"batch {i} / {art_data.steps_per_epoch}")
-          outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
+            outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
           while len(outputs) >= art_data.num_tiles:
-            prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
+            prediction = art_data.analyze_outputs(
+              outputs, multiscale=multiscale)
             yield prediction
             del outputs[:art_data.num_tiles]
-
 
   def predict_visualization(self, art_data):
     """Run prediction, reassembling tiles, with the Artifice data."""
@@ -616,7 +622,6 @@ class ProxyUNet(ArtificeModel):
     else:
       raise NotImplementedError("patient prediction")
 
-
   def predict_outputs(self, art_data):
     """Run prediction for single tiles images with the Artifice data."""
     num_tiles = art_data.num_tiles
@@ -630,13 +635,12 @@ class ProxyUNet(ArtificeModel):
         outputs += _unbatch_outputs(self.model.predict_on_batch(batch))
         while outputs:
           tile = art_data.untile(tiles[:1])
-          yield (tile, outputs[0]) # todo: del line
+          yield (tile, outputs[0])  # todo: del line
           del outputs[0]
           del tiles[0]
     else:
       raise NotImplementedError("patient prediction")
     art_data.num_tiles = num_tiles
-
 
   def evaluate(self, art_data, multiscale=False):
     """Runs evaluation for ProxyUNet."""
@@ -648,8 +652,8 @@ class ProxyUNet(ArtificeModel):
       for i, (batch_tiles, batch_labels) in enumerate(art_data.evaluation_input()):
         if i % 10 == 0:
           logger.info(f"evaluating batch {i} / {art_data.steps_per_epoch}")
-        tile_labels += list(batch_labels)
-        outputs += _unbatch_outputs(self.model.predict_on_batch(batch_tiles))
+          tile_labels += list(batch_labels)
+          outputs += _unbatch_outputs(self.model.predict_on_batch(batch_tiles))
         while len(outputs) >= art_data.num_tiles:
           label = art_data.untile_points(tile_labels)
           prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
@@ -658,22 +662,21 @@ class ProxyUNet(ArtificeModel):
           errors += list(error[error[:, 0] >= 0])
           del tile_labels[:art_data.num_tiles]
           del outputs[:art_data.num_tiles]
-      errors = np.array(errors)
+          errors = np.array(errors)
     else:
       raise NotImplementedError
     return errors, total_num_failed
 
-  
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image."""
     batch_outputs = _unbatch_outputs(self.model.predict_on_batch(images))
     confidences = np.empty(len(batch_outputs), np.float32)
     for i, outputs in enumerate(batch_outputs):
       detections = dat.multiscale_detect_peaks(outputs[1:])
-      confidences[i] = np.mean([outputs[0][x,y] for x, y in detections])
+      confidences[i] = np.mean([outputs[0][x, y] for x, y in detections])
     return 1 - confidences
 
-  
+
 class SparseUNet(ProxyUNet):
   def __init__(self, *, batch_size=None, block_size=[8, 8], tol=0.1, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
@@ -683,10 +686,10 @@ class SparseUNet(ProxyUNet):
     :param block_size: width/height of the blocks used for sparsity, at the
     scale of the original resolution (resized at each level. These are rescaled
     at each level.
-    :param 8]: 
+    :param 8]:
     :param tol: absolute threshold value for sbnet attention.
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     self.batch_size = batch_size
@@ -728,19 +731,19 @@ class SparseUNet(ProxyUNet):
                       block_size=self.block_size,
                       batch_size=self.batch_size)
         mask = conv_output_crop(mask)
-      mask = conv(
-        inputs,
-        1,
-        kernel_shape=[1, 1],
-        activation=None,
-        norm=False,
-        padding='same',
-        mask=mask,
-        tol=self.tol,
-        block_size=self.block_size,
-        batch_size=self.batch_size,
-        name=f'output_{i+1}')
-      outputs.append(mask)
+        mask = conv(
+          inputs,
+          1,
+          kernel_shape=[1, 1],
+          activation=None,
+          norm=False,
+          padding='same',
+          mask=mask,
+          tol=self.tol,
+          block_size=self.block_size,
+          batch_size=self.batch_size,
+          name=f'output_{i+1}')
+        outputs.append(mask)
 
     pose_image = conv(
       inputs,

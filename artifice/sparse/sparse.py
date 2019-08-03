@@ -7,12 +7,10 @@ comes mostly from the git repo README, albeit in a more pythonic format.
 """
 
 
-import logging
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 
-from artifice.log import logger
+from artifice.log import logger  # noqa
 from artifice import utils
 
 _gpu = tf.test.is_gpu_available() and tf.test.is_built_with_cuda()
@@ -32,13 +30,14 @@ def reduce_mask(mask, *,
                 avgpool=False):
   """Reduce `mask` to indices for sparse_gather or sparse_scatter.
 
-  Thin wrapper around sbnet.reduce_mask, which offers the GPU implementation. If
-  no GPU is available, implements the operation in tensorflow primitives.
+  Thin wrapper around sbnet.reduce_mask, which offers the GPU
+  implementation. If no GPU is available, implements the operation in
+  tensorflow primitives.
 
-  Blocks, in the sbnet framework, refer to patches of the image which are either
-  collected for convolution or ignored (and thus implicitly zeroed). In numpy
-  terms each block is defined as a slice from the input mask of dimensions
-  `[N,H,W,1]`, with following dimensions: `[ni, BOFFSH+BSTRH*hi :
+  Blocks, in the sbnet framework, refer to patches of the image which are
+  either collected for convolution or ignored (and thus implicitly zeroed). In
+  numpy terms each block is defined as a slice from the input mask of
+  dimensions `[N,H,W,1]`, with following dimensions: `[ni, BOFFSH+BSTRH*hi :
   BOFFSH+BSTRH*hi+BSZH, BOFFSW+BSTRW*wi : BOFFSW+BSTRW*wi+BSZW, :]`
 
   See https://arxiv.org/abs/1801.02108 for more info.
@@ -76,6 +75,7 @@ def reduce_mask(mask, *,
       avgpool=avgpool)
 
   return indices
+
 
 def gather(inputs, bin_counts, active_block_indices, *, bsize, boffset,
            bstride, transpose=False):
@@ -125,6 +125,7 @@ for (ni, hi, wi) in indices.active_block_indices:
     outputs.set_shape(shape)
   return outputs
 
+
 def scatter(block_stack,
             bin_counts,
             active_block_indices,
@@ -141,11 +142,12 @@ def scatter(block_stack,
   Note that due to a limitation of TensorFlow API an intermediate tensor cannot
   be modified in place unless it's specified to be a tf.Variable. This
   necessitates creating an intermediate tensor inside the op and performing a
-  copy which has negative implications for performance. So the creators of SBNet
-  made a second version of the op sbnet_module.sparse_scatter_var that expects
-  `outputs` to be a tf.Variable and modifies it in place. We automatically
-  detect whether `outputs` is a Tensor or a Variable and using the proper
-  fucntion. Using a Variable is strongly recommended for maximum performance.
+  copy which has negative implications for performance. So the creators of
+  SBNet made a second version of the op sbnet_module.sparse_scatter_var that
+  expects `outputs` to be a tf.Variable and modifies it in place. We
+  automatically detect whether `outputs` is a Tensor or a Variable and using
+  the proper fucntion. Using a Variable is strongly recommended for maximum
+  performance.
 
   the effect of this operation is opposite to sparse_gather - the input blocks
   will be written on top of base tensor x, or added to it's contents if do_add
@@ -161,6 +163,10 @@ for (ni, hi, wi) in indices.active_block_indices:
       BOFFSW+BSTRW*wi : BOFFSW+BSTRW*wi+BSZW, :] = blockStack[ni, :, :, :]
 ```
 
+  If `transpose` is true, a fused transpose operation will also be performed by
+  sparse_scatter, permuting the input `[N,C,H,W]` dimensions to `[N,H,W,C]` in
+  the output.
+
   :param block_stack: `[nBlocks, BSZH, BSZW, C]` tensor stack of blocks
   :param bin_counts:
   :param active_block_indices: `[nBlocks, 3]` set of active block indices.
@@ -170,9 +176,7 @@ for (ni, hi, wi) in indices.active_block_indices:
   :param bstride: `[BSTRH, BSTRW]` block stride
   :param add: perform an add operation rather than replacement
   :param atomic: use atomic or regular adds
-  :param transpose:  if `transpose` is true, a fused transpose operation will
-  also be performed by sparse_scatter, permuting the input `[N,C,H,W]` dimensions
-  to `[N,H,W,C]` in the output.
+  :param transpose: whether to transpose.  
   :returns:
   :rtype:
 
@@ -219,6 +223,7 @@ for (ni, hi, wi) in indices.active_block_indices:
     outputs.set_shape(shape)
   return outputs
 
+
 def main():
   """For testing/understanding sbnet."""
   # tf.enable_eager_execution()
@@ -229,11 +234,16 @@ def main():
   blockSize = [16, 16]
   blockStride = [14, 14]
   blockOffset = [0, 0]
-  blockCount = [utils.divup(hw, blockStride[0]), utils.divup(hw, blockStride[1])]
+  blockCount = [utils.divup(hw, blockStride[0]),
+                utils.divup(hw, blockStride[1])]
 
   # build kwargs to simplify op calls
-  inBlockParams = {"dynamic_bsize": blockSize, "dynamic_boffset": blockOffset, "dynamic_bstride": blockStride }
-  outBlockParams = {"dynamic_bsize": [blockSize[0]-2, blockSize[1]-2], "dynamic_boffset": blockOffset, "dynamic_bstride": blockStride}
+  inBlockParams = {"dynamic_bsize": blockSize,
+                   "dynamic_boffset": blockOffset,
+                   "dynamic_bstride": blockStride}
+  outBlockParams = {"dynamic_bsize": [blockSize[0] - 2, blockSize[1] - 2],
+                    "dynamic_boffset": blockOffset,
+                    "dynamic_bstride": blockStride}
 
   # create a random mask representing attention/a priori sparsity
   # threshold the mask to a specified percentile sparsity
@@ -243,18 +253,19 @@ def main():
   sparseMask = np.greater(mask, threshold).astype(np.float32)
 
   # upsample the mask to full resolution
-  upsampledMask = sparseMask.repeat(blockStride[0],
+  upsampledMask = sparseMask.repeat(blockStride[0],  # noqa
                                     axis=1).repeat(blockStride[1], axis=2)
 
   # create a random input tensor
-  x = tf.constant( np.random.randn(batch, hw, hw, channels).astype(np.float32) )
+  x = tf.constant(np.random.randn(batch, hw, hw, channels).astype(np.float32))
 
   # create a random weight tensor
-  w = tf.constant( np.random.randn(3, 3, channels, channels).astype(np.float32) )
+  w = tf.constant(np.random.randn(3, 3, channels, channels).astype(np.float32))
 
   # reduce the mask to indices by using a fused pooling+indexing operation
   indices = sbnet.reduce_mask(mask, blockCount, tol=0.5, **inBlockParams)
-  print("using gpu:", tf.test.is_gpu_available() and tf.test.is_built_with_cuda())
+  print("using gpu:", tf.test.is_gpu_available()
+        and tf.test.is_built_with_cuda())
   print("bin_counts:", indices.bin_counts)
   print("bin_counts:", indices.bin_counts.shape)
   print("active_block_indices:", indices.active_block_indices)
@@ -269,11 +280,12 @@ def main():
   # perform dense convolution on a sparse stack of tiles
   convBlocks = tf.nn.conv2d(blockStack, w, strides=[1, 1, 1, 1],
                             padding='VALID', data_format='NCHW')
-  # convBlocks = keras.layers.Conv2D(channels, (3,3), padding='valid', data_format='channels_first')(blockStack)
+  # convBlocks = keras.layers.Conv2D(channels, (3, 3), padding='valid',
+  #                                  data_format='channels_first')(blockStack)
 
-  # write/scatter the tiles back on top of original tensor
-  # note that the output tensor is reduced by 1 on each side due to 'VALID' convolution
-  validX = x[:, 1:hw-1, 1:hw-1, :]
+  # write/scatter the tiles back on top of original tensor. Note that the
+  # output tensor is reduced by 1 on each side due to 'VALID' convolution
+  validX = x[:, 1:hw - 1, 1:hw - 1, :]
   y = sbnet.sparse_scatter(
     convBlocks, indices.bin_counts, indices.active_block_indices,
     validX, transpose=True, add=False, atomic=False, **outBlockParams)
@@ -281,6 +293,7 @@ def main():
   if not tf.executing_eagerly():
     sess = tf.Session()
     y_output, = sess.run([y])
+
 
 if __name__ == '__main__':
   main()

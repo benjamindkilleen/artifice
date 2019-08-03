@@ -3,7 +3,6 @@
 """
 
 import os
-import logging
 from time import sleep, strftime, time
 import itertools
 from operator import itemgetter
@@ -16,7 +15,6 @@ from artifice.sharedobjects import SharedDict
 from artifice import dat
 from artifice import utils
 
-logger = logging.getLogger('artifice')
 
 class AnnotationInfo(SharedDict):
   """Maintain a sorted list or heap of (index, priority) pairs, as well as a
@@ -40,7 +38,7 @@ class AnnotationInfo(SharedDict):
   never be an index in 'annotated' that does not have an annotation.
 
   """
-  
+
   def __init__(self, path, *, clear_priorities, clear_limbo):
     """Create a new annotation info dict.
 
@@ -57,8 +55,8 @@ class AnnotationInfo(SharedDict):
       self['annotated'] = set()
     if (clear_limbo or self.get('limbo') is None):
       self['limbo'] = set()
-    if (clear_priorities or self.get('priorities') is None or
-        self.get('sorted_priorities') is None):
+    if (clear_priorities or self.get('priorities') is None
+            or self.get('sorted_priorities') is None):
       self['priorities'] = dict()
       self['sorted_priorities'] = SortedList(key=itemgetter(1))
     self.release()
@@ -81,7 +79,7 @@ class AnnotationInfo(SharedDict):
       self['priorities'][idx] = priority
       self['sorted_priorities'].add((idx, priority))
     self.release()
-    
+
   def pop(self):
     """Pop an example idx off the stack and add it to the 'limbo' set.
 
@@ -99,7 +97,7 @@ class AnnotationInfo(SharedDict):
     return idx
 
   def finalize(self, idx):
-    """Discard idx or idxs from 'limbo' and add to 'annotated'. 
+    """Discard idx or idxs from 'limbo' and add to 'annotated'.
 
     Note that these need not be in limbo (could have multiple annotators, or
     multiple prioritizers). Caller is responsible for making sure that all of
@@ -112,7 +110,8 @@ class AnnotationInfo(SharedDict):
       self['limbo'].discard(idx)
       self['annotated'].add(idx)
     self.release()
-  
+
+
 class Annotator:
   """The annotator takes the examples off the annotation stack and annotates
   them, if they have not already been annotated.
@@ -122,22 +121,21 @@ class Annotator:
   numpy form.
 
   """
-  
+
   def __init__(self, data_set, *, info_path, annotated_dir,
                record_size=10, sleep_duration=15):
     """Annotator abstract class
 
-    :param data_set: ArtificeData object to annotate. Typically an UnlabeledData
-    object, but could be LabeledData, if simulating annotation.
-    :param info_path: 
+    :param data_set: ArtificeData object to annotate.
+    :param info_path:
     :param annotated_dir: directory to store annotation tfrecords in
     :param record_size: number of examples to save in each
     tfrecord. Must be small enough for `record_size` annotated examples to fit
     in memory.
     :param sleep_duration: seconds to sleep if no examples on the annotation
     stack, before checking again.
-    :returns: 
-    :rtype: 
+    :returns:
+    :rtype:
 
     """
     self.data_set = data_set
@@ -149,12 +147,12 @@ class Annotator:
 
   def _generate_record_name(self):
     return os.path.join(self.annotated_dir, strftime(
-      f"%Y%m%d%H%m%S_size-{self.record_size}.tfrecord"))
+        f"%Y%m%d%H%m%S_size-{self.record_size}.tfrecord"))
 
   def run(self, seconds=-1):
     """Run for at most `seconds`. If `seconds` is negative, run forever."""
     start_time = time()
-    
+
     for i in itertools.count():
       examples = []
       idxs = []
@@ -176,19 +174,19 @@ class Annotator:
       if time() - start_time > seconds > 0:
         logger.info(f"finished after {seconds}s.")
         break
-      
+
   def annotate(self, entry):
     """Abstract method for annotating an example.
 
     :param entry: numpy-form entry in the dataset
     :returns: `(image, label, annotation)` tuple of numpy arrays
-    :rtype: 
+    :rtype:
 
     """
-    
+
     raise NotImplementedError("subclasses should implement")
 
-  
+
 class SimulatedAnnotator(Annotator):
   """Simulate a human annotator.
 
@@ -198,36 +196,36 @@ class SimulatedAnnotator(Annotator):
   Loads all the labels in the dataset, which must fit in memory.
 
   """
+
   def __init__(self, *args, annotation_delay=60, **kwargs):
     """Simulate a human annotator.
 
     :param annotation_delay: time that the simulated annotator spends for each
-    example. 
+    example.
 
     """
     self.annotation_delay = annotation_delay
     super().__init__(*args, **kwargs)
     assert issubclass(type(self.data_set), dat.LabeledData)
 
-    
+
 class DiskAnnotator(SimulatedAnnotator):
   def annotate(self, entry):
     sleep(self.annotation_delay)
     image, label = entry[:2]
     annotation = -1 * np.ones((image.shape[0], image.shape[1], 1), np.float32)
     for i in range(label.shape[0]):
-      rr, cc = circle(label[i,0], label[i,1], 8, shape=image.shape[:2])
+      rr, cc = circle(label[i, 0], label[i, 1], 8, shape=image.shape[:2])
       xs = []
       ys = []
-      for x,y in zip(rr,cc):
-        if image[x,y] >= 0.1:   # arbitrary threshold
+      for x, y in zip(rr, cc):
+        if image[x, y] >= 0.1:   # arbitrary threshold
           xs.append(x)
           ys.append(y)
-      annotation[xs,ys] = i
+      annotation[xs, ys] = i
     return image, label, annotation
 
-  
+
 class HumanAnnotator(Annotator):
   def annotate(self, entry):
-    image = entry[0]
-    
+    pass

@@ -25,15 +25,18 @@ from artifice import tform
 
 logger.debug(f"Use Python{3.6} or higher.")
 
+
 def _set_eager(eager):
   if eager:
     tf.enable_eager_execution()
+
 
 def _ensure_dirs_exist(dirs):
   for path in dirs:
     if not exists(path):
       logger.info(f"creating '{path}'")
       os.makedirs(path)
+
 
 class Artifice:
   """Bag of state or Main() class that directs a single `artifice` run.
@@ -45,7 +48,8 @@ class Artifice:
   # todo: copy docs here
 
   """
-  def __init__(self, *, # pylint: disable=too-many-statements
+
+  def __init__(self, *,  # pylint: disable=too-many-statements
                commands,
                data_root,
                model_root,
@@ -149,23 +153,25 @@ class Artifice:
     # derived sizes/shapes
     self.num_levels = len(self.level_filters)
     self.input_tile_shape = mod.ProxyUNet.compute_input_tile_shape_(
-      self.base_shape, self.num_levels, self.level_depth)
+        self.base_shape, self.num_levels, self.level_depth)
     self.output_tile_shapes = mod.ProxyUNet.compute_output_tile_shapes_(
-      self.base_shape, self.num_levels, self.level_depth)
+        self.base_shape, self.num_levels, self.level_depth)
     self.output_tile_shape = self.output_tile_shapes[-1]
     self.num_tiles = dat.ArtificeData.compute_num_tiles(
-      self.image_shape, self.output_tile_shape)
+        self.image_shape, self.output_tile_shape)
 
     # derived model subdirs/paths
     self.cache_dir = join(self.model_root, 'cache')
     self.annotation_info_path = join(self.model_root, 'annotation_info.pkl')
-    self.annotated_dir = join(self.model_root, 'annotated') # model-dependent
+    self.annotated_dir = join(self.model_root, 'annotated')  # model-dependent
 
     # ensure directories exist
     _ensure_dirs_exist([self.data_root, self.model_root, self.figs_dir,
                         self.cache_dir, self.annotated_dir])
 
-  #################### helper functions ####################
+  """
+  Helper functions.
+  """
 
   def __str__(self):
     return f"""{asctime()}:
@@ -182,8 +188,9 @@ todo: other attributes"""
 
   def __call__(self):
     for command in self.commands:
-      if (command[0] == '_' or not hasattr(self, command) or
-          not callable(getattr(self, command))):
+      if (command[0] == '_'
+          or not hasattr(self, command)
+              or not callable(getattr(self, command))):
         raise RuntimeError(f"bad command: {command}")
       getattr(self, command)()
 
@@ -191,46 +198,53 @@ todo: other attributes"""
     if self.num_parallel_calls <= 0:
       self.num_parallel_calls = os.cpu_count()
 
-  #################### loading datasets and models ####################
+  """
+  Loading datasets and models.
+  """
 
   @property
   def _data_kwargs(self):
-    return {'image_shape' : self.image_shape,
-            'input_tile_shape' : self.input_tile_shape,
-            'output_tile_shapes' : self.output_tile_shapes,
-            'batch_size' : self.batch_size,
-            'num_parallel_calls' : self.num_parallel_calls,
-            'num_shuffle' : min(self.data_size, self.num_shuffle),
-            'cache_dir' : self.cache_dir}
+    return {'image_shape': self.image_shape,
+            'input_tile_shape': self.input_tile_shape,
+            'output_tile_shapes': self.output_tile_shapes,
+            'batch_size': self.batch_size,
+            'num_parallel_calls': self.num_parallel_calls,
+            'num_shuffle': min(self.data_size, self.num_shuffle),
+            'cache_dir': self.cache_dir}
+
   def _load_labeled(self):
     return dat.LabeledData(join(self.data_root, 'labeled_set.tfrecord'),
                            size=self.data_size, **self._data_kwargs)
+
   def _load_unlabeled(self):
     return dat.UnlabeledData(join(self.data_root, 'unlabeled_set.tfrecord'),
                              size=self.data_size, **self._data_kwargs)
+
   def _load_annotated(self):
     transformation = (None if self.transformation is None else
                       tform.transformations[self.transformation])
     return dat.AnnotatedData(self.annotated_dir, transformation=transformation,
                              size=self.data_size, **self._data_kwargs)
+
   def _load_test(self):
     return dat.LabeledData(join(self.data_root, 'test_set.tfrecord'),
                            size=self.test_size, **self._data_kwargs)
+
   def _load_train(self):
     if self.labeled:
       return self._load_labeled()
     return self._load_annotated()
 
   def _load_model(self):
-    kwargs = {'base_shape' : self.base_shape,
-              'level_filters' : self.level_filters,
-              'num_channels' : self.image_shape[2],
-              'pose_dim' : self.pose_dim,
-              'level_depth' : self.level_depth,
-              'dropout' : self.dropout,
-              'model_dir' : self.model_root,
-              'learning_rate' : self.learning_rate,
-              'overwrite' : self.overwrite}
+    kwargs = {'base_shape': self.base_shape,
+              'level_filters': self.level_filters,
+              'num_channels': self.image_shape[2],
+              'pose_dim': self.pose_dim,
+              'level_depth': self.level_depth,
+              'dropout': self.dropout,
+              'model_dir': self.model_root,
+              'learning_rate': self.learning_rate,
+              'overwrite': self.overwrite}
     if self.sparse:
       if self.use_var:
         kwargs['batch_size'] = self.batch_size
@@ -239,12 +253,14 @@ todo: other attributes"""
       model = mod.ProxyUNet(**kwargs)
     return model
 
-  #################### Methods implementing Commands ####################
+  """
+  Methods implementing Commands.
+  """
 
   def convert(self):
     for mode in self.convert_modes:
       conversions.conversions[mode](
-        self.data_root, test_size=self.test_size)
+          self.data_root, test_size=self.test_size)
 
   def uncache(self):
     """Clean up the cache files."""
@@ -271,19 +287,19 @@ todo: other attributes"""
   def prioritize(self):
     """Prioritize images for annotation using an active learning or other strategy.
 
-    Note that this does not perform any labeling. It simply maintains a queue of
-    the indices for examples most recently desired for labeling. This queue
+    Note that this does not perform any labeling. It simply maintains a queue
+    of the indices for examples most recently desired for labeling. This queue
     contains no repeats. The queue is saved to disk, and a file lock should be
     created whenever it is altered, ensuring that the annotator does not make a
     bad access.
 
     """
-    kwargs = {'info_path' : self.annotation_info_path}
+    kwargs = {'info_path': self.annotation_info_path}
     if self.priority_mode == 'random':
       prioritizer = prio.RandomPrioritizer(self._load_unlabeled(), **kwargs)
     elif self.priority_mode == 'uncertainty':
       prioritizer = prio.ModelUncertaintyPrioritizer(
-        self._load_unlabeled(), model=self._load_model(), **kwargs)
+          self._load_unlabeled(), model=self._load_model(), **kwargs)
     else:
       raise NotImplementedError(f"{self.priority_mode} priority mode")
     prioritizer.run(seconds=self.seconds)
@@ -298,9 +314,9 @@ todo: other attributes"""
     respect the file lock on the queue.
 
     """
-    kwargs = {'info_path' : self.annotation_info_path,
-              'annotated_dir' : self.annotated_dir,
-              'record_size' : self.record_size}
+    kwargs = {'info_path': self.annotation_info_path,
+              'annotated_dir': self.annotated_dir,
+              'record_size': self.record_size}
     if self.annotation_mode == 'disks':
       annotator = ann.DiskAnnotator(self._load_labeled(),
                                     annotation_delay=self.annotation_delay,
@@ -324,7 +340,8 @@ todo: other attributes"""
     unlabeled_set = self._load_unlabeled()
     model = self._load_model()
     start_time = time()
-    predictions = list(model.predict(unlabeled_set, multiscale=self.multiscale))
+    predictions = list(model.predict(
+        unlabeled_set, multiscale=self.multiscale))
     logger.info(f"ran prediction in {time() - start_time}s.")
     logger.debug(f"prediction:\n{predictions}")
 
@@ -343,7 +360,8 @@ todo: other attributes"""
                 f"{total_num_objects}")
     logger.info(f"avg (euclidean) detection error: {avg_error[0]}")
     logger.info(f"avg (absolute) pose error: {avg_error[1:]}")
-    logger.info("note: some objects may be occluded, making detection impossible")
+    logger.info(
+        "note: some objects may be occluded, making detection impossible")
     logger.info(f"avg: {errors.mean(axis=0)}")
     logger.info(f"std: {errors.std(axis=0)}")
     logger.info(f"min: {errors.min(axis=0)}")
@@ -358,7 +376,7 @@ todo: other attributes"""
         targets = batch[1]
         pose = targets[0][b]
         vis.plot_image(image, None, None,
-                       pose[:,:,1], pose[:,:,2], None,
+                       pose[:, :, 1], pose[:, :, 2], None,
                        targets[1][b], targets[2][b], targets[3][b],
                        columns=3)
         vis.show()
@@ -378,8 +396,8 @@ todo: other attributes"""
     model = self._load_model()
     for image, dist_image, prediction in model.predict_visualization(test_set):
       fig, axes = vis.plot_image(image, image, dist_image, colorbar=True)
-      axes[0,1].plot(prediction[:,1], prediction[:,0], 'rx')
-      axes[0,2].plot(prediction[:,1], prediction[:,0], 'rx')
+      axes[0, 1].plot(prediction[:, 1], prediction[:, 0], 'rx')
+      axes[0, 2].plot(prediction[:, 1], prediction[:, 0], 'rx')
       logger.info(f"prediction:\n{prediction}")
       vis.show(join(self.figs_dir, 'prediction.pdf'))
       if not self.show:
@@ -395,6 +413,7 @@ todo: other attributes"""
       vis.show(join(self.figs_dir, 'model_outputs.pdf'))
       if not self.show:
         break
+
 
 def main():
   parser = argparse.ArgumentParser(description=docs.description)
@@ -419,11 +438,12 @@ def main():
   parser.add_argument('--convert-mode', nargs='+', default=[0, 4], type=int,
                       help=docs.convert_mode)
   parser.add_argument('--transformation', '--augment', '-a', nargs='?',
-                      default=None, const=0, type=int, help=docs.transformation)
+                      default=None, const=0, type=int,
+                      help=docs.transformation)
   parser.add_argument('--identity-prob', nargs=1, default=[0.01], type=float,
                       help=docs.identity_prob)
-  parser.add_argument('--priority-mode', '--priority', nargs=1, default=['random'],
-                      help=docs.priority_mode)
+  parser.add_argument('--priority-mode', '--priority', nargs=1,
+                      default=['random'], help=docs.priority_mode)
   parser.add_argument('--labeled', action='store_true', help=docs.labeled)
 
   # annotation settings
@@ -460,14 +480,15 @@ def main():
 
   # sparse eval and other optimization settings
   parser.add_argument('--sparse', action='store_true', help=docs.sparse)
-  parser.add_argument('--multiscale', action='store_true', help=docs.multiscale)
+  parser.add_argument('--multiscale', action='store_true',
+                      help=docs.multiscale)
   parser.add_argument('--use-var', action='store_true', help=docs.use_var)
 
   # model hyperparameters
   parser.add_argument('--dropout', nargs=1, default=[0.5], type=float,
                       help=docs.dropout)
   parser.add_argument('--initial-epoch', nargs=1, default=[0], type=int,
-                      help=docs.initial_epoch) # todo: get from ckpt
+                      help=docs.initial_epoch)  # todo: get from ckpt
   parser.add_argument('--epochs', '-e', nargs=1, default=[1], type=int,
                       help=docs.epochs)
   parser.add_argument('--learning-rate', '-l', nargs=1, default=[0.1],
@@ -476,10 +497,10 @@ def main():
   # runtime settings
   parser.add_argument('--num-parallel-calls', '--cores', nargs=1, default=[-1],
                       type=int, help=docs.num_parallel_calls)
-  parser.add_argument('--verbose', '-v', nargs='?', const=1, default=2, type=int,
-                      help=docs.verbose)
-  parser.add_argument('--keras-verbose', nargs='?', const=2, default=1, type=int,
-                      help=docs.keras_verbose)
+  parser.add_argument('--verbose', '-v', nargs='?', const=1, default=2,
+                      type=int, help=docs.verbose)
+  parser.add_argument('--keras-verbose', nargs='?', const=2, default=1,
+                      type=int, help=docs.keras_verbose)
   parser.add_argument('--patient', action='store_true', help=docs.patient)
   parser.add_argument('--show', action='store_true', help=docs.show)
   parser.add_argument('--cache', action='store_true', help=docs.cache)
@@ -527,6 +548,7 @@ def main():
                  seconds=args.seconds)
   logger.info(art)
   art()
+
 
 if __name__ == "__main__":
   main()

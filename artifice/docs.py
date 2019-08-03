@@ -51,7 +51,7 @@ epochs = """Number of training epochs. Default is 1."""
 learning_rate = """Learning rate."""
 
 # runtime settings
-num_parallel_calls = "Threadpool size. Default (-1) uses number of available cores."
+num_parallel_calls = "Threadpool size. Default (-1) uses available cores."
 verbose = "Artifice verbosity. Default is 2 (debug level)."
 keras_verbose = "Keras verbosity. Default is 1 (progress bars)."
 patient = "Disable eager execution."

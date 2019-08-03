@@ -13,6 +13,8 @@ from artifice.log import logger
 from artifice import utils
 
 _show = True
+
+
 def set_show(val):
   global _show
   _show = val
@@ -20,11 +22,15 @@ def set_show(val):
     mpl.use('Agg')
     plt.ioff()
 
+
 def show(fname=None, save=False):
   """Show the figure currently in matplotlib or save it, if not self.show.
 
   If no fname provided, and self.show is False, then closes the figure. If save
   is True, figure is saved regardless of show.
+
+  :param fname: name of the file to save to.
+  :param save: whether to save the file.
 
   """
   if _show and not save:
@@ -44,7 +50,7 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
   columns = min(columns, len(images))
   rows = max(1, len(images) // columns)
   fig, axes = plt.subplots(rows, columns, squeeze=False,
-                           figsize=(scale, scale*rows/columns))
+                           figsize=(scale, scale * rows / columns))
   for i, image in enumerate(images):
     ax = axes[i // columns, i % columns]
     if image is None:
@@ -52,7 +58,8 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
       continue
     im = ax.imshow(np.squeeze(image), cmap=cmaps[i], **kwargs)
     if colorbar:
-      fig.colorbar(im, ax=ax, orientation='horizontal', fraction=0.046, pad=0.04)
+      fig.colorbar(im, ax=ax, orientation='horizontal',
+                   fraction=0.046, pad=0.04)
   for ax in axes.ravel():
     if not ticks:
       ax.axis('off')
@@ -79,3 +86,7 @@ def plot_hist(hist):
   axes[1].set_ylabel("MAE")
   fig.suptitle("Training")
   return fig, axes
+
+
+if __name__ == '__main__':
+  print('Hello world!')
