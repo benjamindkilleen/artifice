@@ -2,9 +2,10 @@
 
 """
 
-from time import time, asctime
 import os
 from os.path import join, exists
+import sys
+from time import time, asctime
 from glob import glob
 import argparse
 import numpy as np
@@ -23,7 +24,14 @@ from artifice import ann
 from artifice import prio
 from artifice import tform
 
-logger.debug(f"Use Python{3.6} or higher.")
+
+def _system_checks():
+  if sys.version_info < (3, 6):
+    logger.error("Required: Python3.6 or higher.")
+    exit()
+  if tuple(map(int, tf.__version__.split('.'))) < (1, 13, 1):
+    logger.error("Required: TensorFlow 1.13.1 or higher.")
+    exit()
 
 
 def _set_eager(eager):
@@ -245,7 +253,8 @@ todo: other attributes"""
               'model_dir': self.model_root,
               'learning_rate': self.learning_rate,
               'overwrite': self.overwrite}
-    if self.use_var and self.model in ['sparse', 'dynamic']:
+    if (self.use_var and self.model == 'sparse'
+        or self.model == 'dynamic'):
       kwargs['batch_size'] = self.batch_size
 
     if self.model == 'unet':
@@ -420,6 +429,8 @@ todo: other attributes"""
 
 
 def main():
+  _system_checks()
+
   parser = argparse.ArgumentParser(description=docs.description)
   parser.add_argument('commands', nargs='+', help=docs.commands)
 

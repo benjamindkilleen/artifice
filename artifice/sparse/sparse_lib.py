@@ -23,6 +23,7 @@ import tensorflow as tf
 
 from artifice.log import logger
 
+
 def _compute_mask_padding(size, bcount, bsize, boffset, bstride):
   """Computes the padding for the reduce_mask operation.
 
@@ -35,9 +36,12 @@ def _compute_mask_padding(size, bcount, bsize, boffset, bstride):
   :rtype:
 
   """
-  pad_h = [boffset[0], boffset[0] + bstride[0]*(bcount[0] - 1) + bsize[0] - size[0]]
-  pad_w = [boffset[1], boffset[1] + bstride[1]*(bcount[1] - 1) + bsize[1] - size[1]]
+  pad_h = [boffset[0], boffset[0] + bstride[0]
+           * (bcount[0] - 1) + bsize[0] - size[0]]
+  pad_w = [boffset[1], boffset[1] + bstride[1]
+           * (bcount[1] - 1) + bsize[1] - size[1]]
   return pad_h, pad_w
+
 
 def _pad_mask(mask, bcount, bsize, boffset, bstride):
   """Pad the mask for then
@@ -59,13 +63,13 @@ def _pad_mask(mask, bcount, bsize, boffset, bstride):
     pad_h[0] = 0
   if pad_h[1] < 0:
     mask = mask[:, :-pad_h[1], :, :]
-    mad_h[1] = 0
+    pad_h[1] = 0
   if pad_w[0] < 0:
     mask = mask[:, :, -pad_w[0]:, :]
     pad_w[0] = 0
   if pad_w[1] < 0:
     mask = mask[:, :, :-pad_w[1], :]
-    mad_w[1] = 0
+    pad_w[1] = 0
 
   pad_n = pad_c = [0, 0]
   return tf.pad(mask, [pad_n, pad_h, pad_w, pad_c])
@@ -90,7 +94,8 @@ def _compute_upsample_offsets(bsize):
   :rtype: tf.Tensor
 
   """
-  offsets = np.array([np.arange(i, i + bsize[1]) for i in range(bsize[0])], np.int32)
+  offsets = np.array([np.arange(i, i + bsize[1])
+                      for i in range(bsize[0])], np.int32)
   offsets = tf.constant(offsets, tf.int32)
   offsets = tf.expand_dims(offsets, 0)
   offsets = tf.expand_dims(offsets, 3)
@@ -111,12 +116,13 @@ def _upsample_block_indices(active_block_indices, bsize, boffset, bstride):
   """
   offset = tf.constant([1, boffset[0], boffset[1]], dtype=tf.int32)
   scale = tf.constant([1, bstride[0], bstride[1]], dtype=tf.int32)
-  indices = active_block_indices + offset
+  indices = tf.cast(active_block_indices, tf.int32) + offset
   indices *= scale                                       # [M, 3]
   indices = tf.expand_dims(indices, 1)
-  indices = tf.expand_dims(indices, 2) # [M, 1, 1, 3]
-  upsample_offsets = _compute_upsample_offsets(bsize) # [1, bsize[0], bsize[1], 1]
-  indices += upsample_offsets # [M, bsize[0], bsize[1], 3]
+  indices = tf.expand_dims(indices, 2)  # [M, 1, 1, 3]
+  upsample_offsets = _compute_upsample_offsets(
+    bsize)  # [1, bsize[0], bsize[1], 1]
+  indices += upsample_offsets  # [M, bsize[0], bsize[1], 3]
 
   return indices
 
@@ -151,23 +157,21 @@ def reduce_mask(mask,
     pooling_type='AVG' if avgpool else 'MAX',
     padding='SAME',
     strides=bstride)
-  logger.debug(f"mask values: {mask.numpy().min()} to {mask.numpy().max()}")
   mask = tf.squeeze(mask, axis=3)
   active_block_indices = tf.where(mask > tf.constant(tol, mask.dtype))
   active_block_indices = tf.cast(active_block_indices, tf.int32)
   bin_counts = tf.shape(active_block_indices)[0]
-  logger.debug(f"bin_counts: {bin_counts.numpy()}")
   Indices = namedtuple('Indices', ['active_block_indices', 'bin_counts'])
   return Indices(active_block_indices, bin_counts)
 
 
 def gather(
-    inputs,
-    bin_counts,
-    active_block_indices, *,
-    bsize,
-    boffset,
-    bstride):
+        inputs,
+        bin_counts,
+        active_block_indices, *,
+        bsize,
+        boffset,
+        bstride):
   """FIXME! briefly describe function
 
   :param inputs:
@@ -186,18 +190,20 @@ def gather(
     boffset,
     bstride)
   blocks = tf.gather_nd(inputs, indices)
-  blocks = tf.reshape(blocks, [bin_counts, bsize[0], bsize[1], tf.shape(inputs)[3]])
+  blocks = tf.reshape(
+    blocks, [bin_counts, bsize[0], bsize[1], tf.shape(inputs)[3]])
   return blocks
 
+
 def scatter(
-    blocks,
-    bin_counts,                 # pylint: disable=unused-argument
-    active_block_indices,
-    outputs, *,
-    bsize,
-    boffset,
-    bstride,
-    add=False):
+        blocks,
+        bin_counts,                 # pylint: disable=unused-argument
+        active_block_indices,
+        outputs, *,
+        bsize,
+        boffset,
+        bstride,
+        add=False):
   """Scatter the blocks back onto outputs.
 
   Note that currently this only uses `outputs.shape` to scatter onto a tensor of zeros.
@@ -228,25 +234,26 @@ def scatter(
     # if indices.shape[1] != blocks.shape[1] and indices.shape[2] != indices.shape[2]:
     #   raise ValueError(f'indices and blocks have incompatible shapes: '
     #                    f'{indices.shape} vs {blocks.shape}')
-    outputs = tf.cond(
-      tf.cast(tf.shape(blocks)[0], tf.bool),
-      lambda: tf.scatter_nd(indices, blocks, tf.shape(outputs)),
-      lambda: outputs)
+    outputs = tf.case(
+      [(tf.equal(tf.shape(blocks)[0], tf.constant(0, tf.int32)),
+        (lambda: outputs))],
+      default=lambda: tf.scatter_nd(indices, blocks, tf.shape(outputs)))
 
   return outputs
 
+
 def scatter_var(
-    blocks,
-    bin_counts,                 # pylint: disable=unused-argument
-    active_block_indices,
-    outputs, *,
-    bsize,
-    boffset,
-    bstride,
-    add=False):
+        blocks,
+        bin_counts,                 # pylint: disable=unused-argument
+        active_block_indices,
+        outputs, *,
+        bsize,
+        boffset,
+        bstride,
+        add=False):
 
   raise NotImplementedError("no gradient for sparse_lib.scatter_var")
-  
+
   indices = _upsample_block_indices(
     active_block_indices,
     bsize,

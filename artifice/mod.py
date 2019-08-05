@@ -56,11 +56,14 @@ def _unbatch_outputs(outputs):
   return unbatched_outputs
 
 
-def crop(inputs, shape):
-  top_crop = int(np.floor(int(inputs.shape[1] - shape[1]) / 2))
-  bottom_crop = int(np.ceil(int(inputs.shape[1] - shape[1]) / 2))
-  left_crop = int(np.floor(int(inputs.shape[2] - shape[2]) / 2))
-  right_crop = int(np.ceil(int(inputs.shape[2] - shape[2]) / 2))
+def crop(inputs, shape=None, size=None):
+  if size is None:
+    assert shape is not None, 'one of `size` or `shape` must be provided'
+    size = shape[1:3]
+  top_crop = int(np.floor(int(inputs.shape[1] - size[0]) / 2))
+  bottom_crop = int(np.ceil(int(inputs.shape[1] - size[0]) / 2))
+  left_crop = int(np.floor(int(inputs.shape[2] - size[1]) / 2))
+  right_crop = int(np.ceil(int(inputs.shape[2] - size[1]) / 2))
   outputs = keras.layers.Cropping2D(cropping=((top_crop, bottom_crop),
                                               (left_crop, right_crop)),
                                     input_shape=inputs.shape)(inputs)
@@ -94,8 +97,11 @@ def _crop_like_conv(inputs,
 
 def _reindex_like_upsample(indices, scale=2):
   scale = utils.listify(scale, 2)
-  scale_factor = tf.constant([1, scale[0], scale[1]], tf.float32)
-  return keras.layers.multiply([indices, scale_factor])
+  scale_factor = tf.constant([1, scale[0], scale[1]], indices.dtype)
+  return keras.layers.Lambda(lambda x: x * scale_factor)(indices)
+  # scale_factor = keras.Input(
+  #   tensor=tf.constant([1, scale[0], scale[1]], indices.dtype))
+  # return keras.layers.multiply([indices, scale_factor])
 
 
 def conv(inputs,
@@ -454,6 +460,7 @@ class ProxyUNet(ArtificeModel):
     self.num_levels = len(self.level_filters)
     self.input_tile_shape = self.compute_input_tile_shape()
     self.output_tile_shapes = self.compute_output_tile_shapes()
+    self.output_tile_shape = self.output_tile_shapes[-1]
 
     super().__init__(self.input_tile_shape + [self.num_channels], **kwargs)
 
@@ -803,16 +810,25 @@ class DynamicUNet(SparseUNet):
   """An extension of the SparseUNet that foregoes repeated gather and scatter
   operations. Although it uses the same inputs and outputs as the other models,
   it only uses the distance output of the first (lowest) and last level,
-  outputting empty tensors (or zeros) at the other levels, not used in the loss.
+  outputting empty tensors (or zeros) at the other levels, not used in the
+  loss.
 
-  Uses the block_size as the base_shape for computing what is essentially a more
-  dynamic UNet, with a second tiling phase. The block stride is computed based
-  on the output block size.
+  Uses the block_size as the base_shape for computing what is essentially a
+  more dynamic UNet, with a second tiling phase. The block stride is computed
+  based on the output block size.
 
   """
 
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
+
+    if self.batch_size is None:
+      # todo: make this not required
+      raise ValueError(
+        f'DynamicUNet requires the batch size to create output tensors.')
+
+    self.level_input_tile_sizes = self.compute_level_input_shapes_(
+      self.base_shape, self.num_levels, self.level_depth)
 
     self.input_block_size = self.block_size
     self.level_input_block_sizes = self.compute_level_input_shapes_(
@@ -830,7 +846,9 @@ class DynamicUNet(SparseUNet):
     self.output_block_stride = self.output_block_size
 
   @staticmethod
-  def compute_level_input_block_strides_(input_block_stride, num_levels, level_depth):
+  def compute_level_input_block_strides_(input_block_stride,
+                                         num_levels,
+                                         level_depth):
     """Compute the block stride at the input to every level."""
     strides = []
     stride = np.array(input_block_stride)
@@ -841,7 +859,6 @@ class DynamicUNet(SparseUNet):
     return strides
 
   def forward(self, inputs):
-    batch_size = tf.shape(inputs)[0]
     logger.debug(f"block size: {self.block_size}")
     logger.debug(f"level input block sizes: {self.level_input_block_sizes}")
 
@@ -871,26 +888,34 @@ class DynamicUNet(SparseUNet):
     for i, filters in enumerate(self.level_filters[1:]):
       level = i + 1
       logger.debug(f"level: {level}")
+      logger.debug(f"blocks: {blocks.shape}")
       blocks = conv_upsample(blocks, filters)
+      logger.debug(f"upsampled blocks: {blocks.shape}")
       active_block_indices = _reindex_like_upsample(active_block_indices)
 
-      cropped = crop(next(level_outputs), inputs.shape)
+      level_output = next(level_outputs)
+      logger.debug(f"level_output_{level}: {level_output.shape}")
+      cropped = crop(level_output, size=self.level_input_tile_sizes[level])
+      logger.debug(f"cropped level_output_{level}: {cropped.shape}")
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
-      logger.debug(f'level output: {dropped}')
-      logger.debug(f'blocks: {blocks}')
+      logger.debug(f"block_size: {self.level_input_block_sizes[level]}")
+      logger.debug(f"block_stride: {self.level_input_block_strides[level]}")
       blocked = lay.SparseGather(
         block_size=self.level_input_block_sizes[level],
         block_stride=self.level_input_block_strides[level]
       )([dropped, bin_counts, active_block_indices])
-      logger.debug(f'blocked: {blocked}')
-      blocks = keras.layers.Concatenate()([blocked, blocks])
+      logger.debug(f'blocked level_output_{level}: {blocked.shape}')
+      blocks = keras.layers.concatenate([blocked, blocks])
+      logger.debug(f'concatenated blocks: {blocks.shape}')
 
-      for _ in range(self.level_depth):
-        blocks = conv(inputs, filters)
+      for j in range(self.level_depth):
+        blocks = conv(blocks, filters, padding='valid')
+        logger.debug(f'conv blocks {j}: {blocks.shape}')
 
       # not used but needed for valid outputs
-      outputs.append(
-        tf.zeros([batch_size] + self.output_tile_shapes[level] + [1], tf.float32))
+      outputs.append(keras.Input(tensor=tf.zeros(
+        [self.batch_size] + self.output_tile_shapes[level] + [1],
+        tf.float32)))
 
     pose_blocks = conv(
       blocks,
@@ -902,25 +927,30 @@ class DynamicUNet(SparseUNet):
       name='pose')
 
     # todo: use-var option
-    pose_image = tf.zeros([batch_size] + self.output_tile_shape + [1 + self.pose_dim],
-                          tf.float32)
+    pose_image = keras.Input(tensor=tf.zeros(
+      [self.batch_size] + self.output_tile_shape + [1 + self.pose_dim],
+      tf.float32))
     pose_image = lay.SparseScatter(
       block_size=self.output_block_size,
       block_stride=self.output_block_stride
     )([pose_blocks, bin_counts, active_block_indices, pose_image])
 
     outputs = [pose_image] + outputs
+    logger.debug(f"outputs: {outputs}")
     return outputs
 
   @staticmethod
-  def zero_loss(y_true, y_pred):  # pylint: disable=unused-argument
-    return tf.constant(0, tf.float32)
+  def pred_mean_loss(y_true, y_pred):
+    """Returns the mean of the predicted tensor. (For zeros)."""
+    return tf.reduce_mean(y_pred)
 
   def compile(self):
     if tf.executing_eagerly():
       optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
     else:
       optimizer = keras.optimizers.Adadelta(self.learning_rate)
-    self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
-                       ['mse'] + [self.zero_loss] * (self.num_levels - 1),
-                       metrics=[self.pose_mae])
+    self.model.compile(
+      optimizer=optimizer,
+      loss=([self.pose_loss] + ['mse']
+            + [self.pred_mean_loss] * (self.num_levels - 1)),
+      metrics=[self.pose_mae])

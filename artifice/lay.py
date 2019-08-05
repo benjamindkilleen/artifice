@@ -4,13 +4,14 @@ from tensorflow import keras
 
 from tensorflow.python.ops import array_ops
 
-from artifice.log import logger
+from artifice.log import logger  # noqa
 from artifice import utils
 from artifice import sparse
 from artifice import conv_utils
 from artifice import img, vis
 
 NEG_INF = np.finfo(np.float32).min
+
 
 class PeakDetection(keras.layers.Layer):
   """Finds local maxima in each channel of the image.
@@ -36,8 +37,8 @@ class PeakDetection(keras.layers.Layer):
   |---|---|---|---|---|---|---|
         0   1   2   3   4   5
 
-  We consider pixels near the edge to be local maxima if they satisfy the above,
-  assuming marked positions outside the image domain are at -inf.
+  We consider pixels near the edge to be local maxima if they satisfy the
+  above, assuming marked positions outside the image domain are at -inf.
 
   In cases of ties, both points are returned.
 
@@ -49,8 +50,8 @@ class PeakDetection(keras.layers.Layer):
     3 => 1, 3+1
     4 => 2, 2+1
 
-
   """
+
   def __init__(self, threshold_abs=None, **kwargs):
     self.threshold_abs = threshold_abs
     super().__init__(**kwargs)
@@ -62,9 +63,8 @@ class PeakDetection(keras.layers.Layer):
   def call(self, inputs):
     """FIXME! briefly describe function
 
-    * Use tf.image.image_gradients to get dx, dy for each channel then scan that
-      image for low/zero spots in both directions.
-    *
+    Use tf.image.image_gradients to get dx, dy for each channel then scan
+    that image for low/zero spots in both directions.
 
     :param inputs:
     :returns:
@@ -72,18 +72,21 @@ class PeakDetection(keras.layers.Layer):
 
     """
 
-    padded = tf.pad(inputs, [[0,0], [2,2], [2,2], [0,0]],
+    padded = tf.pad(inputs, [[0, 0], [2, 2], [2, 2], [0, 0]],
                     constant_values=NEG_INF)
     mask = np.ones_like(inputs, dtype=tf.bool)
     for di in range(5):
       start = abs(di - 2)
       stop = -abs(di - 2) + 4
       for dj in range(start, stop + 1):
-        mask = tf.logical_and(mask, inputs >= padded[:, di : di+inputs.shape[1],
-                                                     dj : dj+inputs.shape[2], :])
+        mask = tf.logical_and(
+          mask,
+          inputs >= padded[:, di: di + inputs.shape[1],
+                           dj: dj + inputs.shape[2], :])
 
     if self.threshold_abs is not None:
-      mask = tf.logical_and(mask, inputs > tf.constant(self.threshold_abs, tf.float32))
+      mask = tf.logical_and(mask, inputs > tf.constant(
+        self.threshold_abs, tf.float32))
 
     return tf.where(mask)
 
@@ -123,7 +126,7 @@ class SparseConv2D(keras.layers.Layer):
   def __init__(self,
                filters,
                kernel_size,
-               batch_size=None, # todo: replace with a use_var option
+               batch_size=None,  # todo: replace with a use_var option
                strides=[1, 1],
                padding='valid',
                activation=None,
@@ -160,7 +163,7 @@ class SparseConv2D(keras.layers.Layer):
       self.block_size[i],
       self.kernel_size[i],
       'valid',
-      self.strides[i]) for i in [0,1]]
+      self.strides[i]) for i in [0, 1]]
 
     self.block_offset = [0, 0]
     self.output_block_offset = self.block_offset
@@ -172,13 +175,12 @@ class SparseConv2D(keras.layers.Layer):
     self.avgpool = avgpool
 
     if self.padding == 'valid':
-      pad_size = [0,0]
+      pad_size = [0, 0]
     else:
       pad_h = self.kernel_size[0] // 2
       pad_w = (self.kernel_size[1] - 1) // 2
       pad_size = [pad_h, pad_w]
     self.pad = keras.layers.ZeroPadding2D(pad_size)
-
 
   def build(self, input_shape):
     input_shape, mask_shape = input_shape
@@ -186,8 +188,8 @@ class SparseConv2D(keras.layers.Layer):
                         utils.divup(input_shape[2], self.block_stride[1])]
 
     if len(input_shape) != 4:
-      raise ValueError('Inputs should have rank 4. Received input shape: ' +
-                       str(input_shape))
+      raise ValueError(f'Inputs should have rank 4. Received input shape: '
+                       f'{input_shape}')
     if input_shape[3] is None:
       raise ValueError('The channel dimension of the inputs '
                        'should be defined. Found `None`.')
@@ -224,7 +226,6 @@ class SparseConv2D(keras.layers.Layer):
         trainable=False,
         use_resource=False)
 
-
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
     shape = conv_utils.conv_output_shape(
@@ -235,7 +236,6 @@ class SparseConv2D(keras.layers.Layer):
       self.strides)
     return tf.TensorShape(shape)
 
-
   def call(self, inputs):
     inputs, mask = inputs
 
@@ -243,7 +243,8 @@ class SparseConv2D(keras.layers.Layer):
       self.outputs.assign(tf.zeros_like(self.outputs))
       outputs = self.outputs
     else:
-      output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
+      output_shape = list(
+        self.compute_output_shape([inputs.shape, mask.shape]))
       batch_size = array_ops.shape(inputs)[0]
       outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
 
@@ -296,6 +297,7 @@ class SparseConv2D(keras.layers.Layer):
 
     return outputs
 
+
 class SparseConv2DTranspose(keras.layers.Layer):
   """2D transpose convolution using the sbnet library.
 
@@ -322,6 +324,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
   :rtype:
 
   """
+
   def __init__(self,
                filters,
                kernel_size,
@@ -362,17 +365,16 @@ class SparseConv2DTranspose(keras.layers.Layer):
       self.block_size[i],
       self.kernel_size[i],
       'valid',
-      stride=self.strides[i]) for i in [0,1]]
+      stride=self.strides[i]) for i in [0, 1]]
 
     self.block_offset = [0, 0]
     self.output_block_offset = self.block_offset
 
     self.block_stride = self.block_size
-    self.output_block_stride = self.output_block_size # might not be correct
+    self.output_block_stride = self.output_block_size  # might not be correct
 
     self.tol = tol
     self.avgpool = avgpool
-
 
   def build(self, input_shape):
     input_shape, mask_shape = input_shape
@@ -380,8 +382,8 @@ class SparseConv2DTranspose(keras.layers.Layer):
                         utils.divup(input_shape[2], self.block_stride[1])]
 
     if len(input_shape) != 4:
-      raise ValueError('Inputs should have rank 4. Received input shape: ' +
-                       str(input_shape))
+      raise ValueError(f'Inputs should have rank 4. Received input shape: '
+                       f'{input_shape}')
     if input_shape[3] is None:
       raise ValueError('The channel dimension of the inputs '
                        'should be defined. Found `None`.')
@@ -418,7 +420,6 @@ class SparseConv2DTranspose(keras.layers.Layer):
         trainable=False,
         use_resource=False)
 
-
   def compute_output_shape(self, input_shape):
     input_shape, mask_shape = input_shape
     shape = conv_utils.deconv_output_shape(
@@ -428,7 +429,6 @@ class SparseConv2DTranspose(keras.layers.Layer):
       self.padding,
       self.strides)
     return tf.TensorShape(shape)
-
 
   def call(self, inputs):
     inputs, mask = inputs
@@ -458,7 +458,7 @@ class SparseConv2DTranspose(keras.layers.Layer):
     height, width = blocks_shape[1], blocks_shape[2]
     kernel_h, kernel_w = self.kernel_size
     stride_h, stride_w = self.strides
-    out_pad_h = out_pad_w = None # output padding not implemented
+    out_pad_h = out_pad_w = None  # output padding not implemented
 
     # Infer the dynamic output shape:
     out_height = conv_utils.deconv_output_length(
@@ -499,9 +499,11 @@ class SparseConv2DTranspose(keras.layers.Layer):
       self.outputs.assign(tf.zeros_like(self.outputs))
       outputs = self.outputs
     else:
-      output_shape = list(self.compute_output_shape([inputs.shape, mask.shape]))
+      output_shape = list(
+        self.compute_output_shape([inputs.shape, mask.shape]))
       batch_size = array_ops.shape(inputs)[0]
-      outputs = tf.zeros([batch_size] + output_shape[1:], tf.float32)
+      outputs = tf.zeros([batch_size] + output_shape[1:],
+                         tf.float32)  # todo: might not work
 
     outputs = sparse.scatter(
       blocks,
@@ -525,13 +527,13 @@ class ReduceMask(keras.layers.Layer):
   Outputs is a list containing [bin_counts, active_block_indices] rather than
   the usual namedtuple.
 
-  :param block_size: 
-  :param block_offset: 
-  :param block_stride: 
-  :param tol: 
-  :param avgpool: 
-  :returns: 
-  :rtype: 
+  :param block_size:
+  :param block_offset:
+  :param block_stride:
+  :param tol:
+  :param avgpool:
+  :returns:
+  :rtype:
 
   """
 
@@ -550,15 +552,12 @@ class ReduceMask(keras.layers.Layer):
     self.tol = tol
     self.avgpool = avgpool
 
-
   def build(self, mask_shape):
     self.block_count = [utils.divup(mask_shape[1], self.block_stride[0]),
                         utils.divup(mask_shape[2], self.block_stride[1])]
-    
 
   def compute_output_shape(self, _):
     return [tf.TensorShape([]), tf.TensorShape([None, 3])]
-
 
   def call(self, mask):
     indices = sparse.reduce_mask(
@@ -576,13 +575,14 @@ class ReduceMask(keras.layers.Layer):
 class SparseGather(keras.layers.Layer):
   """Perform the sparse gather operation.
 
-  :param block_size: 
-  :param block_offset: 
-  :param block_stride: 
-  :returns: 
-  :rtype: 
+  :param block_size:
+  :param block_offset:
+  :param block_stride:
+  :returns:
+  :rtype:
 
   """
+
   def __init__(self,
                block_size=[16, 16],
                block_offset=[0, 0],
@@ -594,11 +594,10 @@ class SparseGather(keras.layers.Layer):
     self.block_offset = utils.listify(block_offset, 2)
     self.block_stride = utils.listify(block_stride, 2)
 
-
   def compute_output_shape(self, input_shape):
     input_shape, _, _ = input_shape
-    return tf.TensorShape([None, self.block_size[0], self.block_size[1], input_shape[3]])
-    
+    return tf.TensorShape(
+      [None, self.block_size[0], self.block_size[1], input_shape[3]])
 
   def call(self, inputs):
     inputs, bin_counts, active_block_indices = inputs
@@ -614,13 +613,14 @@ class SparseGather(keras.layers.Layer):
 class SparseScatter(keras.layers.Layer):
   """Perform the sparse scatter operation.
 
-  :param block_size: 
-  :param block_offset: 
-  :param block_stride: 
-  :returns: 
-  :rtype: 
+  :param block_size:
+  :param block_offset:
+  :param block_stride:
+  :returns:
+  :rtype:
 
   """
+
   def __init__(self,
                block_size=[16, 16],
                block_offset=[0, 0],
@@ -632,12 +632,11 @@ class SparseScatter(keras.layers.Layer):
     self.block_size = utils.listify(block_size, 2)
     self.block_offset = utils.listify(block_offset, 2)
     self.block_stride = utils.listify(block_stride, 2)
-
+    self.use_var = use_var
 
   def compute_output_shape(self, input_shape):
     _, _, _, output_shape = input_shape
     return output_shape
-    
 
   def call(self, inputs):
     inputs, bin_counts, active_block_indices, outputs = inputs
@@ -652,13 +651,12 @@ class SparseScatter(keras.layers.Layer):
       use_var=self.use_var)
 
 
-
 def main():
   # tf.enable_eager_execution()
   inputs = keras.layers.Input(shape=(100, 100, 1))
   x = SparseConv2D(1, [3, 3], 4, padding='same')([inputs, inputs])
   x = SparseConv2D(1, [1, 1], 4, padding='same')([x, x])
-  # x = SparseConv2DTranspose(1, [2, 2], strides=[2, 2], padding='same')([x, x])
+  # x = SparseConv2DTranspose(1, [2, 2], strides=[2, 2], padding='same')([x, x]) # noqa
   # x = keras.layers.MaxPool2D()(x)
   model = keras.Model(inputs, x)
   model.compile(optimizer=tf.train.AdadeltaOptimizer(0.1), loss='mse',
@@ -679,6 +677,7 @@ def main():
   y = model.predict(images)
   vis.plot_image(*x, *y, columns=4, vmin=0., vmax=1.)
   vis.show('../figs/sparse_conv2d_example.pdf')
+
 
 if __name__ == '__main__':
   main()
