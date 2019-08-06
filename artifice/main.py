@@ -254,14 +254,14 @@ todo: other attributes"""
               'learning_rate': self.learning_rate,
               'overwrite': self.overwrite}
     if (self.use_var and self.model == 'sparse'
-        or self.model == 'dynamic'):
+        or self.model == 'better-sparse'):
       kwargs['batch_size'] = self.batch_size
 
     if self.model == 'unet':
       return mod.ProxyUNet(**kwargs)
     elif self.model == 'sparse':
       return mod.SparseUNet(**kwargs)
-    elif self.model == 'dynamic':
+    elif self.model == 'better-sparse':
       return mod.DynamicUNet(**kwargs)
     else:
       raise RuntimeError(f"No '{self.model}' model type.")
@@ -395,6 +395,7 @@ todo: other attributes"""
         vis.show()
 
   def vis_history(self):
+    # todo: fix this for multiple models
     model = self._load_model()
     if not exists(model.history_path):
       logger.warning(f"no training history at '{model.history_path}'")
@@ -495,7 +496,7 @@ def main():
 
   # sparse eval and other optimization settings
   parser.add_argument('--model', '-M', nargs='?', default='unet',
-                      choices=docs.model_choices, help=docs.model)
+                      help=docs.model)
   parser.add_argument('--multiscale', action='store_true',
                       help=docs.multiscale)
   parser.add_argument('--use-var', action='store_true', help=docs.use_var)

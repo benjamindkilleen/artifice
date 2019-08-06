@@ -41,7 +41,6 @@ level_depth = "todo"
 
 # sparse eval and other optimization settings
 model = "Which model to use."
-model_choices = ['unet', 'sparse', 'dynamic']
 multiscale = "todo"
 use_var = "todo"
 

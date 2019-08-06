@@ -622,6 +622,7 @@ class SparseScatter(keras.layers.Layer):
   """
 
   def __init__(self,
+               output_shape,
                block_size=[16, 16],
                block_offset=[0, 0],
                block_stride=[16, 16],
@@ -629,17 +630,18 @@ class SparseScatter(keras.layers.Layer):
                **kwargs):
     super().__init__(**kwargs)
 
+    self.output_shape = list(output_shape)
     self.block_size = utils.listify(block_size, 2)
     self.block_offset = utils.listify(block_offset, 2)
     self.block_stride = utils.listify(block_stride, 2)
     self.use_var = use_var
 
-  def compute_output_shape(self, input_shape):
-    _, _, _, output_shape = input_shape
-    return output_shape
+  def compute_output_shape(self, _):
+    return tf.TensorShape(self.output_shape)
 
   def call(self, inputs):
-    inputs, bin_counts, active_block_indices, outputs = inputs
+    inputs, bin_counts, active_block_indices = inputs
+    outputs = tf.zeros(self.output_shape, tf.float32)
     return sparse.scatter(
       inputs,
       bin_counts,
