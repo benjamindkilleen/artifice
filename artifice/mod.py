@@ -15,6 +15,13 @@ from artifice import utils
 from artifice import lay
 
 
+def _get_optimizer(learning_rate):
+  if tf.executing_eagerly():
+    return tf.train.AdadeltaOptimizer(learning_rate)
+  else:
+    return keras.optimizers.Adadelta(learning_rate)
+
+
 def _update_hist(a, b):
   """Concat the lists in b onto the lists in a.
 
@@ -97,7 +104,7 @@ def _crop_like_conv(inputs,
 
 def _reindex_like_upsample(indices, scale=2):
   scale = utils.listify(scale, 2)
-  scale_factor = tf.constant([1, scale[0], scale[1]], indices.dtype)
+  scale_factor = [1, scale[0], scale[1]]
   return keras.layers.Lambda(lambda x: x * scale_factor)(indices)
 
 
@@ -106,9 +113,12 @@ def conv(inputs,
          kernel_shape=[3, 3],
          activation='relu',
          padding='valid',
+         kernel_initializer='glorot_normal',
          norm=True,
          mask=None,
          batch_size=None,
+         activation_name=None,
+         norm_name=None,
          **kwargs):
   """Perform 3x3 convolution on the layer.
 
@@ -134,7 +144,7 @@ def conv(inputs,
       activation=None,
       padding=padding,
       use_bias=False,
-      kernel_initializer='glorot_normal',
+      kernel_initializer=kernel_initializer,
       **kwargs)(inputs)
   else:
     inputs = lay.SparseConv2D(
@@ -144,12 +154,12 @@ def conv(inputs,
       activation=None,
       padding=padding,
       use_bias=False,
-      kernel_initializer='glorot_normal',
+      kernel_initializer=kernel_initializer,
       **kwargs)([inputs, mask])
   if norm:
-    inputs = keras.layers.BatchNormalization()(inputs)
+    inputs = keras.layers.BatchNormalization(name=norm_name)(inputs)
   if activation is not None:
-    inputs = keras.layers.Activation(activation)(inputs)
+    inputs = keras.layers.Activation(activation, name=activation_name)(inputs)
   return inputs
 
 
@@ -568,13 +578,9 @@ class ProxyUNet(ArtificeModel):
                                         weights=pose[:, :, :, :1])
 
   def compile(self):
-    if tf.executing_eagerly():
-      optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
-    else:
-      optimizer = keras.optimizers.Adadelta(self.learning_rate)
+    optimizer = _get_optimizer(self.learning_rate)
     self.model.compile(optimizer=optimizer, loss=[self.pose_loss]
-                       + ['mse'] * self.num_levels,
-                       metrics={'pose_image', 'mae'})
+                       + ['mse'] * self.num_levels)
 
   def forward(self, inputs):
     level_outputs = []
@@ -598,11 +604,18 @@ class ProxyUNet(ArtificeModel):
       inputs = keras.layers.Concatenate()([dropped, inputs])
       for _ in range(self.level_depth):
         inputs = conv(inputs, filters)
-        outputs.append(conv(inputs, 1, kernel_shape=[1, 1], activation=None,
-                            norm=False, name=f'output_{i+1}'))
 
-    pose_image = conv(inputs, 1 + self.pose_dim, kernel_shape=(1, 1), activation=None,
-                      padding='same', norm=False, name='pose')
+      outputs.append(conv(inputs, 1, kernel_shape=[1, 1], activation=None,
+                          norm=False, name=f'output_{i+1}'))
+
+    pose_image = conv(
+      inputs,
+      1 + self.pose_dim,
+      kernel_shape=[1, 1],
+      activation=None,
+      padding='same',
+      norm=False,
+      name='pose')
     return [pose_image] + outputs
 
   def predict(self, art_data, multiscale=False):
@@ -621,7 +634,10 @@ class ProxyUNet(ArtificeModel):
       raise NotImplementedError(
         "enable eager execution for eval (remove --patient)")
     outputs = []
-    next_batch = art_data.prediction_input().make_one_shot_iterator().get_next()
+    next_batch = (art_data
+                  .prediction_input()
+                  .make_one_shot_iterator()
+                  .get_next())
     with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       for i in itertools.count():
@@ -717,7 +733,7 @@ class ProxyUNet(ArtificeModel):
 
 
 class SparseUNet(ProxyUNet):
-  def __init__(self, *, batch_size=None, block_size=[8, 8], tol=0.1, **kwargs):
+  def __init__(self, *, batch_size=None, block_size=[8, 8], tol=0.5, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
 
     :param batch_size: determines whether variables will be used in sparse
@@ -817,27 +833,23 @@ class BetterSparseUNet(SparseUNet):
     super().__init__(**kwargs)
 
     if self.batch_size is None:
-      # todo: make this not required
+      # todo: make this not required?
       raise ValueError(
-        f'DynamicUNet requires the batch size to create output tensors.')
+        f'SparseScatter layer requires the batch size.')
 
     self.level_input_tile_sizes = self.compute_level_input_shapes_(
       self.base_shape, self.num_levels, self.level_depth)
 
-    self.input_block_size = self.block_size
-    self.level_input_block_sizes = self.compute_level_input_shapes_(
-      self.block_size, self.num_levels, self.level_depth)
-    self.output_block_sizes = self.compute_output_tile_shapes_(
-      self.block_size, self.num_levels, self.level_depth)
-    self.output_block_size = self.output_block_sizes[-1]
+    # block sizes
+    self.level_input_block_size = list(2 * np.array(self.block_size))
+    self.level_output_block_size = list(
+      np.array(self.level_input_block_size) - 2 * self.level_depth)
 
-    self.input_block_stride = [
-      int(self.convert_distance_between_levels(
-        self.output_block_size[i], -1, 0))
-      for i in range(2)]        # at the last layer of level 0
-    self.level_input_block_strides = self.compute_level_input_block_strides_(
-      self.input_block_stride, self.num_levels, self.level_depth)
-    self.output_block_stride = self.output_block_size
+    # block strides
+    assert self.level_depth % 2 == 0, 'must have even level_depth for strides'
+    self.block_stride = list(np.array(self.block_size) - self.level_depth // 2)
+    self.level_input_block_stride = list(2 * np.array(self.block_stride))
+    self.level_output_block_stride = self.level_output_block_size
 
   @staticmethod
   def compute_level_input_block_strides_(input_block_stride,
@@ -853,9 +865,6 @@ class BetterSparseUNet(SparseUNet):
     return strides
 
   def forward(self, inputs):
-    logger.debug(f"block size: {self.block_size}")
-    logger.debug(f"level input block sizes: {self.level_input_block_sizes}")
-
     level_outputs = []
     outputs = []
     for level, filters in enumerate(reversed(self.level_filters)):
@@ -871,43 +880,54 @@ class BetterSparseUNet(SparseUNet):
 
     # sparsify based on the first mask
     bin_counts, active_block_indices = lay.ReduceMask(
-      block_size=self.input_block_size,
-      block_stride=self.input_block_stride,
+      block_size=self.block_size,
+      block_stride=self.block_stride,
       tol=self.tol)(mask)
-    blocks = lay.SparseGather(
-      block_size=self.input_block_size,
-      block_stride=self.input_block_stride
-    )([inputs, bin_counts, active_block_indices])
 
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(self.level_filters[1:]):
       level = i + 1
-      # logger.debug(f"level: {level}")
-      # logger.debug(f"blocks: {blocks.shape}")
+      blocks = lay.SparseGather(
+        block_size=self.block_size,
+        block_stride=self.block_stride)(
+          [inputs, bin_counts, active_block_indices])
       blocks = conv_upsample(blocks, filters)
-      # logger.debug(f"upsampled blocks: {blocks.shape}")
       active_block_indices = _reindex_like_upsample(active_block_indices)
-      logger.debug(f"active_block_indices: {active_block_indices}")
 
       level_output = next(level_outputs)
-      # logger.debug(f"level_output_{level}: {level_output.shape}")
       cropped = crop(level_output, size=self.level_input_tile_sizes[level])
-      # logger.debug(f"cropped level_output_{level}: {cropped.shape}")
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
-      # logger.debug(f"block_size: {self.level_input_block_sizes[level]}")
-      # logger.debug(f"block_stride: {self.level_input_block_strides[level]}")
       blocked = lay.SparseGather(
-        block_size=self.level_input_block_sizes[level],
-        block_stride=self.level_input_block_strides[level]
-      )([dropped, bin_counts, active_block_indices])
-      # logger.debug(f'blocked level_output_{level}: {blocked.shape}')
+        block_size=self.level_input_block_size,
+        block_stride=self.level_input_block_stride)(
+          [dropped, bin_counts, active_block_indices])
+
       blocks = keras.layers.concatenate([blocked, blocks])
-      # logger.debug(f'concatenated blocks: {blocks.shape}')
 
       for j in range(self.level_depth):
-        blocks = conv(blocks, filters, padding='valid')
-        # logger.debug(f'conv blocks {j}: {blocks.shape}')
+        blocks = conv(blocks, filters)
 
+      if level == self.num_levels - 1:
+        # make the blocks for the pose_image
+        blocks = conv(
+          blocks,
+          1 + self.pose_dim,
+          kernel_shape=[1, 1],
+          activation=None,
+          padding='same',
+          norm=False)
+        name = 'pose_image'
+      else:
+        name = None
+
+      inputs = lay.SparseScatter(
+        [self.batch_size] + self.output_tile_shapes[level] + [blocks.shape[3]],
+        block_size=self.level_output_block_size,
+        block_stride=self.level_output_block_stride,
+        name=name)(
+          [blocks, bin_counts, active_block_indices])
+
+      # convolve the level's mask at full size, use it to gather the next level
       mask_blocks = conv(
         blocks,
         1,
@@ -917,53 +937,134 @@ class BetterSparseUNet(SparseUNet):
         padding='same')
       mask = lay.SparseScatter(
         [self.batch_size] + self.output_tile_shapes[level] + [1],
-        block_size=self.output_block_sizes[level],
-        block_stride=self.output_block_strides[level])(
-          mask_blocks, bin_counts, active_block_indices)
-      inputs = lay.SparseScatter(
-        [self.batch_size] + self.output_tile_shapes[level] + [filters],
-        block_stride=self.output_block_strides[level])(
-          blocks, bin_counts, active_block_indices)
-      bin_counts, active_block_indices = lay.ReduceMask()
-
-      # not used but needed for valid outputs
-
+        block_size=self.level_output_block_size,
+        block_stride=self.level_output_block_stride,
+        name=f'output_{level}')(
+          [mask_blocks, bin_counts, active_block_indices])
       outputs.append(mask)
 
-    pose_blocks = conv(
-      blocks,
-      1 + self.pose_dim,
-      kernel_shape=[1, 1],
-      activation=None,
-      padding='same',
-      norm=False,
-      name='pose')
-
-    # todo: use-var option
-    pose_image = keras.layers.Lambda(lambda _: tf.zeros(
-      [self.batch_size] + self.output_tile_shape + [1 + self.pose_dim],
-      tf.float32))(inputs)
-    pose_image = lay.SparseScatter(
-      block_size=self.output_block_size,
-      block_stride=self.output_block_stride
-    )([pose_blocks, bin_counts, active_block_indices, pose_image])
-
-    outputs = [pose_image] + outputs
-    logger.debug(f"outputs: {outputs}")
+    outputs = [inputs] + outputs
     return outputs
 
+
+class AutoSparseUNet(BetterSparseUNet):
+  """An extension of the BetterSparseUNet that doesn't use the distance proxy but
+  rather a learned mask for each level.
+
+  """
   @staticmethod
-  def pred_mean_loss(y_true, y_pred):
-    """Returns the mean of the predicted tensor. (For zeros)."""
-    return tf.reduce_mean(y_pred)
+  def compute_level_input_block_strides_(input_block_stride,
+                                         num_levels,
+                                         level_depth):
+    """Compute the block stride at the input to every level."""
+    strides = []
+    stride = np.array(input_block_stride)
+    strides.append(list(stride))
+    for _ in range(num_levels - 1):
+      stride *= 2
+      strides.append(list(stride))
+    return strides
+
+  @staticmethod
+  def sparsity(_, binary_mask):
+    """Choice of sparsity measure."""
+    return tf.reduce_mean(binary_mask) * 0.01
 
   def compile(self):
-    if tf.executing_eagerly():
-      optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
-    else:
-      optimizer = keras.optimizers.Adadelta(self.learning_rate)
-    self.model.compile(
-      optimizer=optimizer,
-      loss=([self.pose_loss] + ['mse']
-            + [self.pred_mean_loss] * (self.num_levels - 1)),
-      metrics={'pose_image': 'mae'})
+    optimizer = _get_optimizer(self.learning_rate)
+    self.model.compile(optimizer=optimizer, loss=[self.pose_loss]
+                       + [self.sparsity] * self.num_levels)
+
+  # todo: resolve similarities between this and other forward functions
+  def forward(self, inputs):
+    level_outputs = []
+    outputs = []
+    for level, filters in enumerate(reversed(self.level_filters)):
+      for _ in range(self.level_depth):
+        inputs = conv(inputs, filters)
+      if level < self.num_levels - 1:
+        level_outputs.append(inputs)
+        inputs = keras.layers.MaxPool2D()(inputs)
+      else:
+        mask = conv(inputs,
+                    1,
+                    kernel_shape=[1, 1],
+                    activation=None,
+                    norm=False,
+                    kernel_initializer='ones')
+        binary_mask = keras.layers.Lambda(
+          lambda x: tf.greater(x, self.tol),
+          name=f'output_0')(mask)
+        outputs.append(binary_mask)
+
+    # sparsify based on the first mask
+    bin_counts, active_block_indices = lay.ReduceMask(
+      block_size=self.block_size,
+      block_stride=self.block_stride,
+      tol=self.tol)(mask)
+
+    level_outputs = reversed(level_outputs)
+    for i, filters in enumerate(self.level_filters[1:]):
+      level = i + 1
+      blocks = lay.SparseGather(
+        block_size=self.block_size,
+        block_stride=self.block_stride)(
+          [inputs, bin_counts, active_block_indices])
+      blocks = conv_upsample(blocks, filters)
+      active_block_indices = _reindex_like_upsample(active_block_indices)
+
+      level_output = next(level_outputs)
+      cropped = crop(level_output, size=self.level_input_tile_sizes[level])
+      dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
+      blocked = lay.SparseGather(
+        block_size=self.level_input_block_size,
+        block_stride=self.level_input_block_stride)(
+          [dropped, bin_counts, active_block_indices])
+
+      blocks = keras.layers.concatenate([blocked, blocks])
+
+      for j in range(self.level_depth):
+        blocks = conv(blocks, filters)
+
+      if level == self.num_levels - 1:
+        # make the blocks for the pose_image
+        blocks = conv(
+          blocks,
+          1 + self.pose_dim,
+          kernel_shape=[1, 1],
+          activation=None,
+          padding='same',
+          norm=False)
+        name = 'pose_image'
+      else:
+        name = None
+
+      inputs = lay.SparseScatter(
+        [self.batch_size] + self.output_tile_shapes[level] + [blocks.shape[3]],
+        block_size=self.level_output_block_size,
+        block_stride=self.level_output_block_stride,
+        name=name)(
+          [blocks, bin_counts, active_block_indices])
+
+      # convolve the level's mask at full size, use it to gather the next level
+      mask_blocks = conv(
+        blocks,
+        1,
+        kernel_shape=[1, 1],
+        activation=None,
+        norm=False,
+        padding='same',
+        kernel_initializer='ones')
+      mask = lay.SparseScatter(
+        [self.batch_size] + self.output_tile_shapes[level] + [1],
+        block_size=self.level_output_block_size,
+        block_stride=self.level_output_block_stride)(
+          [mask_blocks, bin_counts, active_block_indices])
+
+      binary_mask = keras.layers.Lambda(
+        lambda x: tf.greater(x, self.tol),
+        name=f'output_{level}')(mask)
+      outputs.append(binary_mask)
+
+    outputs = [inputs] + outputs
+    return outputs

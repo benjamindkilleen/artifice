@@ -559,9 +559,9 @@ class ReduceMask(keras.layers.Layer):
   def compute_output_shape(self, _):
     return [tf.TensorShape([]), tf.TensorShape([None, 3])]
 
-  def call(self, mask):
+  def call(self, mask_):
     indices = sparse.reduce_mask(
-      mask,
+      mask_,
       block_count=self.block_count,
       bsize=self.block_size,
       boffset=self.block_offset,
@@ -630,14 +630,14 @@ class SparseScatter(keras.layers.Layer):
                **kwargs):
     super().__init__(**kwargs)
 
-    self.output_shape = list(output_shape)
+    self.output_shape_ = list(output_shape)
     self.block_size = utils.listify(block_size, 2)
     self.block_offset = utils.listify(block_offset, 2)
     self.block_stride = utils.listify(block_stride, 2)
     self.use_var = use_var
 
   def compute_output_shape(self, _):
-    return tf.TensorShape(self.output_shape)
+    return tf.TensorShape(self.output_shape_)
 
   def call(self, inputs):
     inputs, bin_counts, active_block_indices = inputs

@@ -910,3 +910,10 @@ More speed tests:
 * learn the sparsity hyperparameters?
 * "I want you to be sparse, you figure out how."
 * Effect of final max-peak search learned?
+
+## August 6, 2019:
+Speed test results. As a reminder, patient, batch size ]:
+* dense: 95, 86, 86
+* sparse: 321, 97, 81, 
+* better sparse: 144, 109, 108
+  142, 109, 107 whyyyyyy

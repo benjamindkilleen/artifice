@@ -89,6 +89,7 @@ class Artifice:
                initial_epoch,
                epochs,
                learning_rate,
+               tol,
                num_parallel_calls,
                verbose,
                keras_verbose,
@@ -142,6 +143,7 @@ class Artifice:
     self.initial_epoch = initial_epoch
     self.epochs = epochs
     self.learning_rate = learning_rate
+    self.tol = tol
 
     # runtime settings
     self.num_parallel_calls = num_parallel_calls
@@ -243,7 +245,8 @@ todo: other attributes"""
       return self._load_labeled()
     return self._load_annotated()
 
-  def _load_model(self):
+  @property
+  def _model_kwargs(self):
     kwargs = {'base_shape': self.base_shape,
               'level_filters': self.level_filters,
               'num_channels': self.image_shape[2],
@@ -254,15 +257,23 @@ todo: other attributes"""
               'learning_rate': self.learning_rate,
               'overwrite': self.overwrite}
     if (self.use_var and self.model == 'sparse'
-        or self.model == 'better-sparse'):
+        or self.model == 'better-sparse'
+        or self.model == 'auto-sparse'):
       kwargs['batch_size'] = self.batch_size
+    if 'sparse' in self.model:
+      kwargs['tol'] = self.tol
+    return kwargs
 
+  def _load_model(self):
+    kwargs = self._model_kwargs
     if self.model == 'unet':
       return mod.ProxyUNet(**kwargs)
     elif self.model == 'sparse':
       return mod.SparseUNet(**kwargs)
     elif self.model == 'better-sparse':
-      return mod.DynamicUNet(**kwargs)
+      return mod.BetterSparseUNet(**kwargs)
+    elif self.model == 'auto-sparse':
+      return mod.AutoSparseUNet(**kwargs)
     else:
       raise RuntimeError(f"No '{self.model}' model type.")
 
@@ -510,6 +521,8 @@ def main():
                       help=docs.epochs)
   parser.add_argument('--learning-rate', '-l', nargs=1, default=[0.1],
                       type=float, help=docs.learning_rate)
+  parser.add_argument('--tol', nargs=1, default=[0.1], type=float,
+                      help=docs.tol)
 
   # runtime settings
   parser.add_argument('--num-parallel-calls', '--cores', nargs=1, default=[-1],
@@ -556,6 +569,7 @@ def main():
                  initial_epoch=args.initial_epoch[0],
                  epochs=args.epochs[0],
                  learning_rate=args.learning_rate[0],
+                 tol=args.tol[0],
                  num_parallel_calls=args.num_parallel_calls[0],
                  verbose=args.verbose,
                  keras_verbose=args.keras_verbose,

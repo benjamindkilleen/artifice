@@ -49,6 +49,7 @@ dropout = "todo"
 initial_epoch = """Initial epoch, starting at 0."""
 epochs = """Number of training epochs. Default is 1."""
 learning_rate = """Learning rate."""
+tol = "todo"
 
 # runtime settings
 num_parallel_calls = "Threadpool size. Default (-1) uses available cores."
