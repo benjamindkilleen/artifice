@@ -806,7 +806,7 @@ class SparseUNet(ProxyUNet):
     return outputs
 
 
-class DynamicUNet(SparseUNet):
+class BetterSparseUNet(SparseUNet):
   """An extension of the SparseUNet that foregoes repeated gather and scatter
   operations. Although it uses the same inputs and outputs as the other models,
   it only uses the distance output of the first (lowest) and last level,
@@ -878,7 +878,8 @@ class DynamicUNet(SparseUNet):
     # sparsify based on the first mask
     bin_counts, active_block_indices = lay.ReduceMask(
       block_size=self.input_block_size,
-      block_stride=self.input_block_stride)(mask)
+      block_stride=self.input_block_stride,
+      tol=self.tol)(mask)
     blocks = lay.SparseGather(
       block_size=self.input_block_size,
       block_stride=self.input_block_stride
@@ -887,35 +888,53 @@ class DynamicUNet(SparseUNet):
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(self.level_filters[1:]):
       level = i + 1
-      logger.debug(f"level: {level}")
-      logger.debug(f"blocks: {blocks.shape}")
+      # logger.debug(f"level: {level}")
+      # logger.debug(f"blocks: {blocks.shape}")
       blocks = conv_upsample(blocks, filters)
-      logger.debug(f"upsampled blocks: {blocks.shape}")
+      # logger.debug(f"upsampled blocks: {blocks.shape}")
       active_block_indices = _reindex_like_upsample(active_block_indices)
+      logger.debug(f"active_block_indices: {active_block_indices}")
 
       level_output = next(level_outputs)
-      logger.debug(f"level_output_{level}: {level_output.shape}")
+      # logger.debug(f"level_output_{level}: {level_output.shape}")
       cropped = crop(level_output, size=self.level_input_tile_sizes[level])
-      logger.debug(f"cropped level_output_{level}: {cropped.shape}")
+      # logger.debug(f"cropped level_output_{level}: {cropped.shape}")
       dropped = keras.layers.Dropout(rate=self.dropout)(cropped)
-      logger.debug(f"block_size: {self.level_input_block_sizes[level]}")
-      logger.debug(f"block_stride: {self.level_input_block_strides[level]}")
+      # logger.debug(f"block_size: {self.level_input_block_sizes[level]}")
+      # logger.debug(f"block_stride: {self.level_input_block_strides[level]}")
       blocked = lay.SparseGather(
         block_size=self.level_input_block_sizes[level],
         block_stride=self.level_input_block_strides[level]
       )([dropped, bin_counts, active_block_indices])
-      logger.debug(f'blocked level_output_{level}: {blocked.shape}')
+      # logger.debug(f'blocked level_output_{level}: {blocked.shape}')
       blocks = keras.layers.concatenate([blocked, blocks])
-      logger.debug(f'concatenated blocks: {blocks.shape}')
+      # logger.debug(f'concatenated blocks: {blocks.shape}')
 
       for j in range(self.level_depth):
         blocks = conv(blocks, filters, padding='valid')
-        logger.debug(f'conv blocks {j}: {blocks.shape}')
+        # logger.debug(f'conv blocks {j}: {blocks.shape}')
+
+      mask_blocks = conv(
+        blocks,
+        1,
+        kernel_shape=[1, 1],
+        activation=None,
+        norm=False,
+        padding='same')
+      mask = lay.SparseScatter(
+        [self.batch_size] + self.output_tile_shapes[level] + [1],
+        block_size=self.output_block_sizes[level],
+        block_stride=self.output_block_strides[level])(
+          mask_blocks, bin_counts, active_block_indices)
+      inputs = lay.SparseScatter(
+        [self.batch_size] + self.output_tile_shapes[level] + [filters],
+        block_stride=self.output_block_strides[level])(
+          blocks, bin_counts, active_block_indices)
+      bin_counts, active_block_indices = lay.ReduceMask()
 
       # not used but needed for valid outputs
-      outputs.append(keras.Input(tensor=tf.zeros(
-        [self.batch_size] + self.output_tile_shapes[level] + [1],
-        tf.float32)))
+
+      outputs.append(mask)
 
     pose_blocks = conv(
       blocks,
