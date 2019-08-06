@@ -99,9 +99,6 @@ def _reindex_like_upsample(indices, scale=2):
   scale = utils.listify(scale, 2)
   scale_factor = tf.constant([1, scale[0], scale[1]], indices.dtype)
   return keras.layers.Lambda(lambda x: x * scale_factor)(indices)
-  # scale_factor = keras.Input(
-  #   tensor=tf.constant([1, scale[0], scale[1]], indices.dtype))
-  # return keras.layers.multiply([indices, scale_factor])
 
 
 def conv(inputs,
@@ -570,17 +567,14 @@ class ProxyUNet(ArtificeModel):
                                         pred[:, :, :, 1:],
                                         weights=pose[:, :, :, :1])
 
-  @staticmethod
-  def pose_mae(true_outputs, outputs):
-    return tf.losses.mean_absolute_error(true_outputs[0], outputs[0])
-
   def compile(self):
     if tf.executing_eagerly():
       optimizer = tf.train.AdadeltaOptimizer(self.learning_rate)
     else:
       optimizer = keras.optimizers.Adadelta(self.learning_rate)
-    self.model.compile(optimizer=optimizer, loss=[self.pose_loss] +
-                       ['mse'] * self.num_levels, metrics=[self.pose_mae])
+    self.model.compile(optimizer=optimizer, loss=[self.pose_loss]
+                       + ['mse'] * self.num_levels,
+                       metrics={'pose_image', 'mae'})
 
   def forward(self, inputs):
     level_outputs = []
@@ -913,9 +907,9 @@ class DynamicUNet(SparseUNet):
         logger.debug(f'conv blocks {j}: {blocks.shape}')
 
       # not used but needed for valid outputs
-      outputs.append(keras.Input(tensor=tf.zeros(
+      outputs.append(keras.layers.Lambda(lambda _: tf.zeros(
         [self.batch_size] + self.output_tile_shapes[level] + [1],
-        tf.float32)))
+        tf.float32))(inputs))
 
     pose_blocks = conv(
       blocks,
@@ -927,9 +921,9 @@ class DynamicUNet(SparseUNet):
       name='pose')
 
     # todo: use-var option
-    pose_image = keras.Input(tensor=tf.zeros(
+    pose_image = keras.layers.Lambda(lambda _: tf.zeros(
       [self.batch_size] + self.output_tile_shape + [1 + self.pose_dim],
-      tf.float32))
+      tf.float32))(inputs)
     pose_image = lay.SparseScatter(
       block_size=self.output_block_size,
       block_stride=self.output_block_stride
@@ -953,4 +947,4 @@ class DynamicUNet(SparseUNet):
       optimizer=optimizer,
       loss=([self.pose_loss] + ['mse']
             + [self.pred_mean_loss] * (self.num_levels - 1)),
-      metrics=[self.pose_mae])
+      metrics={'pose_image': 'mae'})
