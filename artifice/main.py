@@ -395,6 +395,7 @@ todo: other attributes"""
         vis.show()
 
   def vis_history(self):
+    # todo: fix this for multiple models
     model = self._load_model()
     if not exists(model.history_path):
       logger.warning(f"no training history at '{model.history_path}'")

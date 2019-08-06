@@ -891,3 +891,22 @@ The full training run, using these settings:
 
 The dense network never dropped between 91s, but the sparse network got
 below 80. 
+
+## August 5, 2019:
+Docs for continuity:
+* aspects familiar for tensorflow developers
+* aspects unfamiliar for tensorflow developers
+* usage examples
+* breadcrumbs
+
+Document "wisdom"/"bread gained through experiment:
+* how I go about debugging tensorflow
+* different speedups
+* intuition about model topology
+
+More speed tests:
+* The sparsity tolerance vs accuracy.
+* Learn the tolerance
+* learn the sparsity hyperparameters?
+* "I want you to be sparse, you figure out how."
+* Effect of final max-peak search learned?
