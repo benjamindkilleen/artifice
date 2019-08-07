@@ -917,3 +917,8 @@ Speed test results. As a reminder, patient, batch size ]:
 * sparse: 321, 97, 81, 
 * better sparse: 144, 109, 108
   142, 109, 107 whyyyyyy
+
+## August 7, 2019:
+* glk: "Model has to kind of find itself."
+* change the threshold across time/levels?
+* pursue H_G

@@ -102,12 +102,6 @@ def _crop_like_conv(inputs,
   return outputs
 
 
-def _reindex_like_upsample(indices, scale=2):
-  scale = utils.listify(scale, 2)
-  scale_factor = [1, scale[0], scale[1]]
-  return keras.layers.Lambda(lambda x: x * scale_factor)(indices)
-
-
 def conv(inputs,
          filters,
          kernel_shape=[3, 3],
@@ -892,7 +886,6 @@ class BetterSparseUNet(SparseUNet):
         block_stride=self.block_stride)(
           [inputs, bin_counts, active_block_indices])
       blocks = conv_upsample(blocks, filters)
-      active_block_indices = _reindex_like_upsample(active_block_indices)
 
       level_output = next(level_outputs)
       cropped = crop(level_output, size=self.level_input_tile_sizes[level])
@@ -951,7 +944,17 @@ class AutoSparseUNet(BetterSparseUNet):
   """An extension of the BetterSparseUNet that doesn't use the distance proxy but
   rather a learned mask for each level.
 
+  :param gamma: sparsity loss coefficient.
+
   """
+
+  def __init__(self, *args, gamma=0.01, **kwargs):
+    """AutoSparseUNet.
+
+    """
+    super().__init__(*args, **kwargs)
+    self.gamma = gamma
+
   @staticmethod
   def compute_level_input_block_strides_(input_block_stride,
                                          num_levels,
@@ -966,14 +969,14 @@ class AutoSparseUNet(BetterSparseUNet):
     return strides
 
   @staticmethod
-  def sparsity(_, binary_mask):
-    """Choice of sparsity measure."""
-    return tf.reduce_mean(binary_mask) * 0.01
+  def sparsity_loss(_, mask):
+    """Choice of sparsity measure: Gaussian entropy."""
+    return tf.reduce_sum(tf.log(tf.square(mask)))
 
   def compile(self):
     optimizer = _get_optimizer(self.learning_rate)
     self.model.compile(optimizer=optimizer, loss=[self.pose_loss]
-                       + [self.sparsity] * self.num_levels)
+                       + [self.sparsity_loss] * self.num_levels)
 
   # todo: resolve similarities between this and other forward functions
   def forward(self, inputs):
@@ -991,27 +994,34 @@ class AutoSparseUNet(BetterSparseUNet):
                     kernel_shape=[1, 1],
                     activation=None,
                     norm=False,
-                    kernel_initializer='ones')
-        binary_mask = keras.layers.Lambda(
-          lambda x: tf.cast(tf.greater(x, self.tol), tf.float32),
-          name=f'output_0')(mask)
-        outputs.append(binary_mask)
+                    kernel_initializer='ones',
+                    name=f'output_0')
+        outputs.append(mask)
 
     # sparsify based on the first mask
     bin_counts, active_block_indices = lay.ReduceMask(
       block_size=self.block_size,
       block_stride=self.block_stride,
       tol=self.tol)(mask)
+    ops = []
+    ops.append(tf.print(active_block_indices))
+    ops.append(tf.print(tf.reduce_min(active_block_indices, axis=0)))
+    ops.append(tf.print(tf.reduce_max(active_block_indices, axis=0)))
 
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(self.level_filters[1:]):
       level = i + 1
+      # with tf.control_dependencies(ops):
       blocks = lay.SparseGather(
         block_size=self.block_size,
         block_stride=self.block_stride)(
           [inputs, bin_counts, active_block_indices])
+      ops = []
       blocks = conv_upsample(blocks, filters)
-      active_block_indices = _reindex_like_upsample(active_block_indices)
+
+      ops.append(tf.print(active_block_indices))
+      ops.append(tf.print(tf.reduce_min(active_block_indices, axis=0)))
+      ops.append(tf.print(tf.reduce_max(active_block_indices, axis=0)))
 
       level_output = next(level_outputs)
       cropped = crop(level_output, size=self.level_input_tile_sizes[level])
@@ -1058,13 +1068,18 @@ class AutoSparseUNet(BetterSparseUNet):
       mask = lay.SparseScatter(
         [self.batch_size] + self.output_tile_shapes[level] + [1],
         block_size=self.level_output_block_size,
-        block_stride=self.level_output_block_stride)(
+        block_stride=self.level_output_block_stride,
+        name=f'output_{level}')(
           [mask_blocks, bin_counts, active_block_indices])
+      outputs.append(mask)
 
-      binary_mask = keras.layers.Lambda(
-        lambda x: tf.cast(tf.greater(x, self.tol), tf.float32),
-        name=f'output_{level}')(mask)
-      outputs.append(binary_mask)
+      bin_couns, active_block_indices = lay.ReduceMask(
+        block_size=self.block_size,
+        block_stride=self.block_stride,
+        tol=self.tol)(mask)
+      ops.append(tf.print(active_block_indices))
+      ops.append(tf.print(tf.reduce_min(active_block_indices, axis=0)))
+      ops.append(tf.print(tf.reduce_max(active_block_indices, axis=0)))
 
     outputs = [inputs] + outputs
     return outputs
