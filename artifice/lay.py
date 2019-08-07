@@ -641,7 +641,7 @@ class SparseScatter(keras.layers.Layer):
 
   def call(self, inputs):
     inputs, bin_counts, active_block_indices = inputs
-    outputs = tf.zeros(self.output_shape, tf.float32)
+    outputs = tf.zeros(self.output_shape_, tf.float32)
     return sparse.scatter(
       inputs,
       bin_counts,

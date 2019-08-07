@@ -993,7 +993,7 @@ class AutoSparseUNet(BetterSparseUNet):
                     norm=False,
                     kernel_initializer='ones')
         binary_mask = keras.layers.Lambda(
-          lambda x: tf.greater(x, self.tol),
+          lambda x: tf.cast(tf.greater(x, self.tol), tf.float32),
           name=f'output_0')(mask)
         outputs.append(binary_mask)
 
@@ -1062,7 +1062,7 @@ class AutoSparseUNet(BetterSparseUNet):
           [mask_blocks, bin_counts, active_block_indices])
 
       binary_mask = keras.layers.Lambda(
-        lambda x: tf.greater(x, self.tol),
+        lambda x: tf.cast(tf.greater(x, self.tol), tf.float32),
         name=f'output_{level}')(mask)
       outputs.append(binary_mask)
 

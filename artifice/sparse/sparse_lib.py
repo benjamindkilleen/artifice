@@ -21,7 +21,7 @@ import numpy as np
 from collections import namedtuple
 import tensorflow as tf
 
-from artifice.log import logger
+from artifice.log import logger  # noqa: unused
 
 
 def _compute_mask_padding(size, bcount, bsize, boffset, bstride):
@@ -79,7 +79,7 @@ def _compute_upsample_offsets(bsize):
   """Compute the offsets for blocks with bsize.
 
   Assumes that the given coordinate is at the top left of the block.
-
+]
   So for example, if the block size were [3, 4], the returned offsets would be:
 ```
   [[[0], [1], [2], [3]],
@@ -127,7 +127,9 @@ def _upsample_block_indices(active_block_indices, bsize, boffset, bstride):
   return indices
 
 
-#################### tf primitive implementations ####################
+"""
+TensorFlow primitive implementations.
+"""
 
 
 def reduce_mask(mask,
@@ -189,7 +191,7 @@ def gather(
     bsize,
     boffset,
     bstride)
-  blocks = tf.gather_nd(inputs, indices)
+  blocks = tf.gather_nd(inputs, indices)  # todo: fix index error
   blocks = tf.reshape(
     blocks, [bin_counts, bsize[0], bsize[1], tf.shape(inputs)[3]])
   return blocks
@@ -206,7 +208,8 @@ def scatter(
         add=False):
   """Scatter the blocks back onto outputs.
 
-  Note that currently this only uses `outputs.shape` to scatter onto a tensor of zeros.
+  Note that currently this only uses `outputs.shape` to scatter onto a tensor
+  of zeros.
 
   In tf >= 1.14, the functions tf.tensor_scatter_nd_update and
   tf.tensor_scatter_nd_add would overcome this barrier.
