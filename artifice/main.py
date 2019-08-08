@@ -162,9 +162,9 @@ class Artifice:
 
     # derived sizes/shapes
     self.num_levels = len(self.level_filters)
-    self.input_tile_shape = mod.ProxyUNet.compute_input_tile_shape_(
+    self.input_tile_shape = mod.UNet.compute_input_tile_shape_(
         self.base_shape, self.num_levels, self.level_depth)
-    self.output_tile_shapes = mod.ProxyUNet.compute_output_tile_shapes_(
+    self.output_tile_shapes = mod.UNet.compute_output_tile_shapes_(
         self.base_shape, self.num_levels, self.level_depth)
     self.output_tile_shape = self.output_tile_shapes[-1]
     self.num_tiles = dat.ArtificeData.compute_num_tiles(
@@ -267,7 +267,7 @@ todo: other attributes"""
   def _load_model(self):
     kwargs = self._model_kwargs
     if self.model == 'unet':
-      return mod.ProxyUNet(**kwargs)
+      return mod.UNet(**kwargs)
     elif self.model == 'sparse':
       return mod.SparseUNet(**kwargs)
     elif self.model == 'better-sparse':
@@ -406,17 +406,17 @@ todo: other attributes"""
         vis.show()
 
   def vis_history(self):
-    # todo: fix this for multiple models
-    model = self._load_model()
-    if not exists(model.history_path):
-      logger.warning(f"no training history at '{model.history_path}'")
-      return
-    hist = utils.json_load(model.history_path)
-    vis.plot_hist(hist)
+    # todo: fix this for multiple models in the same model_dir
+    vis.plot_hists_from_dir(self.model_root)
     vis.show(join(self.figs_dir, 'history.pdf'))
 
   def vis_predict(self):
     """Run prediction on the test set and visualize the output."""
+    history_files = glob(join(self.model_dir, '*history.json'))
+
+    hists = dict((fname, utils.json_load(fname)) for fname in history_files)
+    vis.plot_hist(hists)
+
     test_set = self._load_test()
     model = self._load_model()
     for image, dist_image, prediction in model.predict_visualization(test_set):
@@ -433,8 +433,16 @@ todo: other attributes"""
     test_set = self._load_test()
     model = self._load_model()
     for image, outputs in model.predict_outputs(test_set):
+      pose_image = outputs[0]
       level_outputs = outputs[1:]
-      fig, axes = vis.plot_image(image, *level_outputs, colorbar=True)
+      columns = max(model.num_levels, model.pose_dim + 1)
+      fig, axes = vis.plot_image(
+        image, *[None for _ in range(columns - 1)],
+        *[pose_image[:, :, i] for i in range(model.pose_dim + 1)],
+        *[None for _ in range(columns - model.pose_dim - 1)],
+        *level_outputs,
+        *[None for _ in range(columns - model.num_levels)],
+        colorbar=True, columns=columns)
       vis.show(join(self.figs_dir, 'model_outputs.pdf'))
       if not self.show:
         break

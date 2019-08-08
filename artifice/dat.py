@@ -913,7 +913,9 @@ def evaluate_prediction(label, prediction_, distance_threshold=10):
 
   for i in range(label.shape[0]):
     distances = np.linalg.norm(
-        prediction[i:i + 1, :2] - label[i:i + 1, :2], axis=1)
+        prediction[:, :2] - label[i:i + 1, :2], axis=1)
+
+    logger.debug(f"distances: {distances}")
     pidx = np.argmin(distances)
     if distances[pidx] >= distance_threshold:
       num_failed += 1

@@ -359,8 +359,9 @@ class ArtificeModel(metaclass=Builder):
       hist = utils.json_load(self.history_path)
     else:
       hist = {}
-      epoch = initial_epoch
-      start_time = time()
+
+    start_time = time()
+    epoch = initial_epoch
 
     while epoch != epochs and time() - start_time > seconds > 0:
       logger.info("reloading dataset (not cached)...")
@@ -431,7 +432,7 @@ class ArtificeModel(metaclass=Builder):
     raise NotImplementedError("uncertainty estimates not implemented")
 
 
-class ProxyUNet(ArtificeModel):
+class UNet(ArtificeModel):
   def __init__(self, *, base_shape, level_filters, num_channels, pose_dim,
                level_depth=2, dropout=0.5, **kwargs):
     """Create a U-Net model for object detection.
@@ -692,29 +693,29 @@ class ProxyUNet(ArtificeModel):
     art_data.num_tiles = num_tiles
 
   def evaluate(self, art_data, multiscale=False):
-    """Runs evaluation for ProxyUNet."""
+    """Runs evaluation for UNet."""
     if tf.executing_eagerly():
       tile_labels = []
       errors = []
       outputs = []
       total_num_failed = 0
-      for i, (batch_tiles, batch_labels) in enumerate(art_data.evaluation_input()):
+      for i, (batch_tiles, batch_labels) in enumerate(
+              art_data.evaluation_input()):
         if i % 10 == 0:
           logger.info(f"evaluating batch {i} / {art_data.steps_per_epoch}")
           tile_labels += list(batch_labels)
           outputs += _unbatch_outputs(self.model.predict_on_batch(batch_tiles))
         while len(outputs) >= art_data.num_tiles:
-          label = art_data.untile_points(tile_labels)
+          label = art_data.untile_points(tile_labels[:art_data.num_tiles])
           prediction = art_data.analyze_outputs(outputs, multiscale=multiscale)
           error, num_failed = dat.evaluate_prediction(label, prediction)
           total_num_failed += num_failed
-          errors += list(error[error[:, 0] >= 0])
+          errors += error[error[:, 0] >= 0].tolist()
           del tile_labels[:art_data.num_tiles]
           del outputs[:art_data.num_tiles]
-          errors = np.array(errors)
     else:
-      raise NotImplementedError
-    return errors, total_num_failed
+      raise NotImplementedError("evaluation on patient execution")
+    return np.array(errors), total_num_failed
 
   def uncertainty_on_batch(self, images):
     """Estimate the model's uncertainty for each image."""
@@ -726,7 +727,7 @@ class ProxyUNet(ArtificeModel):
     return 1 - confidences
 
 
-class SparseUNet(ProxyUNet):
+class SparseUNet(UNet):
   def __init__(self, *, batch_size=None, block_size=[8, 8], tol=0.5, **kwargs):
     """Create a UNet-like architecture using multi-scale tracking.
 
@@ -909,7 +910,7 @@ class BetterSparseUNet(SparseUNet):
           activation=None,
           padding='same',
           norm=False)
-        name = 'pose_image'
+        name = 'pose'
       else:
         name = None
 
@@ -970,13 +971,27 @@ class AutoSparseUNet(BetterSparseUNet):
 
   @staticmethod
   def sparsity_loss(_, mask):
-    """Choice of sparsity measure: Gaussian entropy."""
-    return tf.reduce_sum(tf.log(tf.square(mask)))
+    """Choice of sparsity measure: hoyer entropy."""
+
+    # Gausian entropy: -inf at 0
+    # return tf.reduce_sum(tf.log(tf.square(mask)))
+
+    # Hoyer:
+    # sqrt_N = tf.sqrt(tf.cast(tf.size(mask), tf.float32))
+    # sos = tf.reduce_sum(tf.square(mask))
+    # num = sqrt_N - sos / tf.sqrt(sos)
+    # den = sqrt_N - 1
+    # return num / den
+
+    # l_2 / l_1
+    return tf.norm(mask, ord=2) / tf.norm(mask, ord=1)
 
   def compile(self):
     optimizer = _get_optimizer(self.learning_rate)
-    self.model.compile(optimizer=optimizer, loss=[self.pose_loss]
-                       + [self.sparsity_loss] * self.num_levels)
+    self.model.compile(
+      optimizer=optimizer,
+      loss=[self.pose_loss] + [self.sparsity_loss] * self.num_levels,
+      loss_weights=[1.] + [1. / self.num_levels] * self.num_levels)
 
   # todo: resolve similarities between this and other forward functions
   def forward(self, inputs):
@@ -992,10 +1007,9 @@ class AutoSparseUNet(BetterSparseUNet):
         mask = conv(inputs,
                     1,
                     kernel_shape=[1, 1],
-                    activation=None,
+                    activation='relu',
                     norm=False,
-                    kernel_initializer='ones',
-                    name=f'output_0')
+                    activation_name=f'output_0')
         outputs.append(mask)
 
     # sparsify based on the first mask
@@ -1003,25 +1017,15 @@ class AutoSparseUNet(BetterSparseUNet):
       block_size=self.block_size,
       block_stride=self.block_stride,
       tol=self.tol)(mask)
-    ops = []
-    ops.append(tf.print(active_block_indices))
-    ops.append(tf.print(tf.reduce_min(active_block_indices, axis=0)))
-    ops.append(tf.print(tf.reduce_max(active_block_indices, axis=0)))
 
     level_outputs = reversed(level_outputs)
     for i, filters in enumerate(self.level_filters[1:]):
       level = i + 1
-      # with tf.control_dependencies(ops):
       blocks = lay.SparseGather(
         block_size=self.block_size,
         block_stride=self.block_stride)(
           [inputs, bin_counts, active_block_indices])
-      ops = []
       blocks = conv_upsample(blocks, filters)
-
-      ops.append(tf.print(active_block_indices))
-      ops.append(tf.print(tf.reduce_min(active_block_indices, axis=0)))
-      ops.append(tf.print(tf.reduce_max(active_block_indices, axis=0)))
 
       level_output = next(level_outputs)
       cropped = crop(level_output, size=self.level_input_tile_sizes[level])
@@ -1045,7 +1049,7 @@ class AutoSparseUNet(BetterSparseUNet):
           activation=None,
           padding='same',
           norm=False)
-        name = 'pose_image'
+        name = 'pose'
       else:
         name = None
 
@@ -1061,10 +1065,9 @@ class AutoSparseUNet(BetterSparseUNet):
         blocks,
         1,
         kernel_shape=[1, 1],
-        activation=None,
+        activation='relu',
         norm=False,
-        padding='same',
-        kernel_initializer='ones')
+        padding='same')
       mask = lay.SparseScatter(
         [self.batch_size] + self.output_tile_shapes[level] + [1],
         block_size=self.level_output_block_size,
@@ -1077,9 +1080,6 @@ class AutoSparseUNet(BetterSparseUNet):
         block_size=self.block_size,
         block_stride=self.block_stride,
         tol=self.tol)(mask)
-      ops.append(tf.print(active_block_indices))
-      ops.append(tf.print(tf.reduce_min(active_block_indices, axis=0)))
-      ops.append(tf.print(tf.reduce_max(active_block_indices, axis=0)))
 
     outputs = [inputs] + outputs
     return outputs
