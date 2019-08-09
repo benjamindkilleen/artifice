@@ -541,8 +541,6 @@ class ArtificeData(object):
     # todo: limit checks to edges AND regions
     dist_image = self.untile([output[-1][:, :, 0] for output in
                               outputs[:self.num_tiles]])
-    vis.plot_image(dist_image)
-    vis.show()
     peaks = detect_peaks(dist_image, pois=peaks)
 
     pose_image = self.untile([output[0]
@@ -894,7 +892,7 @@ def multiscale_detect_peaks(images):
   return peaks
 
 
-def evaluate_prediction(label, prediction_, distance_threshold=10):
+def evaluate_prediction(label, prediction, distance_threshold=10):
   """Evaluage the prediction against the label and return an array of absolute
 
   The error array has the same ordering as objects in the label. Negative
@@ -907,19 +905,20 @@ def evaluate_prediction(label, prediction_, distance_threshold=10):
   :rtype:
 
   """
-  prediction = prediction_.copy()
-  error = np.empty((label.shape[0], label.shape[1] - 1))
+  error = -np.ones((label.shape[0], label.shape[1] - 1))
+  if prediction.shape[0] == 0:
+    return error, label.shape[0]
+
+  prediction = prediction.copy()
   num_failed = 0
 
   for i in range(label.shape[0]):
     distances = np.linalg.norm(
         prediction[:, :2] - label[i:i + 1, :2], axis=1)
 
-    logger.debug(f"distances: {distances}")
     pidx = np.argmin(distances)
     if distances[pidx] >= distance_threshold:
       num_failed += 1
-      error[i] = -1
       continue
 
     error[i, 0] = np.linalg.norm(prediction[pidx, :2] - label[i, :2])

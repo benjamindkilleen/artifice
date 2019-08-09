@@ -377,6 +377,9 @@ todo: other attributes"""
     test_set = self._load_test()
     model = self._load_model()
     errors, num_failed = model.evaluate(test_set)
+    if not errors:
+      logger.warning(f"found ZERO objects, num_failed: {num_failed}")
+      return
     avg_error = errors.mean(axis=0)
     total_num_objects = self.test_size * self.num_objects
     num_detected = total_num_objects - num_failed

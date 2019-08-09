@@ -56,9 +56,8 @@ def _unbatch_outputs(outputs):
    ...]
 
   """
-  outputs = [list(output) for output in outputs]
   unbatched_outputs = []
-  for i in range(len(outputs[0])):
+  for i in range(outputs[0].shape[0]):
     unbatched_outputs.append([output[i] for output in outputs])
   return unbatched_outputs
 

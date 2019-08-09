@@ -974,4 +974,16 @@ INFO:artifice:max: [9.9862299  0.29404551 5.14802027]
 ```
 
 Better-sparse:
+(failed completely?) Possible bug.
 
+Auto-sparse:
+```
+INFO:artifice:objects detected: 36864 / 40000
+INFO:artifice:avg (euclidean) detection error: 4.718787164625677
+INFO:artifice:avg (absolute) pose error: [0.27260562 1.7624422 ]
+INFO:artifice:note: some objects may be occluded, making detection impossible
+INFO:artifice:avg: [4.71878716 0.27260562 1.7624422 ]
+INFO:artifice:std: [2.3327723  0.14227601 1.15831823]
+INFO:artifice:min: [0.08718296 0.00101927 0.0035615 ]
+INFO:artifice:max: [9.99702549 0.6903252  5.70947647]
+```
