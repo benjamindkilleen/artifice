@@ -7,7 +7,7 @@ Object detection for scientific images.
 We provide instructions for using `artifice` UChicago's `midway2` cluster. After
 cloning this repository, add its directory to the `PYTHONPATH`:
 ```
-git clone https://github.com/bendkill/artifice.git
+git clone https://github.com/benjamindkilleen/artifice.git
 cd artifice
 ARTIFICE_ROOT=`pwd`
 export PYTHONPATH=$PYTHONPATH:$ARTIFICE_ROOT
@@ -46,7 +46,7 @@ labeled for training. Detections are run on 1000 withheld frames.
 1. The `test_utils` directory contains `experiment.py` for creating an
    artificial experiment. Run ```python scripts/coupled_spheres.py``` to create
    the test dataset, viualized
-   [here](https://github.com/bendkill/artifice/blob/master/docs/coupled_spheres.mp4).
+   [here](https://github.com/benjamindkilleen/artifice/blob/master/docs/coupled_spheres.mp4).
    (This will take about an hour, avoid if possible.) The dataset consists of
    `.png` images and a `.npy` labels file.
 2. Convert this data to the expected `.tfrecord` form with
