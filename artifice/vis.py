@@ -5,6 +5,9 @@ called without clearing the matplotlib buffer.
 
 """
 
+from glob import glob
+from os.path import join, basename
+from stringcase import pascalcase, titlecase
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -70,22 +73,47 @@ def plot_image(*images, columns=10, ticks=True, scale=20, colorbar=False,
   return fig, axes
 
 
-def plot_hist(hist):
-  fig, axes = plt.subplots(2, 1)
-  for name, values in hist.items():
-    if type(values) is not list:
-      continue
-    if 'loss' in name:
-      axes[0].plot(values, label=name)
+def plot_hists_from_dir(model_root, columns=10, scale=20):
+  """Plot all the histories in `model_dir`.
 
-  axes[0].set_title("Loss (Weigted MSE)")
-  axes[0].set_xlabel("Epoch")
-  axes[0].set_ylabel("Loss")
+  For each named property, creates a plot with all the model histories that had
+  that named property (loss or metric)
 
-  axes[1].set_title("Mean Absolute Error")
-  axes[1].set_xlabel("Epoch")
-  axes[1].set_ylabel("MAE")
+  :returns: fig, axes
+
+  """
+
+  history_fnames = glob(join(model_root, '*history.json'))
+  logger.debug(f"history_fnames: {history_fnames}")
+  if not history_fnames:
+    logger.warning(f"no history saved at {model_root}")
+    return None, None
+
+  hist_data = {}                # {property_name -> {model_name -> [values]}}
+  for fname in history_fnames:
+    hist = utils.json_load(fname)
+    model_name = pascalcase(basename(fname).replace('_history.json', ''))
+    for prop_name, values in hist.items():
+      if not isinstance(values, list):
+        continue
+      if hist_data.get(prop_name) is None:
+        hist_data[prop_name] = {}
+      hist_data[prop_name][model_name] = values
+
+  columns = min(columns, len(hist_data))
+  rows = max(1, len(hist_data) // columns)
+  fig, axes = plt.subplots(rows, columns, squeeze=False,
+                           figsize=(scale, scale * rows / columns))
+
+  for i, (prop_name, prop_data) in enumerate(hist_data.items()):
+    ax = axes[i // columns, i % columns]
+    for model_name, values in prop_data.items():
+      ax.plot(values, '-', label=model_name)
+    ax.set_title(titlecase(prop_name))
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Loss')
   fig.suptitle("Training")
+  plt.legend()
   return fig, axes
 
 

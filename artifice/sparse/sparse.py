@@ -1,8 +1,9 @@
 """The implementations in this file rely on SBNet, a project from
 uber-research. The original repository containing this code can be found
 [here](https://github.com/uber-research/sbnet), and the paper describing it
-[here](https://arxiv.org/abs/1801.02108). Documentation for my wrapper functions
-comes mostly from the git repo README, albeit in a more pythonic format.
+[here](https://arxiv.org/abs/1801.02108). Documentation for my wrapper
+functions comes mostly from the git repo README, albeit in a more pythonic
+format.
 
 """
 
@@ -233,7 +234,7 @@ for (ni, hi, wi) in indices.active_block_indices:
         boffset=boffset,
         bstride=bstride,
         add=add)
-      
+
   if not tf.executing_eagerly():
     outputs.set_shape(shape)
   return outputs

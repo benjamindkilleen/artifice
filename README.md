@@ -21,15 +21,18 @@ sinteractive --partition=gpu2 --gres=gpu:1 --mem=32000
 After it opens, load the required modules and activate the python
 environment. Note: you may have to `module unload python` first.
 ```
+module unload python
+module load cuda/9.0
+export PATH=$PATH:/software/cuda-9.0-el7-x86_64/bin
 module load Anaconda3/2018.12
-source activate tf-gpu-1.12.0
+source activate tf-gpu-1.13.1
 module load povray/3.7
 module load ffmpeg
 ```
 
-(We use `POV-Ray` for data generation and `ffmpeg` for visualization).
+We use `POV-Ray` for data generation and `ffmpeg` for visualization. Depending on your use of `artifice`, these may not be necessary.
 
-Check that `artifice` loads correctly by running `python artifice.py -h`
+Check that `artifice` loads correctly by running `python -m artifice -h`
 
 ## Demo
 
@@ -47,11 +50,11 @@ labeled for training. Detections are run on 1000 withheld frames.
    (This will take about an hour, avoid if possible.) The dataset consists of
    `.png` images and a `.npy` labels file.
 2. Convert this data to the expected `.tfrecord` form with
-   ```python artifice.py convert```
-3. Run one training epoch with ```python artifice.py train```. (Epoch
+   ```python -m artifice convert```
+3. Run one training epoch with ```python -m artifice train```. (Epoch
    checkpoints are saved in `models/coupled_spheres/hourglass`
-4. Run object detection with ```python artifice.py detect``` This creates a
+4. Run object detection with ```python -m artifice detect``` This creates a
    `detections.npy` file with object detections in `models/coupled_spheres`.
-5. Run ```python artifice.py visualize``` to create and save detection
+5. Run ```python -m artifice visualize``` to create and save detection
    visualizations in `models/coupled_spheres`. Examples are included with this
    distribution.

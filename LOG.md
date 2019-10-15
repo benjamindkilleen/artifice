@@ -914,6 +914,81 @@ More speed tests:
 ## August 6, 2019:
 Speed test results. As a reminder, patient, batch size ]:
 * dense: 95, 86, 86
-* sparse: 321, 97, 81, 
+* sparse: 321, 97, 81,
 * better sparse: 144, 109, 108
   142, 109, 107 whyyyyyy
+
+## August 7, 2019:
+* glk: "Model has to kind of find itself."
+* change the threshold across time/levels?
+* pursue H_G
+
+## August 8, 2019: More speed tests:
+Updated better-sparse so it actually learns:
+* dense: 95, 86, 86 (from before)
+* sparse: 321, 97, 81, (from before)
+* better sparse: 86, 77, 77, (break), 86, 77, 77, 77, (break), 86, 77, 77
+
+Another few runs were even faster:
+* 84, 75, 75, ...
+* 98, 65, 64, ...
+
+That's like a 30% speedup over dense UNet (91s/epoch), theoretically
+
+But the pose image loss doesn't seem to be going down a whole lot. Maybe I need
+to reprioritize the `pose_image_loss` over the sparsity losses?
+
+The auto-sparse unet has losses (without loss weighting):
+* pose_image: 0.026, 0.0250, 0.0246, 0.0243, 0.0241, 0.0239, 0.023, 0.0236,
+  0.0234, 0.0233
+  
+The output looks better after reprioritizing the `pose_image`. Maybe now make
+self.tol lower? Also, we should try dropping `self.tol` as a function of
+epoch. Not sure how to do that at all.
+
+### Evaluating different models after 20 epochs:
+Tol set at 0.05:
+
+UNet:
+```
+INFO:artifice:objects detected: 36396 / 40000
+INFO:artifice:avg (euclidean) detection error: 2.9550125168617627
+INFO:artifice:avg (absolute) pose error: [0.04189316 0.75587162]
+INFO:artifice:note: some objects may be occluded, making detection impossible
+INFO:artifice:avg: [2.95501252 0.04189316 0.75587162]
+INFO:artifice:std: [2.10017321 0.02714674 1.0314036 ]
+INFO:artifice:min: [9.02138427e-02 9.45106149e-06 1.09195709e-04]
+INFO:artifice:max: [9.98716831 0.13081706 7.21399355]
+```
+
+Sparse:
+```
+INFO:artifice:objects detected: 36420 / 40000
+INFO:artifice:avg (euclidean) detection error: 4.4020743376619755
+INFO:artifice:avg (absolute) pose error: [0.05856278 1.71808761]
+INFO:artifice:note: some objects may be occluded, making detection impossible
+INFO:artifice:avg: [4.40207434 0.05856278 1.71808761]
+INFO:artifice:std: [2.65426281 0.04823871 1.20276581]
+INFO:artifice:min: [0.08930295 0.00054923 0.00357652]
+INFO:artifice:max: [9.9862299  0.29404551 5.14802027]
+```
+
+Better-sparse:
+(failed completely?) Possible bug.
+
+Auto-sparse:
+```
+INFO:artifice:objects detected: 36864 / 40000
+INFO:artifice:avg (euclidean) detection error: 4.718787164625677
+INFO:artifice:avg (absolute) pose error: [0.27260562 1.7624422 ]
+INFO:artifice:note: some objects may be occluded, making detection impossible
+INFO:artifice:avg: [4.71878716 0.27260562 1.7624422 ]
+INFO:artifice:std: [2.3327723  0.14227601 1.15831823]
+INFO:artifice:min: [0.08718296 0.00101927 0.0035615 ]
+INFO:artifice:max: [9.99702549 0.6903252  5.70947647]
+```
+
+
+Investigate:
+* distance transform being backward
+* increase sparsity threshold during training.
