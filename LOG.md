@@ -987,3 +987,8 @@ INFO:artifice:std: [2.3327723  0.14227601 1.15831823]
 INFO:artifice:min: [0.08718296 0.00101927 0.0035615 ]
 INFO:artifice:max: [9.99702549 0.6903252  5.70947647]
 ```
+
+
+Investigate:
+* distance transform being backward
+* increase sparsity threshold during training.
